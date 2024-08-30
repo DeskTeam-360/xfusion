@@ -5,6 +5,7 @@ namespace App\Repository\View;
 use App\Repository\View;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Support\Facades\Auth;
+use mysql_xdevapi\Exception;
 
 class User extends \App\Models\User implements View
 {
@@ -42,13 +43,31 @@ class User extends \App\Models\User implements View
 
     public static function tableField(): array
     {
-        return [
-            ['label' => '#', 'sort' => 'id', 'width' => '7%'],
-            ['label' => 'Name', 'sort' => 'user_nicename'],
-            ['label' => 'Company'],
-            ['label' => 'Role', 'sort' => 'role'],
-            ['label' => 'Action'],
-        ];
+        $roles = Auth::user()->meta->where('meta_key', '=', config('app.wp_prefix', 'wp_') . 'capabilities');
+        $roleUser = '';
+
+        foreach ($roles as $r) {
+            $roleUser = array_key_first(unserialize($r['meta_value']));
+        }
+        if ($roleUser == "administrator") {
+            return [
+                ['label' => '#', 'sort' => 'id', 'width' => '7%'],
+                ['label' => 'Name', 'sort' => 'user_nicename'],
+                ['label' => 'Company'],
+                ['label' => 'Keap Status'],
+                ['label' => 'Role', 'sort' => 'role'],
+                ['label' => 'Action'],
+            ];
+        } else {
+            return [
+                ['label' => '#', 'sort' => 'id', 'width' => '7%'],
+                ['label' => 'Name', 'sort' => 'user_nicename'],
+                ['label' => 'Company'],
+                ['label' => 'Role', 'sort' => 'role'],
+                ['label' => 'Action'],
+            ];
+        }
+
     }
 
     public static function tableData($data = null): array
@@ -63,20 +82,25 @@ class User extends \App\Models\User implements View
 
         $roles = $data->meta->where('meta_key', '=', config('app.wp_prefix', 'wp_') . 'capabilities');
         $role = '';
-
         foreach ($roles as $r) {
             $role = array_key_first(unserialize($r['meta_value']));
         }
-//        dd($data->ID);
+
+        $keaps = $data->meta->where('meta_key', '=', 'keap_contact_id');
+        $route = route('user.connect-keap', $data->ID);
+        $keap = "<a href='$route' class='p-1 rounded btn-error text-nowrap text-xs'>Not Connect</a>";
+        $campaign = "";
+        foreach ($keaps as $r) {
+            $keap = '<div class="p-1 rounded btn btn-success text-nowrap text-xs">Connect</div>';
+            $route = route( 'create_independent_user', $data->ID );
+            $campaign = "<span><a href='$route' class='btn btn-secondary text-xs p-1 rounded text-nowrap'>Send Keap</a></span>";
+        }
 
 
         $companies = $data->meta->where('meta_key', '=', 'company');
         $company = '-';
 
-
-//        $link = route('user.edit', $data->ID);
         $link2 = route('user.show', $data->ID);
-
 
         $companyId = null;
         foreach ($companies as $r) {
@@ -88,7 +112,6 @@ class User extends \App\Models\User implements View
                 $company = 'Company has been delete';
             }
         }
-
 
         if ($roleUser == "administrator") {
             $link = route('user.edit', $data->ID);
@@ -104,6 +127,7 @@ class User extends \App\Models\User implements View
                 "<div>$data->user_login <br><div style='font-size: 10px'>$data->email</div></div>"
             ],
             ['type' => 'string', 'data' => $company],
+            ['type' => 'raw_html', 'data' => "<div class='flex gap-1'> $keap <br> $campaign</div>"],
             ['type' => 'string', 'data' => $role],
             ['type' => 'raw_html', 'text-align' => 'center', 'data' => "
 <div class='flex gap-1'>

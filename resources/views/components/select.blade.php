@@ -8,7 +8,7 @@
 
     <select
         id="{{ $id }}"
-        wire:model="{{ $model }}"
+        wire:model.live="{{ $model }}"
         name="{{ $title }}"
         class="py-2.5 px-4 form-control">
         <option></option>

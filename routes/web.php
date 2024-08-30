@@ -13,6 +13,10 @@ use Illuminate\Support\Facades\Route;
 use KeapGeek\Keap\Facades\Keap;
 
 Route::get('/', function () {
+//    $k=Keap::contact()->list([
+//        'email' =>'mokhamadasif@gmail.com'
+//    ])[0];
+//            dd($k);
 //    return redirect('/keap/auth/');
     return redirect(route('dashboard'));
 });
@@ -24,23 +28,15 @@ Route::middleware([
 ])->group(function () {
     Route::get('/dashboard', function () {
 
-//        try {
-//            if (!Keap::oauth()->user()) {
-//                return redirect('/keap/auth');
-//            }
-//        } catch (\Exception $e) {
-////            return redirect('/keap/auth');
-//        }
-
         $user = Auth::user();
         $ru = $user->meta->where('meta_key', '=', config('app.wp_prefix', 'wp_') . 'capabilities');
         $role = '';
         foreach ($ru as $r) {
             $role = array_key_first(unserialize($r['meta_value']));
         }
-        if ($role=='administrator'){
+        if ($role == 'administrator') {
             return view('admin.index');
-        }elseif ($role=='editor'){
+        } elseif ($role == 'editor') {
             return view('admin.dashboard-company');
         } else {
             return view('admin.dashboard-contributor');
@@ -52,17 +48,22 @@ Route::middleware([
     Route::middleware([
         'auth', 'checkRole:administrator'
     ])->group(function () {
+
+        Route::get('user/connect-keap/{user}', function ($user) {
+            return view('admin.user.keap-connect',compact('user'));
+        })->name('user.connect-keap');
+
         Route::resource('campaign', CampaignController::class)->only('index', 'create', 'edit');
         Route::resource('company', CompanyController::class)->only('index', 'create', 'edit');
         Route::resource('user', UserController::class)->only('index', 'create', 'edit', 'show');
         Route::resource('report', ReportController::class)->only('index', 'create', 'edit');
 
-        Route::resource('course-title', LimitLinkController::class)->only('index','create','edit');
+        Route::resource('course-title', LimitLinkController::class)->only('index', 'create', 'edit');
 
-        Route::get('schedule',function (){
+        Route::get('schedule', function () {
             return view('admin.schedule.index');
         })->name('schedule-all');
-        Route::get('revitalize',function (){
+        Route::get('revitalize', function () {
             return view('admin.revitalize.index');
         })->name('revitalize-all');
 
@@ -76,7 +77,7 @@ Route::middleware([
         Route::get('/apply-tags/{contactId}/{tagId}', [ContactController::class, 'applyTags'])->name('apply_tag');
         Route::get('/tag-list/', [ContactController::class, 'tag_list'])->name('tag_list');
         Route::get('/campaign/create/group', [CampaignController::class, 'create_company'])->name('create_company');
-
+        Route::get('/user/{userId}/create/campaign', [CampaignController::class, 'create_independent_user'])->name('create_independent_user');
     });
 
     Route::middleware([

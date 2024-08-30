@@ -29,4 +29,10 @@ class CampaignController extends Controller
     {
         return view('admin.campaign.edit', compact('id'));
     }
+    public function create_independent_user($id)
+    {
+        return view(
+            'admin.campaign.independent-user.create', compact('id')
+        );
+    }
 }

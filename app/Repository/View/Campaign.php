@@ -3,6 +3,7 @@
 namespace App\Repository\View;
 
 use App\Models\Tag;
+use App\Models\WpUserMeta;
 use App\Repository\View;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Support\Facades\Storage;
@@ -29,21 +30,20 @@ class Campaign extends \App\Models\Campaign implements View
 //            ['label' => '#', 'sort' => 'id', 'width' => '7%'],
             ['label' => 'Users'],
             ['label' => 'Tags'],
-            ['label' => 'Status', 'text-align'=>'center'],
+            ['label' => 'Status'],
             ['label' => 'Action'],
         ];
     }
 
     public static function tableData($data = null): array
     {
-        $exp_users = explode(", ", $data->users);
+        $exp_users = explode(";", $data->users);
         $user_names = [];
         foreach ($exp_users as $user) {
             try {
-                User::find($user)->user_nicename;
-                $user_names[] = User::find($user)->user_nicename;
+                $user_names[] = User::find(WpUserMeta::where('meta_key','keap_contact_id')->where('meta_value',$user)->first()->user_id)->user_nicename;
             } catch (\Exception) {
-
+                $user_names[] = 'User has been deleted, Contact keap id - '. $user;
             }
         }
         $listItems = '';
@@ -51,12 +51,16 @@ class Campaign extends \App\Models\Campaign implements View
             $listItems .= '<li> - ' . htmlspecialchars($userName) . '</li>';
         }
 
-        $exp_tags = explode(", ", $data->tags);
+        $exp_tags = explode(";", $data->tags);
         $tag_names = [];
         foreach ($exp_tags as $tag) {
-//            $tag_names[] = Tag::find($tag)->title;
-            $tag_names[] = Keap::tag()->find($tag)['name'];
+            try {
+                $tag_names[] = Keap::tag()->find($tag)['name'];
+            }catch (\Exception $e){
+                $tag_names[] = "Tag ".$tag." has been deleted";
+            }
         }
+
         $listItems2 = '';
         foreach ($tag_names as $tag) {
             $listItems2 .= '<li> - ' . htmlspecialchars($tag) . '</li>';
