@@ -50,13 +50,14 @@ class KeapConnect extends Component
                 break;
             }
         } else {
-            dd("masuk sini");
+//            dd("masuk sini");
             Keap::contact()->create([
                 'given_name'=>$this->firstName,
                 'family_name'=>$this->lastName,
                 'email'=>$this->user->email
             ]);
         }
+        $this->redirect(route('user.index'));
     }
 
     public function render()

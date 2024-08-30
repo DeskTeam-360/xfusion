@@ -49,7 +49,7 @@ class SendCampaign extends Command
             $c->update([
                 'status'=>'send'
             ]);
-            dd($results);
+//            dd($results);
 //            var_dump();
         }
     }
