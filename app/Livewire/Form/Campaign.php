@@ -132,7 +132,13 @@ class Campaign extends Component
             $array_data['users'] = implode(";", $this->companies);
             $array_data['created_by_group'] = 'yes';
         } elseif ($this->for == 'independent') {
-            $array_data['users'] = $this->userId;
+
+            $keap_id = null;
+            foreach (\App\Models\User::find($this->userId)->meta->where('meta_key', 'keap_contact_id') as $k) {
+                $keap_id = $k->meta_value;
+            }
+
+            $array_data['users'] = $keap_id;
             $array_data['created_by_group'] = 'yes';
         }
 
