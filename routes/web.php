@@ -8,6 +8,9 @@ use App\Http\Controllers\Admin\ImportController;
 use App\Http\Controllers\Admin\LimitLinkController;
 use App\Http\Controllers\Admin\ReportController;
 use App\Http\Controllers\Admin\UserController;
+use App\Models\Tag;
+use App\Models\User;
+use App\Models\WpUserMeta;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Route;
 use KeapGeek\Keap\Facades\Keap;
@@ -27,6 +30,42 @@ Route::middleware([
     'auth'
 ])->group(function () {
     Route::get('/dashboard', function () {
+        $tag = [];
+        $users = User::whereHas('meta',function ($q){
+            $q->where('meta_key', '=', 'keap_contact_id');
+        })->get();
+        foreach ($users as $user){
+            $wpUserMeta = WpUserMeta::where('user_id','=',$user->ID)->where('meta_key','=','keap_tags')->first();
+            $keapId = WpUserMeta::where('user_id','=',$user->ID)->where('meta_key','=','keap_contact_id')->first()->meta_value;
+            $tagKeaps = Keap::contact()->tags($keapId);
+            foreach ($tagKeaps as $tk){
+                $tag[]=$tk['tag']['id'];
+            }
+            $tag = implode(';',$tag);
+            if ($wpUserMeta!=null){
+                WpUserMeta::find($wpUserMeta->umeta_id)->update(['meta_value'=>$tag]);
+            }else{
+                WpUserMeta::create([
+                    'user_id'=>$user->ID,
+                    'meta_key'=>'keap_tags',
+                    'meta_value'=>$tag
+                ]);
+            }
+        }
+
+        $tags = Keap::tag()->list([
+            'category' => 44
+        ]);
+
+        foreach ($tags as $tag){
+            $t = Tag::find($tag['id']);
+            $tag['category'] = $tag['category']['id'];
+            if ($t!=null){
+                $t->update($tag);
+            }else{
+                Tag::create($tag);
+            }
+        }
 
         $user = Auth::user();
         $ru = $user->meta->where('meta_key', '=', config('app.wp_prefix', 'wp_') . 'capabilities');
@@ -50,7 +89,7 @@ Route::middleware([
     ])->group(function () {
 
         Route::get('user/connect-keap/{user}', function ($user) {
-            return view('admin.user.keap-connect',compact('user'));
+            return view('admin.user.keap-connect', compact('user'));
         })->name('user.connect-keap');
 
         Route::resource('campaign', CampaignController::class)->only('index', 'create', 'edit');
@@ -78,6 +117,7 @@ Route::middleware([
         Route::get('/tag-list/', [ContactController::class, 'tag_list'])->name('tag_list');
         Route::get('/campaign/create/group', [CampaignController::class, 'create_company'])->name('create_company');
         Route::get('/user/{userId}/create/campaign', [CampaignController::class, 'create_independent_user'])->name('create_independent_user');
+        Route::get('/user/{userId}/tag-list', [CampaignController::class, 'listTag'])->name('user.tag-list');
     });
 
     Route::middleware([

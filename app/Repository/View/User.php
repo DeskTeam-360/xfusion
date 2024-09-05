@@ -91,9 +91,10 @@ class User extends \App\Models\User implements View
         $keap = "<a href='$route' class='p-1 rounded btn-error text-nowrap text-xs'>Not Connect</a>";
         $campaign = "";
         foreach ($keaps as $r) {
-            $keap = '<div class="p-1 rounded btn btn-success text-nowrap text-xs">Connect</div>';
+            $route = route( 'user.tag-list', $data->ID );
+            $keap = "<a href='$route' class='p-1 rounded btn btn-success text-nowrap text-xs'>List Tag</a>";
             $route = route( 'create_independent_user', $data->ID );
-            $campaign = "<span><a href='$route' class='btn btn-secondary text-xs p-1 rounded text-nowrap'>Send Keap</a></span>";
+            $campaign = "<span><a href='$route' class='btn btn-secondary text-xs p-1 rounded text-nowrap'>Add Tag</a></span>";
         }
 
 

@@ -8,5 +8,5 @@ use Illuminate\Database\Eloquent\Model;
 class Tag extends Model
 {
     use HasFactory;
-    protected $fillable=['user_id', 'tag_id', 'time_schedule', 'status'];
+    protected $fillable=['id','name', 'description', 'category'];
 }

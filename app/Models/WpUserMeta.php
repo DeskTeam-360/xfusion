@@ -15,6 +15,7 @@ use Illuminate\Database\Eloquent\Model;
 class WpUserMeta extends Model
 {
     public $timestamps=false;
+    protected $primaryKey = 'umeta_id';
     protected $table= 'wp_usermeta' ;
     use HasFactory;
     protected $fillable =['user_id', 'meta_key', 'meta_value'];

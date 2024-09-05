@@ -158,6 +158,28 @@ class Campaign extends Component
                     ]);
                 }
             }
+            $tag = [];
+            $users = User::whereHas('meta',function ($q){
+                $q->where('meta_key', '=', 'keap_contact_id');
+            })->get();
+            foreach ($users as $user){
+                $wpUserMeta = WpUserMeta::where('user_id','=',$user->ID)->where('meta_key','=','keap_tags')->first();
+                $keapId = WpUserMeta::where('user_id','=',$user->ID)->where('meta_key','=','keap_contact_id')->first()->meta_value;
+                $tagKeaps = Keap::contact()->tags($keapId);
+                foreach ($tagKeaps as $tk){
+                    $tag[]=$tk['tag']['id'];
+                }
+                $tag = implode(';',$tag);
+                if ($wpUserMeta!=null){
+                    WpUserMeta::find($wpUserMeta->umeta_id)->update(['meta_value'=>$tag]);
+                }else{
+                    WpUserMeta::create([
+                        'user_id'=>$user->ID,
+                        'meta_key'=>'keap_tags',
+                        'meta_value'=>$tag
+                    ]);
+                }
+            }
         }
 
         $this->redirect(route('campaign.index'));
