@@ -14,6 +14,7 @@ Route::get('/user', function (Request $request) {
 Route::post('/keap-gform/', function (Request $request) {
     $data = $request->all();
     \App\Models\Log::create(['log'=>json_encode($data)]);
+    $data['user_id'] = \App\Models\WpGfEntry::find($data['user_id'])->created_by;
     $tag = Tag::where('name','=',$data['tag'])->first();
     $user = User::find($data['user_id']);
     $keapId = $user->meta->where('meta_key','keap_contact_id')->first();
