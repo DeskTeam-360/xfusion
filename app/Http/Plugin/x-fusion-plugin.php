@@ -94,7 +94,7 @@ function get_company_info()
                 wp_send_json_success(['logo_url' => $result['logo_url'], 'qrcode_url' => $result['qrcode_url']]);
                 wp_die();
             }
-            if ($limit->keap_tag==null){
+            if ($limit->keap_tag_start==null){
                 wp_send_json_success(['logo_url' => $result['logo_url'], 'qrcode_url' => $result['qrcode_url']]);
                 wp_die();
             }
@@ -120,13 +120,13 @@ function get_company_info()
 
             $status = 'redirect';
             $message = "You don't have access";
-            wp_send_json_success(['url' => "../../../", 'status' => $status, 'message' => $message]);
+            wp_send_json_success(['url' => "https://demo.xperiencefusion.com/sustain/sustain-menu/self-actualization/", 'status' => $status, 'message' => $message]);
             wp_die();
         }
         $url = $limit->redirect_url;
         $status = 'redirect';
         $message = "You need login";
-        wp_send_json_success(['url' => "../../../", 'status' => $status, 'message' => $message]);
+        wp_send_json_success(['url' => "https://demo.xperiencefusion.com/sustain/sustain-menu/self-actualization/", 'status' => $status, 'message' => $message]);
         wp_die();
     }
 
