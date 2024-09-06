@@ -74,6 +74,7 @@ function get_company_info()
 
     $url = $_POST['url'];
     $query = "select * from course_lists where url='$url'";
+    $wpdb->insert("logs", array('log'=>$query));
     $limitLinks = $wpdb->get_results($query);
     foreach ($limitLinks as $limit) {
 
@@ -217,3 +218,4 @@ function get_company_info()
 }
 
 add_action('wp_ajax_get_company_info', 'get_company_info', 1, 3);
+add_action('wp_ajax_nopriv_get_company_info', 'get_company_info', 1, 3);

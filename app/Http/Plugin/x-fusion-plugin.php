@@ -37,12 +37,9 @@ function company_detect()
                         addQueryParam('dataId', response.data.dataId)
                     }
                     if (response.data.status === "redirect") {
-                        window.setTimeout(
-                            function () {
-                                alert(response.data.message)
-                            },
-                            1000);
-                        window.location.replace(response.data.url)
+                        alert("You dont have access")
+
+                        window.setTimeout(function () {window.location.replace(response.data.url)}, 1000);
                     }
                     if (response.data.logo_url !== null) {
                         const company_logo = document.getElementsByClassName("wp-image-5940");
@@ -72,19 +69,23 @@ function get_company_info()
 
     $url = $_POST['url'];
     $query = "select * from course_lists where url='$url'";
+
+    $wpdb->insert("logs", array('log' => $query));
+
     $limitLinks = $wpdb->get_results($query);
     foreach ($limitLinks as $limit) {
         $userID = get_current_user_id();
-
+        $wpdb->insert("logs", array('log' => "test1"));
         if ($userID != null) {
             $companyID = get_usermeta($userID, 'company');
             $keapTags = get_usermeta($userID, 'keap_tags');
             $query = "select * from companies where id=$companyID";
             $click_logs = $wpdb->get_results($query);
+            $wpdb->insert("logs", array('log' => "test2"));
             $result = [];
             $user = get_userdata($userID);
             $user_roles = $user->roles;
-
+            $wpdb->insert("logs", array('log' => "test3"));
             foreach ($click_logs as $log) {
                 $result['logo_url'] = $log->logo_url;
                 $result['qrcode_url'] = $log->qrcode_url;
@@ -92,37 +93,42 @@ function get_company_info()
 
             if (in_array('editor', $user_roles, true) or in_array('administrator', $user_roles, true)) {
                 wp_send_json_success(['logo_url' => $result['logo_url'], 'qrcode_url' => $result['qrcode_url']]);
+                $wpdb->insert("logs", array('log' => "test4"));
                 wp_die();
             }
-            if ($limit->keap_tag_start==null){
+            if ($limit->keap_tag == null) {
+                $wpdb->insert("logs", array('log' => "test5"));
                 wp_send_json_success(['logo_url' => $result['logo_url'], 'qrcode_url' => $result['qrcode_url']]);
                 wp_die();
             }
 
+            $wpdb->insert("logs", array('log' => "test6"));
             $query = "SELECT id FROM wp_gf_entry where source_url = '$url' and created_by = '$userID' and status='active'";
             $checkEntry = $wpdb->get_results($query);
-
+            $wpdb->insert("logs", array('log' => "test7"));
             foreach ($checkEntry as $check) {
                 $message = "You've done this course";
                 $status = 'redirect';
                 if ($_POST['param'] == 'dataId=' . $check->id) {
+                    $wpdb->insert("logs", array('log' => "test99"));
                     wp_send_json_success(['logo_url' => $result['logo_url'], 'qrcode_url' => $result['qrcode_url']]);
                     wp_die();
                 }
                 wp_send_json_success(['url' => $url . '/?dataId=' . $check->id, 'dataId' => $check->id, 'status' => $status, 'message' => $message, 'logo_url' => $result['logo_url'], 'qrcode_url' => $result['qrcode_url']]);
                 wp_die();
             }
-
-            if (in_array($limit->keap_tag,explode(';',$keapTags))){
+            $wpdb->insert("logs", array('log' => "test99888"));
+            if (in_array($limit->keap_tag, explode(';', $keapTags))) {
                 wp_send_json_success(['logo_url' => $result['logo_url'], 'qrcode_url' => $result['qrcode_url']]);
                 wp_die();
             }
-
+            $wpdb->insert("logs", array('log' => "test99888"));
             $status = 'redirect';
             $message = "You don't have access";
             wp_send_json_success(['url' => "https://demo.xperiencefusion.com/sustain/sustain-menu/self-actualization/", 'status' => $status, 'message' => $message]);
             wp_die();
         }
+        $wpdb->insert("logs", array('log' => "test99888"));
         $url = $limit->redirect_url;
         $status = 'redirect';
         $message = "You need login";
@@ -135,3 +141,4 @@ function get_company_info()
 }
 
 add_action('wp_ajax_get_company_info', 'get_company_info', 1, 3);
+add_action('wp_ajax_nopriv_get_company_info', 'get_company_info', 1, 3);

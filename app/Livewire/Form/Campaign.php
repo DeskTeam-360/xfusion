@@ -159,7 +159,7 @@ class Campaign extends Component
                 }
             }
             $tag = [];
-            $users = User::whereHas('meta',function ($q){
+            $users = \App\Models\User::whereHas('meta',function ($q){
                 $q->where('meta_key', '=', 'keap_contact_id');
             })->get();
             foreach ($users as $user){
