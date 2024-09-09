@@ -7,6 +7,7 @@ use App\Http\Controllers\Admin\ExportController;
 use App\Http\Controllers\Admin\ImportController;
 use App\Http\Controllers\Admin\LimitLinkController;
 use App\Http\Controllers\Admin\ReportController;
+use App\Http\Controllers\Admin\TagController;
 use App\Http\Controllers\Admin\UserController;
 use App\Models\Tag;
 use App\Models\User;
@@ -98,6 +99,7 @@ Route::middleware([
         Route::resource('company', CompanyController::class)->only('index', 'create', 'edit');
         Route::resource('user', UserController::class)->only('index', 'create', 'edit', 'show');
         Route::resource('report', ReportController::class)->only('index', 'create', 'edit');
+        Route::resource('tag', TagController::class)->only('index', 'create', 'edit');
 
         Route::resource('course-title', LimitLinkController::class)->only('index', 'create', 'edit');
 

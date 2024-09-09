@@ -123,6 +123,7 @@ return [
         'store' => env('APP_MAINTENANCE_STORE', 'database'),
     ],
 
-    'wp_prefix'=> env('WP_PREFIX','wp_')
+    'wp_prefix'=> env('WP_PREFIX','wp_'),
+    'keap_category'=> env('KEAP_CATEGORY_ID','wp_'),
 
 ];
