@@ -61,7 +61,7 @@ class Campaign extends Component
         ];
 
         $this->tagOptions = [];
-        $keap_tags = Keap::tag()->list();
+        $keap_tags = Keap::tag()->list(['category' => 44]);
 
         foreach ($keap_tags as $cmp) {
             $this->tagOptions [] = ['value' => $cmp['id'], 'title' => $cmp['name']];
