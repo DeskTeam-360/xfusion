@@ -139,7 +139,7 @@ class Campaign extends Component
             }
 
             $array_data['users'] = $keap_id;
-            $array_data['created_by_group'] = 'yes';
+            $array_data['created_by_group'] = 'no';
         }
 
         \App\Models\Campaign::create($array_data);
@@ -158,11 +158,12 @@ class Campaign extends Component
                     ]);
                 }
             }
-            $tag = [];
+
             $users = \App\Models\User::whereHas('meta',function ($q){
                 $q->where('meta_key', '=', 'keap_contact_id');
             })->get();
             foreach ($users as $user){
+                $tag = [];
                 $wpUserMeta = WpUserMeta::where('user_id','=',$user->ID)->where('meta_key','=','keap_tags')->first();
                 $keapId = WpUserMeta::where('user_id','=',$user->ID)->where('meta_key','=','keap_contact_id')->first()->meta_value;
                 $tagKeaps = Keap::contact()->tags($keapId);

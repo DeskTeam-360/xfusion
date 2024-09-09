@@ -32,6 +32,7 @@ class GetTag extends Command
             $q->where('meta_key', '=', 'keap_contact_id');
         })->get();
         foreach ($users as $user) {
+            $tag=[];
             $wpUserMeta = WpUserMeta::where('user_id', '=', $user->ID)->where('meta_key', '=', 'keap_tags')->first();
             $keapId = WpUserMeta::where('user_id', '=', $user->ID)->where('meta_key', '=', 'keap_contact_id')->first()->meta_value;
             $tagKeaps = Keap::contact()->tags($keapId);
