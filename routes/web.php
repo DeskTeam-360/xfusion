@@ -30,25 +30,27 @@ Route::middleware([
     'auth'
 ])->group(function () {
     Route::get('/dashboard', function () {
-        $tag = [];
-        $users = User::whereHas('meta',function ($q){
+        $users = User::whereHas('meta', function ($q) {
             $q->where('meta_key', '=', 'keap_contact_id');
         })->get();
-        foreach ($users as $user){
-            $wpUserMeta = WpUserMeta::where('user_id','=',$user->ID)->where('meta_key','=','keap_tags')->first();
-            $keapId = WpUserMeta::where('user_id','=',$user->ID)->where('meta_key','=','keap_contact_id')->first()->meta_value;
+        foreach ($users as $user) {
+            $tag = [];
+            $wpUserMeta = WpUserMeta::where('user_id', '=', $user->ID)->where('meta_key', '=', 'keap_tags')->first();
+            $keapId = WpUserMeta::where('user_id', '=', $user->ID)->where('meta_key', '=', 'keap_contact_id')->first()->meta_value;
             $tagKeaps = Keap::contact()->tags($keapId);
-            foreach ($tagKeaps as $tk){
-                $tag[]=$tk['tag']['id'];
+            foreach ($tagKeaps as $tk) {
+                if ($tk['tag']['category'] == "Xfusion Testing") {
+                    $tag[] = $tk['tag']['id'];
+                }
             }
-            $tag = implode(';',$tag);
-            if ($wpUserMeta!=null){
-                WpUserMeta::find($wpUserMeta->umeta_id)->update(['meta_value'=>$tag]);
-            }else{
+            $tag = implode(';', $tag);
+            if ($wpUserMeta != null) {
+                WpUserMeta::find($wpUserMeta->umeta_id)->update(['meta_value' => $tag]);
+            } else {
                 WpUserMeta::create([
-                    'user_id'=>$user->ID,
-                    'meta_key'=>'keap_tags',
-                    'meta_value'=>$tag
+                    'user_id' => $user->ID,
+                    'meta_key' => 'keap_tags',
+                    'meta_value' => $tag
                 ]);
             }
         }
@@ -57,12 +59,12 @@ Route::middleware([
             'category' => 44
         ]);
 
-        foreach ($tags as $tag){
+        foreach ($tags as $tag) {
             $t = Tag::find($tag['id']);
             $tag['category'] = $tag['category']['id'];
-            if ($t!=null){
+            if ($t != null) {
                 $t->update($tag);
-            }else{
+            } else {
                 Tag::create($tag);
             }
         }
