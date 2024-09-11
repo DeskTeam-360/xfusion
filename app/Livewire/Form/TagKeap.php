@@ -19,6 +19,7 @@ class TagKeap extends Component
 
     public function mount()
     {
+        dd();
         $this->name = '';
         $this->description = '';
         if ($this->dataId != null) {

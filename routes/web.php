@@ -133,6 +133,11 @@ Route::middleware([
         Route::get('/report/season-{seasonId}/user-{userId}/course', [ReportController::class, 'seasonCourseIndex'])->name('season-course-index');
         Route::get('/report/season-{seasonId}/user-{userId}/form-{formId}/entry-{entryId}/detail', [ReportController::class, 'courseDetail'])->name('course-detail');
 
+        Route::get('/report/company-{companyId}/level-{levelId}', [ReportController::class, 'levelCourseCompany'])->name('level-course-company');
+        Route::get('/report/level-{levelId}', [ReportController::class, 'levelCourseEmployee'])->name('level-course-employee');
+        Route::get('/report/level-{levelId}/user-{userId}/course', [ReportController::class, 'levelCourseIndex'])->name('level-course-index');
+        Route::get('/report/level-{levelId}/user-{userId}/form-{formId}/entry-{entryId}/detail', [ReportController::class, 'levelDetail'])->name('level-detail');
+
         Route::get('/export-user', [ExportController::class, 'exportToCSV'])->name('export-user');
         Route::get('/template-download', [ExportController::class, 'downloadTemplate'])->name('template-download');
         Route::get('/import-user', [ImportController::class, 'importIndex'])->name('to-import-user');

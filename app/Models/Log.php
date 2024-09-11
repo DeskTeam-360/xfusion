@@ -9,4 +9,5 @@ class Log extends Model
 {
     use HasFactory;
     protected $guarded=[];
+    protected $fillable=['log1'];
 }

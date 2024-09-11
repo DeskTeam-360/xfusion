@@ -54,6 +54,22 @@ class User extends Component
             'display_name' => $this->first_name . ' ' . $this->last_name,
         ]);
 
+        if ($this->companyId != null) {
+            Keap::contact()->create([
+                'given_name' => $this->first_name,
+                'family_name' => $this->last_name,
+                'company_id' => $this->companyId,
+                'email' => $this->email,
+                'website' => $this->website,
+            ]);
+        } else {
+//            dd($this->email,$this->first_name,$this->last_name,$this->website);
+            Keap::contact()->create([
+                'given_name' => $this->first_name,
+                'family_name' => $this->last_name,
+                'email' => $this->email,
+                'website' => $this->website,
+            ]);
 
         $this->userMeta['nickname'] = $this->first_name;
         $this->userMeta['first_name'] = $this->first_name;
@@ -69,8 +85,6 @@ class User extends Component
         $this->userMeta['wp_capabilities'] = serialize([$this->role => true]);
         $this->userMeta['wp_user_level'] = 0;
         $this->userMeta['dismissed_wp_pointers'] = '';
-
-
 
         if ($this->companyId != null) {
             $this->userMeta['company'] = $this->companyId;
@@ -92,6 +106,7 @@ class User extends Component
             $this->redirect(route('company.show', $this->companyId));
         } else {
             $this->redirect(route('user.index'));
+        }
         }
     }
 

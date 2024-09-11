@@ -87,6 +87,7 @@ class AdminLayout extends Component
             $this->sidebar[0]['lists'][] = ['title' => 'Schedule generate', 'type' => 'link', 'route' => route('course-schedule-generate'), 'icon' => '<i class="ti ti-template  text-xl flex-shrink-0"></i> '];
             $this->sidebar[0]['lists'][] = ['title' => 'Report', 'type' => 'link', 'route' => route('report.index'), 'icon' => '<i class="ti ti-user  text-xl flex-shrink-0"></i> '];
             $this->sidebar[0]['lists'][] = ['title' => 'Campaign', 'type' => 'link', 'route' => route('campaign.index'), 'icon' => '<i class="ti ti-brand-campaignmonitor  text-xl flex-shrink-0"></i> '];
+            $this->sidebar[0]['lists'][] = ['title' => 'Tags', 'type' => 'link', 'route' => route('tag.index'), 'icon' => '<i class="ti ti-tags  text-xl flex-shrink-0"></i> '];
 
         }
         if ($role == 'editor') {

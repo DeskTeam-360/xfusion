@@ -7,7 +7,7 @@
             <div class="customizer-box label btn" style="margin-top: 40px;">REVITALIZE</div>
             <div class="customizer-box label btn"
                 style="margin-bottom: 30px; background-color: white; border-color:black; color:black;">
-                SEASON {{$season_id}}</div>
+                LEVEL {{$level_id}}</div>
             @php
                 $temp_loop = 0;
             @endphp
@@ -42,7 +42,7 @@
                                 @endphp
 
                                 @if($entry_id)
-                                    <a href="{{ route('course-detail', [$season_id, $user_id, $form_id, $entry_id]) }}">{{ $df['title'] }}</a>
+                                    <a href="{{ route('course-detail', [$level_id, $user_id, $form_id, $entry_id]) }}">{{ $df['title'] }}</a>
                                 @else
                                     <a href="#" class="inline-block text-red-600">{{ $df['title'] }}</a>
                                 @endif

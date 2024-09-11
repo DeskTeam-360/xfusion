@@ -7,7 +7,7 @@
             <div class="customizer-box label btn" style="margin-top: 40px;">REVITALIZE</div>
             <div class="customizer-box label btn"
                 style="margin-bottom: 30px; background-color: white; border-color:black; color:black;">
-                SEASON {{ $id }}</div>
+                LEVEL {{ $id }}</div>
 
             <div class="overflow-x-auto">
                 <table class="w-full bg-white border border-gray-200 rounded-lg overflow-hidden">
