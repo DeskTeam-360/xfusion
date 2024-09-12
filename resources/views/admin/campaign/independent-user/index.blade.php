@@ -18,11 +18,14 @@
                             <tbody>
                             @if($keapTag!="")
                             @foreach (explode(';',$keapTag) as $index=>$data)
+                                @php($test = \App\Models\Tag::find($data)->id??'')
+                                @if($test!='')
                                 <tr class="border-b border-gray-200 ">
                                     <td class="py-4 px-6">{{ \App\Models\Tag::find($data)->id??'' }}</td>
                                     <td class="py-4 px-6">{{ \App\Models\Tag::find($data)->name??'' }}</td>
                                     <td class="py-4 px-6">{{ \App\Models\Tag::find($data)->description??''}}</td>
                                 </tr>
+                                @endif
                             @endforeach
                             @endif
                             </tbody>
