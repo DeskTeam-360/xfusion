@@ -95,8 +95,9 @@ class User extends \App\Models\User implements View
         $campaign = "";
 
         if (isEmpty($keaps)){
+
             $k = Keap::contact()->list([
-                'email' => $data->email
+                'email' => 'testing@guru.com'
             ]);
             dd($k,$data->email);
             if ($k!=null){
