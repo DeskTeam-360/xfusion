@@ -97,9 +97,8 @@ class User extends \App\Models\User implements View
         if (isEmpty($keaps)){
 
             $k = Keap::contact()->list([
-                'email' => 'testing@guru.com'
+                'email' => $data->email
             ]);
-            dd($k,$data->email);
             if ($k!=null){
                 WpUserMeta::create([
                     'meta_key' => 'keap_contact_id',
