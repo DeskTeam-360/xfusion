@@ -20,7 +20,7 @@
                 @if($companyId==null)
                     <option value="contributor">Contributor</option>
                     <option value="editor">Company/Editor</option>
-                    {{--                <option value="administrator">Administrator</option>--}}
+                    <option value="administrator">Administrator</option>
                 @else
                     <option value="subscriber">Employee/Subscriber</option>
                 @endif
