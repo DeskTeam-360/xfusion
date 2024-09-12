@@ -6,6 +6,8 @@ use App\Models\CompanyEmployee;
 use App\Models\ScheduleExecution;
 use App\Models\WpUserMeta;
 use Carbon\Carbon;
+use GuzzleHttp\Client;
+use Illuminate\Support\Facades\Http;
 use KeapGeek\Keap\Facades\Keap;
 use Livewire\Attributes\Validate;
 use Livewire\Component;
@@ -36,6 +38,7 @@ class User extends Component
     public $role;
 
     public $userMeta;
+    public $keap;
 
     public function create()
     {
@@ -54,22 +57,13 @@ class User extends Component
             'display_name' => $this->first_name . ' ' . $this->last_name,
         ]);
 
-        if ($this->companyId != null) {
-            Keap::contact()->create([
-                'given_name' => $this->first_name,
-                'family_name' => $this->last_name,
-                'company_id' => $this->companyId,
-                'email' => $this->email,
-                'website' => $this->website,
-            ]);
-        } else {
-//            dd($this->email,$this->first_name,$this->last_name,$this->website);
-            Keap::contact()->create([
-                'given_name' => $this->first_name,
-                'family_name' => $this->last_name,
-                'email' => $this->email,
-                'website' => $this->website,
-            ]);
+
+        $client = Http::post('https://hooks.zapier.com/hooks/catch/941497/2hr769d/', [
+            'first_name' => $this->first_name,
+            'last_name' => $this->last_name,
+            'email' => $this->email,
+            'website' => $this->website,
+        ]);
 
         $this->userMeta['nickname'] = $this->first_name;
         $this->userMeta['first_name'] = $this->first_name;
@@ -101,27 +95,75 @@ class User extends Component
                 'meta_value' => $meta
             ]);
         }
+//        sleep(2);
+//        $this->getDataKeap();
+//
+//        WpUserMeta::create([
+//            'meta_key' => 'keap_contact_id',
+//            'user_id' => $user->ID,
+//            'meta_value' => $this->keap
+//        ]);
 
         if ($this->companyId != null) {
             $this->redirect(route('company.show', $this->companyId));
         } else {
             $this->redirect(route('user.index'));
         }
-        }
+    }
+
+    public function getDataKeap()
+    {
+        $this->keap = Keap::contact()->list([
+            'email' => $this->email
+        ]);
+
     }
 
     public function update()
     {
 
         $user = \App\Models\User::find($this->dataId)->update([
-            'user_login' => $this->username,
-            'user_nicename' => $this->first_name,
+            'user_nicename' => $this->username,
             'user_email' => $this->email,
             'user_url' => $this->website ?? 'http://' . $this->first_name,
             'user_registered' => Carbon::now()->toDateTimeString(),
             'user_status' => 0,
             'display_name' => $this->first_name . ' ' . $this->last_name,
         ]);
+
+        $fn = WpUserMeta::where('user_id', $this->dataId)->where('meta_key', 'first_name')->first();
+        $ln = WpUserMeta::where('user_id', $this->dataId)->where('meta_key', 'last_name')->first();
+//        $keapId = WpUserMeta::where('user_id', $this->dataId)->where('meta_key', 'keap_contact_id')->first();
+
+        if ($ln != null) {
+            $ln->update([
+                'meta_value' => $this->last_name
+            ]);
+        } else {
+            WpUserMeta::create([
+                'user_id' => $this->dataId,
+                'meta_key' => 'last_name',
+                'meta_value' => $this->last_name
+            ]);
+        }
+        if ($fn != null) {
+            $fn->update([
+                'meta_value' => $this->first_name
+            ]);
+        } else {
+            WpUserMeta::create([
+                'user_id' => $this->dataId,
+                'meta_key' => 'first_name',
+                'meta_value' => $this->first_name
+            ]);
+        }
+        $client = Http::post('https://hooks.zapier.com/hooks/catch/941497/2hr769d/', [
+            'first_name' => $this->first_name,
+            'last_name' => $this->last_name,
+            'email' => $this->email,
+            'website' => $this->website,
+        ]);
+
 
         if ($this->companyId != null) {
             $this->redirect(route('company.show', $this->companyId));

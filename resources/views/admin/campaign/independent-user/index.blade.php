@@ -19,9 +19,9 @@
                             @if($keapTag!="")
                             @foreach (explode(';',$keapTag) as $index=>$data)
                                 <tr class="border-b border-gray-200 ">
-                                    <td class="py-4 px-6">{{ \App\Models\Tag::find($data)->id }}</td>
-                                    <td class="py-4 px-6">{{ \App\Models\Tag::find($data)->name }}</td>
-                                    <td class="py-4 px-6">{{ \App\Models\Tag::find($data)->description}}</td>
+                                    <td class="py-4 px-6">{{ \App\Models\Tag::find($data)->id??'' }}</td>
+                                    <td class="py-4 px-6">{{ \App\Models\Tag::find($data)->name??'' }}</td>
+                                    <td class="py-4 px-6">{{ \App\Models\Tag::find($data)->description??''}}</td>
                                 </tr>
                             @endforeach
                             @endif

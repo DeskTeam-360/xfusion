@@ -1,0 +1,2 @@
+user_login,user_pass,user_nicename,user_email,user_url,first_name,last_name,company_id,role
+your_username,your_password (make sure to change it after registration),your_nickname,your_email,your_website_url (you can empty it),your_firstname,your_lastname,"your_company_id (check it first the company id from administrator, or you can empty it)","your_role (subscriber, editor, or contributor)"

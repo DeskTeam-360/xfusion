@@ -2,10 +2,13 @@
 
 namespace App\Repository\View;
 
+use App\Models\WpUserMeta;
 use App\Repository\View;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Support\Facades\Auth;
+use KeapGeek\Keap\Facades\Keap;
 use mysql_xdevapi\Exception;
+use function PHPUnit\Framework\isEmpty;
 
 class User extends \App\Models\User implements View
 {
@@ -90,6 +93,19 @@ class User extends \App\Models\User implements View
         $route = route('user.connect-keap', $data->ID);
         $keap = "<a href='$route' class='p-1 rounded btn-error text-nowrap text-xs'>Not Connect</a>";
         $campaign = "";
+
+        if (isEmpty($keaps)){
+            $k = Keap::contact()->list([
+                'email' => $data->email
+            ]);
+            if ($k!=null){
+                WpUserMeta::create([
+                    'meta_key' => 'keap_contact_id',
+                    'user_id' => $data->ID,
+                    'meta_value' => $k[0]['id']
+                ]);
+            }
+        }
         foreach ($keaps as $r) {
             $route = route( 'user.tag-list', $data->ID );
             $keap = "<a href='$route' class='p-1 rounded btn btn-success text-nowrap text-xs'>List Tag</a>";
