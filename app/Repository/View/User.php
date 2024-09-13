@@ -110,6 +110,7 @@ class User extends \App\Models\User implements View
                 ]);
             }
         }
+        $keaps = $data->meta->where('meta_key', '=', 'keap_contact_id');
         foreach ($keaps as $r) {
             $route = route('user.tag-list', $data->ID);
             $keap = "<a href='$route' class='p-1 rounded btn btn-success text-nowrap text-xs'>List Tag</a>";
