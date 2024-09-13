@@ -49,7 +49,7 @@ class ExportController extends Controller
             "Expires" => "0"
         ];
 
-        $columns = ['ID', 'Name', 'Email', 'Company', 'Role'];
+        $columns = ['ID', 'Nickname', 'Email', 'Company', 'Role'];
 
         $callback = function() use($users, $columns) {
             $file = fopen('php://output', 'w');
@@ -57,7 +57,7 @@ class ExportController extends Controller
 
             foreach ($users as $user) {
                 $row['ID']  = $user->ID;
-                $row['Name']    = $user->user_nicename;
+                $row['Nickname']    = $user->user_nicename;
                 $row['Email']   = $user->user_email;
                 try {
                     $row['Company']  = Company::whereId(CompanyEmployee::whereUserId($user->ID)->get()[0]->company_id)->get('title')[0]->title;
@@ -77,7 +77,7 @@ class ExportController extends Controller
                     $row['Role']  = '-';
                 }
 
-                fputcsv($file, [$row['ID'], $row['Name'], $row['Email'], $row['Company'], $row['Role']]);
+                fputcsv($file, [$row['ID'], $row['Nickname'], $row['Email'], $row['Company'], $row['Role']]);
             }
 
             fclose($file);
