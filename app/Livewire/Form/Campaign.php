@@ -75,6 +75,8 @@ class Campaign extends Component
                 $this->userOptions [] = ['value' => $k->meta_value, 'title' => $user->user_email];
             }
         }
+//        dd($s);
+//        dd($this->userOptions);
         $companyCount = \App\Models\User::whereHas('meta', function ($q) {
             $q->where('meta_key', 'wp_capabilities')
                 ->where('meta_value', 'like', "%editor%");

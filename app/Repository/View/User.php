@@ -90,17 +90,19 @@ class User extends \App\Models\User implements View
         }
 
         $keaps = $data->meta->where('meta_key', '=', 'keap_contact_id');
+        $kk = "";
+        foreach ($keaps as $k) {
+            $kk = $k->meta_value;
+        }
         $route = route('user.connect-keap', $data->ID);
         $keap = "<a href='$route' class='p-1 rounded btn-error text-nowrap text-xs'>Not Connect</a>";
         $campaign = "";
 
-        if (isEmpty($keaps)){
-
+        if ($kk == null) {
             $k = Keap::contact()->list([
                 'email' => "$data->email"
             ]);
-
-            if ($k!=null){
+            if ($k != null) {
                 WpUserMeta::create([
                     'meta_key' => 'keap_contact_id',
                     'user_id' => $data->ID,
@@ -109,9 +111,9 @@ class User extends \App\Models\User implements View
             }
         }
         foreach ($keaps as $r) {
-            $route = route( 'user.tag-list', $data->ID );
+            $route = route('user.tag-list', $data->ID);
             $keap = "<a href='$route' class='p-1 rounded btn btn-success text-nowrap text-xs'>List Tag</a>";
-            $route = route( 'create_independent_user', $data->ID );
+            $route = route('create_independent_user', $data->ID);
             $campaign = "<span><a href='$route' class='btn btn-secondary text-xs p-1 rounded text-nowrap'>Add Tag</a></span>";
         }
 
