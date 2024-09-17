@@ -19,10 +19,8 @@ use KeapGeek\Keap\Facades\Keap;
 
 Route::get('/', function () {
 
-//    $k=Keap::contact()->list([
-//        'email' =>'mokhamadasif@gmail.com'
-//    ])[0];
-//            dd($k);
+    $k = Keap::contact()->tags(4718);
+//    dd($k);
 //    return redirect('/keap/auth/');
     return redirect(route('dashboard'));
 });
@@ -33,44 +31,6 @@ Route::middleware([
     'auth'
 ])->group(function () {
     Route::get('/dashboard', function () {
-        $users = User::whereHas('meta', function ($q) {
-            $q->where('meta_key', '=', 'keap_contact_id');
-        })->get();
-        foreach ($users as $user) {
-            $tag = [];
-            $wpUserMeta = WpUserMeta::where('user_id', '=', $user->ID)->where('meta_key', '=', 'keap_tags')->first();
-            $keapId = WpUserMeta::where('user_id', '=', $user->ID)->where('meta_key', '=', 'keap_contact_id')->first()->meta_value;
-            $tagKeaps = Keap::contact()->tags($keapId);
-            foreach ($tagKeaps as $tk) {
-                if ($tk['tag']['category'] == "Xfusion Testing") {
-                    $tag[] = $tk['tag']['id'];
-                }
-            }
-            $tag = implode(';', $tag);
-            if ($wpUserMeta != null) {
-                WpUserMeta::find($wpUserMeta->umeta_id)->update(['meta_value' => $tag]);
-            } else {
-                WpUserMeta::create([
-                    'user_id' => $user->ID,
-                    'meta_key' => 'keap_tags',
-                    'meta_value' => $tag
-                ]);
-            }
-        }
-
-        $tags = Keap::tag()->list([
-            'category' => 44
-        ]);
-
-        foreach ($tags as $tag) {
-            $t = Tag::find($tag['id']);
-            $tag['category'] = $tag['category']['id'];
-            if ($t != null) {
-                $t->update($tag);
-            } else {
-                Tag::create($tag);
-            }
-        }
 
         $user = Auth::user();
         $ru = $user->meta->where('meta_key', '=', config('app.wp_prefix', 'wp_') . 'capabilities');

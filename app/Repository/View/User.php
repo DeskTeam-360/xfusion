@@ -89,27 +89,11 @@ class User extends \App\Models\User implements View
             $role = array_key_first(unserialize($r['meta_value']));
         }
 
-        $keaps = $data->meta->where('meta_key', '=', 'keap_contact_id');
-        $kk = "";
-        foreach ($keaps as $k) {
-            $kk = $k->meta_value;
-        }
         $route = route('user.connect-keap', $data->ID);
         $keap = "<a href='$route' class='p-1 rounded btn-error text-nowrap text-xs'>Not Connect</a>";
         $campaign = "";
 
-        if ($kk == null) {
-            $k = Keap::contact()->list([
-                'email' => "$data->email"
-            ]);
-            if ($k != null) {
-                WpUserMeta::create([
-                    'meta_key' => 'keap_contact_id',
-                    'user_id' => $data->ID,
-                    'meta_value' => $k[0]['id']
-                ]);
-            }
-        }
+
         $keaps = $data->meta->where('meta_key', '=', 'keap_contact_id');
         foreach ($keaps as $r) {
             $route = route('user.tag-list', $data->ID);
@@ -117,7 +101,6 @@ class User extends \App\Models\User implements View
             $route = route('create_independent_user', $data->ID);
             $campaign = "<span><a href='$route' class='btn btn-secondary text-xs p-1 rounded text-nowrap'>Add Tag</a></span>";
         }
-
 
         $companies = $data->meta->where('meta_key', '=', 'company');
         $company = '-';

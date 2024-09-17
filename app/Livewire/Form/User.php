@@ -103,7 +103,10 @@ class User extends Component
 //            'user_id' => $user->ID,
 //            'meta_value' => $this->keap
 //        ]);
-
+        $this->dispatch('swal:alert', data:[
+            'icon' => 'success',
+            'title' => 'Successfully added user',
+        ]);
         if ($this->companyId != null) {
             $this->redirect(route('company.show', $this->companyId));
         } else {
@@ -164,7 +167,10 @@ class User extends Component
             'website' => $this->website,
         ]);
 
-
+        $this->dispatch('swal:alert', data:[
+            'icon' => 'success',
+            'title' => 'successfully changed the user',
+        ]);
         if ($this->companyId != null) {
             $this->redirect(route('company.show', $this->companyId));
         } else {

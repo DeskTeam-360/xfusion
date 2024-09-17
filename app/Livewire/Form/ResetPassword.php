@@ -31,7 +31,10 @@ class ResetPassword extends Component
                 'user_pass' => WpPassword::make($this->password),
             ]);
         }
-
+        $this->dispatch('swal:alert', data:[
+            'icon' => 'success',
+            'title' => 'password has been changed',
+        ]);
         $this->redirect(route('user.index'));
     }
 
