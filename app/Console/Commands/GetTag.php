@@ -51,22 +51,36 @@ class GetTag extends Command
 
         foreach ($users as $user) {
             $tag = [];
+            $tagApply = [];
+            $wpUserMeta = WpUserMeta::where('user_id', '=', $user->ID)->where('meta_key', '=', 'keap_tags')->first();
+            $wpUserMetaApply = WpUserMeta::where('user_id', '=', $user->ID)->where('meta_key', '=', 'keap_tags_applies')->first();
             $keapId = WpUserMeta::where('user_id', '=', $user->ID)->where('meta_key', '=', 'keap_contact_id')->first()->meta_value;
             $tagKeaps = Keap::contact()->tags($keapId);
             foreach ($tagKeaps as $tk) {
                 if ($tk['tag']['category'] == "Xfusion Testing") {
                     $tag[] = $tk['tag']['id'];
+                    $tagApply[] = $tk['date_applied'];
                 }
             }
             $tag = implode(';', $tag);
-            $wpUserMeta = WpUserMeta::where('user_id', '=', $user->ID)->where('meta_key', '=', 'keap_tags')->first();
+            $tagApply = implode(';', $tagApply);
             if ($wpUserMeta != null) {
-                $wpUserMeta->update(['meta_value' => $tag]);
+                WpUserMeta::find($wpUserMeta->umeta_id)->update(['meta_value' => $tag]);
             } else {
                 WpUserMeta::create([
                     'user_id' => $user->ID,
                     'meta_key' => 'keap_tags',
                     'meta_value' => $tag
+                ]);
+
+            }
+            if ($wpUserMetaApply!=null){
+                WpUserMeta::find($wpUserMetaApply->umeta_id)->update(['meta_value' => $tagApply]);
+            }else{
+                WpUserMeta::create([
+                    'user_id' => $user->ID,
+                    'meta_key' => 'keap_tags_applies',
+                    'meta_value' => $tagApply
                 ]);
             }
 

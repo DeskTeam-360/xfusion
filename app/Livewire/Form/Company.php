@@ -65,7 +65,10 @@ class Company extends Component
            'user_id' => $this->user_id,
            'company_id' => $company->id
         ]);
-
+        $this->dispatch('swal:alert', data:[
+            'icon' => 'success',
+            'title' => 'Successfully added company',
+        ]);
         $this->redirect(route('company.index'));
     }
 
@@ -88,6 +91,10 @@ class Company extends Component
         \App\Models\Company::find($this->dataId)->update([
             'user_id' => $this->user_id,
             'title' => $this->title,
+        ]);
+        $this->dispatch('swal:alert', data:[
+            'icon' => 'success',
+            'title' => 'successfully changed the company',
         ]);
         $this->redirect(route('company.index'));
     }

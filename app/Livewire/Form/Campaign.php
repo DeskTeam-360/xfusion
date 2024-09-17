@@ -75,8 +75,7 @@ class Campaign extends Component
                 $this->userOptions [] = ['value' => $k->meta_value, 'title' => $user->user_email];
             }
         }
-//        dd($s);
-//        dd($this->userOptions);
+
         $companyCount = \App\Models\User::whereHas('meta', function ($q) {
             $q->where('meta_key', 'wp_capabilities')
                 ->where('meta_value', 'like', "%editor%");
@@ -118,7 +117,7 @@ class Campaign extends Component
         })->whereHas('meta', function ($q) {
             $q->where('meta_key', 'keap_contact_id');
         })->get();
-//        dd($group,$this->companies);
+
         $this->companies = [];
         foreach ($group as $user) {
             foreach ($user->meta->where('meta_key', 'keap_contact_id') as $k) {
@@ -126,7 +125,7 @@ class Campaign extends Component
             }
         }
 
-//        dd($this->companies);
+
         if ($this->for == 'user') {
             $array_data['users'] = implode(";", $this->users);
             $array_data['created_by_group'] = 'no';
@@ -185,6 +184,11 @@ class Campaign extends Component
             }
         }
 
+        $this->dispatch('swal:alert', data:[
+            'icon' => 'success',
+            'title' => 'Successfully added campaign',
+        ]);
+
         $this->redirect(route('campaign.index'));
     }
 
@@ -198,7 +202,10 @@ class Campaign extends Component
             'time_schedule' => $this->time_schedule != '' ? $this->time_schedule . ' ' . $this->clock : null,
             'status' => $this->status,
         ]);
-
+        $this->dispatch('swal:alert', data:[
+            'icon' => 'success',
+            'title' => 'successfully changed the campaign',
+        ]);
         $this->redirect(route('campaign.index'));
     }
 

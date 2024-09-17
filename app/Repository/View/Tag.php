@@ -43,7 +43,7 @@ class Tag extends \App\Models\Tag implements View
             ['type' => 'string', 'data' => $data->description],
             ['type' => 'raw_html', 'text-align' => 'center', 'data' => "
             <div class='flex gap-1 m-3'>
-<span><a href='$link' class='btn btn-primary'>Edit</a></span>
+<span><a href='#' class='btn btn-primary'>Edit</a></span>
 </div>
             "],
         ];

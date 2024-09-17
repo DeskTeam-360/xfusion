@@ -41,7 +41,10 @@ class Campaign extends \App\Models\Campaign implements View
         $user_names = [];
         foreach ($exp_users as $user) {
             try {
-                $user_names[] = User::find(WpUserMeta::where('meta_key','keap_contact_id')->where('meta_value',$user)->first()->user_id)->user_nicename;
+                $userId=WpUserMeta::where('meta_key','keap_contact_id')->where('meta_value',$user)->first()->user_id;
+                $fname = WpUserMeta::where('user_id',$userId)->where('meta_key','first_name')->first()->meta_value??'';
+                $lname = WpUserMeta::where('user_id',$userId)->where('meta_key','last_name')->first()->meta_value??'';
+                $user_names[] = $fname.' '.$lname;
             } catch (\Exception) {
                 $user_names[] = 'User has been deleted, Contact keap id - '. $user;
             }

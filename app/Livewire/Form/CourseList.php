@@ -3,6 +3,7 @@
 namespace App\Livewire\Form;
 
 
+use App\Models\Tag;
 use Livewire\Component;
 
 class CourseList extends Component
@@ -13,7 +14,9 @@ class CourseList extends Component
     public $url;
     public $pageTitle;
     public $courseTitle;
+    public $courseTag;
     public $optionCourseTitle;
+    public $optionCourseTag;
 
     public function getRules()
     {
@@ -21,15 +24,22 @@ class CourseList extends Component
             'url'=>'required|max:255',
             'pageTitle'=>'required|max:255',
             'courseTitle'=>'required|max:255',
+            'courseTag'=>'nullable',
         ];
     }
     public function mount()
     {
         $this->optionCourseTitle = [
+            ['value' => 'General','title'=>'General'],
             ['value' => 'Revitalize','title'=>'Revitalize'],
             ['value' => 'Sustain','title'=>'Sustain'],
             ['value' => 'Transform','title'=>'Transform'],
         ];
+
+        $this->optionCourseTag = [];
+        foreach(Tag::get() as $item){
+            $this->optionCourseTag [] = ['value' => $item->id, 'title' => $item->name];
+        }
         if ($this->dataId!=null){
             $data = \App\Models\CourseList::find($this->dataId);
             $this->url=$data->url;
@@ -47,6 +57,10 @@ class CourseList extends Component
             'page_title'=>$this->pageTitle,
             'course_title'=>$this->courseTitle,
         ]);
+        $this->dispatch('swal:alert', data:[
+            'icon' => 'success',
+            'title' => 'Successfully added course',
+        ]);
         $this->redirect(route('course-title.index'));
     }
 
@@ -58,6 +72,10 @@ class CourseList extends Component
             'url'=>$this->url,
             'page_title'=>$this->pageTitle,
             'course_title'=>$this->courseTitle,
+        ]);
+        $this->dispatch('swal:alert', data:[
+            'icon' => 'success',
+            'title' => 'successfully changed the course',
         ]);
         $this->redirect(route('course-title.index'));
     }

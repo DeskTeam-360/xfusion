@@ -19,7 +19,7 @@ class TagKeap extends Component
 
     public function mount()
     {
-        dd();
+//        dd();
         $this->name = '';
         $this->description = '';
         if ($this->dataId != null) {
@@ -34,12 +34,14 @@ class TagKeap extends Component
         $this->validate();
         $this->resetErrorBag();
 
+//        dd($this->dataId);
         try {
             $keap = Keap::tag()->create([
                 'name' => $this->name,
                 'description' => $this->description,
                 'category_id' => config('app.keap_category'),
             ]);
+//            dd($keap['id']);
             Tag::create([
                 'id'=>$keap['id'],
                 'name'=>$this->name,
@@ -47,9 +49,43 @@ class TagKeap extends Component
                 'category'=>config('app.keap_category'),
             ]);
         }catch (BadRequestException $badRequestException){
-dd($badRequestException);
+            dd($badRequestException);
+        }
+        $this->dispatch('swal:alert', data:[
+            'icon' => 'success',
+            'title' => 'Successfully added tag',
+        ]);
+
+    }
+
+    public function update()
+    {
+        $this->validate();
+        $this->resetErrorBag();
+
+//        dd(Keap::tag()->find($this->dataId));
+
+        try {
+            Keap::tag()->update([
+                'name' => $this->name,
+                'description' => $this->description,
+            ]);
+
+            Tag::find($this->dataId)->update([
+                'name'=>$this->name,
+                'description'=>$this->description,
+            ]);
+
+        }catch (BadRequestException $badRequestException){
+            dd($badRequestException);
         }
 
+
+        $this->dispatch('swal:alert', data:[
+            'icon' => 'success',
+            'title' => 'Successfully updated tag',
+        ]);
+        $this->redirect(route('tag.index'));
     }
 
     public function render()

@@ -1,4 +1,4 @@
-<form wire:submit="{{ $action }}">
+<form wire:submit.prevent="{{ $action }}">
     @if($for == "group")
         <x-select title="Group" model="companies" :options="$companyOptions" required="true"
                   :isSelected="$companies"/>
@@ -15,5 +15,5 @@
         </div>
     @endif
 
-    <input type="submit" class="btn" value="Submit">
+    <button type="submit" class="btn" wire:loading.attr="disabled">Submit</button>
 </form>
