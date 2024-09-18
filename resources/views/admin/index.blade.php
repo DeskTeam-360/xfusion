@@ -173,12 +173,12 @@ $q->where('meta_key',config('app.wp_prefix', 'wp_') . 'capabilities')->where('me
                                 </td>
                                 <td class=" whitespace-nowrap  dark:text-darklink p-2 text-center">
                                     <a href="{{ route('company.show',$c->id) }}"><i class="ti ti-eye text-xl"></i></a>
-                                    <svg width="19" height="7" viewBox="0 0 19 7" fill="none"
-                                         xmlns="http://www.w3.org/2000/svg" class="m-auto">
-                                        <ellipse cx="9.38496" cy="3.37143" rx="2.62074" ry="3.09552" fill="#AB9AE0"/>
-                                        <ellipse cx="3.09517" cy="3.37143" rx="2.62074" ry="3.09552" fill="#AB9AE0"/>
-                                        <ellipse cx="15.6747" cy="3.37143" rx="2.62074" ry="3.09552" fill="#4E51BF"/>
-                                    </svg>
+{{--                                    <svg width="19" height="7" viewBox="0 0 19 7" fill="none"--}}
+{{--                                         xmlns="http://www.w3.org/2000/svg" class="m-auto">--}}
+{{--                                        <ellipse cx="9.38496" cy="3.37143" rx="2.62074" ry="3.09552" fill="#AB9AE0"/>--}}
+{{--                                        <ellipse cx="3.09517" cy="3.37143" rx="2.62074" ry="3.09552" fill="#AB9AE0"/>--}}
+{{--                                        <ellipse cx="15.6747" cy="3.37143" rx="2.62074" ry="3.09552" fill="#4E51BF"/>--}}
+{{--                                    </svg>--}}
                                 </td>
                             </tr>
 
@@ -250,12 +250,7 @@ $q->where('meta_key',config('app.wp_prefix', 'wp_') . 'capabilities')->where('me
                                     {{ $c->created_at->format('F d, Y') }}
                                 </td>
                                 <td class=" whitespace-nowrap  dark:text-darklink p-2 text-center">
-                                    <svg width="19" height="7" viewBox="0 0 19 7" fill="none"
-                                         xmlns="http://www.w3.org/2000/svg" class="m-auto">
-                                        <ellipse cx="9.38496" cy="3.37143" rx="2.62074" ry="3.09552" fill="#AB9AE0"/>
-                                        <ellipse cx="3.09517" cy="3.37143" rx="2.62074" ry="3.09552" fill="#AB9AE0"/>
-                                        <ellipse cx="15.6747" cy="3.37143" rx="2.62074" ry="3.09552" fill="#4E51BF"/>
-                                    </svg>
+                                    <a href="#"><i class="ti ti-eye text-xl"></i></a>
                                 </td>
                             </tr>
                         @endforeach

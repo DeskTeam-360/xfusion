@@ -1,11 +1,11 @@
 <form wire:submit.prevent="{{ $action }}">
     @if($action=="create")
-    <x-input title="Username" model="username" required="true"/>
-    <x-input title="Email" model="email" required="true"/>
+        <x-input title="Username" model="username" required="true"/>
+        <x-input title="Email" model="email" required="true"/>
     @endif
-        @if($action=="update")
-            <x-input title="Nickname" model="username" required="true"/>
-        @endif
+    @if($action=="update")
+        <x-input title="Nickname" model="username" required="true"/>
+    @endif
     <x-input title="First Name" model="first_name"/>
     <x-input title="Last Name" model="last_name"/>
 
@@ -36,6 +36,6 @@
         </div>
     @endif
 
-    <input type="submit" class="btn" value="Submit">
+    <button type="submit" class="btn" wire:loading.attr="disabled">Submit</button>
 
 </form>

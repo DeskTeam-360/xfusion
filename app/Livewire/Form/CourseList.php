@@ -4,6 +4,7 @@ namespace App\Livewire\Form;
 
 
 use App\Models\Tag;
+use App\Models\WpGfForm;
 use Livewire\Component;
 
 class CourseList extends Component
@@ -14,9 +15,11 @@ class CourseList extends Component
     public $url;
     public $pageTitle;
     public $courseTitle;
+public $gfFormId;
     public $courseTag;
     public $optionCourseTitle;
     public $optionCourseTag;
+    public $optionWpGfForm;
 
     public function getRules()
     {
@@ -40,6 +43,11 @@ class CourseList extends Component
         foreach(Tag::get() as $item){
             $this->optionCourseTag [] = ['value' => $item->id, 'title' => $item->name];
         }
+
+        $this->optionWpGfForm = [];
+        foreach(WpGfForm::get() as $item){
+            $this->optionWpGfForm [] = ['value' => $item->id, 'title' => $item->title];
+        }
         if ($this->dataId!=null){
             $data = \App\Models\CourseList::find($this->dataId);
             $this->url=$data->url;
@@ -50,6 +58,7 @@ class CourseList extends Component
 
     public function create()
     {
+//        dd($this->gfFormId);
         $this->validate();
         $this->resetErrorBag();
         \App\Models\CourseList::create([

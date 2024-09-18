@@ -2,6 +2,7 @@
 
 namespace App\Repository\View;
 
+use App\Models\WpUserMeta;
 use App\Repository\View;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Support\Facades\Auth;
@@ -29,22 +30,23 @@ class Tag extends \App\Models\Tag implements View
             ['label' => '#', 'sort' => 'id'],
             ['label' => 'Name'],
             ['label' => 'Description'],
+            ['label' => 'User have', 'text-align'=>'center'],
             ['label' => 'Action'],
         ];
     }
 
     public static function tableData($data = null): array
     {
-        $link = route('tag.edit',$data->id);
+        $link = route('tag.show',$data->id);
+        $c = WpUserMeta::where('meta_key','keap_tags')->where('meta_value','like',"%$data->id%")->get()->count();
 
         return [
             ['type' => 'string', 'data' => $data->id],
             ['type' => 'string', 'data' => $data->name],
             ['type' => 'string', 'data' => $data->description],
+            ['type' => 'string', 'text-align'=>'center','data' => $c],
             ['type' => 'raw_html', 'text-align' => 'center', 'data' => "
-            <div class='flex gap-1 m-3'>
-<span><a href='#' class='btn btn-primary'>Edit</a></span>
-</div>
+            <div class='flex gap-1'><span><a href='$link' class='btn btn-primary'>Show</a></span></div>
             "],
         ];
     }

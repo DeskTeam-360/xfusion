@@ -18,10 +18,6 @@ use Illuminate\Support\Facades\Route;
 use KeapGeek\Keap\Facades\Keap;
 
 Route::get('/', function () {
-
-    $k = Keap::contact()->tags(4718);
-//    dd($k);
-//    return redirect('/keap/auth/');
     return redirect(route('dashboard'));
 });
 
@@ -45,8 +41,6 @@ Route::middleware([
         } else {
             return view('admin.dashboard-contributor');
         }
-
-
     })->name('dashboard');
 
     Route::middleware([
@@ -61,7 +55,7 @@ Route::middleware([
         Route::resource('company', CompanyController::class)->only('index', 'create', 'edit');
         Route::resource('user', UserController::class)->only('index', 'create', 'edit', 'show');
         Route::resource('report', ReportController::class)->only('index', 'create', 'edit');
-        Route::resource('tag', TagController::class)->only('index', 'create', 'edit');
+        Route::resource('tag', TagController::class)->only('index', 'create', 'show');
 
         Route::resource('course-title', LimitLinkController::class)->only('index', 'create', 'edit');
 

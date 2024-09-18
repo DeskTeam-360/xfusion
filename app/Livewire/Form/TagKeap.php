@@ -3,6 +3,7 @@
 namespace App\Livewire\Form;
 
 use App\Models\Tag;
+use Illuminate\Support\Str;
 use KeapGeek\Keap\Exceptions\BadRequestException;
 use KeapGeek\Keap\Facades\Keap;
 use Livewire\Attributes\Validate;
@@ -20,7 +21,7 @@ class TagKeap extends Component
     public function mount()
     {
 //        dd();
-        $this->name = '';
+        $this->name = 'xfusion-';
         $this->description = '';
         if ($this->dataId != null) {
             $data = Tag::findOrFail($this->dataId);
@@ -33,23 +34,30 @@ class TagKeap extends Component
     {
         $this->validate();
         $this->resetErrorBag();
-
-//        dd($this->dataId);
+        $name = str_replace('.',"-",$this->name);
+        $name = Str::slug($name);
+        $template = ['start','end','finish'];
+//        sleep(10);
         try {
-            $keap = Keap::tag()->create([
-                'name' => $this->name,
-                'description' => $this->description,
-                'category_id' => config('app.keap_category'),
-            ]);
-//            dd($keap['id']);
-            Tag::create([
-                'id'=>$keap['id'],
-                'name'=>$this->name,
-                'description'=>$this->description,
-                'category'=>config('app.keap_category'),
-            ]);
+            foreach ($template  as $t){
+                $keap = Keap::tag()->create([
+                    'name' => $name."-".$t,
+                    'description' => $this->description,
+                    'category_id' => config('app.keap_category'),
+                ]);
+
+                Tag::create([
+                    'id'=>$keap['id'],
+                    'name' => $name."-".$t,
+                    'description'=>$this->description,
+                    'category'=>config('app.keap_category'),
+                ]);
+            }
         }catch (BadRequestException $badRequestException){
-            dd($badRequestException);
+            $this->dispatch('swal:alert', data:[
+                'icon' => 'error',
+                'title' => $badRequestException->getMessage(),
+            ]);
         }
         $this->dispatch('swal:alert', data:[
             'icon' => 'success',
@@ -62,8 +70,6 @@ class TagKeap extends Component
     {
         $this->validate();
         $this->resetErrorBag();
-
-//        dd(Keap::tag()->find($this->dataId));
 
         try {
             Keap::tag()->update([

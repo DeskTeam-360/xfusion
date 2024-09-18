@@ -10,5 +10,5 @@
         <x-input type="date" model="schedule_deadline_date" title="Last access"/>
         <x-input type="time" model="schedule_deadline_time" title="&nbsp"/>
     </div>
-    <input type="submit" class="btn" value="Submit">
+    <button type="submit" class="btn" wire:loading.attr="disabled">Submit</button>
 </form>

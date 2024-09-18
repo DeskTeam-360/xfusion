@@ -42,12 +42,14 @@ function company_detect()
                         window.setTimeout(function () {window.location.replace(response.data.url)}, 1000);
                     }
                     if (response.data.logo_url !== null) {
-                        const company_logo = document.getElementsByClassName("wp-image-5940");
+                        const company_logo = document.getElementsByClassName("wp-image-11067");
                         company_logo[0].src = response.data.logo_url.replace("public/", baseStorage);
                         const qrcode = document.getElementsByClassName("wp-image-1124");
                         qrcode[0].src = response.data.qrcode_url.replace("public/", baseStorage);
                         qrcode[0].srcset = "";
                     }else{
+                        const company_logo = document.getElementsByClassName("wp-image-11067");
+                        console.log(company_logo);
                         const a = "https://demo.xperiencefusion.com/wp-content/uploads/2024/08/FUSION_Transparent-black-font.png";
                         company_logo[0].src = a;
                     }
@@ -80,8 +82,21 @@ function get_company_info()
         if ($userID != null) {
             $companyID = get_usermeta($userID, 'company');
             $keapTags = get_usermeta($userID, 'keap_tags');
+
+
+
             $query = "select * from companies where id=$companyID";
             $click_logs = $wpdb->get_results($query);
+
+            $wpdb->insert('log', array('log'=>json_encode($keapTags)));
+
+            $query = "select meta_value from wp_usermeta where user_id=$userID and meta_key='keap_tags' ";
+            $t = $wpdb->get_results($query);
+            $wpdb->insert('log', array('log'=>json_encode($t)));
+
+
+
+
             $result = [];
             $user = get_userdata($userID);
             $user_roles = $user->roles;
