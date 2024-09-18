@@ -7,6 +7,7 @@ use App\Models\CompanyEmployee;
 use App\Models\Tag;
 use App\Models\WpUserMeta;
 use Carbon\Carbon;
+use Illuminate\Support\Facades\Artisan;
 use KeapGeek\Keap\Facades\Keap;
 use Livewire\Attributes\Validate;
 use Livewire\Component;
@@ -159,29 +160,30 @@ class Campaign extends Component
                     ]);
                 }
             }
+            Artisan::call('app:get-tag');
 
-            $users = \App\Models\User::whereHas('meta',function ($q){
-                $q->where('meta_key', '=', 'keap_contact_id');
-            })->get();
-            foreach ($users as $user){
-                $tag = [];
-                $wpUserMeta = WpUserMeta::where('user_id','=',$user->ID)->where('meta_key','=','keap_tags')->first();
-                $keapId = WpUserMeta::where('user_id','=',$user->ID)->where('meta_key','=','keap_contact_id')->first()->meta_value;
-                $tagKeaps = Keap::contact()->tags($keapId);
-                foreach ($tagKeaps as $tk){
-                    $tag[]=$tk['tag']['id'];
-                }
-                $tag = implode(';',$tag);
-                if ($wpUserMeta!=null){
-                    WpUserMeta::find($wpUserMeta->umeta_id)->update(['meta_value'=>$tag]);
-                }else{
-                    WpUserMeta::create([
-                        'user_id'=>$user->ID,
-                        'meta_key'=>'keap_tags',
-                        'meta_value'=>$tag
-                    ]);
-                }
-            }
+//            $users = \App\Models\User::whereHas('meta',function ($q){
+//                $q->where('meta_key', '=', 'keap_contact_id');
+//            })->get();
+//            foreach ($users as $user){
+//                $tag = [];
+//                $wpUserMeta = WpUserMeta::where('user_id','=',$user->ID)->where('meta_key','=','keap_tags')->first();
+//                $keapId = WpUserMeta::where('user_id','=',$user->ID)->where('meta_key','=','keap_contact_id')->first()->meta_value;
+//                $tagKeaps = Keap::contact()->tags($keapId);
+//                foreach ($tagKeaps as $tk){
+//                    $tag[]=$tk['tag']['id'];
+//                }
+//                $tag = implode(';',$tag);
+//                if ($wpUserMeta!=null){
+//                    WpUserMeta::find($wpUserMeta->umeta_id)->update(['meta_value'=>$tag]);
+//                }else{
+//                    WpUserMeta::create([
+//                        'user_id'=>$user->ID,
+//                        'meta_key'=>'keap_tags',
+//                        'meta_value'=>$tag
+//                    ]);
+//                }
+//            }
         }
 
         $this->dispatch('swal:alert', data:[

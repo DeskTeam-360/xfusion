@@ -71,19 +71,19 @@
                                         style="{{ isset($data['text-align'])?'text-align:'.$data['text-align']:'' }}">{{ $index+1 + (request()->get('page')?request()->get('page')-1:0)*$perPage }}</td>
                                     @break
                                 @case('string')
-                                    <td class="py-2 px-6"
+                                    <td class="py-4 px-6"
                                         style="{{ isset($data['text-align'])?'text-align:'.$data['text-align']:'' }}">{{ $data['data'] }}</td>
                                     @break
                                 @case('thousand_format')
-                                    <td class="py-2 px-6"
+                                    <td class="py-4 px-6"
                                         style="{{ isset($data['text-align'])?'text-align:'.$data['text-align']:'' }}">{{ thousand_format($data['data']) }}</td>
                                     @break
                                 @case('raw_html')
-                                    <td class="py-2 px-6"
+                                    <td class="py-4 px-6"
                                         style="{{ isset($data['text-align'])?'text-align:'.$data['text-align']:'' }}">{!! $data['data'] !!}</td>
                                     @break
                                 @case('img')
-                                    <td class="py-2 px-6"
+                                    <td class="py-4 px-6"
                                         style="{{ isset($data['text-align'])?'text-align:'.$data['text-align']:'' }}">
                                         <img src="{{ $data['data'] }}" alt=""
                                              style="{{ isset($data['width'])?'width:'.$data['width'].';':'' }}
@@ -91,7 +91,7 @@
                                     </td>
                                     @break
                                 @case('action')
-                                    <td class="py-2 px-6"
+                                    <td class="py-4 px-6"
                                         style="{{ isset($data['text-align'])?'text-align:'.$data['text-align']:'' }}">
                                         @foreach($data['data'] as $action)
                                             <a @isset($action['link']) href='{{ $action['link'] }}' @else href='#'

@@ -16,8 +16,8 @@ class TagController extends Controller
     {
         return view('admin.tag.create');
     }
-    public function edit($id)
+    public function show($id)
     {
-        return view('admin.tag.edit',compact('id'));
+        return view('admin.tag.show',compact('id'));
     }
 }

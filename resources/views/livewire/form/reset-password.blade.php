@@ -3,6 +3,5 @@
     <br><br>
     <x-input title="Password" model="password" type="password"/>
     <x-input title="Password" model="rePassword" type="password"/>
-    <input type="submit" class="btn" value="Submit">
-
+    <button type="submit" class="btn" wire:loading.attr="disabled">Submit</button>
 </form>
