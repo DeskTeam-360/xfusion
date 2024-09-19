@@ -39,7 +39,9 @@ function company_detect()
                     if (response.data.status === "redirect") {
                         alert("You dont have access")
 
-                        window.setTimeout(function () {window.location.replace(response.data.url)}, 1000);
+                        window.setTimeout(function () {
+                            window.location.replace(response.data.url)
+                        }, 1000);
                     }
                     if (response.data.logo_url !== null) {
                         const company_logo = document.getElementsByClassName("wp-image-11067");
@@ -47,11 +49,13 @@ function company_detect()
                         const qrcode = document.getElementsByClassName("wp-image-1124");
                         qrcode[0].src = response.data.qrcode_url.replace("public/", baseStorage);
                         qrcode[0].srcset = "";
-                    }else{
+                        f(response.data.form_id)
+                    } else {
                         const company_logo = document.getElementsByClassName("wp-image-11067");
                         console.log(company_logo);
                         const a = "https://demo.xperiencefusion.com/wp-content/uploads/2024/08/FUSION_Transparent-black-font.png";
                         company_logo[0].src = a;
+                        f(response.data.form_id)
                     }
 
                 },
@@ -61,6 +65,78 @@ function company_detect()
                     console.error(error);
                 }
             });
+            var getUrlParameter = function getUrlParameter(sParam) {
+                var sPageURL = window.location.search.substring(1),
+                    sURLVariables = sPageURL.split('&'),
+                    sParameterName,
+                    i;
+                for (i = 0; i < sURLVariables.length; i++) {
+                    sParameterName = sURLVariables[i].split('=');
+                    if (sParameterName[0] === sParam) {
+                        return sParameterName[1] === undefined ? true : decodeURIComponent(sParameterName[1]);
+                    }
+                }
+                return false;
+            };
+
+            function f(formId) {
+                jQuery.ajax({
+                    url: '/wp-admin/admin-ajax.php',
+                    type: 'GET',
+                    dataType: 'json',
+                    async: 'false',
+                    data: {
+                        action: 'get_form_data_gform',
+                        form_id: formId,
+                        order_id: getUrlParameter('dataId')
+                    },
+                    success: function (response) {
+                        // try {
+                        console.log(response.data[0])
+                        const res = response.data[0]
+
+                        // document.querySelector(".mark-as-complete").style.display = 'none'
+
+                        for (var key in res) {
+                            if (!res.hasOwnProperty(key)) continue;
+                            if (!isNaN(key)) {
+                                if (document.getElementsByName('input_' + key)[0] != null) {
+                                    if (document.getElementsByName('input_' + key)[0]['type'] === "radio") {
+                                        var radio = document.querySelector(`input[name="${'input_' + key}"][value="${response.data[0][key]}"]`)
+                                        if (radio) {
+                                            radio.checked = true;
+                                        }
+                                        const radioButtons = document.querySelectorAll(`input[name="${'input_' + key}"]`);
+
+                                        radioButtons.forEach(function (radioButton) {
+                                            radioButton.disabled = true; // Menonaktifkan radio button
+                                        });
+                                    }
+                                    else if(key%1!==0){
+                                        if (response.data[0][key]!==''){
+                                            document.getElementsByName('input_' + key)[0].checked = true
+                                        }
+                                        document.getElementsByName('input_' + key)[0].disabled = true
+                                    }
+                                    else {
+                                        document.getElementsByName('input_' + key)[0].value = response.data[0][key]
+                                    }
+                                    document.getElementsByName('input_' + key)[0].disable = true
+                                    document.getElementsByName('input_' + key)[0].readOnly = true
+                                }
+                            }
+                        }
+
+
+                        // } catch (e) {
+                        //     $('.gform-body').html('Data not found')
+                        // }
+                    },
+                    error: function (xhr, status, error) {
+                        $('.gform-body').html('data not found')
+                    }
+                });
+            }
         });
     </script>
     <?php
@@ -84,17 +160,14 @@ function get_company_info()
             $keapTags = get_usermeta($userID, 'keap_tags');
 
 
-
             $query = "select * from companies where id=$companyID";
             $click_logs = $wpdb->get_results($query);
 
-            $wpdb->insert('log', array('log'=>json_encode($keapTags)));
+            $wpdb->insert('log', array('log' => json_encode($keapTags)));
 
             $query = "select meta_value from wp_usermeta where user_id=$userID and meta_key='keap_tags' ";
             $t = $wpdb->get_results($query);
-            $wpdb->insert('log', array('log'=>json_encode($t)));
-
-
+            $wpdb->insert('log', array('log' => json_encode($t)));
 
 
             $result = [];
@@ -114,13 +187,13 @@ function get_company_info()
                 wp_die();
             }
 
-            $query = "SELECT id FROM wp_gf_entry where source_url = '$url' and created_by = '$userID' and status='active'";
+            $query = "SELECT id,form_id FROM wp_gf_entry where source_url = '$url' and created_by = '$userID' and status='active'";
             $checkEntry = $wpdb->get_results($query);
             foreach ($checkEntry as $check) {
                 $message = "You've done this course";
                 $status = 'redirect';
                 if ($_POST['param'] == 'dataId=' . $check->id) {
-                    wp_send_json_success(['logo_url' => $result['logo_url'], 'qrcode_url' => $result['qrcode_url']]);
+                    wp_send_json_success(['logo_url' => $result['logo_url'], 'qrcode_url' => $result['qrcode_url'], 'form_id' => $check->form_id]);
                     wp_die();
                 }
                 wp_send_json_success(['url' => $url . '/?dataId=' . $check->id, 'dataId' => $check->id, 'status' => $status, 'message' => $message, 'logo_url' => $result['logo_url'], 'qrcode_url' => $result['qrcode_url']]);
@@ -130,6 +203,13 @@ function get_company_info()
                 wp_send_json_success(['logo_url' => $result['logo_url'], 'qrcode_url' => $result['qrcode_url']]);
                 wp_die();
             }
+            if (in_array($limit->keap_tag_parent, explode(';', $keapTags))) {
+                $status = 'redirect';
+                $message = "You need waiting ". $limit+5 ."minutes from last submit";
+                wp_send_json_success(['url' => "https://demo.xperiencefusion.com/sustain/sustain-menu/self-actualization/", 'status' => $status, 'message' => $message]);
+                wp_die();
+            }
+
             $status = 'redirect';
             $message = "You don't have access";
             wp_send_json_success(['url' => "https://demo.xperiencefusion.com/sustain/sustain-menu/self-actualization/", 'status' => $status, 'message' => $message]);

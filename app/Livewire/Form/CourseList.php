@@ -9,14 +9,16 @@ use Livewire\Component;
 
 class CourseList extends Component
 {
-    public $action="create";
+    public $action = "create";
     public $dataId;
 
     public $url;
     public $pageTitle;
     public $courseTitle;
-public $gfFormId;
-    public $courseTag;
+    public $gfFormId;
+    public $courseTag = null;
+    public $courseTagParent = null;
+    public $delay = null;
     public $optionCourseTitle;
     public $optionCourseTag;
     public $optionWpGfForm;
@@ -24,49 +26,63 @@ public $gfFormId;
     public function getRules()
     {
         return [
-            'url'=>'required|max:255',
-            'pageTitle'=>'required|max:255',
-            'courseTitle'=>'required|max:255',
-            'courseTag'=>'nullable',
+            'url' => 'required|max:255',
+            'pageTitle' => 'required|max:255',
+            'courseTitle' => 'required|max:255',
+            'courseTag' => 'nullable',
         ];
     }
+
     public function mount()
     {
         $this->optionCourseTitle = [
-            ['value' => 'General','title'=>'General'],
-            ['value' => 'Revitalize','title'=>'Revitalize'],
-            ['value' => 'Sustain','title'=>'Sustain'],
-            ['value' => 'Transform','title'=>'Transform'],
+            ['value' => 'General', 'title' => 'General'],
+            ['value' => 'Revitalize', 'title' => 'Revitalize'],
+            ['value' => 'Sustain', 'title' => 'Sustain'],
+            ['value' => 'Transform', 'title' => 'Transform'],
         ];
 
         $this->optionCourseTag = [];
-        foreach(Tag::get() as $item){
+        foreach (Tag::get() as $item) {
             $this->optionCourseTag [] = ['value' => $item->id, 'title' => $item->name];
         }
 
         $this->optionWpGfForm = [];
-        foreach(WpGfForm::get() as $item){
+        foreach (WpGfForm::get() as $item) {
             $this->optionWpGfForm [] = ['value' => $item->id, 'title' => $item->title];
         }
-        if ($this->dataId!=null){
+        if ($this->dataId != null) {
             $data = \App\Models\CourseList::find($this->dataId);
-            $this->url=$data->url;
-            $this->pageTitle=$data->page_title;
-            $this->courseTitle=$data->course_title;
+            $this->url = $data->url;
+            $this->pageTitle = $data->page_title;
+            $this->courseTitle = $data->course_title;
+            $this->courseTag = $data->keap_tags;
+            $this->courseTagParent = $data->keap_tags_parent;
+            $this->optionWpGfForm = $data->wp_gf_form_id;
+            $this->delay = $data->delay;
         }
     }
 
     public function create()
     {
-//        dd($this->gfFormId);
         $this->validate();
         $this->resetErrorBag();
+        if ($this->courseTag==''){
+            $this->courseTag = null;
+        }
+        if ($this->courseTagParent==''){
+            $this->courseTagParent = null;
+        }
         \App\Models\CourseList::create([
-            'url'=>$this->url,
-            'page_title'=>$this->pageTitle,
-            'course_title'=>$this->courseTitle,
+            'url' => $this->url,
+            'page_title' => $this->pageTitle,
+            'course_title' => $this->courseTitle,
+            'wp_gf_form_id'=>$this->gfFormId,
+            'keap_tag'=>$this->courseTag,
+            'keap_tag_parent'=>$this->courseTagParent,
+            'delay'=>$this->delay
         ]);
-        $this->dispatch('swal:alert', data:[
+        $this->dispatch('swal:alert', data: [
             'icon' => 'success',
             'title' => 'Successfully added course',
         ]);
@@ -77,12 +93,22 @@ public $gfFormId;
     {
         $this->validate();
         $this->resetErrorBag();
+        if ($this->courseTag==''){
+            $this->courseTag = null;
+        }
+        if ($this->courseTagParent==''){
+            $this->courseTagParent = null;
+        }
         \App\Models\CourseList::find($this->dataId)->update([
-            'url'=>$this->url,
-            'page_title'=>$this->pageTitle,
-            'course_title'=>$this->courseTitle,
+            'url' => $this->url,
+            'page_title' => $this->pageTitle,
+            'course_title' => $this->courseTitle,
+            'wp_gf_form_id'=>$this->gfFormId,
+            'keap_tag'=>$this->courseTag,
+            'keap_tag_parent'=>$this->courseTagParent,
+            'delay'=>$this->delay
         ]);
-        $this->dispatch('swal:alert', data:[
+        $this->dispatch('swal:alert', data: [
             'icon' => 'success',
             'title' => 'successfully changed the course',
         ]);
@@ -91,6 +117,6 @@ public $gfFormId;
 
     public function render()
     {
-        return view('livewire.form.limit-link');
+        return view('livewire.form.course-list');
     }
 }
