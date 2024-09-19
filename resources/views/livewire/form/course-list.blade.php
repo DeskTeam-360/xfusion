@@ -12,7 +12,7 @@
         <x-input title="Delay between this course with parent" model="delay" type="number"/>
     @endif
 
-    <x-select title="Direct input from Gravity Form if user finish course" model="courseTagParent" :options="$optionCourseTag"/>
+{{--    <x-select title="Direct input from Gravity Form if user finish course" model="courseTagParent" :options="$optionCourseTag"/>--}}
 
     <button type="submit" class="btn" wire:loading.attr="disabled">Submit</button>
 </form>

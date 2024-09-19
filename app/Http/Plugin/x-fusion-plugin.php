@@ -205,7 +205,7 @@ function get_company_info()
             }
             if (in_array($limit->keap_tag_parent, explode(';', $keapTags))) {
                 $status = 'redirect';
-                $message = "You need waiting ". $limit+5 ."minutes from last submit";
+                $message = "You need waiting ". $limit->delay+5 ."minutes from last submit";
                 wp_send_json_success(['url' => "https://demo.xperiencefusion.com/sustain/sustain-menu/self-actualization/", 'status' => $status, 'message' => $message]);
                 wp_die();
             }
