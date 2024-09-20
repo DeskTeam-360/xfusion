@@ -4,7 +4,7 @@
 
             <h1 class="text-3xl font-bold text-center text-blue-600">Report @if($role=='administrator') Course @else Company @endif</h1>
 
-            <div class="customizer-box label btn" style="margin-top: 40px;">REVITALIZE</div>
+            <div class="customizer-box label btn" style="margin-top: 40px;">Sustain</div>
             <div class="customizer-box label btn"
                 style="margin-bottom: 30px; background-color: white; border-color:black; color:black;">
                 LEVEL {{ $id }}</div>
