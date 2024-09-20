@@ -8,6 +8,7 @@ use KeapGeek\Keap\Exceptions\BadRequestException;
 use KeapGeek\Keap\Facades\Keap;
 use Livewire\Attributes\Validate;
 use Livewire\Component;
+use Mockery\Exception;
 
 class TagKeap extends Component
 {
@@ -45,6 +46,7 @@ class TagKeap extends Component
                     'description' => $this->description,
                     'category_id' => config('app.keap_category'),
                 ]);
+//                dd($keap);
 
                 Tag::create([
                     'id'=>$keap['id'],
@@ -57,6 +59,13 @@ class TagKeap extends Component
             $this->dispatch('swal:alert', data:[
                 'icon' => 'error',
                 'title' => $badRequestException->getMessage(),
+            ]);
+        }
+        catch (Exception $e){
+            dd($keap);
+            $this->dispatch('swal:alert', data:[
+                'icon' => 'error',
+                'title' => $e->getMessage(),
             ]);
         }
         $this->dispatch('swal:alert', data:[
