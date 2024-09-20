@@ -37,7 +37,7 @@ class TagKeap extends Component
         $this->resetErrorBag();
         $name = str_replace('.',"-",$this->name);
         $name = Str::slug($name);
-        $template = ['start','end','finish'];
+        $template = ['start','done','finish'];
 //        sleep(10);
         try {
             foreach ($template  as $t){
