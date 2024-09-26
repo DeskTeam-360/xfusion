@@ -31,15 +31,15 @@
                                     Answers
                                 </div>
                             </th>
-                            <th class="px-4 py-3 text-center">
-                                <div class="flex items-center justify-center">
-                                    <i class="fas fa-user-tag mr-1 text-gray-500"></i>
-                                    Options
-                                </div>
-                            </th>
+{{--                            <th class="px-4 py-3 text-center">--}}
+{{--                                <div class="flex items-center justify-center">--}}
+{{--                                    <i class="fas fa-user-tag mr-1 text-gray-500"></i>--}}
+{{--                                    Options--}}
+{{--                                </div>--}}
+{{--                            </th>--}}
                         </tr>
                     </thead>
-                    <tbody>
+                    <tbody class="border">
                         @php
                             $loop_count = 0;
                         @endphp
@@ -50,21 +50,22 @@
                                         {{ $lms }}</td>
                                 @endif
 
-                                <td class="border px-4 py-4 text-center">{{ $field->label }}</td>
+                                <td class="border px-4 py-4 text-center ">{{ $field->label }}</td>
                                 <td class="border px-4 py-4 text-center">{{ $array_entry[$field->id] }}</td>
 {{--                                <td class="border px-4 py-4 text-center"></td>--}}
 
-                                @if ($loop_count == 0)
-                                    <td class="border px-4 py-4 text-center" rowspan="{{ $count_fields }}"><a
-                                            class="bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded"
-                                            href="#">Detail</a></td>
-                                @endif
+{{--                                @if ($loop_count == 0)--}}
+{{--                                    <td class="border px-4 py-4 text-center" rowspan="{{ $count_fields }}"><a--}}
+{{--                                            class="bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded"--}}
+{{--                                            href="#">Detail</a></td>--}}
+{{--                                @endif--}}
 
                                 @php
                                     $loop_count += 1;
                                 @endphp
                             </tr>
                         @endforeach
+
 
                     </tbody>
                 </table>

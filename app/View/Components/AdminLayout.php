@@ -85,7 +85,7 @@ class AdminLayout extends Component
             $this->sidebar[0]['lists'][] = ['title' => 'Course list', 'type' => 'link', 'route' => route('course-title.index'), 'icon' => '<i class="ti ti-webhook  text-xl flex-shrink-0"></i> '];
 //            $this->sidebar[0]['lists'][] = ['title' => 'All Schedule', 'type' => 'link', 'route' => route('schedule-all'), 'icon' => '<i class="ti ti-clock  text-xl flex-shrink-0"></i> '];
             //$this->sidebar[0]['lists'][] = ['title' => 'Schedule generate', 'type' => 'link', 'route' => route('course-schedule-generate'), 'icon' => '<i class="ti ti-template  text-xl flex-shrink-0"></i> '];
-            $this->sidebar[0]['lists'][] = ['title' => 'Report (under construction)', 'type' => 'link', 'route' => '#', 'icon' => '<i class="ti ti-user  text-xl flex-shrink-0"></i> '];
+            $this->sidebar[0]['lists'][] = ['title' => 'Report', 'type' => 'link', 'route' => route('report.index'), 'icon' => '<i class="ti ti-report  text-xl flex-shrink-0"></i> '];
             $this->sidebar[0]['lists'][] = ['title' => 'Campaign', 'type' => 'link', 'route' => route('campaign.index'), 'icon' => '<i class="ti ti-brand-campaignmonitor  text-xl flex-shrink-0"></i> '];
             $this->sidebar[0]['lists'][] = ['title' => 'Tags', 'type' => 'link', 'route' => route('tag.index'), 'icon' => '<i class="ti ti-tags  text-xl flex-shrink-0"></i> '];
 
@@ -98,7 +98,7 @@ class AdminLayout extends Component
                     $this->sidebar[0]['lists'][] = ['title' => 'Employee List', 'type' => 'link', 'route' => route('company.show', $c->id), 'icon' => '<i class="ti ti-users  text-xl flex-shrink-0"></i> '];
 //                    $this->sidebar[0]['lists'][] = ['title' => 'Employee Progress', 'type' => 'link', 'route' => route('company.progress', $c->id), 'icon' => '<i class="ti ti-progress  text-xl flex-shrink-0"></i> '];
                     $this->sidebar[0]['lists'][] = ['title' => 'Active Schedule', 'type' => 'link', 'route' => route('company.schedule', $c->id), 'icon' => '<i class="ti ti-clock  text-xl flex-shrink-0"></i> '];
-                    $this->sidebar[0]['lists'][] = ['title' => 'Report', 'type' => 'link', 'route' => route('report.index'), 'icon' => '<i class="ti ti-user  text-xl flex-shrink-0"></i> '];
+                    $this->sidebar[0]['lists'][] = ['title' => 'CourseGroup', 'type' => 'link', 'route' => route('report.index'), 'icon' => '<i class="ti ti-user  text-xl flex-shrink-0"></i> '];
                 }
             }
         }

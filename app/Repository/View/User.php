@@ -18,7 +18,8 @@ class User extends \App\Models\User implements View
         $params = $params['param1'];
         if ($params == null) {
             return empty($query) ? static::query()
-                : static::query()->where('user_nicename', 'like', "%$query%")
+                : static::query()
+                    ->where('user_nicename', 'like', "%$query%")
                     ->orWhereHas('meta', function ($q2) use ($query) {
                         $q2->where('meta_value', 'like', "%$query%");
                     });
@@ -58,7 +59,7 @@ class User extends \App\Models\User implements View
                 ['label' => 'Name', 'sort' => 'user_nicename'],
                 ['label' => 'Company'],
                 ['label' => 'Keap Status'],
-                ['label' => 'Role', 'sort' => 'role'],
+                ['label' => 'Role'],
                 ['label' => 'Action'],
             ];
         } else {
@@ -66,7 +67,7 @@ class User extends \App\Models\User implements View
                 ['label' => '#', 'sort' => 'id', 'width' => '7%'],
                 ['label' => 'Name', 'sort' => 'user_nicename'],
                 ['label' => 'Company'],
-                ['label' => 'Role', 'sort' => 'role'],
+                ['label' => 'Role'],
                 ['label' => 'Action'],
             ];
         }

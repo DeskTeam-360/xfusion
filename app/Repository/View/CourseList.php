@@ -13,7 +13,8 @@ class CourseList extends \App\Models\CourseList implements View
     public static function tableSearch($params = null): Builder
     {
         $query = $params['query'];
-        return empty($query) ? static::query() : static::query()
+        return empty($query) ? static::query()
+            : static::query()
             ->where('url', 'like', "%$query%")
             ->orWhere('course_title', 'like', "%$query%")
             ->orWhere('page_title', 'like', "%$query%");
@@ -33,7 +34,7 @@ class CourseList extends \App\Models\CourseList implements View
             ['label' => 'Course title', 'sort' => 'course_title'],
             ['label' => 'Page title', 'sort' => 'page_title'],
             ['label' => 'Require Tag', 'sort' => 'keap_tag'],
-            ['label' => 'Link', 'sort' => 'link'],
+            ['label' => 'Link', 'sort' => 'url'],
             ['label' => 'Action'],
         ];
     }

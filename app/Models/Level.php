@@ -12,6 +12,6 @@ class Level extends Model
 
     public function courseGroups()
     {
-        return $this->hasMany(CourseGroup::class);
+        return $this->hasMany(CourseGroupBackup::class);
     }
 }

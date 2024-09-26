@@ -1,0 +1,73 @@
+
+<script>
+    jQuery(document).ready(function ($) {
+        var getUrlParameter = function getUrlParameter(sParam) {
+            var sPageURL = window.location.search.substring(1),
+                sURLVariables = sPageURL.split('&'),
+                sParameterName,
+                i;
+            for (i = 0; i < sURLVariables.length; i++) {
+                sParameterName = sURLVariables[i].split('=');
+                if (sParameterName[0] === sParam) {
+                    return sParameterName[1] === undefined ? true : decodeURIComponent(sParameterName[1]);
+                }
+            }
+            return false;
+        };
+
+
+        if (getUrlParameter('dataId')) {
+            console.log(getUrlParameter('dataId'))
+
+            jQuery.ajax({
+                url: '/wp-admin/admin-ajax.php',
+                type: 'GET',
+                dataType: 'json',
+                async: 'false',
+                data: {
+                    action: 'get_form_data_gform',
+                    form_id: 4,
+                    order_id: getUrlParameter('dataId')
+                },
+                success: function (response) {
+                    var count ={
+                        'A':0,
+                        'B':0,
+                        'C':0,
+                        'D':0,
+                    }
+
+
+                    try {
+                        const res = response.data[0]
+                        for (var key in res) {
+                            if (!res.hasOwnProperty(key)) continue;
+                            if (!isNaN(key)) {
+                                if (response.data[0][key]!==""){
+                                    count[response.data[0][key][0]]+=1
+                                }
+                            }
+                        }
+                    } catch (e) {
+                        $('.gform-body').html('Data not found')
+                    }
+                    console.log(count)
+
+                    const maxEntry = Object.entries(count).reduce((max, current) => {
+                        return current[1] > max[1] ? current : max;
+                    });
+
+                    const keyWithMaxValue = maxEntry[0];
+                    const maxValue = maxEntry[1];
+
+                    console.log(keyWithMaxValue)
+                    document.getElementById(`cat-${keyWithMaxValue}`).style.display="block"
+                },
+                error: function (xhr, status, error) {
+                    $('.gform-body').html('data not found')
+                }
+            });
+        }
+    });
+
+</script>

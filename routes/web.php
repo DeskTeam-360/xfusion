@@ -9,6 +9,7 @@ use App\Http\Controllers\Admin\LimitLinkController;
 use App\Http\Controllers\Admin\ReportController;
 use App\Http\Controllers\Admin\TagController;
 use App\Http\Controllers\Admin\UserController;
+use App\Models\CourseGroup;
 use App\Models\Tag;
 use App\Models\User;
 use App\Models\WpUserMeta;
@@ -84,15 +85,56 @@ Route::middleware([
         'auth', 'checkRole:editor,administrator'
     ])->group(function () {
         Route::resource('report', ReportController::class)->only('index', 'create', 'edit');
-        Route::get('/report/company-{companyId}/season-{seasonId}', [ReportController::class, 'seasonCourseCompany'])->name('season-course-company');
-        Route::get('/report/season-{seasonId}', [ReportController::class, 'seasonCourseEmployee'])->name('season-course-employee');
+
+        Route::get('/report/course-group/{id}', function ($id) {
+
+            $courseGroup = CourseGroup::find($id);
+
+            $formIds = [];
+            foreach ($courseGroup->courseGroupDetails as $cgd) {
+                $formIds[] = $cgd->courseList->wp_gf_form_id;
+            }
+
+            $user = Auth::user();
+            $ru = $user->meta->where('meta_key', '=', config('app.wp_prefix', 'wp_') . 'capabilities');
+            $role = '';
+            foreach ($ru as $r) {
+                $role = array_key_first(unserialize($r['meta_value']));
+            }
+
+            $data = User::join('gf_entry', 'users.ID', '=', 'gf_entry.created_by')
+                ->whereIn('gf_entry.form_id', $formIds)
+                ->pluck('users.ID');
+            $data = array_unique($data->toArray());
+
+            return view(
+                'admin.report.level-course-employee', compact('data', 'id', 'role')
+            );
+        })->name('report.course-group');
+
+        Route::get('/report/course-group/{id}/user/{user}',function ($id, $user){
+
+            $courseGroup = CourseGroup::find($id);
+            return view(
+                'admin.report.report-detail', compact('user', 'id','courseGroup')
+            );
+        })->name('report.course-group.user');
+
+
+//        Route::get('/report/company-{companyId}/season-{seasonId}', [ReportController::class, 'seasonCourseCompany'])->name('season-course-company');
+//        Route::get('/report/season-{seasonId}', [ReportController::class, 'seasonCourseEmployee'])->name('season-course-employee');
         Route::get('/report/season-{seasonId}/user-{userId}/course', [ReportController::class, 'seasonCourseIndex'])->name('season-course-index');
         Route::get('/report/season-{seasonId}/user-{userId}/form-{formId}/entry-{entryId}/detail', [ReportController::class, 'courseDetail'])->name('course-detail');
+//
+//        Route::get('/report/company-{companyId}/level-{levelId}', [ReportController::class, 'levelCourseCompany'])->name('level-course-company');
+//        Route::get('/report/level-{levelId}', [ReportController::class, 'levelCourseEmployee'])->name('level-course-employee');
+//        Route::get('/report/level-{levelId}/user-{userId}/course', [ReportController::class, 'levelCourseIndex'])->name('level-course-index');
+//        Route::get('/report/level-{levelId}/user-{userId}/form-{formId}/entry-{entryId}/detail', [ReportController::class, 'levelDetail'])->name('level-detail');
 
-        Route::get('/report/company-{companyId}/level-{levelId}', [ReportController::class, 'levelCourseCompany'])->name('level-course-company');
-        Route::get('/report/level-{levelId}', [ReportController::class, 'levelCourseEmployee'])->name('level-course-employee');
-        Route::get('/report/level-{levelId}/user-{userId}/course', [ReportController::class, 'levelCourseIndex'])->name('level-course-index');
-        Route::get('/report/level-{levelId}/user-{userId}/form-{formId}/entry-{entryId}/detail', [ReportController::class, 'levelDetail'])->name('level-detail');
+
+        Route::get('course-group', function (){
+            return view();
+        });
 
         Route::get('/export-user', [ExportController::class, 'exportToCSV'])->name('export-user');
         Route::get('/template-download', [ExportController::class, 'downloadTemplate'])->name('template-download');

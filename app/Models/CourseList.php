@@ -8,5 +8,11 @@ use Illuminate\Database\Eloquent\Model;
 class CourseList extends Model
 {
     use HasFactory;
-    protected $fillable=['url','course_title','page_title', 'wp_gf_form_id','keap_tag','keap_tag_parent','delay'];
+
+    protected $fillable = ['url', 'course_title', 'page_title', 'wp_gf_form_id', 'keap_tag', 'keap_tag_parent', 'delay'];
+
+    public function courseGroupDetails()
+    {
+        return $this->hasMany(CourseGroupDetail::class, 'course_list_id');
+    }
 }

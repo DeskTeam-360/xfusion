@@ -3,6 +3,8 @@
 namespace App\Http\Controllers\Admin;
 
 use App\Models\CourseGroup;
+use App\Models\CourseGroupBackup;
+use App\Models\CourseGroupDetail;
 use App\Models\CourseList;
 use App\Models\Level;
 use App\Models\ScheduleExecution;
@@ -34,8 +36,9 @@ class ReportController extends Controller
     {
         $role = $this->auth();
 
-        $data = Season::all();
-        $data_level = Level::all();
+        $data = CourseGroup::where('title', 'Revitalize')->get();
+
+        $data_level = CourseGroup::where('title', 'Sustain')->get();
 
         if ($role == "editor") {
             $user = Auth::user();
@@ -85,8 +88,7 @@ class ReportController extends Controller
     {
         $role = $this->auth();
 
-        $data_form = ScheduleExecution::where('user_id', $d)->get();
-//        dd($data_form);
+        $data_form = CourseGroupDetail::where('course_group_id', $id)->get();
         $season_id = $id;
         $user_id = $d;
 
