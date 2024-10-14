@@ -58,7 +58,7 @@ class CourseList extends Component
             $this->courseTitle = $data->course_title;
             $this->courseTag = $data->keap_tags;
             $this->courseTagParent = $data->keap_tags_parent;
-            $this->optionWpGfForm = $data->wp_gf_form_id;
+            $this->gfFormId = $data->wp_gf_form_id;
             $this->delay = $data->delay;
         }
     }
