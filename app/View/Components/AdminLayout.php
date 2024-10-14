@@ -98,7 +98,8 @@ class AdminLayout extends Component
                     $this->sidebar[0]['lists'][] = ['title' => 'Employee List', 'type' => 'link', 'route' => route('company.show', $c->id), 'icon' => '<i class="ti ti-users  text-xl flex-shrink-0"></i> '];
 //                    $this->sidebar[0]['lists'][] = ['title' => 'Employee Progress', 'type' => 'link', 'route' => route('company.progress', $c->id), 'icon' => '<i class="ti ti-progress  text-xl flex-shrink-0"></i> '];
                     $this->sidebar[0]['lists'][] = ['title' => 'Active Schedule', 'type' => 'link', 'route' => route('company.schedule', $c->id), 'icon' => '<i class="ti ti-clock  text-xl flex-shrink-0"></i> '];
-                    $this->sidebar[0]['lists'][] = ['title' => 'CourseGroup', 'type' => 'link', 'route' => route('report.index'), 'icon' => '<i class="ti ti-user  text-xl flex-shrink-0"></i> '];
+//                    $this->sidebar[0]['lists'][] = ['title' => 'CourseGroup', 'type' => 'link', 'route' => route('report.index'), 'icon' => '<i class="ti ti-user  text-xl flex-shrink-0"></i> '];
+                    $this->sidebar[0]['lists'][] = ['title' => 'Report', 'type' => 'link', 'route' => route('report.index'), 'icon' => '<i class="ti ti-report  text-xl flex-shrink-0"></i> '];
                 }
             }
         }

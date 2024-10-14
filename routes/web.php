@@ -96,6 +96,7 @@ Route::middleware([
             }
 
             $user = Auth::user();
+            $userId = $user->ID;
             $ru = $user->meta->where('meta_key', '=', config('app.wp_prefix', 'wp_') . 'capabilities');
             $role = '';
             foreach ($ru as $r) {
@@ -108,7 +109,7 @@ Route::middleware([
             $data = array_unique($data->toArray());
 
             return view(
-                'admin.report.level-course-employee', compact('data', 'id', 'role')
+                'admin.report.level-course-employee', compact('data', 'id', 'role', 'userId')
             );
         })->name('report.course-group');
 

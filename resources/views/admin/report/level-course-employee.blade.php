@@ -56,29 +56,65 @@
                     @foreach($data as $d)
                         @php
                             try {
-                                $user = \App\Models\User::where('id', $d)->first()['user_login'];
+                                if ($role == 'administrator') {
+                                    $user = \App\Models\User::where('id', $d)->first()['user_login'];
 
-                                $scheduleExec = \App\Models\WpGfEntry::where('created_by', $d)->count() >= \App\Models\CourseGroupBackup::where('season_id', $d)->count() ? 'Done' : 'On Progress';
+                                    $scheduleExec = \App\Models\WpGfEntry::where('created_by', $d)->count() >= \App\Models\CourseGroupBackup::where('season_id', $d)->count() ? 'Done' : 'On Progress';
 
-                                $c_list = \App\Models\CourseGroupDetail::where('course_group_id', $id)->orderBy('id')->pluck('course_list_id');
+                                    $c_list = \App\Models\CourseGroupDetail::where('course_group_id', $id)->orderBy('id')->pluck('course_list_id');
 
-                                $temp_array = [];
+                                    $temp_array = [];
 
-                                foreach ($c_list as $c) {
-                                    $course = \App\Models\CourseList::where('id', $c)->value('wp_gf_form_id');
-                                    $temp_date = \App\Models\WpGfEntry::where('form_id', $course)->where('created_by', $d)->value('date_created');
+                                    foreach ($c_list as $c) {
+                                        $course = \App\Models\CourseList::where('id', $c)->value('wp_gf_form_id');
+                                        $temp_date = \App\Models\WpGfEntry::where('form_id', $course)->where('created_by', $d)->value('date_created');
 
-                                    if ($temp_date) {
-                                        $temp_array[] = $temp_date;
+                                        if ($temp_date) {
+                                            $temp_array[] = $temp_date;
+                                        }
                                     }
+                                    sort($temp_array);
+
+                                    $date = $temp_array[0];
+
+                                    $dateRec = \Carbon\Carbon::createFromFormat('Y-m-d H:i:s', $date)->format('M d, Y');
+
+                                    $result = 'yes';
+                                } else {
+
+                                    $companyId = \App\Models\Company::where('user_id', $userId)->pluck('ID')[0];
+                                    $employees = \App\Models\CompanyEmployee::where('company_id', $companyId)->pluck('user_id')->toArray();
+
+                                    if (in_array($d, $employees)) {
+                                        $user = \App\Models\User::where('id', $d)->first()['user_login'];
+
+                                        $scheduleExec = \App\Models\WpGfEntry::where('created_by', $d)->count() >= \App\Models\CourseGroupBackup::where('season_id', $d)->count() ? 'Done' : 'On Progress';
+
+                                        $c_list = \App\Models\CourseGroupDetail::where('course_group_id', $id)->orderBy('id')->pluck('course_list_id');
+
+                                        $temp_array = [];
+
+                                        foreach ($c_list as $c) {
+                                            $course = \App\Models\CourseList::where('id', $c)->value('wp_gf_form_id');
+                                            $temp_date = \App\Models\WpGfEntry::where('form_id', $course)->where('created_by', $d)->value('date_created');
+
+                                            if ($temp_date) {
+                                                $temp_array[] = $temp_date;
+                                            }
+                                        }
+                                        sort($temp_array);
+
+                                        $date = $temp_array[0];
+
+                                        $dateRec = \Carbon\Carbon::createFromFormat('Y-m-d H:i:s', $date)->format('M d, Y');
+
+                                        $result = 'yes';
+                                    } else {
+                                        $result = 'no';
+                                    }
+
                                 }
-                                sort($temp_array);
 
-                                $date = $temp_array[0];
-
-                                $dateRec = \Carbon\Carbon::createFromFormat('Y-m-d H:i:s', $date)->format('M d, Y');
-
-                                $result = 'yes';
 
                             } catch (\Exception $e) {
                                 $result = 'no';
