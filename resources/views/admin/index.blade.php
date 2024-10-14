@@ -21,7 +21,7 @@
                         </div>
                         <div class="items-center justify-between mt-5">
                             <h3 class="text-2xl">
-                                {{ User::count() - User::whereHas('meta',function ($q){$q->where('meta_key',config('app.wp_prefix', 'wp_') . 'capabilities')->where('meta_value','like','%administrator%');})->count() }}
+                                {{ User::whereHas('meta',function ($q){$q->where('meta_key',config('app.wp_prefix', 'wp_') . 'capabilities')->where('meta_value','like','%editor%');})->orWhereHas('meta',function ($q){$q->where('meta_key',config('app.wp_prefix', 'wp_') . 'capabilities')->where('meta_value','like','%contributor%');})->count() }}
                             </h3>
                             <br>
                             <span class="font-semibold card-subtitle text-xl">
