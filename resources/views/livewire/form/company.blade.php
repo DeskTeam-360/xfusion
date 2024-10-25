@@ -1,7 +1,28 @@
 <form wire:submit="{{ $action }}">
-    <x-input title="Name company" model="title" required="true"/>
-    <x-input title="Company logo" model="logo_url" type="file" accept="image/png" ignore="{{true}}"/>
-    <x-input title="Company qrcode" model="qrcode_url" type="file" accept="image/png" ignore="{{true}}"/>
-    <x-select title="Company leader" model="user_id" :options="$usersOption" required="true"/>
+
+    <div class="form-group">
+        <label for="title">{{ __('Name company') }}</label>@error('title') <span style="margin-left: 10px; color: indianred;" >{{ $message }}</span> @enderror
+        <x-input model="title" id="title"/>
+
+    </div>
+
+    <div class="form-group">
+        <label for="logo_url">{{ __('Company logo') }}</label>@error('logo_url') <span style="margin-left: 10px; color: indianred;" >{{ $message }}</span> @enderror
+        <x-input model="logo_url" type="file" accept="image/png" ignore="{{true}}" id="logo_url"/>
+
+    </div>
+
+    <div class="form-group">
+        <label for="qrcode_url">{{ __('Company QR code') }}</label>@error('qrcode_url') <span style="margin-left: 10px; color: indianred;" >{{ $message }}</span> @enderror
+        <x-input model="qrcode_url" type="file" accept="image/png" ignore="{{true}}" id="qrcode_url"/>
+    </div>
+
+    <div class="form-group">
+        <label for="user_id">{{ __('Company leader') }}</label>@error('user_id') <span style="margin-left: 10px; color: indianred;" >{{ $message }}</span> @enderror
+        <x-select model="user_id" :options="$usersOption" id="user_id"/>
+
+    </div>
+
     <button type="submit" class="btn" wire:loading.attr="disabled">Submit</button>
+
 </form>

@@ -18,14 +18,28 @@ class Company extends Component
     public $data;
     public $usersOption;
 
-    #[Validate('required')]
+//    #[Validate('required')]
     public $user_id;
-    #[Validate('required|max:255')]
+//    #[Validate('required|max:255')]
     public $title;
-    #[Validate('image:4096|mimes:png')]
+//    #[Validate('image:4096|mimes:png')]
     public $logo_url;
-    #[Validate('image:4096|mimes:png')]
+//    #[Validate('image:4096|mimes:png')]
     public $qrcode_url;
+
+    protected $rules = [
+        'title' => 'required|max:255',
+        'logo_url' => 'required',
+        'qrcode_url' => 'required',
+        'user_id' => 'required',
+    ];
+
+    protected $messages = [
+        'title.required' => 'Please fill the Company name.',
+        'logo_url.required' => 'Please select a Company Logo.',
+        'qrcode_url.required' => 'Please select a Company QRcode.',
+        'user_id.required' => 'Please select a Company leader.',
+    ];
 
     public function mount()
     {
@@ -33,10 +47,13 @@ class Company extends Component
         foreach (\App\Models\User::get() as $item) {
             $this->usersOption[] = ['value' => $item->ID, 'title' => $item->user_email];
         }
+
         if ($this->dataId) {
             $data = \App\Models\Company::find($this->dataId);
-            $this->user_id = $data->user_id;
+            $this->user_id = (int)$data->user_id;
             $this->title = $data->title;
+            $this->logo_url = $data->logo_url;
+            $this->qrcode_url = $data->qrcode_url;
         }
     }
 
@@ -74,20 +91,29 @@ class Company extends Component
 
     public function update()
     {
-        $this->validate();
+        $this->validate([
+            'user_id' => 'required',
+            'title' => 'required|string|max:255',
+        ]);
         $this->resetErrorBag();
-        if ($this->logo_url != null) {
-            $logoUrl = $this->logo_url->store(path: 'public/photos');
-            \App\Models\Company::find($this->dataId)->update([
-                'logo_url' => $logoUrl,
-            ]);
+        $data_compare = \App\Models\Company::find($this->dataId);
+
+        if ($data_compare->logo_url != $this->logo_url) {
+            if ($this->logo_url != null) {
+                $logoUrl = $this->logo_url->store(path: 'public/photos');
+                \App\Models\Company::find($this->dataId)->update([
+                    'logo_url' => $logoUrl,
+                ]);
+            }
+        } else if ($data_compare->qrcode_url != $this->qrcode_url) {
+            if ($this->qrcode_url != null) {
+                $qrcodeUrl = $this->qrcode_url->store(path: 'public/qrcode');
+                \App\Models\Company::find($this->dataId)->update([
+                    'qrcode_url' => $qrcodeUrl
+                ]);
+            }
         }
-        if ($this->qrcode_url != null) {
-            $qrcodeUrl = $this->qrcode_url->store(path: 'public/qrcode');
-            \App\Models\Company::find($this->dataId)->update([
-                'qrcode_url' => $qrcodeUrl
-            ]);
-        }
+
         \App\Models\Company::find($this->dataId)->update([
             'user_id' => $this->user_id,
             'title' => $this->title,
