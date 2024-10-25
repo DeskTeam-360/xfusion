@@ -63,6 +63,7 @@ class User extends Component
             'last_name' => $this->last_name,
             'email' => $this->email,
             'website' => $this->website,
+            'password' => WpPassword::make($this->password),
         ]);
 
         $this->userMeta['nickname'] = $this->first_name;
