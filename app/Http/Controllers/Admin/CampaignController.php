@@ -41,8 +41,8 @@ class CampaignController extends Controller
 
     public function listTag($id)
     {
-        $keapTag = "";
-        $keapTagApply = "";
+        $keapTag = [];
+        $keapTagApply = [];
         $keaps = User::find($id)->meta->where('meta_key', '=', 'keap_contact_id')->first();
 
         if ($keaps == null || $keaps == []) {
@@ -51,8 +51,8 @@ class CampaignController extends Controller
             $keapTag = User::find($id)->meta->where('meta_key', '=', 'keap_tags')->first();
             $keapTagApply = User::find($id)->meta->where('meta_key', '=', 'keap_tags_applies')->first();
             if ($keapTag == null || $keapTag == []) {
-                $keapTag = "";
-                $keapTagApply = "";
+                $keapTag = [];
+                $keapTagApply = [];
             } else {
                 $keapTag = explode(';',$keapTag->meta_value);
                 $keapTagApply = explode(';',$keapTagApply->meta_value);
