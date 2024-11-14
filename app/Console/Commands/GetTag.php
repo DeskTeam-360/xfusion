@@ -85,8 +85,9 @@ class GetTag extends Command
                         ]);
                     }
                 }
-            }catch (\Exception $exception){
                 var_dump($user->ID);
+            }catch (\Exception $exception){
+                var_dump("error ".$user->ID);
             }
 
 
