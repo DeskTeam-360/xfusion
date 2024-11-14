@@ -160,7 +160,7 @@ class Campaign extends Component
                     ]);
                 }
             }
-//            Artisan::queue('app:get-tag');
+            Artisan::queue('app:get-tag');
 
 //            $users = \App\Models\User::whereHas('meta',function ($q){
 //                $q->where('meta_key', '=', 'keap_contact_id');
