@@ -35,6 +35,7 @@ class CourseList extends \App\Models\CourseList implements View
             ['label' => 'Page title', 'sort' => 'page_title'],
             ['label' => 'Require Tag', 'sort' => 'keap_tag'],
             ['label' => 'Link', 'sort' => 'url'],
+            ['label' => 'Next Page', 'sort' => 'url_next'],
             ['label' => 'Action'],
         ];
     }
@@ -52,6 +53,7 @@ class CourseList extends \App\Models\CourseList implements View
             ['type' => 'string', 'data' => $data->page_title],
             ['type' => 'string', 'data' => $tag],
             ['type' => 'raw_html', 'data' => "<a href='$data->url'>$data->url</a>"],
+            ['type' => 'raw_html', 'data' => "<a href='$data->url_next'>$data->url_next</a>"],
             ['type' => 'raw_html','text-align'=>'center', 'data' => "
 <div class='flex gap-1'>
 <button href='#' wire:click='deleteItem($data->id)' class='btn btn-error'>Delete</button>

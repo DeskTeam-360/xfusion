@@ -16,6 +16,7 @@ class CourseList extends Component
     public $pageTitle;
     public $courseTitle;
     public $gfFormId;
+    public $urlNext;
     public $courseTag = null;
     public $courseTagParent = null;
     public $delay = null;
@@ -60,6 +61,7 @@ class CourseList extends Component
             $this->courseTagParent = $data->keap_tags_parent;
             $this->gfFormId = $data->wp_gf_form_id;
             $this->delay = $data->delay;
+            $this->urlNext = $data->url_next;
         }
     }
 
@@ -80,7 +82,8 @@ class CourseList extends Component
             'wp_gf_form_id'=>$this->gfFormId,
             'keap_tag'=>$this->courseTag,
             'keap_tag_parent'=>$this->courseTagParent,
-            'delay'=>$this->delay
+            'delay'=>$this->delay,
+            'url_next'=>$this->urlNext
         ]);
         $this->dispatch('swal:alert', data: [
             'icon' => 'success',
@@ -106,7 +109,8 @@ class CourseList extends Component
             'wp_gf_form_id'=>$this->gfFormId,
             'keap_tag'=>$this->courseTag,
             'keap_tag_parent'=>$this->courseTagParent,
-            'delay'=>$this->delay
+            'delay'=>$this->delay,
+            'url_next'=>$this->urlNext
         ]);
         $this->dispatch('swal:alert', data: [
             'icon' => 'success',

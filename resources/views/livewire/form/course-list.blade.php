@@ -2,6 +2,7 @@
     <x-select title="Course title" model="courseTitle" :options="$optionCourseTitle" required="true"/>
     <x-input title="Page title" model="pageTitle" required="true"/>
     <x-input title="Url" model="url" required="true"/>
+    <x-input title="Next Url" model="urlNext"/>
 
     <x-select title="Gravity Form" model="gfFormId" :options="$optionWpGfForm"/>
     <x-select title="Course tag require" model="courseTag" :options="$optionCourseTag"/>
