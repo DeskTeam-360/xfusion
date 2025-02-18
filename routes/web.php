@@ -3,6 +3,7 @@
 use App\Http\Controllers\Admin\CampaignController;
 use App\Http\Controllers\Admin\CompanyController;
 use App\Http\Controllers\Admin\ContactController;
+use App\Http\Controllers\Admin\CourseGroupController;
 use App\Http\Controllers\Admin\ExportController;
 use App\Http\Controllers\Admin\ImportController;
 use App\Http\Controllers\Admin\LimitLinkController;
@@ -59,6 +60,7 @@ Route::middleware([
         Route::resource('tag', TagController::class)->only('index', 'create', 'show');
 
         Route::resource('course-title', LimitLinkController::class)->only('index', 'create', 'edit');
+        Route::resource('course-group', CourseGroupController::class)->only('index', 'create', 'edit','show');
 
         Route::get('schedule', function () {
             return view('admin.schedule.index');
