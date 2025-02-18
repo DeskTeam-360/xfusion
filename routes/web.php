@@ -135,9 +135,9 @@ Route::middleware([
 //        Route::get('/report/level-{levelId}/user-{userId}/form-{formId}/entry-{entryId}/detail', [ReportController::class, 'levelDetail'])->name('level-detail');
 
 
-        Route::get('course-group', function (){
-            return view();
-        });
+//        Route::get('course-group', function (){
+//            return view();
+//        });
 
         Route::get('/export-user', [ExportController::class, 'exportToCSV'])->name('export-user');
         Route::get('/template-download', [ExportController::class, 'downloadTemplate'])->name('template-download');
