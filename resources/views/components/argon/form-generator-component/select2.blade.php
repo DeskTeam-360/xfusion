@@ -18,7 +18,7 @@
         @endfor
     </select>
     <script>
-        document.addEventListener('livewire:load', function () {
+        document.addEventListener('livewire:init', function () {
             let data;
             $('#{{'data'.$repository['model']}}').select2();
             $('#{{'data'.$repository['model']}}').on('change', function (e) {

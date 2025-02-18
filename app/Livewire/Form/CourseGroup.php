@@ -39,7 +39,7 @@ public $courseLists;
         if($this->dataId!=null){
             $data = \App\Models\CourseGroup::find($this->dataId);
             $this->courseLists=$data->courseGroupDetails->pluck('course_list_id')->toArray();
-            dd($this->courseLists);
+//            dd($this->courseLists);
             $this->title = $data->title;
             $this->subTitle = $data->sub_title;
             $this->type = $data->type;
