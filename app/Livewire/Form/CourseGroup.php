@@ -33,7 +33,7 @@ public $courseLists;
 
         $this->optionCourseTitle = [];
         foreach (\App\Models\CourseList::get() as $cl){
-            $this->optionCourseTitle[] = ['value'=>$cl->id,'title'=>$cl->title];
+            $this->optionCourseTitle[] = ['value'=>$cl->id,'title'=>$cl->course_title.'- '.$cl->page_title];
         }
 
         if($this->dataId!=null){
