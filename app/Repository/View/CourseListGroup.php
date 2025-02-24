@@ -40,6 +40,7 @@ class CourseListGroup extends \App\Models\CourseGroup implements View
     public static function tableData($data = null): array
     {
         $link = route('course-group.edit',$data->id);
+        $link2 = route('course-group.show',$data->id);
 
         return [
             ['type' => 'string','data'=>$data->id],
@@ -50,6 +51,7 @@ class CourseListGroup extends \App\Models\CourseGroup implements View
 <div class='flex gap-1'>
 <button href='#' wire:click='deleteItem($data->id)' class='btn btn-error'>Delete</button>
 <a href='$link' class='btn btn-primary'>Edit</a>
+<a href='$link2' class='btn btn-secondary'>Show</a>
 </div>"],
 
         ];
