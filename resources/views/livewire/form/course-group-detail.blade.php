@@ -5,7 +5,7 @@
             <td>Title</td>
             <td>Order</td>
         </tr>
-        @foreach($courseGroup->courseGroupDetails as $index=>$cgd)
+        @foreach($courseGroup->courseGroupDetails->sortBy('orders') as $index=>$cgd)
             <tr>
                 <td>{{ $index+1 }}</td>
                 <td>{{ $cgd->courseList->course_title.' '.$cgd->courseList->page_title }}</td>
