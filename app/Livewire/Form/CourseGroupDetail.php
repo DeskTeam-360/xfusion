@@ -8,10 +8,11 @@ class CourseGroupDetail extends Component
 {
     public $dataId;
     public $courseGroup;
+    public $courseGroupDetails;
     public $orders;
     public function mount(){
-        $courseGroup = \App\Models\CourseGroup::find($this->dataId);
-        foreach($courseGroup->courseGroupDetails as $course){
+        $this->courseGroup = \App\Models\CourseGroup::find($this->dataId);
+        foreach($this->courseGroup->courseGroupDetails as $course){
             $this->orders[$course->id] = $course->orders;
         }
     }
