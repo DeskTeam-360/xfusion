@@ -15,7 +15,7 @@
 
         <table class="border-collapse border-wishka-400 w-full text-sm text-left rounded table-auto"
                style="width: 100%">
-            <thead class="text-md text-black  text-uppercase uppercase dark:bg-dark  text-bold">
+            <thead class="text-md text-uppercase uppercase dark:bg-dark  text-bold">
             <tr class="border-b-[3px] border-gray-200 border-collapse">
                 <td>TopicId</td>
                 <td>Course</td>

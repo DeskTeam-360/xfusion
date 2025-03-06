@@ -14,7 +14,7 @@ class UserCourse extends Component
     public $u;
     public $value;
     public $courseUser;
-    public $search=[];
+    public $search = [];
 
     public function mount()
     {
@@ -22,7 +22,7 @@ class UserCourse extends Component
 
         if ($this->u != null) {
             $this->value = $this->u->meta_value;
-        }else{
+        } else {
             $this->redirect(route('user.index'));
         }
 
@@ -35,16 +35,16 @@ class UserCourse extends Component
 
         $wp = WpPost::find($topicId);
 
-        $url ="%/topics/$wp->post_name%";
-        $cl = CourseList::where('url','like',$url)->first();
+        $url = "%/topics/$wp->post_name%";
+        $cl = CourseList::where('url', 'like', $url)->first();
 
-        WpGfEntry::where('source_url','like',$url)->where('created_by','=',$this->user)
+        WpGfEntry::where('source_url', 'like', $url)->where('created_by', '=', $this->user)
             ->update([
-                'status'=>'trash'
+                'status' => 'trash',
             ]);
-        WpGfEntry::where('form_id','like',$cl->wp_gf_form_id)->where('created_by','=',$this->user)
+        WpGfEntry::where('form_id', 'like', $cl->wp_gf_form_id)->where('created_by', '=', $this->user)
             ->update([
-                'status'=>'trash'
+                'status' => 'trash',
             ]);
 
 
@@ -54,41 +54,40 @@ class UserCourse extends Component
         ]);
 
 
-
-        $this->dispatch('swal:alert', data:[
+        $this->dispatch('swal:alert', data: [
             'icon' => 'success',
             'title' => 'Delete progress user',
         ]);
     }
 
-    public function redirectToCourse($lessonId, $courseId, $topicId){
+    public function redirectToCourse($lessonId, $courseId, $topicId)
+    {
 
         $wp = WpPost::find($topicId);
 
-        $url ="%/topics/$wp->post_name%";
-        $cl = CourseList::where('url','like',$url)->first();
-$id=null;
-        $wf1= WpGfEntry::where('source_url','like',$url)->where('created_by','=',$this->user)
+        $url = "%/topics/$wp->post_name%";
+        $cl = CourseList::where('url', 'like', $url)->first();
+        $id = null;
+        $wf1 = WpGfEntry::where('source_url', 'like', $url)->where('created_by', '=', $this->user)
             ->first();
-        if ($wf1!=null){
-            $id=$wf1->id;
-        }else{
-            $wf2=WpGfEntry::where('form_id','like',$cl->wp_gf_form_id)->where('created_by','=',$this->user)
+        if ($wf1 != null) {
+            $id = $wf1->id;
+        } else {
+            $wf2 = WpGfEntry::where('form_id', 'like', $cl->wp_gf_form_id)->where('created_by', '=', $this->user)
                 ->first();
-            if ($wf2!=null){
-                $id=$wf2->id;
+            if ($wf2 != null) {
+                $id = $wf2->id;
             }
         }
-        if ($id==null){
+        if ($id == null) {
 
-            $this->dispatch('swal:alert', data:[
+            $this->dispatch('swal:alert', data: [
                 'icon' => 'warning',
                 'title' => 'Invalid progress',
             ]);
-        }else{
-            $this->redirect($cl->url.'?dataId='.$id);
+        } else {
+            $this->redirect($cl->url . '?dataId=' . $id);
         }
-
 
 
     }
