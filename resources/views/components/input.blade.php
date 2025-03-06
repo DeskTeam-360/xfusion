@@ -3,9 +3,10 @@
 ])
 @php($id = "component-".rand(0,1000))
 <div class="{{ $class }}" @if($ignore) wire:ignore @endif >
-    <label for="{{ $id }}" class="form-label mb-2 ">
+    <label for="{{ $id }}" class="form-label mb-2 " style="width: 100%">
         {!! $title !!}@if($required)<span class="text-red-600">*</span>   @endif
     </label>
+    <br>
 
     @if($type != 'password')
         <input type="{{ $type }}" class="py-2.5 px-4 form-control"

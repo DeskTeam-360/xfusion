@@ -1,0 +1,45 @@
+line 4950
+//                            $output .= '
+//                        <div id="my'.$modal_id.'" class="modal">
+//                            <div class="modal-content">
+//                                <span class="close" id="close'.$modal_id.'">&times;</span>
+//                                <h2>'. $c_list[0]->page_title .'</h2>
+//                                <table>
+//                                    <thead>
+//                                        <tr>
+//                                            <th>Question</th>
+//                                            <th>Answer</th>
+//                                        </tr>
+//                                    </thead>
+//                                    <tbody>';
+//                            foreach($data_fields as $f) {
+//                                $output .= '<tr>
+//                                            <td>'. $f->label .'</td>
+//                                            <td>'. $array_entry[$f->id] .'</td>
+//                                        </tr>';
+//                            }
+//
+//                            $output .= '</tbody>
+//                                </table>
+//                                <div style="text-align: right; margin-top: 10px;">
+//                                    <a class="custom-btn" href="'. $link_child .'?dataId='. $entry_id .'">Details</a>
+//                                </div>
+//                            </div>
+//                        </div>';
+//
+//                            $output .= '
+//                        <script>
+//                            document.getElementById("open'.$modal_id.'").onclick = function() {
+//                                document.getElementById("my'.$modal_id.'").style.display = "block";
+//                            }
+//                            document.getElementById("close'.$modal_id.'").onclick = function() {
+//                                document.getElementById("my'.$modal_id.'").style.display = "none";
+//                            }
+//
+//                            // Listen for outside click to close modal
+//                            window.onclick = function(event) {
+//                                if (event.target == document.getElementById("my'.$modal_id.'")) {
+//                                    document.getElementById("my'.$modal_id.'").style.display = "none";
+//                                }
+//                            }
+//                        </script>';

@@ -4,6 +4,7 @@
     <x-input title="Url" model="url" required="true"/>
     <x-input title="Next Url" model="urlNext"/>
 
+
     <x-select title="Gravity Form" model="gfFormId" :options="$optionWpGfForm"/>
     <x-select title="Course tag require" model="courseTag" :options="$optionCourseTag"/>
     <x-select title="Course tag parent" model="courseTagParent" :options="$optionCourseTag"/>
@@ -12,6 +13,10 @@
     @if($courseTagParent!=null)
         <x-input title="Delay between this course with parent" model="delay" type="number"/>
     @endif
+
+    <div style="width: 100px">
+        <x-input type="checkbox" title="Repeat Entry" model="repeatEntry"/>
+    </div>
 
 {{--    <x-select title="Direct input from Gravity Form if user finish course" model="courseTagParent" :options="$optionCourseTag"/>--}}
 

@@ -23,6 +23,7 @@ class CourseList extends Component
     public $optionCourseTitle;
     public $optionCourseTag;
     public $optionWpGfForm;
+    public $repeatEntry=0;
 
     public function getRules()
     {
@@ -83,7 +84,8 @@ class CourseList extends Component
             'keap_tag'=>$this->courseTag,
             'keap_tag_parent'=>$this->courseTagParent,
             'delay'=>$this->delay,
-            'url_next'=>$this->urlNext
+            'url_next'=>$this->urlNext,
+            'repeat_entry'=>$this->repeatEntry,
         ]);
         $this->dispatch('swal:alert', data: [
             'icon' => 'success',

@@ -869,11 +869,15 @@ input::placeholder {
 /* For Checkbox */
 
 .form-check-input[type=checkbox] {
-    height: 1.25rem;
-    width: 1.25rem;
+    height: 1.25rem !important;
+    width: 1.25rem !important;;
     border-width: 1px;
     border-color: var(--color-bordergray);
     background-color: transparent;
+}
+.form-control[type=checkbox] {
+    height: 1.25rem !important;
+    width: 1.25rem !important;;
 }
 
 .form-check-input[type=checkbox]:checked {

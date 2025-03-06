@@ -53,6 +53,10 @@ Route::middleware([
             return view('admin.user.keap-connect', compact('user'));
         })->name('user.connect-keap');
 
+        Route::get('user/course/{user}', function ($user) {
+            return view('admin.user.course', compact('user'));
+        })->name('user.course');
+
         Route::resource('campaign', CampaignController::class)->only('index', 'create', 'edit');
         Route::resource('company', CompanyController::class)->only('index', 'create', 'edit');
         Route::resource('user', UserController::class)->only('index', 'create', 'edit', 'show');

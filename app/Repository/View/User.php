@@ -122,6 +122,7 @@ class User extends \App\Models\User implements View
         if ($roleUser == "administrator") {
             $link = route('user.edit', $data->ID);
             $link3 = route('schedule-user-administrator', [$data->ID]);
+            $link4 = route('user.course', [$data->ID]);
         } else {
             $link = route('company.edit-employee', [$companyId, $data->ID]);
             $link3 = route('company.schedule-user', [$companyId, $data->ID]);
@@ -139,8 +140,10 @@ class User extends \App\Models\User implements View
 <div class='flex gap-1'>
 <span><a href='$link' class='btn btn-primary'>Edit</a></span>
 <span><a href='#' wire:click='deleteItem($data->ID)' class='btn btn-error text-nowrap'>Delete</a></span>
+<span><a href='$link4' class='btn btn-info text-nowrap'>Activity Check</a></span>
 <span><a href='$link2' class='btn btn-secondary text-nowrap'>Reset Password</a></span>
 <span><a href='$link3' class='btn btn-info text-nowrap'>Show Schedule</a></span>
+
 </div>"],
         ];
     }
