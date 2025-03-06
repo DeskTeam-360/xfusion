@@ -53,7 +53,7 @@ class CourseList extends \App\Models\CourseList implements View
             ['type' => 'string', 'data' => $data->page_title],
             ['type' => 'string', 'data' => $tag],
             ['type' => 'string', 'data' => ($data->repeat_entry==1)?'Yes':'No'],
-            ['type' => 'raw_html', 'data' => "<b>Main link</b> : <a href='$data->url'>$data->url</a> <br><b> Next Page Link : </b> <a href='$data->url_next'>$data->url_next</a>"],
+            ['type' => 'raw_html', 'data' => "<b>Main link</b> : <a target='_blank' href='$data->url'>$data->url</a> <br><b> Next Page Link : </b> <a target='_blank' href='$data->url_next'>$data->url_next</a>"],
             ['type' => 'raw_html','text-align'=>'center', 'data' => "
 <div class='flex gap-1'>
 <button href='#' wire:click='deleteItem($data->id)' class='btn btn-error'>Delete</button>
