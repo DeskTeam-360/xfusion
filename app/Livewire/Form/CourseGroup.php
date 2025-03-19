@@ -10,6 +10,7 @@ class CourseGroup extends Component
     public $title='';
     public $subTitle='';
     public $type='';
+    public $tools=0;
     public $dataId;
 public $optionCourseTitle;
 public $optionCourseType;
@@ -79,6 +80,7 @@ public $courseLists;
             'title' => $this->title,
             'sub_title' => $this->subTitle,
             'type' => $this->type,
+            'tools'=>$this->tools
         ]);
 
         \App\Models\CourseGroupDetail::where('course_group_id', $this->dataId)->delete();

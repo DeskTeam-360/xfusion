@@ -38,6 +38,9 @@
         </script>
 
     </div>
+    <div style="width: 100px">
+        <x-input type="checkbox" title="Repeat Entry" model="tools"/>
+    </div>
 
 
 

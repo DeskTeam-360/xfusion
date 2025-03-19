@@ -51,7 +51,7 @@ class CourseList extends Component
 
         $this->optionWpGfForm = [];
         foreach (WpGfForm::get() as $item) {
-            $this->optionWpGfForm [] = ['value' => $item->id, 'title' => $item->title];
+            $this->optionWpGfForm [] = ['value' => $item->id, 'title' =>$item->id.' - '. $item->title];
         }
         if ($this->dataId != null) {
             $data = \App\Models\CourseList::find($this->dataId);

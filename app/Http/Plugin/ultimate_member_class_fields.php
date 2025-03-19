@@ -4955,9 +4955,10 @@ if (!class_exists('um\core\Fields')) {
                     $output .= "<h1 style='text-align: center'>Tool List</h1>";
 
                     foreach ($cg_list as $cg) {
-                        $output .= "<h2 style='font-size: 35px'>$cg->title - $cg->sub_title </h2>";
+                        $output .= "<h2 style='font-size: 35px'>$cg->title</h2>";
                         $query = "SELECT * FROM course_group_details where course_group_id = $cg->id order by orders";
                         $q_list = $wpdb->get_results($query);
+
 
 //                        $c = count($q_list);
 
@@ -4966,13 +4967,15 @@ if (!class_exists('um\core\Fields')) {
                         }
 
 
-                        $output .= "<div class='profile-notes'> ";
+
                         foreach ($q_list as $q) {
+
 
 
                             $temp_id = (int)$q->course_list_id;
                             $query = "SELECT * FROM course_lists WHERE id = $temp_id";
                             $c_list = $wpdb->get_results($query);
+
 //                            if($c_list[0]->repeat_entry==1){
 //                                continue
 //                            }
@@ -4994,14 +4997,22 @@ if (!class_exists('um\core\Fields')) {
 //                                AND (created_by, date_created) IN ($subquery)
 
                                 // get entry_id
+
                                 $entry_ids = $wpdb->get_results($query);
 
                             } catch (Exception $e) {
                                 $entry_ids = [];
                             }
+
+                            $output .= "<div style='font-size: 24px'> {$c_list[0]->page_title} </div>";
+                            $output .= "<div class='profile-notes'> ";
                             foreach ($entry_ids as $entry_id) {
-                                $output .= '<a href="' . $link_child . '?dataId=' . $entry_id->id . '" target="_blank" class="note-column" style="color: #666; font-weight: bold" ><span>' . $c_list[0]->page_title.'='.$entry_id->date_created . '</span></a>';
+
+                                $timestamp = $entry_id->date_created;
+                                $formatted_date = date("F j, Y", strtotime($timestamp));
+                                $output .= '<a href="' . $link_child . '?dataId=' . $entry_id->id . '" target="_blank" class="note-column" style="color: #666; font-weight: bold" ><span>' .$formatted_date . '</span></a>';
                             }
+                            $output .= "</div>";
 
 
 
