@@ -14,7 +14,9 @@ class UserCourse extends Component
     public $u;
     public $value;
     public $courseUser;
-    public $search = [];
+//    public $search = [];
+
+    public $search = '';
 
     public function mount()
     {
@@ -29,15 +31,37 @@ class UserCourse extends Component
         $this->courseUser = unserialize($this->value);
     }
 
+    public function getFilteredCourseUserProperty()
+    {
+        $search = strtolower($this->search);
+
+        // Filter courseUser dengan search (judul course atau topic)
+        return collect($this->courseUser)->map(function ($lessons, $lessonId) use ($search) {
+            $filteredTopics = [];
+
+            foreach ($lessons['topics'] as $courseId => $topics) {
+                foreach ($topics as $topicId => $value) {
+                    $courseTitle = strtolower(WpPost::find($courseId)->post_title);
+                    $topicTitle = strtolower(WpPost::find($topicId)->post_title);
+
+                    if ($value == 1 && (str_contains($courseTitle, $search) || str_contains($topicTitle, $search))) {
+                        $filteredTopics[$courseId][$topicId] = $value;
+                    }
+                }
+            }
+
+            return ['topics' => $filteredTopics];
+        })->filter(function ($item) {
+            return count($item['topics']);
+        });
+    }
+
+
     public function removeProgress($lessonId, $courseId, $topicId)
     {
-
-
         $wp = WpPost::find($topicId);
-
         $url = "%/topics/$wp->post_name%";
         $cl = CourseList::where('url', 'like', $url)->first();
-
         WpGfEntry::where('source_url', 'like', $url)->where('created_by', '=', $this->user)
             ->update([
                 'status' => 'trash',
@@ -46,8 +70,6 @@ class UserCourse extends Component
             ->update([
                 'status' => 'trash',
             ]);
-
-
         $this->courseUser[$lessonId]['topics'][$courseId][$topicId] = 0;
         $this->u->update([
             'meta_value' => serialize($this->courseUser),
@@ -64,7 +86,6 @@ class UserCourse extends Component
     {
 
         $wp = WpPost::find($topicId);
-
         $url = "%/topics/$wp->post_name%";
         $cl = CourseList::where('url', 'like', $url)->first();
         $id = null;

@@ -2,35 +2,43 @@
 <div class="w-full">
 
     <br><br>
-    @foreach($courseUser as $lessonId=>$lessons)
+    <div class="col-span-12 grid grid-cols-12 gap-3">
+
+        <div class="lg:col-span-6 md:col-span-6 sm:col-span-6 col-span-12">
+            <label for="search" class="form-label  text-md mb-10" style="width: 100%">
+                Search topic or course...
+            </label>
+            <br>
+            <input id="search" type="text" wire:model.live.debounce.300ms="search" placeholder="Search topic or course..."
+                   class="border border-gray-300 p-2 rounded mt-2 w-6/12 py-2.5 px-4 form-control" />
+        </div>
+    </div>
+    <br>
+
+
+    @foreach($this->filteredCourseUser as $lessonId=>$lessons)
         <h3 class="text-2xl">
             Lesson {{ WpPost::find($lessonId)->post_name }}
         </h3>
         <br>
-        {{--    <div style="float: right; margin-bottom: 20px">--}}
-        {{--        Search : <input wire:model.live="search.{{$lessonId}}" type="text" class="form-control" style="width: 300px">--}}
-        {{--    </div>--}}
-
-
-
-        <table class="border-collapse border-wishka-400 w-full text-sm text-left rounded table-auto"
+        <table class="border-collapse border-wishka-400 w-full text-sm text-left rounded table-auto "
                style="width: 100%">
             <thead class="text-md text-uppercase uppercase dark:bg-dark  text-bold">
             <tr class="border-b-[3px] border-gray-200 border-collapse">
-                <td>TopicId</td>
-                <td>Course</td>
-                <td>Topic</td>
+                <td style="padding: 10px">TopicId</td>
+                <td style="padding: 10px">Course</td>
+                <td style="padding: 10px">Topic</td>
                 <td class="text-center">Action</td>
             </tr>
             </thead>
             @foreach($lessons['topics'] as $courseId=>$courses)
                 @foreach($courses as $topicId=>$topic)
                     @if($courseUser[$lessonId]['topics'][$courseId][$topicId]==1)
-                        <tr class="border-b border-gray-200 text-md" style="height: 40px" wire:key="{{ $topicId }}">
-                            <td>{{ $topicId }}</td>
-                            <td>{{ WpPost::find($courseId)->post_title }}</td>
-                            <td>{{ WpPost::find($topicId)->post_title }}</td>
-                            <td class="text-center">
+                        <tr class="border-b border-gray-200 text-md" style="height: 50px" wire:key="{{ $topicId }}">
+                            <td style="padding: 10px">{{ $topicId }}</td>
+                            <td style="padding: 10px">{{ WpPost::find($courseId)->post_title }}</td>
+                            <td style="padding: 10px">{{ WpPost::find($topicId)->post_title }}</td>
+                            <td style="padding: 10px" class="text-center">
                                 <i class="ti ti-trash btn btn-light-error"
                                    wire:click="removeProgress({{$lessonId}},{{$courseId}},{{$topicId}})"></i>
                                 <i class="ti ti-eye btn-light-primary btn"
@@ -38,7 +46,6 @@
                             </td>
                         </tr>
                     @endif
-
                 @endforeach
             @endforeach
         </table>
