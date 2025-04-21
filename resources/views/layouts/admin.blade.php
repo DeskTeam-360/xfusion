@@ -232,6 +232,11 @@
                 const data = d.__livewire.params.data;
                 SwalAlert(data.icon, data.title, data.timeout)
             })
+
+            window.addEventListener('swal:redirect:new-tab', function(d) {
+                const data = d.__livewire.params.data;
+                window.open(data.url, '_blank');
+            })
         })
     </script>
 @stack('script')
