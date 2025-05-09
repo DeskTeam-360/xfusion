@@ -11,22 +11,23 @@ use App\Http\Controllers\Admin\ReportController;
 use App\Http\Controllers\Admin\TagController;
 use App\Http\Controllers\Admin\UserController;
 use App\Models\CourseGroup;
-use App\Models\Tag;
+use App\Models\CourseList;
 use App\Models\User;
-use App\Models\WpUserMeta;
+use App\Models\WpGfEntryMeta;
+use App\Models\WpGfFormMeta;
 use Illuminate\Support\Facades\Auth;
-use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Route;
-use KeapGeek\Keap\Facades\Keap;
 
 Route::get('/', function () {
-    return redirect(route('dashboard'));
+
+
 });
+
 
 Auth::routes();
 
 Route::middleware([
-    'auth'
+    'auth',
 ])->group(function () {
     Route::get('/dashboard', function () {
 
@@ -38,7 +39,7 @@ Route::middleware([
         }
         if ($role == 'administrator') {
             return view('admin.index');
-        } elseif ($role == 'editor') {
+        } else if ($role == 'editor') {
             return view('admin.dashboard-company');
         } else {
             return view('admin.dashboard-contributor');
@@ -46,7 +47,7 @@ Route::middleware([
     })->name('dashboard');
 
     Route::middleware([
-        'auth', 'checkRole:administrator'
+        'auth', 'checkRole:administrator',
     ])->group(function () {
 
         Route::get('user/connect-keap/{user}', function ($user) {
@@ -57,6 +58,10 @@ Route::middleware([
             return view('admin.user.course', compact('user'));
         })->name('user.course');
 
+        Route::get('user/course/{user}/details', function ($user) {
+            return view('admin.user.course', compact('user'));
+        })->name('user.course');
+
         Route::resource('campaign', CampaignController::class)->only('index', 'create', 'edit');
         Route::resource('company', CompanyController::class)->only('index', 'create', 'edit');
         Route::resource('user', UserController::class)->only('index', 'create', 'edit', 'show');
@@ -64,7 +69,7 @@ Route::middleware([
         Route::resource('tag', TagController::class)->only('index', 'create', 'show');
 
         Route::resource('course-title', LimitLinkController::class)->only('index', 'create', 'edit');
-        Route::resource('course-group', CourseGroupController::class)->only('index', 'create', 'edit','show');
+        Route::resource('course-group', CourseGroupController::class)->only('index', 'create', 'edit', 'show');
 
         Route::get('schedule', function () {
             return view('admin.schedule.index');
@@ -88,7 +93,7 @@ Route::middleware([
     });
 
     Route::middleware([
-        'auth', 'checkRole:editor,administrator'
+        'auth', 'checkRole:editor,administrator',
     ])->group(function () {
         Route::resource('report', ReportController::class)->only('index', 'create', 'edit');
 
@@ -115,15 +120,15 @@ Route::middleware([
             $data = array_unique($data->toArray());
 
             return view(
-                'admin.report.level-course-employee', compact('data', 'id', 'role', 'userId')
+                'admin.report.level-course-employee', compact('data', 'id', 'role', 'userId'),
             );
         })->name('report.course-group');
 
-        Route::get('/report/course-group/{id}/user/{user}',function ($id, $user){
+        Route::get('/report/course-group/{id}/user/{user}', function ($id, $user) {
 
             $courseGroup = CourseGroup::find($id);
             return view(
-                'admin.report.report-detail', compact('user', 'id','courseGroup')
+                'admin.report.report-detail', compact('user', 'id', 'courseGroup'),
             );
         })->name('report.course-group.user');
 

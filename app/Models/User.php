@@ -19,6 +19,8 @@ use Illuminate\Notifications\Notifiable;
  * @property string $user_activation_key
  * @property string $user_status
  * @property string $display_name
+ *
+ * @property CompanyEmployee[] companyEmployee
  */
 
 
@@ -41,9 +43,6 @@ class User extends Corcel
         'user_activation_key',
         'user_status',
         'display_name',
-//        'name',
-//        'email',
-//        'password',
     ];
 
     /**
@@ -73,6 +72,7 @@ class User extends Corcel
     {
         return $this->hasMany(CompanyEmployee::class,'user_id');
     }
+
     public function wpGfEntry()
     {
         return $this->hasMany(WpGfEntry::class,'created_by');

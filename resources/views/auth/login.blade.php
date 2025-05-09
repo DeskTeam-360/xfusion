@@ -130,19 +130,56 @@
                         @enderror
                     </div>
                     <!-- password -->
-                    <div class="mb-6">
-                        <label for="forPassword"
-                               class="block text-sm font-semibold mb-2 text-gray-600">Password</label>
-                        <input type="password" id="forPassword"
-                               name="password" required autocomplete="current-password"
-                               class="py-3 px-4 block w-full border-gray-200 rounded-md text-sm focus:border-blue-600 @error('password') border-error @enderror  "
+                    <div class="mb-6 relative">
+                        <label for="forPassword" class="block text-sm font-semibold mb-2 text-gray-600">Password</label>
+                        <input type="password" id="forPassword" name="password" required autocomplete="current-password"
+                               class="py-3 px-4 block w-full border-gray-200 rounded-md text-sm focus:border-blue-600 @error('password') border-error @enderror"
                                aria-describedby="hs-input-helper-text">
+
+                        <!-- Toggle icon -->
+                        <button type="button" id="togglePassword"
+                                class="absolute right-4 transform -translate-y-1/2 text-gray-600 focus:outline-none" style="top: 52px">
+                            <!-- Eye icon (default) -->
+{{--                            <i class="fa fa-eye"></i>--}}
+                            <i id="eyeIcon" class="ti ti-eye  text-xl flex-shrink-0"></i>
+                            <i id="eyeOffIcon" class="ti ti-eye-closed  text-xl flex-shrink-0 hidden"></i>
+{{--                            <svg id="eyeIcon" xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none"--}}
+{{--                                 viewBox="0 0 24 24" stroke="currentColor">--}}
+{{--                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"--}}
+{{--                                      d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />--}}
+{{--                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"--}}
+{{--                                      d="M2.458 12C3.732 7.943 7.523 5 12 5c4.477 0 8.268 2.943 9.542 7-1.274 4.057-5.065 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />--}}
+{{--                            </svg>--}}
+
+{{--                            <!-- Eye off icon (hidden initially) -->--}}
+{{--                            <svg id="eyeOffIcon" xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 hidden" fill="none"--}}
+{{--                                 viewBox="0 0 24 24" stroke="currentColor">--}}
+{{--                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"--}}
+{{--                                      d="M13.875 18.825A10.05 10.05 0 0112 19c-4.477 0-8.268-2.943-9.542-7a10.052 10.052 0 012.258-3.592M9.88 9.88a3 3 0 104.24 4.24M15 12a3 3 0 00-3-3m0 0L3 3m18 18l-1.5-1.5" />--}}
+{{--                            </svg>--}}
+                        </button>
+
                         @if (Route::has('password.request'))
-                            <a class="btn btn-link" href="{{ route('password.request') }}">
+                            <a class="btn btn-link mt-2 block text-sm text-blue-600" href="{{ route('password.request') }}">
                                 {{ __('Forgot Your Password?') }}
                             </a>
                         @endif
                     </div>
+
+                    <script>
+                        const togglePassword = document.getElementById('togglePassword');
+                        const passwordField = document.getElementById('forPassword');
+                        const eyeIcon = document.getElementById('eyeIcon');
+                        const eyeOffIcon = document.getElementById('eyeOffIcon');
+
+                        togglePassword.addEventListener('click', function () {
+                            const type = passwordField.getAttribute('type') === 'password' ? 'text' : 'password';
+                            passwordField.setAttribute('type', type);
+                            eyeIcon.classList.toggle('hidden');
+                            eyeOffIcon.classList.toggle('hidden');
+                        });
+                    </script>
+
                     <!-- checkbox -->
                     <div class="flex justify-between">
 
