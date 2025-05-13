@@ -73,8 +73,8 @@ class Company extends Component
         $company = \App\Models\Company::create([
             'user_id' => $this->user_id,
             'title' => $this->title,
-            'logo_url' => $logoUrl,
-            'qrcode_url' => $qrcodeUrl,
+            'logo_url' => $logoUrl??'',
+            'qrcode_url' => $qrcodeUrl??'',
             'company_url' => $this->company_url
         ]);
         \App\Models\User::find($this->user_id)
