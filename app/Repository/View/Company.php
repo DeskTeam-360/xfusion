@@ -39,6 +39,7 @@ class Company extends \App\Models\Company implements View
         $qrcode_url = Storage::url($data->qrcode_url);
         $link = route('company.edit',$data->id);
         $link2 = route('company.show',$data->id);
+        $company_url = $data->company_url?"<span><a href='$data->company_url' class='btn btn-success' style='overflow: hidden;white-space: nowrap;' target='_blank'>Company Website</a></span>":'';
         return [
             ['type' => 'string','data'=>$data->id],
             ['type' => 'string', 'data' => $data->title],
@@ -50,7 +51,7 @@ class Company extends \App\Models\Company implements View
         <span><a href='$link' class='btn btn-primary'>Edit</a></span>
         <span><a href='#' wire:click='deleteItem($data->id)' class='btn btn-error'>Delete</a></span>
         <span><a href='$link2' class='btn btn-secondary' style='overflow: hidden;white-space: nowrap;'>Show Employee</a></span>
-        <span><a href='$data->company_url' class='btn btn-success' style='overflow: hidden;white-space: nowrap;' target='_blank'>Company Website</a></span>
+        $company_url
         </div>"],
 
         ];
