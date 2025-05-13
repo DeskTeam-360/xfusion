@@ -60,14 +60,14 @@ return [
     */
 
     'providers' => [
-        'users' => [
-            'driver' => 'custom',
-            'model' => Corcel\Model\User::class,
-        ],
 //        'users' => [
-//            'driver' => 'corcel',
-//            'model'  => Corcel\Model\User::class,
+//            'driver' => 'eloquent',
+//            'model' => env('AUTH_MODEL', App\Models\User::class),
 //        ],
+        'users' => [
+            'driver' => 'corcel',
+            'model'  => Corcel\Model\User::class,
+        ],
 
         // 'users' => [
         //     'driver' => 'database',

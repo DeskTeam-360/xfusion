@@ -21,8 +21,8 @@ class AppServiceProvider extends ServiceProvider
      */
     public function boot(): void
     {
-        Auth::provider('custom', function ($app, array $config) {
-            return new CustomUserProvider($app['hash'], $config['model']);
-        });
+//        Auth::provider('custom', function ($app, array $config) {
+//            return new CustomUserProvider($app['hash'], $config['model']);
+//        });
     }
 }
