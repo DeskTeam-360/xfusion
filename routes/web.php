@@ -22,6 +22,10 @@ Route::get('/', function () {
     return redirect()->route('dashboard');
 });
 
+Route::get('/home', function () {
+    return redirect()->route('dashboard');
+});
+
 
 
 Auth::routes();
