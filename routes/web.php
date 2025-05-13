@@ -23,6 +23,7 @@ Route::get('/', function () {
 });
 
 
+
 Auth::routes();
 
 Route::middleware([
