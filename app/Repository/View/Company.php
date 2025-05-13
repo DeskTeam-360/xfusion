@@ -28,7 +28,7 @@ class Company extends \App\Models\Company implements View
             ['label' => 'Company Name', 'sort' => 'title'],
             ['label' => 'Company Leader', 'sort' => 'user_id'],
             ['label' => 'Company Logo', 'text-align'=>'center'],
-            ['label' => 'Company Qrcode',],
+//            ['label' => 'Company Qrcode',],
             ['label' => 'Action'],
         ];
     }
@@ -44,12 +44,13 @@ class Company extends \App\Models\Company implements View
             ['type' => 'string', 'data' => $data->title],
             ['type' => 'string', 'data' =>  \App\Models\User::find($data->user_id)->user_nicename],
             ['type' => 'raw_html','text-align'=>'center', 'data' => "<div class='text-center' style=' display: flex;justify-content: center;'><img style='width: 100px' src='$logo_url'></div>"],
-            ['type' => 'raw_html','text-align'=>'center', 'data' => "<div class='text-center' style=' display: flex;justify-content: center;'><img style='width: 100px' src='$qrcode_url'></div>"],
+//            ['type' => 'raw_html','text-align'=>'center', 'data' => "<div class='text-center' style=' display: flex;justify-content: center;'><img style='width: 100px' src='$qrcode_url'></div>"],
             ['type' => 'raw_html','text-align'=>'center', 'data' => "
         <div class='flex gap-1'>
         <span><a href='$link' class='btn btn-primary'>Edit</a></span>
         <span><a href='#' wire:click='deleteItem($data->id)' class='btn btn-error'>Delete</a></span>
         <span><a href='$link2' class='btn btn-secondary' style='overflow: hidden;white-space: nowrap;'>Show Employee</a></span>
+        <span><a href='$data->company_url' class='btn btn-success' style='overflow: hidden;white-space: nowrap;' target='_blank'>Company Website</a></span>
         </div>"],
 
         ];

@@ -26,18 +26,19 @@ class Company extends Component
     public $logo_url;
 //    #[Validate('image:4096|mimes:png')]
     public $qrcode_url;
+    public $company_url;
 
     protected $rules = [
         'title' => 'required|max:255',
-        'logo_url' => 'required',
-        'qrcode_url' => 'required',
+        'logo_url' => 'nullable',
+        'company_url' => 'nullable',
         'user_id' => 'required',
     ];
 
     protected $messages = [
         'title.required' => 'Please fill the Company name.',
-        'logo_url.required' => 'Please select a Company Logo.',
-        'qrcode_url.required' => 'Please select a Company QRcode.',
+//        'logo_url.required' => 'Please select a Company Logo.',
+//        'qrcode_url.required' => 'Please select a Company QRcode.',
         'user_id.required' => 'Please select a Company leader.',
     ];
 
@@ -54,6 +55,7 @@ class Company extends Component
             $this->title = $data->title;
             $this->logo_url = $data->logo_url;
             $this->qrcode_url = $data->qrcode_url;
+            $this->company_url = $data->company_url;
         }
     }
 
@@ -72,7 +74,8 @@ class Company extends Component
             'user_id' => $this->user_id,
             'title' => $this->title,
             'logo_url' => $logoUrl,
-            'qrcode_url' => $qrcodeUrl
+            'qrcode_url' => $qrcodeUrl,
+            'company_url' => $this->company_url
         ]);
         \App\Models\User::find($this->user_id)
         ->saveMeta([
@@ -117,6 +120,7 @@ class Company extends Component
         \App\Models\Company::find($this->dataId)->update([
             'user_id' => $this->user_id,
             'title' => $this->title,
+            'company_url' => $this->company_url,
         ]);
         $this->dispatch('swal:alert', data:[
             'icon' => 'success',

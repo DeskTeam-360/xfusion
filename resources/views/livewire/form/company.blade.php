@@ -3,7 +3,6 @@
     <div class="form-group">
         <label for="title">{{ __('Name company') }}</label>@error('title') <span style="margin-left: 10px; color: indianred;" >{{ $message }}</span> @enderror
         <x-input model="title" id="title"/>
-
     </div>
 
     <div class="form-group">
@@ -11,11 +10,15 @@
         <x-input model="logo_url" type="file" accept="image/png" ignore="{{true}}" id="logo_url"/>
 
     </div>
-
     <div class="form-group">
-        <label for="qrcode_url">{{ __('Company QR code') }}</label>@error('qrcode_url') <span style="margin-left: 10px; color: indianred;" >{{ $message }}</span> @enderror
-        <x-input model="qrcode_url" type="file" accept="image/png" ignore="{{true}}" id="qrcode_url"/>
+        <label for="title">{{ __('Website company') }}</label>@error('company_url') <span style="margin-left: 10px; color: indianred;" >{{ $message }}</span> @enderror
+        <x-input model="company_url" id="company_url"/>
     </div>
+
+{{--    <div class="form-group">--}}
+{{--        <label for="qrcode_url">{{ __('Company QR code') }}</label>@error('qrcode_url') <span style="margin-left: 10px; color: indianred;" >{{ $message }}</span> @enderror--}}
+{{--        <x-input model="qrcode_url" type="file" accept="image/png" ignore="{{true}}" id="qrcode_url"/>--}}
+{{--    </div>--}}
 
     <div class="form-group">
         <label for="user_id">{{ __('Company leader') }}</label>@error('user_id') <span style="margin-left: 10px; color: indianred;" >{{ $message }}</span> @enderror

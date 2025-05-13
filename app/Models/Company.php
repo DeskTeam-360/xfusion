@@ -11,6 +11,7 @@ use Illuminate\Database\Eloquent\Model;
  * @property string $title
  * @property string $logo_url
  * @property string $qrcode_url
+ * @property string $company_url
  * @property string $created_at
  * @property string $updated_at
  */
@@ -18,7 +19,7 @@ use Illuminate\Database\Eloquent\Model;
 class Company extends Model
 {
     use HasFactory;
-    protected $fillable=['user_id', 'title', 'logo_url', 'qrcode_url'];
+    protected $fillable=['user_id', 'title', 'logo_url', 'qrcode_url','company_url'];
 
     public function companyEmployees()
     {
