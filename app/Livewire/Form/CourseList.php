@@ -40,8 +40,15 @@ class CourseList extends Component
         $this->optionCourseTitle = [
             ['value' => 'General', 'title' => 'General'],
             ['value' => 'Revitalize', 'title' => 'Revitalize'],
-            ['value' => 'Sustain', 'title' => 'Sustain'],
+            
+
             ['value' => 'Transform', 'title' => 'Transform'],
+            ['value' => 'Transform Tools', 'title' => 'Transform Tools'],
+            ['value' => 'Transform Resources', 'title' => 'Transform Resources'],
+            
+            ['value' => 'Sustain', 'title' => 'Sustain'],
+            ['value' => 'Sustain Tools', 'title' => 'Sustain Tools'],
+            ['value' => 'Sustain Resources', 'title' => 'Sustain Resources'],
         ];
 
         $this->optionCourseTag = [];

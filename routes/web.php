@@ -129,7 +129,6 @@ Route::middleware([
         })->name('report.course-group');
 
         Route::get('/report/course-group/{id}/user/{user}', function ($id, $user) {
-
             $courseGroup = CourseGroup::find($id);
             return view(
                 'admin.report.report-detail', compact('user', 'id', 'courseGroup'),
@@ -137,10 +136,11 @@ Route::middleware([
         })->name('report.course-group.user');
 
 
-//        Route::get('/report/company-{companyId}/season-{seasonId}', [ReportController::class, 'seasonCourseCompany'])->name('season-course-company');
-//        Route::get('/report/season-{seasonId}', [ReportController::class, 'seasonCourseEmployee'])->name('season-course-employee');
         Route::get('/report/season-{seasonId}/user-{userId}/course', [ReportController::class, 'seasonCourseIndex'])->name('season-course-index');
         Route::get('/report/season-{seasonId}/user-{userId}/form-{formId}/entry-{entryId}/detail', [ReportController::class, 'courseDetail'])->name('course-detail');
+
+//        Route::get('/report/season-{seasonId}', [ReportController::class, 'seasonCourseEmployee'])->name('season-course-employee');
+//        Route::get('/report/company-{companyId}/season-{seasonId}', [ReportController::class, 'seasonCourseCompany'])->name('season-course-company');
 //
 //        Route::get('/report/company-{companyId}/level-{levelId}', [ReportController::class, 'levelCourseCompany'])->name('level-course-company');
 //        Route::get('/report/level-{levelId}', [ReportController::class, 'levelCourseEmployee'])->name('level-course-employee');

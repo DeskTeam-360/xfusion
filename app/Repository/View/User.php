@@ -2,13 +2,9 @@
 
 namespace App\Repository\View;
 
-use App\Models\WpUserMeta;
 use App\Repository\View;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Support\Facades\Auth;
-use KeapGeek\Keap\Facades\Keap;
-use mysql_xdevapi\Exception;
-use function PHPUnit\Framework\isEmpty;
 
 class User extends \App\Models\User implements View
 {
@@ -17,32 +13,22 @@ class User extends \App\Models\User implements View
         $query = $params['query'];
         $params = $params['param1'];
         if ($params == null) {
-            return empty($query) ? static::query()
-                : static::query()
-                    ->where('user_nicename', 'like', "%$query%")
-                    ->orWhereHas('meta', function ($q2) use ($query) {
-                        $q2->where('meta_value', 'like', "%$query%");
-                    });
+            return empty($query) ? static::query() : static::query()->where('user_nicename', 'like', "%$query%")->orWhereHas('meta', function ($q2) use ($query) {
+                $q2->where('meta_value', 'like', "%$query%");
+            });
         } else {
-            return empty($query) ? static::query()
-                ->orWhereHas('companyEmployee', function ($q) use ($params) {
-                    $q->where('company_id', '=', $params);
-                })
-                ->where('user_nicename', 'like', "%$query%") :
-                static::query()
-                    ->whereHas('companyEmployee', function ($q) use ($params) {
-                        $q->where('company_id', '=', $params);
-                    })
-                    ->orWhere('user_nicename', 'like', "%$query%");
+            return empty($query) ? static::query()->orWhereHas('companyEmployee', function ($q) use ($params) {
+                $q->where('company_id', '=', $params);
+            })->where('user_nicename', 'like', "%$query%") : static::query()->whereHas('companyEmployee', function ($q) use ($params) {
+                $q->where('company_id', '=', $params);
+            })->orWhere('user_nicename', 'like', "%$query%");
         }
 
     }
 
     public static function tableView(): array
     {
-        return [
-            'searchable' => true,
-        ];
+        return ['searchable' => true,];
     }
 
     public static function tableField(): array
@@ -55,21 +41,16 @@ class User extends \App\Models\User implements View
         }
         if ($roleUser == "administrator") {
             return [
-                ['label' => '#', 'sort' => 'id', 'width' => '7%'],
-                ['label' => 'Name', 'sort' => 'user_nicename'],
-                ['label' => 'Company'],
-                ['label' => 'Keap Status'],
+                    ['label' => '#', 'sort' => 'id', 'width' => '7%'],
+                    ['label' => 'Name', 'sort' => 'user_nicename'],
+                    ['label' => 'Company'],
+                    ['label' => 'Access',],
                 ['label' => 'Role'],
-                ['label' => 'Action'],
-            ];
+
+                    ['label' => 'Action'],
+                ];
         } else {
-            return [
-                ['label' => '#', 'sort' => 'id', 'width' => '7%'],
-                ['label' => 'Name', 'sort' => 'user_nicename'],
-                ['label' => 'Company'],
-                ['label' => 'Role'],
-                ['label' => 'Action'],
-            ];
+            return [['label' => '#', 'sort' => 'id', 'width' => '7%'], ['label' => 'Name', 'sort' => 'user_nicename'], ['label' => 'Company'], ['label' => 'Access'], ['label' => 'Role'], ['label' => 'Action'],];
         }
 
     }
@@ -83,11 +64,18 @@ class User extends \App\Models\User implements View
             $roleUser = array_key_first(unserialize($r['meta_value']));
         }
 
+        $roleEncryption=[
+            'administrator' => 'Super Admin',
+            'editor' => 'Company Admin',
+            'contributor' => 'Employee Company',
+            'subscriber' => 'Individual purchaser',
+        ];
+
 
         $roles = $data->meta->where('meta_key', '=', config('app.wp_prefix', 'wp_') . 'capabilities');
         $role = '';
         foreach ($roles as $r) {
-            $role = array_key_first(unserialize($r['meta_value']));
+            $role = $roleEncryption[array_key_first(unserialize($r['meta_value']))];
         }
 
         $route = route('user.connect-keap', $data->ID);
@@ -107,12 +95,23 @@ class User extends \App\Models\User implements View
         $company = '-';
 
         $activity = $data->meta->where('meta_key', '=', '_sfwd-course_progress')->first();
-        $button4='';
-        if ($activity!=null){
-            $link4 = route('user.course', [$data->ID]);
-            $button4="<span><a href='$link4' class='btn btn-info text-nowrap'>Activity Check</a></span>";
-        }
 
+        $button4 = '';
+        if ($activity != null) {
+            $link4 = route('user.course', [$data->ID]);
+            $button4 = "<span><a href='$link4' class='btn btn-success text-nowrap'>Activity Check</a></span>";
+        }
+        $userAccess = "";
+        $access = $data->meta->where('meta_key', '=', 'user_access')->first();
+        if ($access != null) {
+            $ua = json_decode($access->meta_value);
+            $userAccess = "<ul style='list-style: disc; margin: 0 20px'>";
+            foreach ($ua as $u) {
+                $userAccess .= "<li>$u</li>";
+            }
+            $userAccess .= "</ul>";
+
+        }
         $link2 = route('user.show', $data->ID);
 
         $companyId = null;
@@ -137,22 +136,18 @@ class User extends \App\Models\User implements View
 
         return [
             ['type' => 'string', 'data' => $data->ID],
-            ['type' => 'raw_html', 'data' =>
-                "<div>$data->user_login <br><div style='font-size: 10px'>$data->email</div></div>"
-            ],
+            ['type' => 'raw_html', 'data' => "<div>$data->user_login <br><div style='font-size: 10px'>$data->email</div></div>"],
             ['type' => 'string', 'data' => $company],
+            ['type' => 'raw_html', 'data' => "<div style='text-wrap: nowrap; font-weight: bold'>$role</div><div style='text-wrap: nowrap'>$userAccess</div>"],
             ['type' => 'raw_html', 'data' => "<div class='flex gap-1'> $keap <br> $campaign</div>"],
-            ['type' => 'string', 'data' => $role],
             ['type' => 'raw_html', 'text-align' => 'center', 'data' => "
-<div class='flex gap-1'>
-<span><a href='$link' class='btn btn-primary'>Edit</a></span>
-<span><a href='#' wire:click='deleteItem($data->ID)' class='btn btn-error text-nowrap'>Delete</a></span>
-$button4
-
-<span><a href='$link2' class='btn btn-secondary text-nowrap'>Reset Password</a></span>
-<span><a href='$link3' class='btn btn-info text-nowrap'>Show Schedule</a></span>
-
-</div>"],
+                <div class='flex gap-1'>
+                    <span><a href='$link' class='btn btn-primary'>Edit</a></span>
+                    $button4
+                    <span><a href='$link2' class='btn btn-secondary text-nowrap'>Reset Password</a></span>
+                    <span><a href='#' wire:click='deleteItem($data->ID)' class='btn btn-error text-nowrap'>Delete</a></span>
+                </div>"
+            ],
         ];
     }
 }

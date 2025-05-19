@@ -40,6 +40,9 @@ class User extends Component
     public $userMeta;
     public $keap;
 
+    public $optionAccess;
+    public $accessSelected=[];
+
     public function create()
     {
 
@@ -125,6 +128,19 @@ class User extends Component
 
     public function update()
     {
+        if ($this->accessSelected){
+            $wum = WpUserMeta::where('meta_key', 'user_access')->where('user_id', $this->dataId)->first();
+            if ($wum) {
+                $wum->delete();
+            }
+            WpUserMeta::create([
+                'meta_key' => 'user_access',
+                'user_id' => $this->dataId,
+                'meta_value' => json_encode($this->accessSelected)
+            ]);
+        }
+
+//        dd($this->accessSelected);
 
         $user = \App\Models\User::find($this->dataId)->update([
             'user_nicename' => $this->username,
@@ -150,6 +166,7 @@ class User extends Component
                 'meta_value' => $this->last_name
             ]);
         }
+
         if ($fn != null) {
             $fn->update([
                 'meta_value' => $this->first_name
@@ -181,6 +198,19 @@ class User extends Component
 
     public function mount()
     {
+        $this->optionAccess =[
+            ['value'=>'revitalize','title'=>'Revitalize'],
+            ['value'=>'revitalize-facilitation','title'=>'Revitalize facilitation'],
+
+            ['value'=>'transform','title'=>'Transform'],
+            ['value'=>'transform-resource','title'=>'Transform resource'],
+            ['value'=>'transform-tools','title'=>'Transform tools'],
+
+            ['value'=>'sustain','title'=>'Sustain'],
+            ['value'=>'sustain-resource','title'=>'Sustain resource'],
+            ['value'=>'sustain-tools','title'=>'Sustain tools'],
+            ['value'=>'individual-reports','title'=>'Individual reports'],
+        ];
         if ($this->companyId != null) {
             $this->role = 'subscriber';
         } else {
@@ -198,6 +228,8 @@ class User extends Component
             $this->email = $data->user_email;
             $this->website = $data->user_url;
             $roles = $data->meta->where('meta_key', '=', config('app.wp_prefix', 'wp_') . 'capabilities');
+            $this->accessSelected = json_decode($data->meta->where('meta_key','=','user_access')->first()->meta_value);
+//            dd($this->accessSelected);
             $this->role = '';
             foreach ($roles as $r) {
                 $this->role = array_key_first(unserialize($r['meta_value']));

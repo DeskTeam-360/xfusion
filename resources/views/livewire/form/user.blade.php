@@ -36,6 +36,41 @@
         </div>
     @endif
 
+
+        <div class="mt-3" wire:ignore>
+            <label for="{{'optionAccess'}}"
+                   class="block text-sm font-bold dark:text-light">
+                Access
+            </label>
+            <select id="{{'optionAccess'}}"
+                    class="bg-gray-200 appearance-none border-1 border border-gray-100 rounded w-full text-gray-700 leading-tight focus:outline-none dark:border-primary-light focus:bg-gray-100 dark:bg-dark dark:text-light focus:dark:border-white select2"
+                    multiple=""
+
+                    name="optionAccess"
+                    style="padding:0  100px" wire:model="{{'accessSelected'}}">
+                @for($i=0;$i<count($optionAccess) ;$i++)
+                    <option value="{{$optionAccess[$i]['value']}}"
+                            style="padding: 0 25px"
+                        {{ in_array($optionAccess[$i]['value'],$accessSelected)?'selected':''}}
+                    >
+                        {{$optionAccess[$i]['title']}}
+                    </option>
+                @endfor
+            </select>
+            <script>
+                document.addEventListener('livewire:init', function () {
+                    let data;
+                    $('#optionAccess').select2();
+                    $('#optionAccess').on('change', function (e) {
+                        data = $('#{{'optionAccess'}}').select2("val");
+                        @this.set('{{'accessSelected'}}', data);
+                    })
+                });
+
+            </script>
+
+        </div>
+
     <button type="submit" class="btn" wire:loading.attr="disabled">Submit</button>
 
 </form>
