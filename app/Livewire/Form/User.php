@@ -228,7 +228,10 @@ class User extends Component
             $this->email = $data->user_email;
             $this->website = $data->user_url;
             $roles = $data->meta->where('meta_key', '=', config('app.wp_prefix', 'wp_') . 'capabilities');
-            $this->accessSelected = json_decode($data->meta->where('meta_key','=','user_access')->first()->meta_value);
+            $as = $data->meta->where('meta_key','=','user_access')->first();
+            if ($as != null) {
+                $this->accessSelected = json_decode($as->meta_value);
+            }
 //            dd($this->accessSelected);
             $this->role = '';
             foreach ($roles as $r) {
