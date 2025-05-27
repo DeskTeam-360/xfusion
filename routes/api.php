@@ -68,8 +68,9 @@ Route::post('/next-course/', function (Request $request) {
             $wpUserMeta = WpUserMeta::where('user_id','=',$user->ID)->where('meta_key','=','keap_tags')->first();
             $keapId = WpUserMeta::where('user_id','=',$user->ID)->where('meta_key','=','keap_contact_id')->first()->meta_value;
             if ($keapId!=null){
-                $tagKeaps = Keap::contact()->tags($keapId);
+
                 try {
+                    $tagKeaps = Keap::contact()->tags($keapId);
                     foreach ($tagKeaps as $tk){
                         array_push($newTag,$tk['tag']['id']);
                     }
