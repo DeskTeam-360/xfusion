@@ -67,28 +67,29 @@ Route::post('/next-course/', function (Request $request) {
             $newTag = array();
             $wpUserMeta = WpUserMeta::where('user_id','=',$user->ID)->where('meta_key','=','keap_tags')->first();
             $keapId = WpUserMeta::where('user_id','=',$user->ID)->where('meta_key','=','keap_contact_id')->first()->meta_value;
-            $tagKeaps = Keap::contact()->tags($keapId);
-//            dd($tagKeaps);
-            try {
-                foreach ($tagKeaps as $tk){
-//                dd($tk['tag']['id']);
-                    array_push($newTag,$tk['tag']['id']);
-//                    $newTag$tk['tag']['id'];
+            if ($keapId!=null){
+                $tagKeaps = Keap::contact()->tags($keapId);
+                try {
+                    foreach ($tagKeaps as $tk){
+                        array_push($newTag,$tk['tag']['id']);
+                    }
+                }catch (\Exception $e){
+                    dd($tk['tag']['id']);
                 }
-            }catch (\Exception $e){
-                dd($tk['tag']['id']);
+
+                $newTag = implode(';',$newTag);
+                if ($wpUserMeta!=null){
+                    WpUserMeta::find($wpUserMeta->umeta_id)->update(['meta_value'=>$newTag]);
+                }else{
+                    WpUserMeta::create([
+                        'user_id'=>$user->ID,
+                        'meta_key'=>'keap_tags',
+                        'meta_value'=>$newTag
+                    ]);
+                }
+
             }
 
-            $newTag = implode(';',$newTag);
-            if ($wpUserMeta!=null){
-                WpUserMeta::find($wpUserMeta->umeta_id)->update(['meta_value'=>$newTag]);
-            }else{
-                WpUserMeta::create([
-                    'user_id'=>$user->ID,
-                    'meta_key'=>'keap_tags',
-                    'meta_value'=>$newTag
-                ]);
-            }
         }
     }
 });
