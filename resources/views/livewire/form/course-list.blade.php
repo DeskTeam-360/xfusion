@@ -10,7 +10,7 @@
 {{--    <x-select title="Course tag next" model="courseTagNext" :options="$optionCourseTag"/>--}}
 
 
-    {{ $courseTag }}
+
     <div class="mt-3" wire:ignore>
         <label for="{{'courseTag'}}"
                class="block text-sm font-bold dark:text-light">
