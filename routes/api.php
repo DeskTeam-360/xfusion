@@ -68,10 +68,15 @@ Route::post('/next-course/', function (Request $request) {
             $keapId = WpUserMeta::where('user_id','=',$user->ID)->where('meta_key','=','keap_contact_id')->first()->meta_value;
             $tagKeaps = Keap::contact()->tags($keapId);
 //            dd($tagKeaps);
-            foreach ($tagKeaps as $tk){
+            try {
+                foreach ($tagKeaps as $tk){
+//                dd($tk['tag']['id']);
+                    $newTag[]=$tk['tag']['id'];
+                }
+            }catch (\Exception $e){
                 dd($tk['tag']['id']);
-                $newTag[]=$tk['tag']['id'];
             }
+
             $newTag = implode(';',$newTag);
             if ($wpUserMeta!=null){
                 WpUserMeta::find($wpUserMeta->umeta_id)->update(['meta_value'=>$newTag]);
