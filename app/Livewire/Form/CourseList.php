@@ -78,15 +78,10 @@ class CourseList extends Component
         $this->validate();
         $this->resetErrorBag();
 
-        if ($this->courseTag == '' or $this->courseTag == [] or empty($this->courseTag)) {
-            $this->courseTag = null;
-        } else {
+        if (isset($this->courseTag[0])){
             $this->courseTag = $this->courseTag[0];
         }
-
-        if ($this->courseTagNext == '' or $this->courseTagNext == null or empty($this->courseTagNext)) {
-            $this->courseTagNext = null;
-        } else {
+        if (isset($this->courseTagNext[0])){
             $this->courseTagNext = $this->courseTagNext[0];
         }
 
@@ -112,18 +107,23 @@ class CourseList extends Component
     {
         $this->validate();
         $this->resetErrorBag();
-
-        if ($this->courseTag == '' or $this->courseTag == [] or empty($this->courseTag)) {
-            $this->courseTag = null;
-        } else {
+        if (isset($this->courseTag[0])){
             $this->courseTag = $this->courseTag[0];
         }
-
-        if ($this->courseTagNext == '' or $this->courseTagNext == null or empty($this->courseTagNext)) {
-            $this->courseTagNext = null;
-        } else {
+        if (isset($this->courseTagNext[0])){
             $this->courseTagNext = $this->courseTagNext[0];
         }
+//        if ($this->courseTag == '' or $this->courseTag == [] or empty($this->courseTag)) {
+//            $this->courseTag = null;
+//        } else {
+//            $this->courseTag = $this->courseTag[0];
+//        }
+
+//        if ($this->courseTagNext == '' or $this->courseTagNext == null or empty($this->courseTagNext)) {
+//            $this->courseTagNext = null;
+//        } else {
+//            $this->courseTagNext = $this->courseTagNext[0];
+//        }
 
         \App\Models\CourseList::find($this->dataId)->update([
             'url' => $this->url,
