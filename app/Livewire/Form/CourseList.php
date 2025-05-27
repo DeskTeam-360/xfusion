@@ -18,7 +18,7 @@ class CourseList extends Component
     public $gfFormId;
     public $urlNext;
     public $courseTag = null;
-    public $courseTagParent = null;
+    public $courseTagNext = null;
     public $delay = null;
     public $optionCourseTitle;
     public $optionCourseTag;
@@ -65,8 +65,8 @@ class CourseList extends Component
             $this->url = $data->url;
             $this->pageTitle = $data->page_title;
             $this->courseTitle = $data->course_title;
-            $this->courseTag = $data->keap_tags;
-            $this->courseTagParent = $data->keap_tag_next;
+            $this->courseTag = $data->keap_tag;
+            $this->courseTagNext = $data->keap_tag_next;
             $this->gfFormId = $data->wp_gf_form_id;
             $this->delay = $data->delay;
             $this->urlNext = $data->url_next;
@@ -77,19 +77,26 @@ class CourseList extends Component
     {
         $this->validate();
         $this->resetErrorBag();
-        if ($this->courseTag==''){
+
+        if ($this->courseTag == '' or $this->courseTag == [] or empty($this->courseTag)) {
             $this->courseTag = null;
+        } else {
+            $this->courseTag = $this->courseTag[0];
         }
-        if ($this->courseTagParent==''){
-            $this->courseTagParent = null;
+
+        if ($this->courseTagNext == '' or $this->courseTagNext == null or empty($this->courseTagNext)) {
+            $this->courseTagNext = null;
+        } else {
+            $this->courseTagNext = $this->courseTagNext[0];
         }
+
         \App\Models\CourseList::create([
             'url' => $this->url,
             'page_title' => $this->pageTitle,
             'course_title' => $this->courseTitle,
             'wp_gf_form_id'=>$this->gfFormId,
             'keap_tag'=>$this->courseTag,
-            'keap_tag_next'=>$this->courseTagParent,
+            'keap_tag_next' => $this->courseTagNext,
             'delay'=>$this->delay,
             'url_next'=>$this->urlNext,
             'repeat_entry'=>$this->repeatEntry,
@@ -105,19 +112,26 @@ class CourseList extends Component
     {
         $this->validate();
         $this->resetErrorBag();
-        if ($this->courseTag==''){
+
+        if ($this->courseTag == '' or $this->courseTag == [] or empty($this->courseTag)) {
             $this->courseTag = null;
+        } else {
+            $this->courseTag = $this->courseTag[0];
         }
-        if ($this->courseTagParent==''){
-            $this->courseTagParent = null;
+
+        if ($this->courseTagNext == '' or $this->courseTagNext == null or empty($this->courseTagNext)) {
+            $this->courseTagNext = null;
+        } else {
+            $this->courseTagNext = $this->courseTagNext[0];
         }
+
         \App\Models\CourseList::find($this->dataId)->update([
             'url' => $this->url,
             'page_title' => $this->pageTitle,
             'course_title' => $this->courseTitle,
             'wp_gf_form_id'=>$this->gfFormId,
             'keap_tag'=>$this->courseTag,
-            'keap_tag_next'=>$this->courseTagParent,
+            'keap_tag_next' => $this->courseTagNext,
             'delay'=>$this->delay,
             'url_next'=>$this->urlNext
         ]);
