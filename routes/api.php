@@ -52,7 +52,7 @@ Route::post('/next-course/', function (Request $request) {
 
     $dataEntry = WpGfEntry::find($data['entry_id']);
     $userId = $dataEntry->created_by;
-    $tag = CourseList::where('wp_gf_form_id',$dataEntry->form_id)->keap_tag_next;
+    $tag = CourseList::where('wp_gf_form_id',$dataEntry->form_id)->first()->keap_tag_next;
     if ($tag){
         $user = User::find($userId);
         $keapId = $user->meta->where('meta_key','keap_contact_id')->first();
