@@ -69,7 +69,7 @@ Route::post('/next-course/', function (Request $request) {
             $tagKeaps = Keap::contact()->tags($keapId);
 //            dd($tagKeaps);
             foreach ($tagKeaps as $tk){
-                dd($tk);
+                dd($tk['tag']['id']);
                 $newTag[]=$tk['tag']['id'];
             }
             $newTag = implode(';',$newTag);
