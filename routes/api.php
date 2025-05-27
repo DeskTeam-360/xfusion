@@ -71,7 +71,8 @@ Route::post('/next-course/', function (Request $request) {
             try {
                 foreach ($tagKeaps as $tk){
 //                dd($tk['tag']['id']);
-                    $newTag[]=$tk['tag']['id'];
+                    array_push($newTag,$tk['tag']['id']);
+//                    $newTag$tk['tag']['id'];
                 }
             }catch (\Exception $e){
                 dd($tk['tag']['id']);
