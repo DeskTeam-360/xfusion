@@ -40,12 +40,12 @@ class CourseList extends Component
         $this->optionCourseTitle = [
             ['value' => 'General', 'title' => 'General'],
             ['value' => 'Revitalize', 'title' => 'Revitalize'],
-            
+
 
             ['value' => 'Transform', 'title' => 'Transform'],
             ['value' => 'Transform Tools', 'title' => 'Transform Tools'],
             ['value' => 'Transform Resources', 'title' => 'Transform Resources'],
-            
+
             ['value' => 'Sustain', 'title' => 'Sustain'],
             ['value' => 'Sustain Tools', 'title' => 'Sustain Tools'],
             ['value' => 'Sustain Resources', 'title' => 'Sustain Resources'],
@@ -66,7 +66,7 @@ class CourseList extends Component
             $this->pageTitle = $data->page_title;
             $this->courseTitle = $data->course_title;
             $this->courseTag = $data->keap_tags;
-            $this->courseTagParent = $data->keap_tags_parent;
+            $this->courseTagParent = $data->keap_tag_next;
             $this->gfFormId = $data->wp_gf_form_id;
             $this->delay = $data->delay;
             $this->urlNext = $data->url_next;
@@ -89,7 +89,7 @@ class CourseList extends Component
             'course_title' => $this->courseTitle,
             'wp_gf_form_id'=>$this->gfFormId,
             'keap_tag'=>$this->courseTag,
-            'keap_tag_parent'=>$this->courseTagParent,
+            'keap_tag_next'=>$this->courseTagParent,
             'delay'=>$this->delay,
             'url_next'=>$this->urlNext,
             'repeat_entry'=>$this->repeatEntry,
@@ -117,7 +117,7 @@ class CourseList extends Component
             'course_title' => $this->courseTitle,
             'wp_gf_form_id'=>$this->gfFormId,
             'keap_tag'=>$this->courseTag,
-            'keap_tag_parent'=>$this->courseTagParent,
+            'keap_tag_next'=>$this->courseTagParent,
             'delay'=>$this->delay,
             'url_next'=>$this->urlNext
         ]);

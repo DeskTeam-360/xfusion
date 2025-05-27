@@ -84,6 +84,7 @@ function company_detect()
                         f(response.data.form_id, response.data.url_next, tools)
                     }
                     if (response.data.status === "redirect") {
+                        alert(response.data.message)
                         window.location.replace(response.data.url)
                     }
 
@@ -240,7 +241,10 @@ function company_detect()
 
                                 if (buttonSubmit.value === "" || buttonSubmit.value === undefined ||  buttonSubmit.value==="Next Lesson" ||  buttonSubmit.value==="Done" || buttonSubmit.value==="Submit") {
                                     newLink.textContent = "Return to menu"; // Salin inline style
-                                    const buttonSubmit = document.querySelector('#gform_submit_button_13').remove();
+                                    const buttonSubmit = document.querySelector('#gform_submit_button_13');
+                                    if  (buttonSubmit){
+                                        buttonSubmit.remove();
+                                    }
 
 
 
@@ -403,19 +407,22 @@ function get_company_info()
     $arrayLinks = ["https://demo.xperiencefusion.com/user/$user_login/",
         "https://demo.xperiencefusion.com/lms-home-screen/",
         "https://demo.xperiencefusion.com/topics/dependability/",
-        "https://demo.xperiencefusion.com/transform/transform-menu/",
-        "https://demo.xperiencefusion.com/transform/transform-menu/introduction-level-1/",
-        "https://demo.xperiencefusion.com/sustain/sustain-menu/introduction-level-1/",
-        "https://demo.xperiencefusion.com/sustain/sustain-menu/self-actualization/",
-        "https://demo.xperiencefusion.com/sustain/sustain-menu/",
-        "https://demo.xperiencefusion.com/sustain/sustain-menu/intermediate-level-1/",
-        "https://demo.xperiencefusion.com/sustain/sustain-menu/intermediate-level-2/",
-        "https://demo.xperiencefusion.com/sustain/sustain-menu/intermediate-level-3/",
+//        "https://demo.xperiencefusion.com/transform/transform-menu/",
+//        "https://demo.xperiencefusion.com/transform/transform-menu/introduction-level-1/",
+//        "https://demo.xperiencefusion.com/sustain/sustain-menu/introduction-level-1/",
+//        "https://demo.xperiencefusion.com/lms-home-screen/",
+//        "https://demo.xperiencefusion.com/sustain/sustain-menu/",
+//        "https://demo.xperiencefusion.com/sustain/sustain-menu/intermediate-level-1/",
+//        "https://demo.xperiencefusion.com/sustain/sustain-menu/intermediate-level-2/",
+//        "https://demo.xperiencefusion.com/sustain/sustain-menu/intermediate-level-3/",
         "https://demo.xperiencefusion.com/thank-you-for-successfully-completing-this-topic/",
         "https://demo.xperiencefusion.com/account/",
         "https://demo.xperiencefusion.com/resources/resource-menu/",
-        "https://demo.xperiencefusion.com/revitalize/course/",
-        "https://demo.xperiencefusion.com/transform/transform-menu/", "https://demo.xperiencefusion.com/transform/transform-menu/introduction-level-1/", "https://demo.xperiencefusion.com/transform/transform-menu/intermediate-level-2/",];
+//        "https://demo.xperiencefusion.com/revitalize/course/",
+//        "https://demo.xperiencefusion.com/transform/transform-menu/",
+//        "https://demo.xperiencefusion.com/transform/transform-menu/intermediate-level-1/",
+//        "https://demo.xperiencefusion.com/transform/transform-menu/intermediate-level-2/",
+    ];
 
     if (!$limitLinks) {
 
@@ -517,19 +524,19 @@ function get_company_info()
             if (in_array($limit->keap_tag_parent, explode(';', $keapTags))) {
                 $status = 'redirect';
                 $message = "You need waiting " . $limit->delay + 5 . "minutes from last submit";
-                wp_send_json_success(['url' => "https://demo.xperiencefusion.com/sustain/sustain-menu/self-actualization/", 'status' => $status, 'message' => $message, 'tools' => $limit->repeat_entry]);
+                wp_send_json_success(['url' => "https://demo.xperiencefusion.com/lms-home-screen/", 'status' => $status, 'message' => $message, 'tools' => $limit->repeat_entry]);
                 wp_die();
             }
 
             $status = 'redirect';
             $message = "You don't have access";
-            wp_send_json_success(['url' => "https://demo.xperiencefusion.com/sustain/sustain-menu/self-actualization/", 'status' => $status, 'message' => $message, 'tools' => $limit->repeat_entry]);
+            wp_send_json_success(['url' => "https://demo.xperiencefusion.com/lms-home-screen/", 'status' => $status, 'message' => $message, 'tools' => $limit->repeat_entry]);
             wp_die();
         }
         $url = $limit->redirect_url;
         $status = 'redirect';
         $message = "You need login ";
-        wp_send_json_success(['url' => "https://demo.xperiencefusion.com/sustain/sustain-menu/self-actualization/", 'status' => $status, 'message' => $message, 'tools' => $limit->repeat_entry]);
+        wp_send_json_success(['url' => "https://demo.xperiencefusion.com/lms-home-screen/", 'status' => $status, 'message' => $message, 'tools' => $limit->repeat_entry]);
         wp_die();
     }
 
