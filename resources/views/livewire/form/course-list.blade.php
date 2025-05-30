@@ -81,9 +81,9 @@
     </div>
 
 
-    @if($courseTagNext!=null)
-        <x-input title="Delay between this course with parent" model="delay" type="number"/>
-    @endif
+{{--    @if($courseTagNext!=null)--}}
+{{--        <x-input title="Delay between this course with parent" model="delay" type="number"/>--}}
+{{--    @endif--}}
 
     <div style="width: 100px">
         <x-input type="checkbox" title="Repeat Entry" model="repeatEntry"/>

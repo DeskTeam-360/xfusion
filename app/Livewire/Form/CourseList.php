@@ -19,7 +19,7 @@ class CourseList extends Component
     public $urlNext;
     public $courseTag = null;
     public $courseTagNext = null;
-    public $delay = null;
+    public $delay = 10;
     public $optionCourseTitle;
     public $optionCourseTag;
     public $optionWpGfForm;
@@ -92,7 +92,7 @@ class CourseList extends Component
             'wp_gf_form_id'=>$this->gfFormId,
             'keap_tag'=>$this->courseTag,
             'keap_tag_next' => $this->courseTagNext,
-            'delay'=>$this->delay,
+            'delay'=>10,
             'url_next'=>$this->urlNext,
             'repeat_entry'=>$this->repeatEntry,
         ]);
