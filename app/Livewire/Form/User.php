@@ -47,7 +47,7 @@ class User extends Component
     {
         $this->optionAccess = [];
         foreach (\App\Models\UserRole::get() as $role) {
-            $this->optionAccess[$role->id] = $role->name;
+            $this->optionAccess[$role->id] = $role->title;
         }
 //         = \App\Models\UserRole::get();
 //        $this->optionAccess =[
