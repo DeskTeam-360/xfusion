@@ -29,7 +29,7 @@
 {{--            <br>--}}
 {{--        </div>--}}
 {{--    @endif--}}
-    <div class="mt-3 mb-3" >
+    <div class="mb-2" >
         <label for="role" class="form-label mb-2">
             Role <span class="text-red-600">*</span>
         </label>
