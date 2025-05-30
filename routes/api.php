@@ -50,7 +50,6 @@ Route::post('/keap-gform/', function (Request $request) {
 
 Route::post('/next-course/', function (Request $request) {
     $data = $request->all();
-
     $dataEntry = WpGfEntry::find($data['entry_id']);
     $userId = $dataEntry->created_by;
     $tag = CourseList::where('wp_gf_form_id',$dataEntry->form_id)->first()->keap_tag_next;
@@ -88,9 +87,7 @@ Route::post('/next-course/', function (Request $request) {
                         'meta_value'=>$newTag
                     ]);
                 }
-
             }
-
         }
         Artisan::queue('app:get-tag');
     }
