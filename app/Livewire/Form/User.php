@@ -3,10 +3,8 @@
 namespace App\Livewire\Form;
 
 use App\Models\CompanyEmployee;
-use App\Models\ScheduleExecution;
 use App\Models\WpUserMeta;
 use Carbon\Carbon;
-use GuzzleHttp\Client;
 use Illuminate\Support\Facades\Http;
 use KeapGeek\Keap\Facades\Keap;
 use Livewire\Attributes\Validate;
@@ -40,164 +38,18 @@ class User extends Component
     public $userMeta;
     public $keap;
 
-//    public $optionAccess;
+    public $optionAccess;
+
 //    public $accessSelected=[];
 
-    public function create()
-    {
-
-        $this->validate();
-
-        $user = \App\Models\User::create([
-            'user_login' => $this->username,
-            'user_pass' => WpPassword::make($this->password),
-            'user_nicename' => $this->first_name,
-            'user_email' => $this->email,
-            'user_url' => $this->website ?? 'http://' . $this->first_name,
-            'user_registered' => Carbon::now()->toDateTimeString(),
-            'user_activation_key' => '',
-            'user_status' => 0,
-            'display_name' => $this->first_name . ' ' . $this->last_name,
-        ]);
-
-
-        $client = Http::post('https://hooks.zapier.com/hooks/catch/941497/2hr769d/', [
-            'first_name' => $this->first_name,
-            'last_name' => $this->last_name,
-            'email' => $this->email,
-            'website' => $this->website,
-            'password' => WpPassword::make($this->password),
-        ]);
-
-        $this->userMeta['nickname'] = $this->first_name;
-        $this->userMeta['first_name'] = $this->first_name;
-        $this->userMeta['last_name'] = $this->last_name;
-        $this->userMeta['description'] = '';
-        $this->userMeta['rich_editing'] = true;
-        $this->userMeta['syntax_highlighting'] = true;
-        $this->userMeta['comment_shortcuts'] = false;
-        $this->userMeta['admin_color'] = 'fresh';
-        $this->userMeta['use_ssl'] = 0;
-        $this->userMeta['show_admin_bar_front'] = true;
-        $this->userMeta['locale'] = '';
-        $this->userMeta['wp_capabilities'] = serialize([$this->role => true]);
-        $this->userMeta['wp_user_level'] = 0;
-        $this->userMeta['dismissed_wp_pointers'] = '';
-
-        if ($this->companyId != null) {
-            $this->userMeta['company'] = $this->companyId;
-            CompanyEmployee::create([
-                'user_id' => $user->ID,
-                'company_id' => $this->companyId
-            ]);
-        }
-
-        foreach ($this->userMeta as $key => $meta) {
-            WpUserMeta::create([
-                'meta_key' => $key,
-                'user_id' => $user->ID,
-                'meta_value' => $meta
-            ]);
-        }
-//        sleep(2);
-//        $this->getDataKeap();
-//
-//        WpUserMeta::create([
-//            'meta_key' => 'keap_contact_id',
-//            'user_id' => $user->ID,
-//            'meta_value' => $this->keap
-//        ]);
-        $this->dispatch('swal:alert', data:[
-            'icon' => 'success',
-            'title' => 'Successfully added user',
-        ]);
-        if ($this->companyId != null) {
-            $this->redirect(route('company.show', $this->companyId));
-        } else {
-            $this->redirect(route('user.index'));
-        }
-    }
-
-    public function getDataKeap()
-    {
-        $this->keap = Keap::contact()->list([
-            'email' => $this->email
-        ]);
-
-    }
-
-    public function update()
-    {
-//        if ($this->accessSelected){
-//            $wum = WpUserMeta::where('meta_key', 'user_access')->where('user_id', $this->dataId)->first();
-//            if ($wum) {
-//                $wum->delete();
-//            }
-//            WpUserMeta::create([
-//                'meta_key' => 'user_access',
-//                'user_id' => $this->dataId,
-//                'meta_value' => json_encode($this->accessSelected)
-//            ]);
-//        }
-
-//        dd($this->accessSelected);
-
-        $user = \App\Models\User::find($this->dataId)->update([
-            'user_nicename' => $this->username,
-            'user_email' => $this->email,
-            'user_url' => $this->website ?? 'http://' . $this->first_name,
-            'user_registered' => Carbon::now()->toDateTimeString(),
-            'user_status' => 0,
-            'display_name' => $this->first_name . ' ' . $this->last_name,
-        ]);
-
-        $fn = WpUserMeta::where('user_id', $this->dataId)->where('meta_key', 'first_name')->first();
-        $ln = WpUserMeta::where('user_id', $this->dataId)->where('meta_key', 'last_name')->first();
-//        $keapId = WpUserMeta::where('user_id', $this->dataId)->where('meta_key', 'keap_contact_id')->first();
-
-        if ($ln != null) {
-            $ln->update([
-                'meta_value' => $this->last_name
-            ]);
-        } else {
-            WpUserMeta::create([
-                'user_id' => $this->dataId,
-                'meta_key' => 'last_name',
-                'meta_value' => $this->last_name
-            ]);
-        }
-
-        if ($fn != null) {
-            $fn->update([
-                'meta_value' => $this->first_name
-            ]);
-        } else {
-            WpUserMeta::create([
-                'user_id' => $this->dataId,
-                'meta_key' => 'first_name',
-                'meta_value' => $this->first_name
-            ]);
-        }
-        $client = Http::post('https://hooks.zapier.com/hooks/catch/941497/2hr769d/', [
-            'first_name' => $this->first_name,
-            'last_name' => $this->last_name,
-            'email' => $this->email,
-            'website' => $this->website,
-        ]);
-
-        $this->dispatch('swal:alert', data:[
-            'icon' => 'success',
-            'title' => 'successfully changed the user',
-        ]);
-        if ($this->companyId != null) {
-            $this->redirect(route('company.show', $this->companyId));
-        } else {
-            $this->redirect(route('user.index'));
-        }
-    }
 
     public function mount()
     {
+        $this->optionAccess = [];
+        foreach (\App\Models\UserRole::get() as $role) {
+            $this->optionAccess[$role->id] = $role->name;
+        }
+//         = \App\Models\UserRole::get();
 //        $this->optionAccess =[
 //            ['value'=>'revitalize','title'=>'Revitalize'],
 //            ['value'=>'revitalize-facilitation','title'=>'Revitalize facilitation'],
@@ -216,6 +68,7 @@ class User extends Component
         } else {
             $this->role = 'contributor';
         }
+
         if ($this->dataId != null) {
             $data = \App\Models\User::find($this->dataId);
             $this->username = $data->user_login;
@@ -239,6 +92,126 @@ class User extends Component
             }
         }
     }
+
+    public function create()
+    {
+
+        $this->validate();
+
+        $user = \App\Models\User::create(['user_login' => $this->username, 'user_pass' => WpPassword::make($this->password), 'user_nicename' => $this->first_name, 'user_email' => $this->email, 'user_url' => $this->website ?? 'http://' . $this->first_name, 'user_registered' => Carbon::now()->toDateTimeString(), 'user_activation_key' => '', 'user_status' => 0, 'display_name' => $this->first_name . ' ' . $this->last_name,]);
+
+
+        $client = Http::post('https://hooks.zapier.com/hooks/catch/941497/2hr769d/', ['first_name' => $this->first_name, 'last_name' => $this->last_name, 'email' => $this->email, 'website' => $this->website, 'password' => WpPassword::make($this->password),]);
+        $wpRole = '';
+        if ($this->role == '1') {
+            $wpRole = 'administrator';
+        } else {
+            $wpRole = 'subscriber';
+        }
+
+        $this->userMeta['nickname'] = $this->first_name;
+        $this->userMeta['first_name'] = $this->first_name;
+        $this->userMeta['last_name'] = $this->last_name;
+        $this->userMeta['description'] = '';
+        $this->userMeta['rich_editing'] = true;
+        $this->userMeta['syntax_highlighting'] = true;
+        $this->userMeta['comment_shortcuts'] = false;
+        $this->userMeta['admin_color'] = 'fresh';
+        $this->userMeta['use_ssl'] = 0;
+        $this->userMeta['show_admin_bar_front'] = true;
+        $this->userMeta['locale'] = '';
+        $this->userMeta['wp_capabilities'] = serialize([$wpRole => true]);
+
+        $ur =  \App\Models\UserRole::find($this->role)->first();
+        if ($ur){
+            $this->userMeta['user_access'] = $ur->accesses;
+        }
+
+        $this->userMeta['wp_user_level'] = 0;
+        $this->userMeta['dismissed_wp_pointers'] = '';
+
+        if ($this->companyId != null) {
+            $this->userMeta['company'] = $this->companyId;
+            CompanyEmployee::create(['user_id' => $user->ID, 'company_id' => $this->companyId]);
+        }
+
+        foreach ($this->userMeta as $key => $meta) {
+            WpUserMeta::create(['meta_key' => $key, 'user_id' => $user->ID, 'meta_value' => $meta]);
+        }
+//        sleep(2);
+//        $this->getDataKeap();
+//
+//        WpUserMeta::create([
+//            'meta_key' => 'keap_contact_id',
+//            'user_id' => $user->ID,
+//            'meta_value' => $this->keap
+//        ]);
+        $this->dispatch('swal:alert', data: ['icon' => 'success', 'title' => 'Successfully added user',]);
+        if ($this->companyId != null) {
+            $this->redirect(route('company.show', $this->companyId));
+        } else {
+            $this->redirect(route('user.index'));
+        }
+    }
+
+    public function getDataKeap()
+    {
+        $this->keap = Keap::contact()->list(['email' => $this->email]);
+
+    }
+
+    public function update()
+    {
+//        if ($this->accessSelected){
+//            $wum = WpUserMeta::where('meta_key', 'user_access')->where('user_id', $this->dataId)->first();
+//            if ($wum) {
+//                $wum->delete();
+//            }
+//            WpUserMeta::create([
+//                'meta_key' => 'user_access',
+//                'user_id' => $this->dataId,
+//                'meta_value' => json_encode($this->accessSelected)
+//            ]);
+//        }
+
+//        dd($this->accessSelected);
+
+        $user = \App\Models\User::find($this->dataId)->update(['user_nicename' => $this->username, 'user_email' => $this->email, 'user_url' => $this->website ?? 'http://' . $this->first_name, 'user_registered' => Carbon::now()->toDateTimeString(), 'user_status' => 0, 'display_name' => $this->first_name . ' ' . $this->last_name,]);
+
+        $fn = WpUserMeta::where('user_id', $this->dataId)->where('meta_key', 'first_name')->first();
+        $ln = WpUserMeta::where('user_id', $this->dataId)->where('meta_key', 'last_name')->first();
+        $ac = WpUserMeta::where('user_id', $this->dataId)->where('meta_key', 'user_access')->first();
+//        $keapId = WpUserMeta::where('user_id', $this->dataId)->where('meta_key', 'keap_contact_id')->first();
+
+        if ($ln != null) {
+            $ln->update(['meta_value' => $this->last_name]);
+        } else {
+            WpUserMeta::create(['user_id' => $this->dataId, 'meta_key' => 'last_name', 'meta_value' => $this->last_name]);
+        }
+
+        if ($fn != null) {
+            $fn->update(['meta_value' => $this->first_name]);
+        } else {
+            WpUserMeta::create(['user_id' => $this->dataId, 'meta_key' => 'first_name', 'meta_value' => $this->first_name]);
+        }
+
+        $ur =  \App\Models\UserRole::find($this->role)->first();
+        if ($ac != null) {
+            $ac->update(['meta_value' => $ur->accesses]);
+        }else{
+            WpUserMeta::create(['user_id' => $this->dataId, 'meta_key' => 'user_access', 'meta_value' => $ur->accesses]);
+        }
+
+        $client = Http::post('https://hooks.zapier.com/hooks/catch/941497/2hr769d/', ['first_name' => $this->first_name, 'last_name' => $this->last_name, 'email' => $this->email, 'website' => $this->website,]);
+
+        $this->dispatch('swal:alert', data: ['icon' => 'success', 'title' => 'successfully changed the user',]);
+        if ($this->companyId != null) {
+            $this->redirect(route('company.show', $this->companyId));
+        } else {
+            $this->redirect(route('user.index'));
+        }
+    }
+
 
     public function render()
     {
