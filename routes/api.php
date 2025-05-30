@@ -6,6 +6,7 @@ use App\Models\User;
 use App\Models\WpGfEntry;
 use App\Models\WpUserMeta;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Artisan;
 use Illuminate\Support\Facades\Route;
 use KeapGeek\Keap\Facades\Keap;
 
@@ -91,6 +92,7 @@ Route::post('/next-course/', function (Request $request) {
             }
 
         }
+        Artisan::queue('app:get-tag');
     }
 });
 Route::get('/next-course/', function (Request $request) {
