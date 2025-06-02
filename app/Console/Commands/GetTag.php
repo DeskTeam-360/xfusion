@@ -68,6 +68,9 @@ class GetTag extends Command
                 var_dump($tag);
                 $tag = implode(';', $tag);
                 $tagApply = implode(';', $tagApply);
+                if ($user->ID==36){
+                    dd($tag,$tagApply,$wpUserMeta,$wpUserMetaApply);
+                }
                 if ($wpUserMeta != null) {
                     WpUserMeta::find($wpUserMeta->umeta_id)->update(['meta_value' => $tag]);
                 } else {
