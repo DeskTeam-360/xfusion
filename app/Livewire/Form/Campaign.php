@@ -140,7 +140,7 @@ class Campaign extends Component
             $array_data['created_by_group'] = 'no';
 
             foreach ($this->users as $user) {
-                $wum = WpUserMeta::where('meta_key', 'keap_contact_id')->where('meta_value', $user->ID)->first();
+                $wum = WpUserMeta::where('meta_key', 'keap_contact_id')->where('meta_value', $user)->first();
                 if ($wum != null) {
                     $userID= $wum->user_id;
                     $user = \App\Models\User::find($userID);
