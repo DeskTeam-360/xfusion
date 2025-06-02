@@ -151,10 +151,8 @@ class Campaign extends Component
                     } else {
                         WpUserMeta::create(['user_id' => $user->ID, 'meta_key' => 'keap_tags', 'meta_value' => $tag]);
                     }
-
                 }
             }
-
         } elseif ($this->for == 'group') {
             $array_data['users'] = implode(";", $this->companies);
             $array_data['created_by_group'] = 'yes';

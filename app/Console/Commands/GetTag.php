@@ -58,6 +58,7 @@ class GetTag extends Command
 
             try {
                 $tagKeaps = Keap::contact()->tags($keapId);
+                var_dump($tagKeaps);
                 foreach ($tagKeaps as $tk) {
                     if ($tk['tag']['category'] == "Xfusion Testing") {
                         $tag[] = $tk['tag']['id'];
