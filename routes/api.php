@@ -56,13 +56,10 @@ Route::post('/next-course/', function (Request $request) {
     if ($tag){
         $user = User::find($userId);
         $keapId = $user->meta->where('meta_key','keap_contact_id')->first();
-
         $keapTag = $user->meta->where('meta_key','keap_tags')->first();
-
         if ($keapId!=null){
             Keap::contact()->tag($keapId->meta_value, [$tag]);
         }
-
         if ($keapTag!=null){
             $keapTag->update(['meta_value' => $keapTag->meta_value.";$tag"]);
         }else{
@@ -72,41 +69,6 @@ Route::post('/next-course/', function (Request $request) {
                 'meta_value'=>$tag
             ]);
         }
-
-
-        $users = User::whereHas('meta',function ($q){
-            $q->where('meta_key', '=', 'keap_contact_id');
-        })->get();
-
-
-        foreach ($users as $user){
-            $newTag = array();
-            $wpUserMeta = WpUserMeta::where('user_id','=',$user->ID)->where('meta_key','=','keap_tags')->first();
-            $keapId = WpUserMeta::where('user_id','=',$user->ID)->where('meta_key','=','keap_contact_id')->first()->meta_value;
-            if ($keapId!=null){
-                try {
-                    $tagKeaps = Keap::contact()->tags($keapId);
-                    foreach ($tagKeaps as $tk){
-                        array_push($newTag,$tk['tag']['id']);
-                    }
-                }catch (\Exception $e){
-                    var_dump($e->getMessage());
-//                    dd($tk['tag']['id']);
-                }
-
-                $newTag = implode(';',$newTag);
-                if ($wpUserMeta!=null){
-                    WpUserMeta::find($wpUserMeta->umeta_id)->update(['meta_value'=>$newTag]);
-                }else{
-                    WpUserMeta::create([
-                        'user_id'=>$user->ID,
-                        'meta_key'=>'keap_tags',
-                        'meta_value'=>$newTag
-                    ]);
-                }
-            }
-        }
-        Artisan::queue('app:get-tag');
     }
 });
 Route::get('/next-course/', function (Request $request) {
