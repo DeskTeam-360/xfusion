@@ -25,6 +25,57 @@ Route::get('/', function () {
 Route::get('/home', function () {
     return redirect()->route('dashboard');
 });
+Route::get('/settings', function () {
+    $numbers = [
+        35, 52, 51, 53, 54, 55, 66, 58, 65, 96, 61, 97, 83, 98, 77, 81, 80, 99, 72, 74, 87,
+        62, 100, 101, 102, 63, 88, 103, 36, 67, 68, 84, 86, 73, 145, 144, 70, 71, 69, 146,
+        78, 147, 85, 82, 56, 76, 59, 64, 60, 148, 79, 104, 105, 106, 107, 108, 109, 110,
+        111, 112, 113, 114, 115, 116, 117, 118, 119, 120, 121, 123, 125, 290, 126, 127,
+        128, 130, 131, 132, 133, 134, 135, 136, 137, 138, 139, 140, 142, 143, 150, 151,
+        152, 153, 154, 155, 230, 231, 232, 233, 234, 235, 149, 236, 237, 2, 3, 24, 289, 7,
+        8, 29, 9, 276, 30, 4, 14, 13, 15, 278, 16, 279, 280, 17, 281, 325, 282, 323, 324,
+        75, 122, 306, 293, 292, 294, 295, 296, 297, 300, 301, 299, 298, 303, 302,
+        373, 311, 312, 313, 314, 315, 316, 317, 318, 322, 319, 320, 371, 372
+    ];
+
+    $metaJson = json_encode([
+        "feedName" => "Next Course",
+        "requestURL" => "https://admin.demo.xperiencefusion.com/api/next-course",
+        "requestMethod" => "POST",
+        "requestFormat" => "json",
+        "requestHeaders" => [[
+            "key" => "",
+            "custom_key" => "",
+            "value" => "",
+            "custom_value" => ""
+        ]],
+        "requestBodyType" => "select_fields",
+        "fieldValues" => [[
+            "key" => "gf_custom",
+            "custom_key" => "entry_id",
+            "value" => "id",
+            "custom_value" => ""
+        ]],
+        "feed_condition_conditional_logic_object" => [],
+        "feed_condition_conditional_logic" => "0",
+        "feedCondition" => ""
+    ]);
+
+    foreach ($numbers as $formId) {
+        DB::table('wp_gf_addon_feed')->insert([
+            'form_id' => $formId,
+            'is_active' => 1,
+            'feed_order' => 0,
+            'meta' => $metaJson,
+            'addon_slug' => 'gravityformswebhooks',
+            'event_type' => null,
+        ]);
+    }
+    return [
+        'code'  => 200,
+        'status' => 'success',
+    ];
+});
 
 
 
