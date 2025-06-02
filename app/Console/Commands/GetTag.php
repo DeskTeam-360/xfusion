@@ -63,9 +63,9 @@ class GetTag extends Command
 //                var_dump($tag);
                 $tag = implode(';', $tag);
                 $tagApply = implode(';', $tagApply);
-                if ($user->ID == 36) {
-                    dd($tag, $tagApply, $wpUserMeta, $wpUserMetaApply);
-                }
+//                if ($user->ID == 36) {
+//                    dd($tag, $tagApply, $wpUserMeta, $wpUserMetaApply);
+//                }
                 if ($wpUserMeta != null) {
 //                    346;334;328;1568;326;358;1620;352;322;376;340;282;272;364;508;370;324;1644
 //                    334;346;508;326;352;1620;1644;272;322;340;376;358;1568;282;328;364;324;370
