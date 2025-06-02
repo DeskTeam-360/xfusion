@@ -90,7 +90,7 @@ Route::post('/next-course/', function (Request $request) {
                         array_push($newTag,$tk['tag']['id']);
                     }
                 }catch (\Exception $e){
-                    dd($tk['tag']['id']);
+//                    dd($tk['tag']['id']);
                 }
 
                 $newTag = implode(';',$newTag);
