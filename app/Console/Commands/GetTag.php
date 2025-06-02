@@ -60,7 +60,7 @@ class GetTag extends Command
                         $tagApply[] = $tk['date_applied'];
                     }
                 }
-                var_dump($tag);
+//                var_dump($tag);
                 $tag = implode(';', $tag);
                 $tagApply = implode(';', $tagApply);
                 if ($user->ID == 36) {
