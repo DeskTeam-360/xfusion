@@ -148,10 +148,24 @@ class Campaign extends Component
 
         if ($this->status == "send") {
             foreach ($this->tags as $tag) {
+
                 $k = Keap::tag()->applyToContacts(
                     $tag,
                     explode(';',$array_data['users'])
                 );
+                foreach (explode(';',$array_data['users']) as $user) {
+                    $userD = \App\Models\User::find($user);
+                    $keapTag = $userD->meta->where('meta_key','keap_tags')->first();
+                    if ($keapTag!=null){
+                        $keapTag->update(['meta_value' => $keapTag->meta_value.";$tag"]);
+                    }else{
+                        WpUserMeta::create([
+                            'user_id'=>$user,
+                            'meta_key'=>'keap_tags',
+                            'meta_value'=>$tag
+                        ]);
+                    }
+                }
                 foreach ($k as $key => $note) {
                     CampaignLog::create([
                         'tag_id'=>$tag,
@@ -160,6 +174,8 @@ class Campaign extends Component
                     ]);
                 }
             }
+
+
             Artisan::queue('app:get-tag');
 
 //            $users = \App\Models\User::whereHas('meta',function ($q){
