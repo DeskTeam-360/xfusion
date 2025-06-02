@@ -90,6 +90,7 @@ Route::post('/next-course/', function (Request $request) {
                         array_push($newTag,$tk['tag']['id']);
                     }
                 }catch (\Exception $e){
+                    var_dump($e->getMessage());
 //                    dd($tk['tag']['id']);
                 }
 
