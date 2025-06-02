@@ -120,16 +120,41 @@ class Campaign extends Component
         })->get();
 
         $this->companies = [];
+
         foreach ($group as $user) {
             foreach ($user->meta->where('meta_key', 'keap_contact_id') as $k) {
                 $this->companies[] = $k->meta_value;
             }
+            foreach ($this->tags as $tag) {
+                $keapTag = $user->meta->where('meta_key', 'keap_tags')->first();
+                if ($keapTag != null) {
+                    $keapTag->update(['meta_value' => $keapTag->meta_value . ";$tag"]);
+                } else {
+                    WpUserMeta::create(['user_id' => $user->ID, 'meta_key' => 'keap_tags', 'meta_value' => $tag]);
+                }
+            }
         }
-
 
         if ($this->for == 'user') {
             $array_data['users'] = implode(";", $this->users);
             $array_data['created_by_group'] = 'no';
+
+            foreach ($this->users as $user) {
+                $wum = WpUserMeta::where('meta_key', 'keap_contact_id')->where('meta_value', $user->ID)->first();
+                if ($wum != null) {
+                    $userID= $wum->user_id;
+                    $user = \App\Models\User::find($userID);
+
+                    $keapTag = $user->meta->where('meta_key', 'keap_tags')->first();
+                    if ($keapTag != null) {
+                        $keapTag->update(['meta_value' => $keapTag->meta_value . ";$tag"]);
+                    } else {
+                        WpUserMeta::create(['user_id' => $user->ID, 'meta_key' => 'keap_tags', 'meta_value' => $tag]);
+                    }
+
+                }
+            }
+
         } elseif ($this->for == 'group') {
             $array_data['users'] = implode(";", $this->companies);
             $array_data['created_by_group'] = 'yes';
@@ -153,19 +178,7 @@ class Campaign extends Component
                     $tag,
                     explode(';',$array_data['users'])
                 );
-//                foreach (explode(';',$array_data['users']) as $user) {
-//                    $userD = \App\Models\User::find($user);
-//                    $keapTag = $userD->meta->where('meta_key','keap_tags')->first();
-//                    if ($keapTag!=null){
-//                        $keapTag->update(['meta_value' => $keapTag->meta_value.";$tag"]);
-//                    }else{
-//                        WpUserMeta::create([
-//                            'user_id'=>$user,
-//                            'meta_key'=>'keap_tags',
-//                            'meta_value'=>$tag
-//                        ]);
-//                    }
-//                }
+
                 foreach ($k as $key => $note) {
                     CampaignLog::create([
                         'tag_id'=>$tag,
