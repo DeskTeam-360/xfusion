@@ -13,7 +13,7 @@ class Tag extends \App\Models\Tag implements View
     {
         $query = $params['query'];
         return empty($query) ? static::query()
-            : static::query()->where('title', 'like', "%$query%")
+            : static::query()->where('name', 'like', "%$query%")
                 ->orWhere('description', 'like', "%$query%");
     }
 
