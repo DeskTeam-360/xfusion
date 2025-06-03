@@ -48,12 +48,16 @@ class TagKeap extends Component
                 ]);
 //                dd($keap);
 
-                Tag::create([
-                    'id'=>$keap['id'],
-                    'name' => $name."-".$t,
-                    'description'=>$this->description,
-                    'category'=>config('app.keap_category'),
-                ]);
+                if ($keap){
+                    Tag::create([
+                        'id'=>$keap['id'],
+                        'name' => $name."-".$t,
+                        'description'=>$this->description,
+                        'category'=>config('app.keap_category'),
+                    ]);
+                }
+
+
             }
         }catch (BadRequestException $badRequestException){
             $this->dispatch('swal:alert', data:[
