@@ -77,9 +77,9 @@ class User extends \App\Models\User implements View
 
         $roles = $data->meta->where('meta_key', '=', config('app.wp_prefix', 'wp_') . 'capabilities');
         $role = '';
-        foreach ($roles as $r) {
-            $role = $roleEncryption[array_key_first(unserialize($r['meta_value']))];
-        }
+//        foreach ($roles as $r) {
+//            $role = $roleEncryption[array_key_first(unserialize($r['meta_value']))];
+//        }
 
         $route = route('user.connect-keap', $data->ID);
         $keap = "<a href='$route' class='p-1 rounded btn-error text-nowrap text-xs'>Not Connect</a>";
