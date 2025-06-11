@@ -114,8 +114,7 @@ class Campaign extends Component
 
 
         $group = \App\Models\User::whereHas('meta', function ($q) {
-            $q->where('meta_key', 'wp_capabilities')
-                ->where('meta_value', 'like', "%$this->companies%");
+            $q->where('meta_key', 'wp_capabilities')->where('meta_value', 'like', "%$this->companies%");
         })->whereHas('meta', function ($q) {
             $q->where('meta_key', 'keap_contact_id');
         })->get();
@@ -146,7 +145,8 @@ class Campaign extends Component
                     $userID= $wum->user_id;
                     $user = \App\Models\User::find($userID);
 
-                    $keapTag = $user->meta->where('meta_key', 'keap_tags')->first();
+//                    $keapTag = $user->meta->where('meta_key', 'keap_tags')->first();
+                    $keapTag = WpUserMeta::where('user_id', $userID)->where('meta_key', 'keap_tags')->first();
                     if ($keapTag != null) {
                         $keapTag->update(['meta_value' => $keapTag->meta_value . ";$tag"]);
                     } else {
@@ -167,6 +167,7 @@ class Campaign extends Component
             $array_data['users'] = $keap_id;
             $array_data['created_by_group'] = 'no';
         }
+//        $this->filterCollectionDataDownToSpecificKeys()
 
         \App\Models\Campaign::create($array_data);
 
