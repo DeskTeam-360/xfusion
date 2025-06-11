@@ -59,7 +59,7 @@ class Campaign extends Component
 
         $this->statusOptions = [
             ['value' => 'send', 'title' => 'Send'],
-            ['value' => 'scheduled', 'title' => 'Scheduled'],
+//            ['value' => 'scheduled', 'title' => 'Scheduled'],
         ];
 
         $this->tagOptions = [];
