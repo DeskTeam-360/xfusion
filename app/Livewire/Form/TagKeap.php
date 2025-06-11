@@ -37,7 +37,8 @@ class TagKeap extends Component
         $this->resetErrorBag();
         $name = str_replace('.',"-",$this->name);
         $name = Str::slug($name);
-        $template = ['start','done','finish'];
+        $template = ['start'];
+//        $template = ['start','done','finish'];
 //        sleep(10);
         try {
             foreach ($template  as $t){
@@ -46,7 +47,6 @@ class TagKeap extends Component
                     'description' => $this->description,
                     'category_id' => config('app.keap_category'),
                 ]);
-//                dd($keap);
 
                 if ($keap){
                     Tag::create([
@@ -66,7 +66,6 @@ class TagKeap extends Component
             ]);
         }
         catch (Exception $e){
-            dd($keap);
             $this->dispatch('swal:alert', data:[
                 'icon' => 'error',
                 'title' => $e->getMessage(),
