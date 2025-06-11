@@ -35,8 +35,8 @@ class Campaign extends Component
     public $time_schedule;
     public $clock;
 
-    #[Validate('required')]
-    public $status;
+//    #[Validate('required')]
+    public $status='send';
 
     #[Validate('required')]
     public $tags=[];
@@ -47,7 +47,7 @@ class Campaign extends Component
             $mounted = \App\Models\Campaign::find($this->dataId);
             $this->users = explode(", ", $mounted->users);
             $this->tags = explode(", ", $mounted->tags);
-            $this->status = $mounted->status;
+//            $this->status = $mounted->status;
 
             list($time_schedule, $clock) = explode(' ', $mounted->time_schedule);
             $this->time_schedule = $time_schedule;
@@ -57,10 +57,10 @@ class Campaign extends Component
             $this->clock = '00:00';
         }
 
-        $this->statusOptions = [
-            ['value' => 'send', 'title' => 'Send'],
-//            ['value' => 'scheduled', 'title' => 'Scheduled'],
-        ];
+//        $this->statusOptions = [
+//            ['value' => 'send', 'title' => 'Send'],
+////            ['value' => 'scheduled', 'title' => 'Scheduled'],
+//        ];
 
         $this->tagOptions = [];
         $keap_tags = Keap::tag()->list(['category' => 44]);
@@ -109,7 +109,7 @@ class Campaign extends Component
         $array_data = [
             'tags' => implode(";", $this->tags),
             'time_schedule' => $this->time_schedule != '' ? $this->time_schedule . ' ' . $this->clock : null,
-            'status' => $this->status
+            'status' => 'send'
         ];
 
 
