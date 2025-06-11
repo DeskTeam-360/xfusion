@@ -122,20 +122,20 @@ class Campaign extends Component
 
         $this->companies = [];
 
-        foreach ($group as $user) {
-            foreach ($user->meta->where('meta_key', 'keap_contact_id') as $k) {
-                $this->companies[] = $k->meta_value;
-            }
-            foreach ($this->tags as $tag) {
-                $keapTag = $user->meta->where('meta_key', 'keap_tags')->first();
-                if ($keapTag != null) {
-                    $keapTag->update(['meta_value' => $keapTag->meta_value . ";$tag"]);
-                } else {
-                    WpUserMeta::create(['user_id' => $user->ID, 'meta_key' => 'keap_tags', 'meta_value' => $tag]);
-                }
-            }
-            dd($this->companies);
-        }
+//        foreach ($group as $user) {
+//            foreach ($user->meta->where('meta_key', 'keap_contact_id') as $k) {
+//                $this->companies[] = $k->meta_value;
+//            }
+//            foreach ($this->tags as $tag) {
+//                $keapTag = $user->meta->where('meta_key', 'keap_tags')->first();
+//                if ($keapTag != null) {
+//                    $keapTag->update(['meta_value' => $keapTag->meta_value . ";$tag"]);
+//                } else {
+//                    WpUserMeta::create(['user_id' => $user->ID, 'meta_key' => 'keap_tags', 'meta_value' => $tag]);
+//                }
+//            }
+//            dd($this->companies);
+//        }
 
         if ($this->for == 'user') {
             $array_data['users'] = implode(";", $this->users);
