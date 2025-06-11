@@ -122,7 +122,7 @@ class User extends Component
         $this->userMeta['locale'] = '';
         $this->userMeta['wp_capabilities'] = serialize([$wpRole => true]);
 
-        $ur =  \App\Models\UserRole::find($this->role)->first();
+        $ur =  \App\Models\UserRole::find($this->role);
         if ($ur){
             $this->userMeta['user_access'] = $ur->accesses;
         }
@@ -195,7 +195,7 @@ class User extends Component
             WpUserMeta::create(['user_id' => $this->dataId, 'meta_key' => 'first_name', 'meta_value' => $this->first_name]);
         }
 
-        $ur =  \App\Models\UserRole::find($this->role)->first();
+        $ur =  \App\Models\UserRole::find($this->role);
         if ($ac != null) {
             $ac->update(['meta_value' => $ur->accesses]);
         }else{
