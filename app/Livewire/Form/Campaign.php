@@ -38,7 +38,8 @@ class Campaign extends Component
     #[Validate('required')]
     public $status;
 
-    public $tags;
+    #[Validate('required')]
+    public $tags=[];
 
     public function mount()
     {

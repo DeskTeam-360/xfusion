@@ -17,11 +17,14 @@ class User extends \App\Models\User implements View
                 $q2->where('meta_value', 'like', "%$query%");
             });
         } else {
-            return empty($query) ? static::query()->orWhereHas('companyEmployee', function ($q) use ($params) {
+            return empty($query) ? static::
+            query()->whereHas('companyEmployee', function ($q) use ($params) {
                 $q->where('company_id', '=', $params);
-            })->where('user_nicename', 'like', "%$query%") : static::query()->whereHas('companyEmployee', function ($q) use ($params) {
+            })->where('user_nicename', 'like', "%$query%") :
+
+                static::query()->whereHas('companyEmployee', function ($q) use ($params) {
                 $q->where('company_id', '=', $params);
-            })->orWhere('user_nicename', 'like', "%$query%");
+            })->where('user_nicename', 'like', "%$query%");
         }
 
     }

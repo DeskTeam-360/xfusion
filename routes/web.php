@@ -203,7 +203,8 @@ Route::middleware([
 //            return view();
 //        });
 
-        Route::get('/export-user', [ExportController::class, 'exportToCSV'])->name('export-user');
+        Route::get('/export-user/', [ExportController::class, 'exportToCSV'])->name('export-user');
+        Route::get('/export-user-company/{id}', [ExportController::class, 'exportToCSVCompany'])->name('export-user-company');
         Route::get('/template-download', [ExportController::class, 'downloadTemplate'])->name('template-download');
         Route::get('/import-user', [ImportController::class, 'importIndex'])->name('to-import-user');
         Route::post('/import-user-action', [ImportController::class, 'importCSV'])->name('import-user');

@@ -80,9 +80,13 @@ class CourseList extends Component
 
         if (isset($this->courseTag[0])){
             $this->courseTag = $this->courseTag[0];
+        }else{
+            $this->courseTag = null;
         }
         if (isset($this->courseTagNext[0])){
             $this->courseTagNext = $this->courseTagNext[0];
+        }else{
+            $this->courseTagNext = null;
         }
 
         \App\Models\CourseList::create([
@@ -109,9 +113,13 @@ class CourseList extends Component
         $this->resetErrorBag();
         if (isset($this->courseTag[0])){
             $this->courseTag = $this->courseTag[0];
+        }else{
+            $this->courseTag = null;
         }
         if (isset($this->courseTagNext[0])){
             $this->courseTagNext = $this->courseTagNext[0];
+        }else{
+            $this->courseTagNext = null;
         }
 //        if ($this->courseTag == '' or $this->courseTag == [] or empty($this->courseTag)) {
 //            $this->courseTag = null;

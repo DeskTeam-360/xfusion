@@ -6,13 +6,13 @@
     @if($action=="update")
         <x-input title="Nickname" model="username" required="true"/>
     @endif
-    <x-input title="First Name" model="first_name"/>
-    <x-input title="Last Name" model="last_name"/>
+    <x-input title="First Name" model="first_name" required="true"/>
+    <x-input title="Last Name" model="last_name" required="true"/>
 
     <x-input title="Website" model="website"/>
     @if($action=="create")
-        <x-input title="Password" model="password" type="password"/>
-        <x-input title="Re-type password" model="rePassword" type="password"/>
+        <x-input title="Password" model="password" type="password" required="true"/>
+        <x-input title="Re-type password" model="rePassword" type="password" required="true"/>
     @endif
 {{--    @if($action=="create" and $companyId==null)--}}
 {{--        <div>--}}

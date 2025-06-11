@@ -86,6 +86,81 @@ class ExportController extends Controller
         return response()->stream($callback, 200, $headers);
     }
 
+    public function exportToCSVCompany($id)
+    {
+//        dd(Company::whereId(CompanyEmployee::whereUserId(32)->get()[0]->company_id)->get('title')[0]->title);
+        $fileName = 'users.csv';
+
+        $auth_roles = Auth::user()->meta->where('meta_key', '=', config('app.wp_prefix', 'wp_') . 'capabilities');
+        $auth_role = '';
+
+        foreach ($auth_roles as $ar) {
+            $auth_role = array_key_first(unserialize($ar['meta_value']));
+        }
+
+//        if ($auth_role == "administrator") {
+//            $users = User::where('')all();
+//        } else {
+//            $companies = Auth::user()->meta->where('meta_key', '=', 'company');
+//            foreach ($companies as $r) {
+//                $c = \App\Models\Company::find($r['meta_value']);
+//                if ($c != null) {
+//                    $companyId = $c->id;
+//                    $company = $c->title;
+//                } else {
+//                    $company = 'Company has been delete';
+//                }
+//            }
+
+            $auth_company_employees = CompanyEmployee::whereCompanyId($id)->pluck('user_id');
+            $users = User::whereIn('id', $auth_company_employees)->get();
+//        }
+
+        $headers = [
+            "Content-type" => "text/csv",
+            "Content-Disposition" => "attachment; filename=$fileName",
+            "Pragma" => "no-cache",
+            "Cache-Control" => "must-revalidate, post-check=0, pre-check=0",
+            "Expires" => "0"
+        ];
+
+        $columns = ['ID', 'Nickname', 'Email', 'Company', 'Role'];
+
+        $callback = function() use($users, $columns) {
+            $file = fopen('php://output', 'w');
+            fputcsv($file, $columns);
+
+            foreach ($users as $user) {
+                $row['ID']  = $user->ID;
+                $row['Nickname']    = $user->user_nicename;
+                $row['Email']   = $user->user_email;
+                try {
+                    $row['Company']  = Company::whereId(CompanyEmployee::whereUserId($user->ID)->get()[0]->company_id)->get('title')[0]->title;
+                } catch (\Exception) {
+                    $row['Company']  = "-";
+                }
+
+                try {
+                    $roles = $user->meta->where('meta_key', '=', config('app.wp_prefix', 'wp_') . 'capabilities');
+                    $role = '';
+
+                    foreach ($roles as $r) {
+                        $role = array_key_first(unserialize($r['meta_value']));
+                    }
+                    $row['Role']  = $role;
+                } catch (\Exception) {
+                    $row['Role']  = '-';
+                }
+
+                fputcsv($file, [$row['ID'], $row['Nickname'], $row['Email'], $row['Company'], $row['Role']]);
+            }
+
+            fclose($file);
+        };
+
+        return response()->stream($callback, 200, $headers);
+    }
+
     public function downloadTemplate()
     {
         $filePath = 'csv_templates/csv_import_example.csv'; // Path to the CSV file

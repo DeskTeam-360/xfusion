@@ -183,8 +183,57 @@
         </div>
         @if($perPage!=-1)
             <div id="table_pagination" class="py-3">
-                {{ $datas->onEachSide(1)->links('pagination::tailwind') }}
+{{--                {{ $datas->onEachSide(1)->links('pagination::tailwind') }}--}}
+                {{--                {{ $datas->appends(request()->except('page'))->onEachSide(1)->links('pagination::tailwind') }}--}}
+
+                @php
+                    $currentPage = $datas->currentPage();
+                    $lastPage = $datas->lastPage();
+                    $search = request()->input('search');
+                    $link = function($page) {
+//                        return $datas->url($page) . ($search ? '&search=' . urlencode($search) : '');
+                        return '?page='.$page;
+                    };
+                @endphp
+
+                @if($lastPage > 1)
+                    <div class="flex justify-center mt-4 space-x-1 text-sm">
+                        {{-- Prev --}}
+                        @if($currentPage > 1)
+                            <a href="{{ $link($currentPage - 1) }}" class="relative inline-flex items-center px-4 py-2 -ml-px text-sm font-medium text-gray-700 bg-white border border-gray-300 leading-5 hover:text-gray-500 focus:z-10 focus:outline-none focus:ring ring-gray-300 focus:border-blue-300 active:bg-gray-100 active:text-gray-700 transition ease-in-out duration-150 dark:bg-gray-800 dark:border-gray-600 dark:text-gray-400 dark:hover:text-gray-300 dark:active:bg-gray-700 dark:focus:border-blue-800 ">&laquo;</a>
+                        @endif
+
+                        {{-- Page links --}}
+                        @for ($i = 1; $i <= $lastPage; $i++)
+                            @if (
+                                $i == 1 ||
+                                $i == $lastPage ||
+                                ($i >= $currentPage - 1 && $i <= $currentPage + 1)
+                            )
+                                <a href="{{ $link($i) }}"
+                                   class="
+                   {{ $i == $currentPage ? 'relative inline-flex items-center px-4 py-2 -ml-px text-sm font-medium text-gray-500 bg-white border border-gray-300 cursor-default leading-5 dark:bg-gray-800 dark:border-gray-600' :
+'relative inline-flex items-center px-4 py-2 -ml-px text-sm font-medium text-gray-700 bg-white border border-gray-300 leading-5 hover:text-gray-500 focus:z-10 focus:outline-none focus:ring ring-gray-300 focus:border-blue-300 active:bg-gray-100 active:text-gray-700 transition ease-in-out duration-150 dark:bg-gray-800 dark:border-gray-600 dark:text-gray-400 dark:hover:text-gray-300 dark:active:bg-gray-700 dark:focus:border-blue-800' }}">
+                                    {{ $i }}
+                                </a>
+                            @elseif (
+                                $i == 2 && $currentPage > 4 ||
+                                $i == $lastPage - 1 && $currentPage < $lastPage - 3
+                            )
+                                <span class="px-2">...</span>
+                            @endif
+                        @endfor
+
+                        {{-- Next --}}
+                        @if($currentPage < $lastPage)
+                            <a href="{{ $link($currentPage + 1) }}" class="relative inline-flex items-center px-4 py-2 -ml-px text-sm font-medium text-gray-700 bg-white border border-gray-300 leading-5 hover:text-gray-500 focus:z-10 focus:outline-none focus:ring ring-gray-300 focus:border-blue-300 active:bg-gray-100 active:text-gray-700 transition ease-in-out duration-150 dark:bg-gray-800 dark:border-gray-600 dark:text-gray-400 dark:hover:text-gray-300 dark:active:bg-gray-700 dark:focus:border-blue-800">&raquo;</a>
+                        @endif
+                    </div>
+                @endif
+
+
             </div>
+
         @endif
         @if($extras)
             <div>

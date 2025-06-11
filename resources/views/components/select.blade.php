@@ -10,6 +10,7 @@
         id="{{ $id }}"
         wire:model.live="{{ $model }}"
         name="{{ $title }}"
+        @if($required) required @endif
         class="py-2.5 px-4 form-control">
         <option></option>
 
@@ -20,6 +21,7 @@
             </option>
         @endfor
         <div> @error($model) <span class="error">{{ $message }}</span> @enderror </div>
+        <div> @error($model) <span class="error">{{ ($message) }}</span> @enderror </div>
     </select>
     <br><br>
 </div>
