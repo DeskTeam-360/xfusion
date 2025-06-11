@@ -119,7 +119,6 @@ class Campaign extends Component
             $q->where('meta_key', 'keap_contact_id');
         })->get();
 
-
         $this->companies = [];
 
 //        foreach ($group as $user) {
@@ -134,12 +133,13 @@ class Campaign extends Component
 //                    WpUserMeta::create(['user_id' => $user->ID, 'meta_key' => 'keap_tags', 'meta_value' => $tag]);
 //                }
 //            }
-//            dd($this->companies);
 //        }
 
         if ($this->for == 'user') {
             $array_data['users'] = implode(";", $this->users);
             $array_data['created_by_group'] = 'no';
+//            $tag =
+                $tag = implode(';', $this->tags);
 
             foreach ($this->users as $user) {
                 $wum = WpUserMeta::where('meta_key', 'keap_contact_id')->where('meta_value', $user)->first();
@@ -156,7 +156,6 @@ class Campaign extends Component
                     }
                 }
             }
-            dd($this->users);
         } elseif ($this->for == 'group') {
             $array_data['users'] = implode(";", $this->companies);
             $array_data['created_by_group'] = 'yes';
