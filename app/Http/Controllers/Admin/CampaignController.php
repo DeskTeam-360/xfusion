@@ -53,11 +53,18 @@ class CampaignController extends Controller
             $keapTagApply = User::find($id)->meta->where('meta_key', '=', 'keap_tags_applies')->first();
             if ($keapTag == null || $keapTag == []) {
                 $keapTag = [];
-                $keapTagApply = [];
+//                $keapTagApply = [];
             } else {
                 $keapTag = explode(';',$keapTag->meta_value);
-                $keapTagApply = explode(';',$keapTagApply->meta_value);
+//                $keapTagApply = explode(';',$keapTagApply->meta_value);
             }
+        if ($keapTagApply == null || $keapTagApply == []) {
+//            $keapTag = [];
+            $keapTagApply = [];
+        } else {
+//            $keapTag = explode(';',$keapTag->meta_value);
+            $keapTagApply = explode(';',$keapTagApply->meta_value);
+        }
 //        }
 
         return view(
