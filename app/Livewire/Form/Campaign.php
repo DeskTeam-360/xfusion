@@ -104,12 +104,15 @@ class Campaign extends Component
 
         \App\Models\Campaign::create($array_data);
 
-        foreach ($this->tags as $tag) {
-            $k = Keap::tag()->applyToContacts($tag, explode(';', $array_data['users']));
-            foreach ($k as $key => $note) {
-                CampaignLog::create(['tag_id' => $tag, 'user_id' => $key, 'status' => $note]);
+        if ($array_data['users'] != []) {
+            foreach ($this->tags as $tag) {
+                $k = Keap::tag()->applyToContacts($tag, explode(';', $array_data['users']));
+                foreach ($k as $key => $note) {
+                    CampaignLog::create(['tag_id' => $tag, 'user_id' => $key, 'status' => $note]);
+                }
             }
         }
+
 
         Artisan::queue('app:get-tag');
         $this->dispatch('swal:alert', data: ['icon' => 'success', 'title' => 'Successfully added campaign',]);
