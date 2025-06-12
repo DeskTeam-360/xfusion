@@ -46,9 +46,11 @@ class User extends Component
     public function mount()
     {
         $this->optionAccess = [];
+
         foreach (\App\Models\UserRole::get() as $role) {
             $this->optionAccess[$role->id] = $role->title;
         }
+        $this->role=1;
 
         if ($this->dataId != null) {
             $data = \App\Models\User::find($this->dataId);
