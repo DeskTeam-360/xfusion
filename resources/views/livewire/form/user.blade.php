@@ -33,7 +33,8 @@
         <label for="role" class="form-label mb-2">
             Role <span class="text-red-600">*</span>
         </label>
-        <select wire:model="role" class="form-control">
+        <select wire:model="role" class="form-control" required>
+            <option value=""></option>
             @foreach($optionAccess as $key=>$value)
                 <option value="{{ $key }}">{{ $value }}</option>
             @endforeach
