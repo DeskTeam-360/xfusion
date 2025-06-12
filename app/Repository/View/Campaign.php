@@ -46,7 +46,7 @@ class Campaign extends \App\Models\Campaign implements View
                 $lname = WpUserMeta::where('user_id',$userId)->where('meta_key','last_name')->first()->meta_value??'';
                 $user_names[] = $fname.' '.$lname;
             } catch (\Exception) {
-                $user_names[] = 'User has been deleted, Contact keap id - '. $user;
+                $user_names[] = 'Non Keap user';
             }
         }
         $listItems = '';
