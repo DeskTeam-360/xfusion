@@ -104,7 +104,7 @@ class Campaign extends Component
 
         \App\Models\Campaign::create($array_data);
 
-        if ($array_data['users'] != []) {
+        if ($array_data['users']) {
             foreach ($this->tags as $tag) {
                 $k = Keap::tag()->applyToContacts($tag, explode(';', $array_data['users']));
                 foreach ($k as $key => $note) {
