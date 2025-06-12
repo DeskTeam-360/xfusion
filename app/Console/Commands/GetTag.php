@@ -48,6 +48,7 @@ class GetTag extends Command
             $tag = [];
             $tagApply = [];
             $wpUserMeta = WpUserMeta::where('user_id', '=', $user->ID)->where('meta_key', '=', 'keap_tags')->first();
+            $wpUserMetaAccess = WpUserMeta::where('user_id', '=', $user->ID)->where('meta_key', '=', 'access_tags')->first();
             $wpUserMetaApply = WpUserMeta::where('user_id', '=', $user->ID)->where('meta_key', '=', 'keap_tags_applies')->first();
             $keapId = WpUserMeta::where('user_id', '=', $user->ID)->where('meta_key', '=', 'keap_contact_id')->first()->meta_value;
 
@@ -73,6 +74,12 @@ class GetTag extends Command
                     WpUserMeta::find($wpUserMetaApply->umeta_id)->update(['meta_value' => $tagApply]);
                 } else {
                     WpUserMeta::create(['user_id' => $user->ID, 'meta_key' => 'keap_tags_applies', 'meta_value' => $tagApply]);
+                }
+
+                if ($wpUserMetaAccess != null) {
+                    WpUserMeta::find($wpUserMetaAccess->umeta_id)->update(['meta_value' => $tag]);
+                }else{
+                    WpUserMeta::create(['user_id' => $user->ID, 'meta_key' => 'access_tags', 'meta_value' => $tag]);
                 }
                 var_dump($user->ID);
             } catch (Exception $exception) {

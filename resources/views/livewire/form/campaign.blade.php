@@ -1,10 +1,11 @@
 <form wire:submit.prevent="{{ $action }}">
-    @if($for == "group")
-        <x-select title="Group" model="companies" :options="$companyOptions" required="true"
-                  :isSelected="$companies"/>
-    @elseif ($for == "user")
+{{--    @if($for == "group")--}}
+{{--        <x-select title="Group" model="companies" :options="$companyOptions" required="true"--}}
+{{--                  :isSelected="$companies"/>--}}
+{{--    @elseif ($for == "user")--}}
+{{--        <x-select2 title="User" model="users" :options="$userOptions" required="true" :isSelected="$users"/>--}}
+{{--    @endif--}}
         <x-select2 title="User" model="users" :options="$userOptions" required="true" :isSelected="$users"/>
-    @endif
 {{--    <x-select title="Status" model="status" :options="$statusOptions" required="true"/>--}}
     <x-select2 title="Tag" model="tags" :options="$tagOptions" required="true" :isSelected="$tags"/>
 

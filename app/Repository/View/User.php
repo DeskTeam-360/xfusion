@@ -44,13 +44,12 @@ class User extends \App\Models\User implements View
         }
         if ($roleUser == "administrator") {
             return [
-                    ['label' => '#', 'sort' => 'id', 'width' => '7%'],
-                    ['label' => 'Name', 'sort' => 'user_nicename'],
-                    ['label' => 'Company'],
-                    ['label' => 'Access',],
+                ['label' => '#', 'sort' => 'id', 'width' => '7%'],
+                ['label' => 'Name', 'sort' => 'user_nicename'],
+                ['label' => 'Keap'],
                 ['label' => 'Role'],
-
-                    ['label' => 'Action'],
+                ['label' => 'Access',],
+                ['label' => 'Action'],
                 ];
         } else {
             return [['label' => '#', 'sort' => 'id', 'width' => '7%'], ['label' => 'Name', 'sort' => 'user_nicename'], ['label' => 'Company'], ['label' => 'Access'], ['label' => 'Role'], ['label' => 'Action'],];
@@ -67,35 +66,20 @@ class User extends \App\Models\User implements View
             $roleUser = array_key_first(unserialize($r['meta_value']));
         }
 
-        $roleEncryption=[
-            'administrator' => 'Super Admin',
-            'editor' => 'Company Admin',
-            'contributor' => 'Employee Company',
-            'subscriber' => 'Individual purchaser',
-        ];
-
-
-        $roles = $data->meta->where('meta_key', '=', config('app.wp_prefix', 'wp_') . 'capabilities');
-        $role = '';
-//        foreach ($roles as $r) {
-//            $role = $roleEncryption[array_key_first(unserialize($r['meta_value']))];
-//        }
+        $role = $data->meta->where('meta_key', '=', 'user_role')->first()->meta_value??'';
 
         $route = route('user.connect-keap', $data->ID);
-        $keap = "<a href='$route' class='p-1 rounded btn-error text-nowrap text-xs'>Not Connect</a>";
-        $campaign = "";
+        $keap = "<a href='$route' class='p-1 rounded btn-error text-nowrap text-xs'>Not connect with keap</a>";
+        $routeAccess = route('user.tag-list', $data->ID);
 
-
-        $keaps = $data->meta->where('meta_key', '=', 'keap_contact_id');
-        foreach ($keaps as $r) {
-            $route = route('user.tag-list', $data->ID);
-            $keap = "<a href='$route' class='p-1 rounded btn btn-success text-nowrap text-xs'>List Tag</a>";
-            $route = route('create_independent_user', $data->ID);
-            $campaign = "<span><a href='$route' class='btn btn-secondary text-xs p-1 rounded text-nowrap'>Add Tag</a></span>";
+        $keaps = $data->meta->where('meta_key', '=', 'keap_contact_id')->first()->meta_value??'';
+        if ($keaps){
+            $keap = "<div class='p-1 rounded btn btn-primary text-nowrap text-xs'>Connect with keap</div>";
         }
 
+
         $companies = $data->meta->where('meta_key', '=', 'company');
-        $company = '-';
+        $company = 'Non Company';
 
         $activity = $data->meta->where('meta_key', '=', '_sfwd-course_progress')->first();
 
@@ -104,17 +88,7 @@ class User extends \App\Models\User implements View
             $link4 = route('user.course', [$data->ID]);
             $button4 = "<span><a href='$link4' class='btn btn-success text-nowrap'>Activity Check</a></span>";
         }
-        $userAccess = "";
-        $access = $data->meta->where('meta_key', '=', 'user_access')->first();
-        if ($access != null) {
-            $ua = json_decode($access->meta_value);
-            $userAccess = "<ul style='list-style: disc; margin: 0 20px'>";
-            foreach ($ua as $u) {
-                $userAccess .= "<li>$u</li>";
-            }
-            $userAccess .= "</ul>";
 
-        }
         $link2 = route('user.show', $data->ID);
 
         $companyId = null;
@@ -130,21 +104,20 @@ class User extends \App\Models\User implements View
 
         if ($roleUser == "administrator") {
             $link = route('user.edit', $data->ID);
-            $link3 = route('schedule-user-administrator', [$data->ID]);
 
         } else {
             $link = route('company.edit-employee', [$companyId, $data->ID]);
-            $link3 = route('company.schedule-user', [$companyId, $data->ID]);
         }
 
+//        <div style='text-wrap: nowrap'>$userAccess</div>
         return [
             ['type' => 'string', 'data' => $data->ID],
-            ['type' => 'raw_html', 'data' => "<div>$data->user_login <br><div style='font-size: 10px'>$data->email</div></div>"],
-            ['type' => 'string', 'data' => $company],
-            ['type' => 'raw_html', 'data' => "<div style='text-wrap: nowrap; font-weight: bold'>$role</div><div style='text-wrap: nowrap'>$userAccess</div>"],
-            ['type' => 'raw_html', 'data' => "<div class='flex gap-1'> $keap <br> $campaign</div>"],
+            ['type' => 'raw_html', 'data' => "<div>$data->user_login <br><div style='font-size: 10px'>$data->email <br>$company</div></div>"],
+            ['type' => 'raw_html', 'data' => "<div style=' font-weight: bold'>$keap</div>"],
+            ['type' => 'raw_html', 'data' => "<div style=' font-weight: bold'>$role</div>"],
             ['type' => 'raw_html', 'text-align' => 'center', 'data' => "
                 <div class='flex gap-1'>
+                    <span><a href='$routeAccess' class='btn btn-success'>Access</a></span>
                     <span><a href='$link' class='btn btn-primary'>Edit</a></span>
                     $button4
                     <span><a href='$link2' class='btn btn-secondary text-nowrap'>Reset Password</a></span>

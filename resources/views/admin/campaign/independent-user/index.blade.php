@@ -4,7 +4,7 @@
             <div>
                 <div class="gap-3 p-4 lg:grid lg:grid-cols-12">
                     <h2 class="text-2xl col-span-12">
-                        List tag
+                        List access
                         {{ \App\Models\WpUserMeta::where('user_id',$id)->where('meta_key','first_name')->first()->meta_value??'' }}
                         {{ \App\Models\WpUserMeta::where('user_id',$id)->where('meta_key','last_name')->first()->meta_value??'' }}
                     </h2>
