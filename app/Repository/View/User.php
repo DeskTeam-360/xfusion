@@ -70,7 +70,7 @@ class User extends \App\Models\User implements View
 
         $route = "";
 //        $route = route('user.connect-keap', $data->ID);
-        $keap = "<a href='$route' class='p-1 rounded btn-error text-nowrap text-xs'>Not connect with keap</a>";
+        $keap = "<div href='$route' class='p-1 rounded btn-error text-nowrap text-xs'>Not connect with keap</div>";
         $routeAccess = route('user.tag-list', $data->ID);
 
         $keaps = $data->meta->where('meta_key', '=', 'keap_contact_id')->first()->meta_value??'';
