@@ -28,7 +28,7 @@ class ResetPassword extends Component
         $this->resetErrorBag();
         if ($this->password == $this->rePassword){
             $user = \App\Models\User::find($this->dataId)->update([
-                'user_pass' => WpPassword::make($this->password),
+                'user_pass' => md5($this->password),
             ]);
         }
         $this->dispatch('swal:alert', data:[
