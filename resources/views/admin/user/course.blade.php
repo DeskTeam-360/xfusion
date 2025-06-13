@@ -7,9 +7,9 @@
             <div class="text-3xl col">
                 Activity Done - {{ User::find($user)->user_nicename }}
             </div>
-            <a href="" class="btn btn-success col">
-                Detail
-            </a>
+{{--            <a href="" class="btn btn-success col">--}}
+{{--                Detail--}}
+{{--            </a>--}}
         </div>
 
         <livewire:user-course :user="$user"/>
