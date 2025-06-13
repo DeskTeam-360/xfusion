@@ -61,8 +61,9 @@ Route::post('/next-course/', function (Request $request) {
         if ($keapId!=null){
             Keap::contact()->tag($keapId->meta_value, [$tag]);
         }
+
         if ($accessTag!=null){
-            $accessTag->update(['meta_value' => $keapTag->meta_value.";$tag"]);
+            $accessTag->update(['meta_value' => $accessTag->meta_value.";$tag"]);
         }else{
             WpUserMeta::create([
                 'user_id'=>$user->ID,
