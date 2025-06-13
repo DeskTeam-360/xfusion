@@ -116,9 +116,14 @@ Route::middleware([
         Route::get('user/course/{user}/details', function ($user) {
             return view('admin.user.course', compact('user'));
         })->name('user.course');
+
         Route::get('user/access/{user}/', function ($user) {
             return view('admin.user.show-access', compact('user'));
         })->name('user.show-access');
+
+        Route::get('user-roles/', function () {
+            return view('admin.user.roles');
+        })->name('user.roles');
 
         Route::resource('campaign', CampaignController::class)->only('index', 'create', 'edit');
         Route::resource('company', CompanyController::class)->only('index', 'create', 'edit');

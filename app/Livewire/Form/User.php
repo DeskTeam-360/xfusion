@@ -109,6 +109,7 @@ class User extends Component
         if ($ur){
             $this->userMeta['user_role'] = $ur->title;
             $this->userMeta['user_access'] = $ur->accesses;
+            $this->userMeta['access_tags'] = implode(';',json_decode($ur->tag_starter));
         }
 
         $this->userMeta['wp_user_level'] = 0;
