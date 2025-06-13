@@ -68,7 +68,8 @@ class User extends \App\Models\User implements View
 
         $role = $data->meta->where('meta_key', '=', 'user_role')->first()->meta_value??'';
 
-        $route = route('user.connect-keap', $data->ID);
+        $route = "";
+//        $route = route('user.connect-keap', $data->ID);
         $keap = "<a href='$route' class='p-1 rounded btn-error text-nowrap text-xs'>Not connect with keap</a>";
         $routeAccess = route('user.tag-list', $data->ID);
 
