@@ -57,9 +57,20 @@ Route::post('/next-course/', function (Request $request) {
         $user = User::find($userId);
         $keapId = $user->meta->where('meta_key','keap_contact_id')->first();
         $keapTag = $user->meta->where('meta_key','keap_tags')->first();
+        $accessTag = $user->meta->where('meta_key','access_tags')->first();
         if ($keapId!=null){
             Keap::contact()->tag($keapId->meta_value, [$tag]);
         }
+        if ($accessTag!=null){
+            $accessTag->update(['meta_value' => $keapTag->meta_value.";$tag"]);
+        }else{
+            WpUserMeta::create([
+                'user_id'=>$user->ID,
+                'meta_key'=>'access_tags',
+                'meta_value'=>$tag
+            ]);
+        }
+
         if ($keapTag!=null){
             $keapTag->update(['meta_value' => $keapTag->meta_value.";$tag"]);
         }else{
