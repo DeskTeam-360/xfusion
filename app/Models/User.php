@@ -45,6 +45,17 @@ class User extends Corcel
         'display_name',
     ];
 
+    protected static $aliases = [
+        'login' => 'user_login',
+        'email' => 'user_email',
+        'slug' => 'user_nicename',
+        'url' => 'user_url',
+        'nickname' => ['meta' => 'nickname'],
+        'first_name' => ['meta' => 'first_name'],
+        'last_name' => ['meta' => 'last_name'],
+        'description' => ['meta' => 'description'],
+        'created_at' => 'user_registered',
+    ];
     /**
      * The attributes that should be hidden for serialization.
      *
