@@ -64,8 +64,13 @@ return [
 //            'driver' => 'eloquent',
 //            'model' => env('AUTH_MODEL', App\Models\User::class),
 //        ],
+//        'users' => [
+//            'driver' => 'corcel',
+//            'model'  => Corcel\Model\User::class,
+//        ],
+
         'users' => [
-            'driver' => 'corcel',
+            'driver' => 'custom',
             'model'  => Corcel\Model\User::class,
         ],
 
