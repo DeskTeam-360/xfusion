@@ -2,12 +2,14 @@
 
 namespace App\Auth;
 
+use Hautelook\Phpass\PasswordHash;
 use Illuminate\Auth\EloquentUserProvider;
 use Illuminate\Contracts\Auth\Authenticatable;
+use Illuminate\Contracts\Auth\Authenticatable as UserContract;
 
 class CustomUserProvider extends EloquentUserProvider
 {
-    public function validateCredentials(Authenticatable $user, array $credentials)
+    public function validateCredentials(UserContract $user, array $credentials)
     {
         $plain = $credentials['password'];
         $hashed = $user->getAuthPassword();
@@ -18,20 +20,16 @@ class CustomUserProvider extends EloquentUserProvider
         }
 
         if (str_starts_with($hashed, '$P$')) {
-            // Butuh library PHPass kalau kamu ingin dukung hash lama
             return $this->checkPhpPass($plain, $hashed);
         }
 
         return parent::validateCredentials($user, $credentials);
     }
 
-    protected function checkPhpPass($password, $hash)
+    protected function checkPhpPass($plain, $hashed)
     {
-        // kamu bisa pakai library ini via composer:
-        // composer require hautelook/phpass
-
-        $hasher = new \Hautelook\Phpass\PasswordHash(8, true);
-        return $hasher->CheckPassword($password, $hash);
+        $hasher = new PasswordHash(8, true);
+        return $hasher->CheckPassword($plain, $hashed);
     }
 
     public function retrieveByCredentials(array $credentials)
