@@ -33,4 +33,21 @@ class CustomUserProvider extends EloquentUserProvider
         $hasher = new \Hautelook\Phpass\PasswordHash(8, true);
         return $hasher->CheckPassword($password, $hash);
     }
+
+    public function retrieveByCredentials(array $credentials)
+    {
+        $queryCredentials = array_filter(
+            $credentials,
+            fn($key) => $key !== 'password',
+            ARRAY_FILTER_USE_KEY
+        );
+
+        $query = $this->createModel()->newQuery();
+
+        foreach ($queryCredentials as $key => $value) {
+            $query->where($key, $value);
+        }
+
+        return $query->first();
+    }
 }
