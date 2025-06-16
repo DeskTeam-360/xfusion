@@ -71,7 +71,7 @@ return [
 
         'users' => [
             'driver' => 'custom',
-            'model'  => Corcel\Model\User::class,
+            'model'  => App\Models\User::class,
         ],
 
         // 'users' => [
