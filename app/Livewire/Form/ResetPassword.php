@@ -6,6 +6,7 @@ use Carbon\Carbon;
 use Livewire\Attributes\Validate;
 use Livewire\Component;
 use MikeMcLin\WpPassword\Facades\WpPassword;
+use Hautelook\Phpass\PasswordHash;
 
 class ResetPassword extends Component
 {
@@ -27,8 +28,19 @@ class ResetPassword extends Component
         $this->validate();
         $this->resetErrorBag();
         if ($this->password == $this->rePassword){
+
+
+
+            $hasher = new PasswordHash(8, true); // Sama seperti di WordPress
+            $passwordHash = $hasher->HashPassword($this->password);
+
+//            User::create([
+//                'email' => $request->email,
+//                'password' => $passwordHash, // Ini format $P$... yang cocok buat WordPress
+//            ]);
+
             $user = \App\Models\User::find($this->dataId)->update([
-                'user_pass' => md5($this->password),
+                'user_pass' => $passwordHash,
             ]);
         }
         $this->dispatch('swal:alert', data:[

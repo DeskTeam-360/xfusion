@@ -5,6 +5,7 @@ namespace App\Livewire\Form;
 use App\Models\CompanyEmployee;
 use App\Models\WpUserMeta;
 use Carbon\Carbon;
+use Hautelook\Phpass\PasswordHash;
 use Illuminate\Support\Facades\Http;
 use KeapGeek\Keap\Facades\Keap;
 use Livewire\Attributes\Validate;
@@ -81,7 +82,10 @@ class User extends Component
 
         $this->validate();
 
-        $user = \App\Models\User::create(['user_login' => $this->username, 'user_pass' => md5($this->password), 'user_nicename' => $this->first_name, 'user_email' => $this->email, 'user_url' => $this->website ?? 'http://' . $this->first_name, 'user_registered' => Carbon::now()->toDateTimeString(), 'user_activation_key' => '', 'user_status' => 0, 'display_name' => $this->first_name . ' ' . $this->last_name,]);
+        $hasher = new PasswordHash(8, true); // Sama seperti di WordPress
+        $passwordHash = $hasher->HashPassword($this->password);
+
+        $user = \App\Models\User::create(['user_login' => $this->username, 'user_pass' => $passwordHash, 'user_nicename' => $this->first_name, 'user_email' => $this->email, 'user_url' => $this->website ?? 'http://' . $this->first_name, 'user_registered' => Carbon::now()->toDateTimeString(), 'user_activation_key' => '', 'user_status' => 0, 'display_name' => $this->first_name . ' ' . $this->last_name,]);
 
 
 //        $client = Http::post('https://hooks.zapier.com/hooks/catch/941497/2hr769d/', ['first_name' => $this->first_name, 'last_name' => $this->last_name, 'email' => $this->email, 'website' => $this->website, 'password' => WpPassword::make($this->password),]);
