@@ -20,7 +20,7 @@ class User extends Component
     public $dataId;
     #[Validate('required|max:255')]
     public $username;
-    #[Validate('required|max:255|email|unique:wp_users,email')]
+    #[Validate('required|max:255|email|unique:wp_users,user_email')]
     public $email;
     #[Validate('required|max:255')]
     public $first_name;
