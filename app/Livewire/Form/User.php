@@ -116,6 +116,7 @@ class User extends Component
                 ],
             ]);
             $contactId = $contact['id'];
+            Keap::contact()->tag($contact['id'],json_decode($ur->tag_starter));
 
             $ar = WpUserMeta::where('user_id', $this->dataId)->where('meta_key', 'keap_contact_id')->first();
             if ($ar == null) {
@@ -199,6 +200,7 @@ class User extends Component
                 ]);
             $this->userMeta['keap_contact_id'] = $contact['id'];
             $this->userMeta['keap_status'] = true;
+            Keap::contact()->tag($contact['id'],json_decode($ur->tag_starter));
         }else{
             $this->userMeta['keap_status'] = false;
         }
