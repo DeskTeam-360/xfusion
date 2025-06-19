@@ -17,6 +17,21 @@ use Illuminate\Support\Facades\Route;
 
 Route::get('/', function () {
 
+
+
+
+//    $contact = Keap::contact()->createOrUpdate([
+//        'given_name' => 'John222',
+//        'family_name' => 'Doe222',
+//        'email_addresses' => [
+//            [
+//                'email' => 'john@example.com',
+//                'field' => 'EMAIL1',
+//            ],
+//        ],
+//    ]);
+//
+//    dd($contact['id']);
     return redirect()->route('dashboard');
 });
 

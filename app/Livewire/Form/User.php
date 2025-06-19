@@ -6,11 +6,9 @@ use App\Models\CompanyEmployee;
 use App\Models\WpUserMeta;
 use Carbon\Carbon;
 use Hautelook\Phpass\PasswordHash;
-use Illuminate\Support\Facades\Http;
 use KeapGeek\Keap\Facades\Keap;
 use Livewire\Attributes\Validate;
 use Livewire\Component;
-use MikeMcLin\WpPassword\Facades\WpPassword;
 
 class User extends Component
 {
@@ -68,12 +66,90 @@ class User extends Component
 //            foreach ($roles as $r) {
 //                $this->role = array_key_first(unserialize($r['meta_value']));
 //            }
-            $role =$data->meta()->where('meta_key', 'user_role')->first()->meta_value??'';
-            if ($role){
+            $role = $data->meta()->where('meta_key', 'user_role')->first()->meta_value ?? '';
+            if ($role) {
                 $this->role = \App\Models\UserRole::where('title', $role)->first()->id;
             }
 //            $this->role = ;
 //            dd($this->role);
+        }
+    }
+
+    public function update()
+    {
+        $user = \App\Models\User::find($this->dataId);
+        $user->update(['user_nicename' => $this->username, 'user_email' => $this->email, 'user_url' => $this->website ?? 'http://' . $this->first_name, 'user_registered' => Carbon::now()->toDateTimeString(), 'user_status' => 0, 'display_name' => $this->first_name . ' ' . $this->last_name,]);
+
+        $fn = WpUserMeta::where('user_id', $this->dataId)->where('meta_key', 'first_name')->first();
+        $ln = WpUserMeta::where('user_id', $this->dataId)->where('meta_key', 'last_name')->first();
+        $ac = WpUserMeta::where('user_id', $this->dataId)->where('meta_key', 'user_access')->first();
+        $ar = WpUserMeta::where('user_id', $this->dataId)->where('meta_key', 'user_role')->first();
+
+
+
+
+        if ($ln != null) {
+            $ln->update(['meta_value' => $this->last_name]);
+        } else {
+            WpUserMeta::create(['user_id' => $this->dataId, 'meta_key' => 'last_name', 'meta_value' => $this->last_name]);
+        }
+
+        if ($fn != null) {
+            $fn->update(['meta_value' => $this->first_name]);
+        } else {
+            WpUserMeta::create(['user_id' => $this->dataId, 'meta_key' => 'first_name', 'meta_value' => $this->first_name]);
+        }
+
+        $ur = \App\Models\UserRole::find($this->role);
+        if ($ac != null) {
+            $ac->update(['meta_value' => $ur->accesses]);
+        } else {
+            WpUserMeta::create(['user_id' => $this->dataId, 'meta_key' => 'user_access', 'meta_value' => $ur->accesses]);
+        }
+
+        if (str_contains($ur->accesses, 'keap')) {
+            $contact = Keap::contact()->createOrUpdate([
+                'given_name' => $this->first_name,
+                'family_name' => $this->last_name,
+                'email_addresses' => [
+                    ['email' => $this->email, 'field' => 'EMAIL1',],
+                ],
+            ]);
+            $contactId = $contact['id'];
+
+            $ar = WpUserMeta::where('user_id', $this->dataId)->where('meta_key', 'keap_contact_id')->first();
+            if ($ar == null) {
+                WpUserMeta::create(['user_id' => $this->dataId, 'meta_key' => 'keap_contact_id', 'meta_value' => $contactId]);
+            }
+            $ks = WpUserMeta::where('user_id', $this->dataId)->where('meta_key', 'keap_status')->first();
+            if ($ks != null) {
+                $ar->update(['meta_value' => true]);
+            }else{
+                WpUserMeta::create(['user_id' => $this->dataId, 'meta_key' => 'keap_status', 'meta_value' => true]);
+            }
+        }
+        else{
+            $ks = WpUserMeta::where('user_id', $this->dataId)->where('meta_key', 'keap_status')->first();
+            if ($ks != null) {
+                $ar->update(['meta_value' => false]);
+            }else{
+                WpUserMeta::create(['user_id' => $this->dataId, 'meta_key' => 'keap_status', 'meta_value' => false]);
+            }
+        }
+
+        if ($ar != null) {
+            $ar->update(['meta_value' => $ur->title]);
+        } else {
+            WpUserMeta::create(['user_id' => $this->dataId, 'meta_key' => 'user_role', 'meta_value' => $ur->title]);
+        }
+
+//        $client = Http::post('https://hooks.zapier.com/hooks/catch/941497/2hr769d/', ['first_name' => $this->first_name, 'last_name' => $this->last_name, 'email' => $this->email, 'website' => $this->website,]);
+
+        $this->dispatch('swal:alert', data: ['icon' => 'success', 'title' => 'successfully changed the user',]);
+        if ($this->companyId != null) {
+            $this->redirect(route('company.show', $this->companyId));
+        } else {
+            $this->redirect(route('user.index'));
         }
     }
 
@@ -87,9 +163,6 @@ class User extends Component
 
         $user = \App\Models\User::create(['user_login' => $this->username, 'user_pass' => $passwordHash, 'user_nicename' => $this->first_name, 'user_email' => $this->email, 'user_url' => $this->website ?? 'http://' . $this->first_name, 'user_registered' => Carbon::now()->toDateTimeString(), 'user_activation_key' => '', 'user_status' => 0, 'display_name' => $this->first_name . ' ' . $this->last_name,]);
 
-
-//        $client = Http::post('https://hooks.zapier.com/hooks/catch/941497/2hr769d/', ['first_name' => $this->first_name, 'last_name' => $this->last_name, 'email' => $this->email, 'website' => $this->website, 'password' => WpPassword::make($this->password),]);
-//        $wpRole = '';
         if ($this->role == '1') {
             $wpRole = 'administrator';
         } else {
@@ -109,11 +182,25 @@ class User extends Component
         $this->userMeta['locale'] = '';
         $this->userMeta['wp_capabilities'] = serialize([$wpRole => true]);
 
-        $ur =  \App\Models\UserRole::find($this->role);
-        if ($ur){
+        $ur = \App\Models\UserRole::find($this->role);
+        if ($ur) {
             $this->userMeta['user_role'] = $ur->title;
             $this->userMeta['user_access'] = $ur->accesses;
-            $this->userMeta['access_tags'] = implode(';',json_decode($ur->tag_starter));
+            $this->userMeta['access_tags'] = implode(';', json_decode($ur->tag_starter));
+        }
+
+        if (str_contains($ur->accesses, 'keap')) {
+            $contact = Keap::contact()->createOrUpdate([
+                'given_name' => $this->first_name,
+                'family_name' => $this->last_name,
+                'email_addresses' => [
+                    ['email' => $this->email, 'field' => 'EMAIL1',],
+                    ],
+                ]);
+            $this->userMeta['keap_contact_id'] = $contact['id'];
+            $this->userMeta['keap_status'] = true;
+        }else{
+            $this->userMeta['keap_status'] = false;
         }
 
         $this->userMeta['wp_user_level'] = 0;
@@ -135,60 +222,6 @@ class User extends Component
             $this->redirect(route('user.index'));
         }
     }
-
-    public function update()
-    {
-        $user = \App\Models\User::find($this->dataId);
-        $user->update([
-            'user_nicename' => $this->username,
-            'user_email' => $this->email,
-            'user_url' => $this->website ?? 'http://' . $this->first_name,
-            'user_registered' => Carbon::now()->toDateTimeString(),
-            'user_status' => 0,
-            'display_name' => $this->first_name . ' ' . $this->last_name,
-            ]);
-
-        $fn = WpUserMeta::where('user_id', $this->dataId)->where('meta_key', 'first_name')->first();
-        $ln = WpUserMeta::where('user_id', $this->dataId)->where('meta_key', 'last_name')->first();
-        $ac = WpUserMeta::where('user_id', $this->dataId)->where('meta_key', 'user_access')->first();
-        $ar = WpUserMeta::where('user_id', $this->dataId)->where('meta_key', 'user_role')->first();
-
-
-        if ($ln != null) {
-            $ln->update(['meta_value' => $this->last_name]);
-        } else {
-            WpUserMeta::create(['user_id' => $this->dataId, 'meta_key' => 'last_name', 'meta_value' => $this->last_name]);
-        }
-
-        if ($fn != null) {
-            $fn->update(['meta_value' => $this->first_name]);
-        } else {
-            WpUserMeta::create(['user_id' => $this->dataId, 'meta_key' => 'first_name', 'meta_value' => $this->first_name]);
-        }
-
-        $ur =  \App\Models\UserRole::find($this->role);
-        if ($ac != null) {
-            $ac->update(['meta_value' => $ur->accesses]);
-        }else{
-            WpUserMeta::create(['user_id' => $this->dataId, 'meta_key' => 'user_access', 'meta_value' => $ur->accesses]);
-        }
-
-        if ($ar != null) {
-            $ar->update(['meta_value' => $ur->title]);
-        }else{
-            WpUserMeta::create(['user_id' => $this->dataId, 'meta_key' => 'user_role', 'meta_value' => $ur->title]);
-        }
-
-//        $client = Http::post('https://hooks.zapier.com/hooks/catch/941497/2hr769d/', ['first_name' => $this->first_name, 'last_name' => $this->last_name, 'email' => $this->email, 'website' => $this->website,]);
-
-        $this->dispatch('swal:alert', data: ['icon' => 'success', 'title' => 'successfully changed the user',]);
-        if ($this->companyId != null) {
-            $this->redirect(route('company.show', $this->companyId));
-        } else {
-            $this->redirect(route('user.index'));
-        }
-    }
-
 
     public function render()
     {

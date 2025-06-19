@@ -17,13 +17,13 @@ class CustomUserProvider extends EloquentUserProvider
         if (str_starts_with($rawHashed, '$wp$')) {
             $fixedHash = str_replace('$wp$', '$', trim($rawHashed));
 
-            dd([
-                'plain' => $plain,
-                'stored_hash' => $rawHashed,
-                'fixed_hash' => $fixedHash,
-                'verify_result' => password_verify($plain, $fixedHash),
-                'hash_info' => password_get_info($fixedHash)
-            ]);
+//            dd([
+//                'plain' => $plain,
+//                'stored_hash' => $rawHashed,
+//                'fixed_hash' => $fixedHash,
+//                'verify_result' => password_verify($plain, $fixedHash),
+//                'hash_info' => password_get_info($fixedHash)
+//            ]);
 //            dd($credentials);
 //            dd($plain, $hashed, password_verify($plain, $hashed));
 //            return password_verify($plain, $hashed);
