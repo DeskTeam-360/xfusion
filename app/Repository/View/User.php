@@ -74,7 +74,8 @@ class User extends \App\Models\User implements View
         $routeAccess = route('user.tag-list', $data->ID);
 
         $keaps = $data->meta->where('meta_key', '=', 'keap_contact_id')->first()->meta_value??'';
-        if ($keaps){
+        $keapStatus = $data->meta->where('meta_key', '=', 'keap_status')->first()->meta_value??'';
+        if ($keaps and $keapStatus == 'true') {
             $keap = "<div class='p-1 rounded btn btn-primary text-nowrap text-xs'>Connect with keap</div>";
         }
 
