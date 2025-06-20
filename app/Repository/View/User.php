@@ -46,7 +46,7 @@ class User extends \App\Models\User implements View
             return [
                 ['label' => '#', 'sort' => 'id', 'width' => '7%'],
                 ['label' => 'Name', 'sort' => 'user_nicename'],
-                ['label' => 'Keap'],
+//                ['label' => 'Keap'],
                 ['label' => 'Role'],
                 ['label' => 'Access',],
                 ['label' => 'Action'],
@@ -113,8 +113,8 @@ class User extends \App\Models\User implements View
 //        <div style='text-wrap: nowrap'>$userAccess</div>
         return [
             ['type' => 'string', 'data' => $data->ID],
-            ['type' => 'raw_html', 'data' => "<div>$data->user_login <br><div style='font-size: 10px'>$data->email <br>$company</div></div>"],
-            ['type' => 'raw_html', 'data' => "<div style=' font-weight: bold'>$keap</div>"],
+            ['type' => 'raw_html', 'data' => "<div>$data->user_login <br><div style='font-size: 10px'>$data->email <br>$company <br> $keap </div></div>"],
+
             ['type' => 'raw_html', 'data' => "<div style=' font-weight: bold'>$role</div>"],
             ['type' => 'raw_html', 'text-align' => 'center', 'data' => "
                 <div class='flex gap-1'>
