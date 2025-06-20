@@ -30,18 +30,18 @@ class GetTag extends Command
      */
     public function handle()
     {
-        $users = User::whereDoesntHave('meta', function ($q) {
-            $q->where('meta_key', '=', 'keap_contact_id');
-        })->get();
-        foreach ($users as $user) {
-            $k = Keap::contact()->list(['email' => $user->email]);
-            if ($k != null) {
-                WpUserMeta::create(['meta_key' => 'keap_contact_id', 'user_id' => $user->ID, 'meta_value' => $k[0]['id']]);
-            }
-        }
+//        $users = User::whereDoesntHave('meta', function ($q) {
+//            $q->where('meta_key', '=', 'keap_contact_id');
+//        })->get();
+//        foreach ($users as $user) {
+//            $k = Keap::contact()->list(['email' => $user->email]);
+//            if ($k != null) {
+//                WpUserMeta::create(['meta_key' => 'keap_contact_id', 'user_id' => $user->ID, 'meta_value' => $k[0]['id']]);
+//            }
+//        }
 
         $users = User::whereHas('meta', function ($q) {
-            $q->where('meta_key', '=', 'keap_contact_id');
+            $q->where('meta_key', '=', 'keap_status')->where('meta_value', '=', 'true');
         })->get();
 
         foreach ($users as $user) {
@@ -61,6 +61,7 @@ class GetTag extends Command
                         $tagApply[] = $tk['date_applied'];
                     }
                 }
+
                 $tag = implode(';', $tag);
                 $tagApply = implode(';', $tagApply);
 
@@ -87,21 +88,21 @@ class GetTag extends Command
             }
 
 
-            $k = Keap::contact()->list(['email' => $user->email])[0];
+//            $k = Keap::contact()->list(['email' => $user->email])[0];
 
-            $fn = WpUserMeta::where('user_id', $user->ID)->where('meta_key', 'first_name')->first();
-            $ln = WpUserMeta::where('user_id', $user->ID)->where('meta_key', 'last_name')->first();
-
-            if ($ln != null) {
-                $ln->update(['meta_value' => $k['family_name']]);
-            } else {
-                WpUserMeta::create(['user_id' => $user->ID, 'meta_key' => 'last_name', 'meta_value' => $k['family_name']]);
-            }
-            if ($fn != null) {
-                $fn->update(['meta_value' => $k['given_name']]);
-            } else {
-                WpUserMeta::create(['user_id' => $user->ID, 'meta_key' => 'first_name', 'meta_value' => $k['given_name']]);
-            }
+//            $fn = WpUserMeta::where('user_id', $user->ID)->where('meta_key', 'first_name')->first();
+//            $ln = WpUserMeta::where('user_id', $user->ID)->where('meta_key', 'last_name')->first();
+//
+//            if ($ln != null) {
+//                $ln->update(['meta_value' => $k['family_name']]);
+//            } else {
+//                WpUserMeta::create(['user_id' => $user->ID, 'meta_key' => 'last_name', 'meta_value' => $k['family_name']]);
+//            }
+//            if ($fn != null) {
+//                $fn->update(['meta_value' => $k['given_name']]);
+//            } else {
+//                WpUserMeta::create(['user_id' => $user->ID, 'meta_key' => 'first_name', 'meta_value' => $k['given_name']]);
+//            }
         }
         $tags = Keap::tag()->list(['category' => 44]);
 

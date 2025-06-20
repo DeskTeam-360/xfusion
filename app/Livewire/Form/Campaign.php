@@ -95,7 +95,7 @@ class Campaign extends Component
             } else {
                 WpUserMeta::create(['user_id' => $userID, 'meta_key' => 'access_tags', 'meta_value' => $tag]);
             }
-            $keapUser = WpUserMeta::where('user_id', $userID)->where('meta_key', 'keap_contact_id')->first();
+            $keapUser = WpUserMeta::where('user_id', $userID)->where('meta_key', 'keap_status')->where('meta_value', 'true')->first();
             if ($keapUser != null) {
                 $array_data['users'][] = $keapUser->meta_value;
             }

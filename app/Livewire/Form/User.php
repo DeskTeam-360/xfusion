@@ -88,6 +88,8 @@ class User extends Component
 
 
 
+
+
         if ($ln != null) {
             $ln->update(['meta_value' => $this->last_name]);
         } else {
@@ -107,6 +109,14 @@ class User extends Component
             WpUserMeta::create(['user_id' => $this->dataId, 'meta_key' => 'user_access', 'meta_value' => $ur->accesses]);
         }
 
+        $at = WpUserMeta::where('user_id', $this->dataId)->where('meta_key', 'access_tags')->first();
+        $currentTag =json_decode($ur->tag_starter);
+
+        if ($at != null) {
+            $currentTag = array_merge($currentTag, explode(';', $at->meta_value));
+            $at->update(['meta_value' => implode(';', $currentTag)]);
+        }
+
         if (str_contains($ur->accesses, 'keap')) {
             $contact = Keap::contact()->createOrUpdate([
                 'given_name' => $this->first_name,
@@ -115,8 +125,10 @@ class User extends Component
                     ['email' => $this->email, 'field' => 'EMAIL1',],
                 ],
             ]);
+
             $contactId = $contact['id'];
-            Keap::contact()->tag($contact['id'],json_decode($ur->tag_starter));
+
+            Keap::contact()->tag($contact['id'],$currentTag);
 
             $ar = WpUserMeta::where('user_id', $this->dataId)->where('meta_key', 'keap_contact_id')->first();
             if ($ar == null) {
@@ -143,8 +155,6 @@ class User extends Component
         } else {
             WpUserMeta::create(['user_id' => $this->dataId, 'meta_key' => 'user_role', 'meta_value' => $ur->title]);
         }
-
-//        $client = Http::post('https://hooks.zapier.com/hooks/catch/941497/2hr769d/', ['first_name' => $this->first_name, 'last_name' => $this->last_name, 'email' => $this->email, 'website' => $this->website,]);
 
         $this->dispatch('swal:alert', data: ['icon' => 'success', 'title' => 'successfully changed the user',]);
         if ($this->companyId != null) {
