@@ -78,7 +78,7 @@ class User extends \App\Models\User implements View
 
         $keap = "<div href='$route' class='p-1 rounded btn btn-error text-nowrap text-xs'>Not connect with keap $keapStatus</div>";
 
-        if ($keaps and $keapStatus == 'true') {
+        if ($keaps and $keapStatus == 1) {
             $keap = "<div class='p-1 rounded btn btn-primary text-nowrap text-xs'>Connect with keap</div>";
         }
 
