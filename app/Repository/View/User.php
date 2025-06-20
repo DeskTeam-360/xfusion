@@ -48,7 +48,7 @@ class User extends \App\Models\User implements View
                 ['label' => 'Name', 'sort' => 'user_nicename'],
 //                ['label' => 'Keap'],
                 ['label' => 'Role'],
-                ['label' => 'Access',],
+//                ['label' => 'Access',],
                 ['label' => 'Action'],
                 ];
         } else {
