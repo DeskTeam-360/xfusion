@@ -75,6 +75,9 @@ class User extends \App\Models\User implements View
 
         $keaps = $data->meta->where('meta_key', '=', 'keap_contact_id')->first()->meta_value??'';
         $keapStatus = $data->meta->where('meta_key', '=', 'keap_status')->first()->meta_value??'';
+
+        $keap = "<div href='$route' class='p-1 rounded btn btn-error text-nowrap text-xs'>Not connect with keap $keapStatus</div>";
+
         if ($keaps and $keapStatus == 'true') {
             $keap = "<div class='p-1 rounded btn btn-primary text-nowrap text-xs'>Connect with keap</div>";
         }
