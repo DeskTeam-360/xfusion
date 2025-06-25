@@ -3,6 +3,7 @@
 namespace App\Repository\View;
 
 use App\Repository\View;
+use Corcel\Model\Attachment;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Support\Facades\Auth;
 
@@ -44,10 +45,10 @@ class User extends \App\Models\User implements View
         }
         if ($roleUser == "administrator") {
             return [
-                ['label' => '#', 'sort' => 'id', 'width' => '7%'],
-                ['label' => 'Name', 'sort' => 'user_nicename'],
+//                ['label' => '#', 'sort' => 'id', 'width' => '7%'],
+                ['label' => 'Profile', 'sort' => 'user_nicename'],
 //                ['label' => 'Keap'],
-                ['label' => 'Role'],
+                ['label' => 'Status'],
 //                ['label' => 'Access',],
                 ['label' => 'Action'],
                 ];
@@ -66,20 +67,21 @@ class User extends \App\Models\User implements View
             $roleUser = array_key_first(unserialize($r['meta_value']));
         }
 
+        $fn = $data->meta->where('meta_key', '=', 'first_name')->first()->meta_value??'';
+        $ln = $data->meta->where('meta_key', '=', 'last_name')->first()->meta_value??'';
+
+        $fullName = "$fn $ln";
         $role = $data->meta->where('meta_key', '=', 'user_role')->first()->meta_value??'';
 
-        $route = "";
-//        $route = route('user.connect-keap', $data->ID);
-        $keap = "<div href='$route' class='p-1 rounded btn btn-error text-nowrap text-xs'>Not connect with keap</div>";
         $routeAccess = route('user.tag-list', $data->ID);
 
         $keaps = $data->meta->where('meta_key', '=', 'keap_contact_id')->first()->meta_value??'';
         $keapStatus = $data->meta->where('meta_key', '=', 'keap_status')->first()->meta_value??'';
 
-        $keap = "<div href='$route' class='p-1 rounded btn btn-error text-nowrap text-xs'>Not connect with keap $keapStatus</div>";
+        $keap = "<div class='text-nowrap text-xs text-danger' style='color: red'>Not connect with keap</div>";
 
         if ($keaps and $keapStatus == true) {
-            $keap = "<div class='p-1 rounded btn btn-primary text-nowrap text-xs'>Connect with keap</div>";
+            $keap = "<div class='text-nowrap text-xs text-success' style='color: green;'>Connect with keap</div>";
         }
 
 
@@ -114,15 +116,21 @@ class User extends \App\Models\User implements View
             $link = route('company.edit-employee', [$companyId, $data->ID]);
         }
 
-//        <div style='text-wrap: nowrap'>$userAccess</div>
         return [
-            ['type' => 'string', 'data' => $data->ID],
-            ['type' => 'raw_html', 'data' => "<div>$data->user_login <br><div style='font-size: 10px'>$data->email <br>$company <br> $keap </div></div>"],
+            ['type' => 'raw_html', 'data' => "<div>
+                <span class='text-xl'>$fullName</span> <br>
+                <font color='#ffd700'>$data->user_login</font> <br>
+                $data->user_email
+                </div>"],
+            ['type' => 'raw_html', 'data' => "<div>
+                <span class='text-xl'>$company</span> <br>
+                <span class='text-xs'>$role</span> <br>
+                $keap
 
-            ['type' => 'raw_html', 'data' => "<div style=' font-weight: bold'>$role</div>"],
+                </div>"],
             ['type' => 'raw_html', 'text-align' => 'center', 'data' => "
                 <div class='flex gap-1'>
-                    <span><a href='$routeAccess' class='btn btn-success'>Access</a></span>
+                    <span><a href='$routeAccess' class='btn'>Access</a></span>
                     <span><a href='$link' class='btn btn-primary'>Edit</a></span>
                     $button4
                     <span><a href='$link2' class='btn btn-secondary text-nowrap'>Reset Password</a></span>

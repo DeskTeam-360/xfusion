@@ -17,6 +17,8 @@ use Illuminate\Support\Facades\Route;
 
 Route::get('/', function () {
 
+//    $fields = Keap::contact()->model();
+//    dd($fields);
 
 
 
@@ -29,10 +31,15 @@ Route::get('/', function () {
 //                'field' => 'EMAIL1',
 //            ],
 //        ],
+//        'custom_fields' => [
+//            ['id' => '96', 'content' => 'xfusion@example.com'],
+//            ['id' => '98', 'content' => 'securepassword123'],
+//        ],
 //    ]);
-//
+//    dd($contact);
+////
 //    dd($contact['id']);
-    return redirect()->route('dashboard');
+//    return redirect()->route('dashboard');
 });
 
 Route::get('/home', function () {

@@ -10,11 +10,13 @@ use App\Models\WpUserMeta;
 use Carbon\Carbon;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Http;
+use Livewire\WithFileUploads;
 use MikeMcLin\WpPassword\Facades\WpPassword;
 use App\Livewire\Table\Master;
 
 class ImportController extends Controller
 {
+
     public $userMeta;
     private $username;
     private $first_name;
@@ -24,6 +26,8 @@ class ImportController extends Controller
     private $email;
     private $website;
     private $role;
+
+    public $fileCsv;
 
     public function importIndex()
     {
@@ -48,6 +52,7 @@ class ImportController extends Controller
             $this->role = array_key_first(unserialize($r['meta_value']));
         }
     }
+
 
     public function importCSV(Request $request)
     {

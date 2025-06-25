@@ -47,6 +47,7 @@ class TagKeap extends Component
                     'description' => $this->description,
                     'category_id' => config('app.keap_category'),
                 ]);
+//                dd($keap);
 
                 if ($keap){
                     Tag::create([

@@ -164,7 +164,7 @@ class ExportController extends Controller
     public function downloadTemplate()
     {
         $filePath = 'csv_templates/csv_import_example.csv'; // Path to the CSV file
-        $fileName = 'csv_import_example.csv'; // Desired filename for download
+        $fileName = 'user_upload_template.csv'; // Desired filename for download
 
         return response()->download(public_path('/assets/'. $fileName));
     }

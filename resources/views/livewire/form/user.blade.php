@@ -8,28 +8,7 @@
     @endif
     <x-input title="First Name" model="first_name" required="true"/>
     <x-input title="Last Name" model="last_name" required="true"/>
-
-    <x-input title="Website" model="website"/>
-    @if($action=="create")
-        <x-input title="Password" model="password" type="password" required="true"/>
-        <x-input title="Re-type password" model="rePassword" type="password" required="true"/>
-    @endif
-{{--    @if($action=="create" and $companyId==null)--}}
-{{--        <div>--}}
-{{--            <label for="role" class="form-label mb-2">--}}
-{{--                Role <span class="text-red-600">*</span>--}}
-{{--            </label>--}}
-{{--            <select wire:model="role" class="form-control">--}}
-{{--                <option value="contributor">Contributor</option>--}}
-{{--                <option value="editor">Company/Editor</option>--}}
-{{--                <option value="administrator">Administrator</option>--}}
-{{--                <option value="subscriber">Non Administrator</option>--}}
-{{--            </select>--}}
-{{--            <div> @error('role') <span class="error">{{ $message }}</span> @enderror </div>--}}
-{{--            <br>--}}
-{{--        </div>--}}
-{{--    @endif--}}
-    <div class="mb-2" >
+    <div class="mb-2">
         <label for="role" class="form-label mb-2">
             Role <span class="text-red-600">*</span>
         </label>
@@ -41,41 +20,20 @@
         </select>
     </div>
 
+    <x-input title="Website" model="website"/>
+    @if($action=="create")
+        <x-input title="Password" model="password" type="password" required="true"/>
+        <x-input title="Re-type password" model="rePassword" type="password" required="true"/>
+    @endif
 
-    {{--        <div class="mt-3" wire:ignore>--}}
-    {{--            <label for="{{'optionAccess'}}"--}}
-    {{--                   class="block text-sm font-bold dark:text-light">--}}
-    {{--                Access--}}
-    {{--            </label>--}}
-    {{--            <select id="{{'optionAccess'}}"--}}
-    {{--                    class="bg-gray-200 appearance-none border-1 border border-gray-100 rounded w-full text-gray-700 leading-tight focus:outline-none dark:border-primary-light focus:bg-gray-100 dark:bg-dark dark:text-light focus:dark:border-white select2"--}}
-    {{--                    multiple=""--}}
 
-    {{--                    name="optionAccess"--}}
-    {{--                    style="padding:0  100px" wire:model="{{'accessSelected'}}">--}}
-    {{--                @for($i=0;$i<count($optionAccess) ;$i++)--}}
-    {{--                    <option value="{{$optionAccess[$i]['value']}}"--}}
-    {{--                            style="padding: 0 25px"--}}
-    {{--                        {{ in_array($optionAccess[$i]['value'],$accessSelected)?'selected':''}}--}}
-    {{--                    >--}}
-    {{--                        {{$optionAccess[$i]['title']}}--}}
-    {{--                    </option>--}}
-    {{--                @endfor--}}
-    {{--            </select>--}}
-    {{--            <script>--}}
-    {{--                document.addEventListener('livewire:init', function () {--}}
-    {{--                    let data;--}}
-    {{--                    $('#optionAccess').select2();--}}
-    {{--                    $('#optionAccess').on('change', function (e) {--}}
-    {{--                        data = $('#{{'optionAccess'}}').select2("val");--}}
-    {{--                        @this.set('{{'accessSelected'}}', data);--}}
-    {{--                    })--}}
-    {{--                });--}}
-
-    {{--            </script>--}}
-
-    {{--        </div>--}}
-
+    <div class="mb-2 mt-2">
+        <label for="mail-send" class="flex align-items-center">
+            <input type="checkbox" id="mail-send" style="margin-right: 10px;" wire:model="keapMailSend">
+            Send email and password access ?
+        </label>
+    </div>
+    <br>
     <button type="submit" class="btn" wire:loading.attr="disabled">Submit</button>
 
 </form>
