@@ -39,7 +39,7 @@ Route::get('/', function () {
 //    dd($contact);
 ////
 //    dd($contact['id']);
-//    return redirect()->route('dashboard');
+    return redirect()->route('dashboard');
 });
 
 Route::get('/home', function () {
