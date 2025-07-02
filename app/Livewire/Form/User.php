@@ -120,14 +120,14 @@ class User extends Component
             }
             $ks = WpUserMeta::where('user_id', $this->dataId)->where('meta_key', 'keap_status')->first();
             if ($ks != null) {
-                $ar->update(['meta_value' => true]);
+                $ks->update(['meta_value' => true]);
             } else {
                 WpUserMeta::create(['user_id' => $this->dataId, 'meta_key' => 'keap_status', 'meta_value' => true]);
             }
         } else {
             $ks = WpUserMeta::where('user_id', $this->dataId)->where('meta_key', 'keap_status')->first();
             if ($ks != null) {
-                $ar->update(['meta_value' => false]);
+                $ks->update(['meta_value' => false]);
             } else {
                 WpUserMeta::create(['user_id' => $this->dataId, 'meta_key' => 'keap_status', 'meta_value' => false]);
             }
