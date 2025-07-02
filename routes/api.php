@@ -53,35 +53,108 @@ Route::post('/next-course/', function (Request $request) {
     $dataEntry = WpGfEntry::find($data['entry_id']);
     $userId = $dataEntry->created_by;
     $tag = CourseList::where('wp_gf_form_id',$dataEntry->form_id)->first()->keap_tag_next;
-    if ($tag){
-        $user = User::find($userId);
-        $keapId = $user->meta->where('meta_key','keap_contact_id')->first();
-        $keapTag = $user->meta->where('meta_key','keap_tags')->first();
-        $accessTag = $user->meta->where('meta_key','access_tags')->first();
-        if ($keapId!=null){
-            Keap::contact()->tag($keapId->meta_value, [$tag]);
+    if ($tag==322){
+        $userId = $dataEntry->created_by;
+        $user =  \Corcel\Model\Meta\UserMeta::where('user_id','=',$userId)->where('meta_key','user_access')->first();
+        $userAccess = $user->meta_value;
+        if (str_contains($userAccess, '"sustain"')) {
+            $tag = 322;
+            if ($tag){
+                $user = User::find($userId);
+                $keapId = $user->meta->where('meta_key','keap_contact_id')->first();
+                $keapTag = $user->meta->where('meta_key','keap_tags')->first();
+                $accessTag = $user->meta->where('meta_key','access_tags')->first();
+                if ($keapId!=null){
+                    Keap::contact()->tag($keapId->meta_value, [$tag]);
+                }
+        
+                if ($accessTag!=null){
+                    $accessTag->update(['meta_value' => $accessTag->meta_value.";$tag"]);
+                 }else{
+                    WpUserMeta::create([
+                        'user_id'=>$user->ID,
+                        'meta_key'=>'access_tags',
+                        'meta_value'=>$tag
+                    ]);
+                }
+        
+                if ($keapTag!=null){
+                    $keapTag->update(['meta_value' => $keapTag->meta_value.";$tag"]);
+                }else{
+                    
+                    WpUserMeta::create([
+                        'user_id'=>$user->ID,
+                        'meta_key'=>'keap_tags',
+                        'meta_value'=>$tag
+                    ]);
+                }
+            }
+        } 
+        
+        if (str_contains($userAccess, '"transform"')) {
+            $tag = 1012;
+            if ($tag){
+                $user = User::find($userId);
+                $keapId = $user->meta->where('meta_key','keap_contact_id')->first();
+                $keapTag = $user->meta->where('meta_key','keap_tags')->first();
+                $accessTag = $user->meta->where('meta_key','access_tags')->first();
+                if ($keapId!=null){
+                    Keap::contact()->tag($keapId->meta_value, [$tag]);
+                }
+        
+                if ($accessTag!=null){
+                    $accessTag->update(['meta_value' => $accessTag->meta_value.";$tag"]);
+                 }else{
+                    WpUserMeta::create([
+                        'user_id'=>$user->ID,
+                        'meta_key'=>'access_tags',
+                        'meta_value'=>$tag
+                    ]);
+                }
+        
+                if ($keapTag!=null){
+                    $keapTag->update(['meta_value' => $keapTag->meta_value.";$tag"]);
+                }else{
+                    WpUserMeta::create([
+                        'user_id'=>$user->ID,
+                        'meta_key'=>'keap_tags',
+                        'meta_value'=>$tag
+                    ]);
+                }
+            }
         }
-
-        if ($accessTag!=null){
-            $accessTag->update(['meta_value' => $accessTag->meta_value.";$tag"]);
-        }else{
-            WpUserMeta::create([
-                'user_id'=>$user->ID,
-                'meta_key'=>'access_tags',
-                'meta_value'=>$tag
-            ]);
-        }
-
-        if ($keapTag!=null){
-            $keapTag->update(['meta_value' => $keapTag->meta_value.";$tag"]);
-        }else{
-            WpUserMeta::create([
-                'user_id'=>$user->ID,
-                'meta_key'=>'keap_tags',
-                'meta_value'=>$tag
-            ]);
-        }
+    }else{
+        if ($tag){
+            $user = User::find($userId);
+            $keapId = $user->meta->where('meta_key','keap_contact_id')->first();
+            $keapTag = $user->meta->where('meta_key','keap_tags')->first();
+            $accessTag = $user->meta->where('meta_key','access_tags')->first();
+            if ($keapId!=null){
+                Keap::contact()->tag($keapId->meta_value, [$tag]);
+            }
+    
+            if ($accessTag!=null){
+                $accessTag->update(['meta_value' => $accessTag->meta_value.";$tag"]);
+             }else{
+                WpUserMeta::create([
+                    'user_id'=>$user->ID,
+                    'meta_key'=>'access_tags',
+                    'meta_value'=>$tag
+                ]);
+            }
+    
+            if ($keapTag!=null){
+                $keapTag->update(['meta_value' => $keapTag->meta_value.";$tag"]);
+            }else{
+                WpUserMeta::create([
+                    'user_id'=>$user->ID,
+                    'meta_key'=>'keap_tags',
+                    'meta_value'=>$tag
+                ]);
+            }
+        }    
     }
+    
 });
 Route::get('/next-course/', function (Request $request) {
     return [

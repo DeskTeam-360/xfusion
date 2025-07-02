@@ -17,7 +17,12 @@ function company_detect()
     <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.7.1/jquery.min.js"></script>
     <script>
 
-        const baseStorage = 'https://demo.xperiencefusion.com/storage/';
+
+        function openWindowXfusion(link) {
+            window.open(link, '_blank'); // Buka Google di tab baru
+        }
+
+        const baseStorage = 'https://demo.xperiencefusion.com/xfusion-laravel/public/storage/';
         var data = {
             url: window.location.href.split('?')[0]
         }
@@ -26,51 +31,25 @@ function company_detect()
             url.searchParams.set(key, value);
             window.history.pushState({}, '', url.toString());
         };
+        jQuery(document).ready(function ($) {
+            jQuery(document).on('gform_confirmation_loaded', function () {
+                jQuery('.btn-close').appendTo('#container-revitlize-center');
+                jQuery('#btn-prev-revitalize').appendTo('#container-revitlize-center');
+            });
+        })
+
+
+        const buttonSubmit99 = document.querySelector('.gform_button');
+        const buttonSubmit3 = document.querySelector('#btn-prev-revitalize');
+        let container = document.querySelector("#container-revitlize-center");
+
+        if (buttonSubmit3 && !buttonSubmit99 && container) {
+            container.appendChild(buttonSubmit3);
+        }
 
         document.addEventListener('DOMContentLoaded', function () {
-            jQuery.ajax({
-                url: '<?php echo admin_url('admin-ajax.php'); ?>',
-                type: 'post',
-                dataType: "json",
-                data: {
-                    action: 'get_company_info',
-                    url: window.location.href.split('?')[0],
-                    param: window.location.href.split('?')[1],
-                },
-                success: function (response) {
-                    console.log(response)
-                    console.log(window.location.href.split('?')[0], window.location.href.split('?')[1],)
-
-                    if (response.data.status === "setId") {
-                        addQueryParam('dataId', response.data.dataId)
-                    }
-                    if (response.data.status === "redirect") {
-                        window.location.replace(response.data.url)
-                    }
-
-                    if (response.data.logo_url !== null) {
-                        const company_logo = document.getElementsByClassName("wp-image-11067");
-                        company_logo[0].src = response.data.logo_url.replace("public/", baseStorage);
-                        const qrcode = document.getElementsByClassName("wp-image-1124");
-                        qrcode[0].src = response.data.qrcode_url.replace("public/", baseStorage);
-                        qrcode[0].srcset = "";
-                    } else {
-                        const company_logo = document.getElementsByClassName("wp-image-11067");
-                        const a = "https://demo.xperiencefusion.com/wp-content/uploads/2024/08/FUSION_Transparent-black-font.png";
-                        company_logo[0].src = a;
-
-                    }
-
-                    f(response.data.form_id, response.data.url_next)
 
 
-                },
-                error: function (xhr, status, error) {
-                    console.error(xhr);
-                    console.error(status);
-                    console.error(error);
-                }
-            });
             var getUrlParameter = function getUrlParameter(sParam) {
                 var sPageURL = window.location.search.substring(1),
                     sURLVariables = sPageURL.split('&'),
@@ -85,7 +64,122 @@ function company_detect()
                 return false;
             };
 
-            function f(formId, next) {
+
+            jQuery.ajax({
+                url: '<?php echo admin_url('admin-ajax.php'); ?>',
+                type: 'post',
+                dataType: "json",
+                data: {
+                    action: 'get_company_info',
+                    url: window.location.href.split('?')[0],
+                    param: window.location.href.split('?')[1],
+                },
+                success: function (response) {
+                    const tools = response.data.tools ?? 0;
+                    if (response.data.status === "setId") {
+                        addQueryParam('dataId', response.data.dataId)
+                    }
+                    if (response.data.status === "return") {
+                        addQueryParam('dataId', response.data.dataId)
+                        f(response.data.form_id, response.data.url_next, tools)
+                    }
+                    if (response.data.status === "redirect") {
+                        alert(response.data.message)
+                        if (getUrlParameter('btn-close') == 'true') {
+                            window.close()
+                        }else{
+                            window.location.replace(response.data.url)
+                        }
+                    }
+
+                    if (response.data.logo_url !== null) {
+                        const company_logo = document.getElementsByClassName("wp-image-11067");
+                        if (company_logo.length > 0) {
+                            company_logo[0].src = response.data.logo_url.replace("public/", baseStorage);
+                        }
+
+                        const qrcode = document.getElementsByClassName("wp-image-1124");
+                        if (qrcode.length > 0) {
+                            qrcode[0].src = response.data.qrcode_url.replace("public/", baseStorage);
+                            qrcode[0].srcset = "";
+                        }
+                        //const cll = document.querySelector("#company-logo > div > a");
+
+                    } else {
+                        const company_logo = document.getElementsByClassName("wp-image-11067");
+                        if (company_logo) {
+                            company_logo[0].src = "https://demo.xperiencefusion.com/wp-content/uploads/2024/08/FUSION_Transparent-black-font.png";
+                        }
+
+
+                    }
+
+                    if (getUrlParameter('btn-close') === 'true') {
+
+                        if (response.data.tools == 1) {
+                            const buttonSubmit99 = document.querySelector('.gform_button');
+                            const buttonSubmit3 = document.querySelector('#btn-prev-revitalize');
+                            if (buttonSubmit3 && buttonSubmit99) {
+                                let button = document.createElement("button");
+                                button.className = "btn-close";
+                                button.innerText = "Close tab";
+                                button.style.display = "block";
+                                button.style.marginTop = "10px";
+                                button.onclick = function () {
+                                    window.close()
+                                };
+                                buttonSubmit3.parentNode.replaceChild(button, buttonSubmit3);
+                            } else {
+                                let forms = document.querySelector("#container-revitlize-center");
+                                let btnClose = document.querySelector(".btn-close");
+                                if (forms) { // Cegah duplikasi tombol
+                                    if (!btnClose) {
+                                        const buttonSubmit3 = document.querySelector('#btn-prev-revitalize');
+                                        if (buttonSubmit3) {
+                                            buttonSubmit3.remove()
+                                        }
+                                        let button = document.createElement("button");
+                                        button.className = "btn-close";
+                                        button.innerText = "Close tab";
+                                        button.style.display = "block";
+                                        button.style.marginTop = "10px";
+                                        button.onclick = function () {
+                                            window.close()
+                                        };
+                                        forms.appendChild(button);
+                                    }
+                                }
+                            }
+
+
+                            const buttonSubmit4 = document.querySelector('#btn-next-revitalize');
+                            if (buttonSubmit4) {
+                                buttonSubmit4.remove();
+                            }
+
+                        } else {
+                            const buttonSubmit3 = document.querySelector('#btn-prev-revitalize');
+                            if (buttonSubmit3) {
+                                buttonSubmit3.remove();
+                            }
+                            const buttonSubmit4 = document.querySelector('#btn-next-revitalize');
+                            if (buttonSubmit4) {
+                                buttonSubmit4.remove();
+                            }
+                        }
+                    }
+                    if (getUrlParameter('dataId')) {
+                        f(response.data.form_id, response.data.url_next, tools)
+                        if (getUrlParameter('btn-close') === 'true') {
+                            document.querySelectorAll('.gform_button')?.forEach(btn => btn.remove());
+                        }
+                    }
+
+                },
+            });
+
+
+            function f(formId, next, tools) {
                 jQuery.ajax({
                     url: '/wp-admin/admin-ajax.php',
                     type: 'GET',
@@ -97,27 +191,54 @@ function company_detect()
                         order_id: getUrlParameter('dataId')
                     },
                     success: function (response) {
-
-                        console.log(response)
                         const res = response.data[0]
-
-                        if (next) {
-                            console.log(next)
+                        if (getUrlParameter('btn-close') == 'true' && tools && res) {
                             const buttonSubmit = document.querySelector('.gform_button');
+                            if (buttonSubmit) {
+                                buttonSubmit.remove()
+                            }
+                        }
+                        if (getUrlParameter('btn-close') == 'true') {
+                            const btn = document.querySelector(".btn-close");
+                            const container = document.getElementById("container-revitlize-center");
+                            if (container) {
+                                if (btn) {
+                                    container.appendChild(btn);
+                                } else {
+                                    let button = document.createElement("button");
+                                    button.className = "btn-close";
+                                    button.innerText = "Close tab";
+                                    button.style.display = "block";
+                                    button.style.marginTop = "10px";
+                                    button.onclick = function () {
+                                        window.close()
+                                    };
+                                    container.appendChild(button);
+                                }
+                            }
+                        }
 
+
+                        if (next && (getUrlParameter('btn-close') != 'true')) {
+                            const buttonSubmit = document.querySelector('.gform_button');
 
                             if (buttonSubmit) {
                                 // Buat elemen <a> baru
                                 const newLink = document.createElement('a');
                                 newLink.href = next // Ganti dengan link tujuan
-                                newLink.className = buttonSubmit.className; // Salin class
-                                newLink.style.cssText = buttonSubmit.style.cssText; // Salin inline style
+                                newLink.className = buttonSubmit.className + ' btn-close';
 
-                                if (buttonSubmit.value === "") {
+                                newLink.style.cssText = buttonSubmit.style.cssText + '; text-align: center; position:static'; // Salin inline style
 
-                                    newLink.textContent = "Next Lesson"; // Salin inline style
+                                if (buttonSubmit.value === "" || buttonSubmit.value === undefined || buttonSubmit.value === "Next Lesson" || buttonSubmit.value === "Done" || buttonSubmit.value === "Submit") {
+                                    newLink.textContent = "Return to menu"; // Salin inline style
+                                    const buttonSubmit = document.querySelector('#gform_submit_button_13');
+                                    if (buttonSubmit) {
+                                        buttonSubmit.remove();
+                                    }
+
+
                                 } else if (buttonSubmit.value === 'Mark as Complete') {
-
                                     newLink.textContent = 'Return to Menu'
                                 } else {
 
@@ -127,10 +248,18 @@ function company_detect()
                                 if (buttonSubmit.id) {
                                     newLink.id = buttonSubmit.id;
                                 }
+                                var container = document.getElementById("container-revitlize-center");
 
 
                                 // Ganti tombol lama dengan elemen <a>
                                 buttonSubmit.parentNode.replaceChild(newLink, buttonSubmit);
+                                if (newLink && container) {
+                                    container.appendChild(newLink);
+                                    var btnPrev = document.getElementById('btn-prev-revitalize')
+                                    if (btnPrev) {
+                                        btnPrev.remove();
+                                    }
+                                }
 
                             }
                             const buttonSubmit2 = document.querySelector('.mark-as-complete');
@@ -139,13 +268,11 @@ function company_detect()
                                 newLink.href = next // Ganti dengan link tujuan
                                 newLink.className = buttonSubmit2.className; // Salin class
                                 newLink.style.cssText = buttonSubmit2.style.cssText; // Salin inline style
-                                newLink.style.color='white';
-                                newLink.style.textTransform='none';
-
+                                newLink.style.color = 'white';
+                                newLink.style.textTransform = 'none';
                                 if (buttonSubmit2.textContent === "") {
                                     newLink.textContent = "Next Lesson"; // Salin inline style
                                 } else if (buttonSubmit2.textContent === 'Mark as Complete') {
-
                                     newLink.textContent = 'Return to Menu'
                                 } else {
                                     newLink.textContent = buttonSubmit2.textContent; // Gunakan teks yang sama
@@ -154,14 +281,27 @@ function company_detect()
                                 if (buttonSubmit2.id) {
                                     newLink.id = buttonSubmit2.id;
                                 }
-
-
                                 // Ganti tombol lama dengan elemen <a>
                                 buttonSubmit2.parentNode.replaceChild(newLink, buttonSubmit2);
                             }
 
                         }
 
+                        if (getUrlParameter('btn-close') == 'true') {
+                            const buttonSubmit2 = document.querySelector('.mark-as-complete');
+                            if (buttonSubmit2) {
+                                let button = document.createElement("button");
+                                button.className = buttonSubmit2.className;
+                                button.innerText = "Close tab";
+                                button.style.display = "block";
+
+                                button.style.marginTop = "10px";
+                                button.onclick = function () {
+                                    window.close()
+                                };
+                                buttonSubmit2.parentNode.replaceChild(button, buttonSubmit2);
+                            }
+                        }
 
 
                         for (var key in res) {
@@ -180,8 +320,6 @@ function company_detect()
                                             radio.checked = true;
                                             radio.disabled = false;
 
-                                        } else {
-                                            console.warn(`Radio button not found for selector: input[name="${'input_' + key}"][value="${response.data[0][key]}"]`);
                                         }
 
                                     } else if (key % 1 !== 0) {
@@ -203,22 +341,22 @@ function company_detect()
 
                                         file.parentNode.insertBefore(downloadBtn, file.nextSibling);
                                     } else {
-                                        document.getElementsByName('input_' + key)[0].value = response.data[0][key]
+                                        // document.getElementsByName('input_' + key)[0].value = response.data[0][key]
+                                        const inputElement = document.getElementsByName('input_' + key)[0];
+                                        inputElement.value = response.data[0][key];
+                                        const event = new Event('change', {bubbles: true});
+                                        inputElement.dispatchEvent(event);
                                     }
                                     document.getElementsByName('input_' + key)[0].disable = true
                                     document.getElementsByName('input_' + key)[0].readOnly = true
                                 }
                             }
                         }
-
-
-                    },
-                    error: function (xhr, status, error) {
-                        console.log(error)
                     }
                 });
             }
-        });
+        })
+
     </script>
     <?php
 }
@@ -240,54 +378,40 @@ function get_company_info()
     $qu = $wpdb->get_results($query_user);
 
     $t5 = json_encode($qu);
+
     // Decode JSON to a PHP array
     $data = json_decode($t5, true);
 
     // Access the "user_login" value
     $user_login = str_replace(' ', '+', strtolower($data[0]['user_login']));
 
-
-    $arrayLinks = ["https://demo.xperiencefusion.com/user/$user_login/",
+    $arrayLinks = [
+        "https://demo.xperiencefusion.com/user/$user_login/",
         "https://demo.xperiencefusion.com/lms-home-screen/",
         "https://demo.xperiencefusion.com/topics/dependability/",
-        "https://demo.xperiencefusion.com/transform/transform-menu/",
-        "https://demo.xperiencefusion.com/transform/transform-menu/introduction-level-1/",
-        "https://demo.xperiencefusion.com/sustain/sustain-menu/introduction-level-1/",
-        "https://demo.xperiencefusion.com/sustain/sustain-menu/self-actualization/",
-        "https://demo.xperiencefusion.com/sustain/sustain-menu/",
-        "https://demo.xperiencefusion.com/sustain/sustain-menu/intermediate-level-1/",
-        "https://demo.xperiencefusion.com/sustain/sustain-menu/intermediate-level-2/",
-        "https://demo.xperiencefusion.com/sustain/sustain-menu/intermediate-level-3/",
-        "https://demo.xperiencefusion.com/thank-you-for-successfully-completing-this-topic/",
         "https://demo.xperiencefusion.com/account/",
         "https://demo.xperiencefusion.com/resources/resource-menu/",
-        "https://demo.xperiencefusion.com/revitalize/course/",
-        "https://demo.xperiencefusion.com/transform/transform-menu/", "https://demo.xperiencefusion.com/transform/transform-menu/introduction-level-1/", "https://demo.xperiencefusion.com/transform/transform-menu/intermediate-level-2/",];
+    ];
 
     if (!$limitLinks) {
 
         if ($userID != null) {
             $companyID = get_usermeta($userID, 'company');
-            $keapTags = get_usermeta($userID, 'keap_tags');
-
 
             $query = "select * from companies where id=$companyID";
             $click_logs = $wpdb->get_results($query);
 
 
             $result = [];
-            $user = get_userdata($userID);
-            $user_roles = $user->roles;
             foreach ($click_logs as $log) {
                 $result['logo_url'] = $log->logo_url;
                 $result['qrcode_url'] = $log->qrcode_url;
             }
-
-            $temp_data2 = $url;
-
-
             if (in_array($url, $arrayLinks)) {
-                wp_send_json_success(['logo_url' => $result['logo_url'], 'qrcode_url' => $result['qrcode_url'], 'asd' => 'asdasd1']);
+                wp_send_json_success([
+                    'logo_url'   => $result['logo_url'],
+                    'qrcode_url' => $result['qrcode_url'],
+                ]);
                 wp_die();
             }
         }
@@ -299,20 +423,33 @@ function get_company_info()
         $userID = get_current_user_id();
         if ($userID != null) {
             $companyID = get_usermeta($userID, 'company');
-            $keapTags = get_usermeta($userID, 'keap_tags');
-
+            $keapTags = get_usermeta($userID, 'access_tags');
 
             $query = "select * from companies where id=$companyID";
             $click_logs = $wpdb->get_results($query);
 
-
-            $query = "select meta_value from wp_usermeta where user_id=$userID and meta_key='keap_tags' ";
-            $t = $wpdb->get_results($query);
-
-
             $result = [];
             $user = get_userdata($userID);
             $user_roles = $user->roles;
+
+            $user_access = get_user_meta($userID, 'user_access', true);
+            if (in_array('administrator', $user_roles, true) or in_array('editor', $user_roles, true)) {
+
+            } else {
+                $user_access = str_replace(' ', '-', $user_access);
+                if (!stripos($user_access, $limit->course_title)) {
+                    $status = 'redirect';
+                    $message = "You don't have access to this page";
+//                    'url'     => "https://demo.xperiencefusion.com/lms-home-screen/",
+                    wp_send_json_success([
+                        'url'     => $limit->url_redirect,
+                        'status'  => $status,
+                        'message' => $message,
+                    ]);
+                    wp_die();
+                }
+            }
+
             foreach ($click_logs as $log) {
                 $result['logo_url'] = $log->logo_url;
                 $result['qrcode_url'] = $log->qrcode_url;
@@ -323,27 +460,66 @@ function get_company_info()
 
             foreach ($checkEntry as $check) {
                 $message = "You've done the topic";
-                $status = 'redirect';
-                if ($_POST['param'] == 'dataId=' . $check->id) {
-                    wp_send_json_success(['logo_url' => $result['logo_url'], 'qrcode_url' => $result['qrcode_url'], 'form_id' => $check->form_id, 'url_next' => $limit->url_next]);
+                $status = 'return';
+                if (isset($_POST['param']) && strpos($_POST['param'], $check->id) !== false) {
+                    wp_send_json_success([
+                        'logo_url'   => $result['logo_url'],
+                        'qrcode_url' => $result['qrcode_url'],
+                        'form_id'    => $check->form_id,
+                        'url_next'   => $limit->url_next,
+                        'tools'      => $limit->repeat_entry,
+                    ]);
                     wp_die();
                 }
-                wp_send_json_success(['url' => $url . '/?dataId=' . $check->id, 'dataId' => $check->id, 'status' => $status, 'message' => $message, 'logo_url' => $result['logo_url'], 'qrcode_url' => $result['qrcode_url']]);
+
+                if ($limit->repeat_entry == 1) {
+                    wp_send_json_success([
+                        'logo_url'   => $result['logo_url'],
+                        'qrcode_url' => $result['qrcode_url'],
+                        'form_id'    => $check->form_id,
+                        'url_next'   => $limit->url_next,
+                        'tools'      => $limit->repeat_entry,
+                    ]);
+                    wp_die();
+                }
+
+                wp_send_json_success([
+                    'url'        => $url . '?dataId=' . $check->id . '&' . $_POST['param'],
+                    'dataId'     => $check->id,
+                    'status'     => $status,
+                    'message'    => $message,
+                    'logo_url'   => $result['logo_url'],
+                    'qrcode_url' => $result['qrcode_url'],
+                    'tools'      => $limit->repeat_entry,
+                    'url_next'   => $limit->url_next,
+                ]);
                 wp_die();
             }
 
             if ($limit->keap_tag == null) {
-                wp_send_json_success(['logo_url' => $result['logo_url'], 'qrcode_url' => $result['qrcode_url'], 'asd' => $url]);
+                wp_send_json_success([
+                    'logo_url'   => $result['logo_url'],
+                    'qrcode_url' => $result['qrcode_url'],
+                    'tools'      => $limit->repeat_entry,
+                ]);
                 wp_die();
             }
 
             if (in_array($limit->keap_tag, explode(';', $keapTags))) {
-                wp_send_json_success(['logo_url' => $result['logo_url'], 'qrcode_url' => $result['qrcode_url'], 'asd' => 'asdasdasd']);
+                wp_send_json_success([
+                    'logo_url'   => $result['logo_url'],
+                    'qrcode_url' => $result['qrcode_url'],
+                    'tools'      => $limit->repeat_entry,
+                ]);
                 wp_die();
             }
 
             if (in_array('administrator', $user_roles, true)) {
-                wp_send_json_success(['logo_url' => $result['logo_url'], 'qrcode_url' => $result['qrcode_url'], 'asd' => 'asdasdasdaa']);
+                wp_send_json_success([
+                    'logo_url'   => $result['logo_url'],
+                    'qrcode_url' => $result['qrcode_url'],
+                    'tools'      => $limit->repeat_entry,
+                ]);
                 wp_die();
             }
 
@@ -351,25 +527,74 @@ function get_company_info()
             if (in_array($limit->keap_tag_parent, explode(';', $keapTags))) {
                 $status = 'redirect';
                 $message = "You need waiting " . $limit->delay + 5 . "minutes from last submit";
-                wp_send_json_success(['url' => "https://demo.xperiencefusion.com/sustain/sustain-menu/self-actualization/", 'status' => $status, 'message' => $message]);
+                wp_send_json_success([
+                    'url'     => $limit->url_redirect,
+                    'status'  => $status,
+                    'message' => $message,
+                    'tools'   => $limit->repeat_entry,
+                ]);
                 wp_die();
             }
 
             $status = 'redirect';
             $message = "You don't have access";
-            wp_send_json_success(['url' => "https://demo.xperiencefusion.com/sustain/sustain-menu/self-actualization/", 'status' => $status, 'message' => $message]);
+            wp_send_json_success([
+                'url'     => $limit->url_redirect,
+                'status'  => $status,
+                'message' => $message,
+                'tools'   => $limit->repeat_entry,
+            ]);
             wp_die();
         }
         $url = $limit->redirect_url;
         $status = 'redirect';
         $message = "You need login ";
-        wp_send_json_success(['url' => "https://demo.xperiencefusion.com/sustain/sustain-menu/self-actualization/", 'status' => $status, 'message' => $message]);
+        wp_send_json_success([
+            'url'     => "https://demo.xperiencefusion.com/lms-home-screen/",
+            'status'  => $status,
+            'message' => $message,
+            'tools'   => $limit->repeat_entry,
+        ]);
         wp_die();
     }
 
-    wp_send_json_success(['logo_url' => null, 'qrcode_url' => null, 'asd' => 'asdasd']);
+    wp_send_json_success([
+        'logo_url'   => null,
+        'qrcode_url' => null,
+        'tools'      => $limit->repeat_entry,
+    ]);
     wp_die();
 }
 
 add_action('wp_ajax_get_company_info', 'get_company_info');
 add_action('wp_ajax_nopriv_get_company_info', 'get_company_info', 1, 3);
+
+add_filter('wp_hash_password', 'custom_wp_hash_password', 10, 2);
+
+function custom_wp_hash_password($password, $user_id = null)
+{
+    require_once ABSPATH . WPINC . '/class-phpass.php';
+    $wp_hasher = new PasswordHash(8, true);
+    return $wp_hasher->HashPassword(trim($password));
+}
+
+
+if (!function_exists('wp_hash_password')) {
+    function wp_hash_password($password)
+    {
+        require_once ABSPATH . WPINC . '/class-phpass.php';
+        $hasher = new PasswordHash(8, true); // 8 adalah strength, true untuk portable
+        return $hasher->HashPassword(trim($password));
+    }
+}
+
+if (!function_exists('wp_check_password')) {
+    function wp_check_password($password, $hash, $user_id = '')
+    {
+        require_once ABSPATH . WPINC . '/class-phpass.php';
+        $hasher = new PasswordHash(8, true);
+        $check = $hasher->CheckPassword($password, $hash);
+
+        return apply_filters('check_password', $check, $password, $hash, $user_id);
+    }
+}
