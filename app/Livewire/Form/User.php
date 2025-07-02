@@ -133,6 +133,17 @@ class User extends Component
             }
         }
         if ($this->keapMailSend){
+            $contact = Keap::contact()->createOrUpdate([
+                'given_name' => $this->first_name,
+                'family_name' => $this->last_name,
+                'email_addresses' => [['email' => $this->email, 'field' => 'EMAIL1',],],
+                'custom_fields' => [
+                    ['id' => '96', 'content' => $this->email],
+//                    ['id' => '98', 'content' => $this->password],
+                ],
+                ]);
+
+
             Keap::contact()->tag($contact['id'], [1942]);
         }
 
@@ -185,7 +196,31 @@ class User extends Component
             $this->userMeta['user_access'] = $ur->accesses;
             $this->userMeta['access_tags'] = implode(';', json_decode($ur->tag_starter));
         }
-        $contact = Keap::contact()->createOrUpdate(['given_name' => $this->first_name, 'family_name' => $this->last_name, 'email_addresses' => [['email' => $this->email, 'field' => 'EMAIL1',],],]);
+
+//        if ($this->keapMailSend){
+//            $contact = Keap::contact()->createOrUpdate([
+//                'given_name' => $this->first_name,
+//                'family_name' => $this->last_name,
+//                'email_addresses' => [['email' => $this->email, 'field' => 'EMAIL1',],],
+//                'custom_fields' => [
+//                    ['id' => '96', 'content' => $this->email],
+//                    ['id' => '98', 'content' => $this->password],
+//                ],
+//            ]);
+//
+//
+//            Keap::contact()->tag($contact['id'], [1942]);
+//        }
+
+        $contact = Keap::contact()->createOrUpdate([
+            'given_name' => $this->first_name,
+            'family_name' => $this->last_name,
+            'email_addresses' => [['email' => $this->email, 'field' => 'EMAIL1',],],
+            'custom_fields' => [
+                ['id' => '96', 'content' => $this->email],
+                ['id' => '98', 'content' => $this->password],
+            ],
+            ]);
 //        $this->userMeta['keap_contact_id'] = $contact['id'];
 
         if (str_contains($ur->accesses, 'keap')) {

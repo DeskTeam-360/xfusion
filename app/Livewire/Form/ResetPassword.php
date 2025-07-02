@@ -3,6 +3,7 @@
 namespace App\Livewire\Form;
 
 use Carbon\Carbon;
+use KeapGeek\Keap\Facades\Keap;
 use Livewire\Attributes\Validate;
 use Livewire\Component;
 use MikeMcLin\WpPassword\Facades\WpPassword;
@@ -34,10 +35,22 @@ class ResetPassword extends Component
             $hasher = new PasswordHash(8, true); // Sama seperti di WordPress
             $passwordHash = $hasher->HashPassword($this->password);
 
+            $contact = Keap::contact()->createOrUpdate([
+
+                'email_addresses' => [['email' => $this->user->email, 'field' => 'EMAIL1',],],
+                'custom_fields' => [
+                    ['id' => '96', 'content' => $this->user->email],
+                                        ['id' => '98', 'content' => $this->password],
+                ],
+            ]);
+
+
 //            User::create([
 //                'email' => $request->email,
 //                'password' => $passwordHash, // Ini format $P$... yang cocok buat WordPress
 //            ]);
+
+
 
             $user = \App\Models\User::find($this->dataId)->update([
                 'user_pass' => $passwordHash,
