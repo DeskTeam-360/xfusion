@@ -192,7 +192,7 @@ class User extends Component
         $contact = $this->updateContact();
     
         if ($contact['id']) {
-            dd($contact);
+            // dd($contact);
             Keap::contact()->tag($contact['id'], $tag,);
         }
 
