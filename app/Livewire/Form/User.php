@@ -193,7 +193,7 @@ class User extends Component
     
         if ($contact['id']) {
             // dd($contact);
-            Keap::contact()->tag($contact['id'], json_decode($this->userMeta['access_tags']),);
+            Keap::contact()->tag($contact['id'], explode(';', $this->userMeta['access_tags']),);
         }
 
         if ($contact['id']) {
