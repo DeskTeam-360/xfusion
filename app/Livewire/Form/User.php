@@ -37,9 +37,10 @@ class User extends Component
     public $userMeta;
     public $keap;
     public $keapMailSend;
+    public $keapIntegration;
+    public $skipRevitalize;
 
     public $optionAccess;
-
 
 
     public function mount()
@@ -51,7 +52,7 @@ class User extends Component
         }
 
         if ($this->dataId != null) {
-            $data = \App\Models\User::find($this->dataId);
+            $data = \App\Models\User::find($this->dataId,);
             $this->username = $data->user_login;
             $this->first_name = $data->user_nicename;
             $this->last_name = $data->last_name;
@@ -62,9 +63,9 @@ class User extends Component
             $this->email = $data->user_email;
             $this->website = $data->user_url;
 
-            $role = $data->meta()->where('meta_key', 'user_role')->first()->meta_value ?? '';
+            $role = $data->meta()->where('meta_key', 'user_role',)->first()->meta_value ?? '';
             if ($role) {
-                $this->role = \App\Models\UserRole::where('title', $role)->first()->id;
+                $this->role = \App\Models\UserRole::where('title', $role,)->first()->id;
             }
 
         }
@@ -72,92 +73,62 @@ class User extends Component
 
     public function update()
     {
-        $user = \App\Models\User::find($this->dataId);
-        $user->update(['user_nicename' => $this->username, 'user_email' => $this->email, 'user_url' => $this->website ?? 'http://' . $this->first_name, 'user_registered' => Carbon::now()->toDateTimeString(), 'user_status' => 0, 'display_name' => $this->first_name . ' ' . $this->last_name,]);
+        $user = \App\Models\User::find($this->dataId,);
+        $user->update([
+            'user_nicename'   => $this->username,
+            'user_email'      => $this->email,
+            'user_url'        => $this->website ?? 'http://' . $this->first_name,
+            'user_registered' => Carbon::now()->toDateTimeString(),
+            'user_status'     => 0,
+            'display_name'    => $this->first_name . ' ' . $this->last_name,
+        ],);
 
-        $fn = WpUserMeta::where('user_id', $this->dataId)->where('meta_key', 'first_name')->first();
-        $ln = WpUserMeta::where('user_id', $this->dataId)->where('meta_key', 'last_name')->first();
-        $ac = WpUserMeta::where('user_id', $this->dataId)->where('meta_key', 'user_access')->first();
-        $ar = WpUserMeta::where('user_id', $this->dataId)->where('meta_key', 'user_role')->first();
+        $ur = \App\Models\UserRole::find($this->role,);
+    
+        $currentTag = json_decode($ur->tag_starter,);
 
-        if ($ln != null) {
-            $ln->update(['meta_value' => $this->last_name]);
-        } else {
-            WpUserMeta::create(['user_id' => $this->dataId, 'meta_key' => 'last_name', 'meta_value' => $this->last_name]);
-        }
-
-        if ($fn != null) {
-            $fn->update(['meta_value' => $this->first_name]);
-        } else {
-            WpUserMeta::create(['user_id' => $this->dataId, 'meta_key' => 'first_name', 'meta_value' => $this->first_name]);
-        }
-
-        $ur = \App\Models\UserRole::find($this->role);
-        if ($ac != null) {
-            $ac->update(['meta_value' => $ur->accesses]);
-        } else {
-            WpUserMeta::create(['user_id' => $this->dataId, 'meta_key' => 'user_access', 'meta_value' => $ur->accesses]);
-        }
-
-        $at = WpUserMeta::where('user_id', $this->dataId)->where('meta_key', 'access_tags')->first();
-        $currentTag = json_decode($ur->tag_starter);
-
-        if ($at != null) {
-            $currentTag = array_merge($currentTag, explode(';', $at->meta_value));
-            $at->update(['meta_value' => implode(';', $currentTag)]);
-        }
-
-        if (str_contains($ur->accesses, 'keap') or true) {
-            $contact = Keap::contact()->createOrUpdate(['given_name' => $this->first_name, 'family_name' => $this->last_name, 'email_addresses' => [['email' => $this->email, 'field' => 'EMAIL1',],],]);
-
-            $contactId = $contact['id'];
-
-            Keap::contact()->tag($contact['id'], $currentTag);
-
-            $ar = WpUserMeta::where('user_id', $this->dataId)->where('meta_key', 'keap_contact_id')->first();
-            if ($ar == null) {
-                WpUserMeta::create(['user_id' => $this->dataId, 'meta_key' => 'keap_contact_id', 'meta_value' => $contactId]);
+        if ($this->skipRevitalize) {
+            if (str_contains($ur->accesses, '"sustain"',)) {
+                $currentTag = array_merge($currentTag, [322],);
             }
-            $ks = WpUserMeta::where('user_id', $this->dataId)->where('meta_key', 'keap_status')->first();
-            if ($ks != null) {
-                $ks->update(['meta_value' => true]);
-            } else {
-                WpUserMeta::create(['user_id' => $this->dataId, 'meta_key' => 'keap_status', 'meta_value' => true]);
-            }
-        } else {
-            $ks = WpUserMeta::where('user_id', $this->dataId)->where('meta_key', 'keap_status')->first();
-            if ($ks != null) {
-                $ks->update(['meta_value' => false]);
-            } else {
-                WpUserMeta::create(['user_id' => $this->dataId, 'meta_key' => 'keap_status', 'meta_value' => false]);
+            if (str_contains($ur->accesses, '"transform"',)) {
+                $currentTag = array_merge($currentTag, [1012],);
             }
         }
-        if ($this->keapMailSend){
-            $contact = Keap::contact()->createOrUpdate([
-                'given_name' => $this->first_name,
-                'family_name' => $this->last_name,
-                'email_addresses' => [['email' => $this->email, 'field' => 'EMAIL1',],],
-                'custom_fields' => [
-                    ['id' => '96', 'content' => $this->email],
-//                    ['id' => '98', 'content' => $this->password],
-                ],
-                ]);
+        $currentTag = array_merge($currentTag, [1960]);
 
+        $contact = $this->updateContact();
+        $contactId = $contact['id'];
+        
+        $this->updateOrCreateMeta('last_name', $this->last_name);
+        $this->updateOrCreateMeta('first_name', $this->first_name);
+        $this->updateOrCreateMeta('user_access', $ur->accesses);
+        $this->updateOrCreateMeta('access_tags', implode(';', $currentTag));
+        $this->updateOrCreateMeta('user_role', $ur->title);
+        Keap::contact()->tag($contactId, $currentTag);
 
-            Keap::contact()->tag($contact['id'], [1942]);
-        }
-
-        if ($ar != null) {
-            $ar->update(['meta_value' => $ur->title]);
+        if ($this->keapIntegration) {
+            Keap::contact()->tag($contactId, [1958]);
+            $this->updateOrCreateMeta('keap_contact_id', $contactId);
+            $this->updateOrCreateMeta('keap_status', true);
         } else {
-            WpUserMeta::create(['user_id' => $this->dataId, 'meta_key' => 'user_role', 'meta_value' => $ur->title]);
+            $this->updateOrCreateMeta('keap_status', false);
         }
 
-        $this->dispatch('swal:alert', data: ['icon' => 'success', 'title' => 'successfully changed the user',]);
+
+        if ($this->keapMailSend) {
+            $this->keapMailSend($contactId);
+        }
+
+
+        $this->dispatch('swal:alert', data: [
+            'icon'  => 'success',
+            'title' => 'successfully changed the user',
+        ],);
         if ($this->companyId != null) {
-            $this->redirect(route('company.show', $this->companyId));
+            $this->redirect(route('company.show', $this->companyId,),);
         } else {
-            $this->redirect(route('user.index'));
+            $this->redirect(route('user.index',),);
         }
     }
 
@@ -166,10 +137,20 @@ class User extends Component
 
         $this->validate();
 
-        $hasher = new PasswordHash(8, true); // Sama seperti di WordPress
-        $passwordHash = $hasher->HashPassword($this->password);
+        $hasher = new PasswordHash(8, true,); // Sama seperti di WordPress
+        $passwordHash = $hasher->HashPassword($this->password,);
 
-        $user = \App\Models\User::create(['user_login' => $this->username, 'user_pass' => $passwordHash, 'user_nicename' => $this->first_name, 'user_email' => $this->email, 'user_url' => $this->website ?? 'http://' . $this->first_name, 'user_registered' => Carbon::now()->toDateTimeString(), 'user_activation_key' => '', 'user_status' => 0, 'display_name' => $this->first_name . ' ' . $this->last_name,]);
+        $user = \App\Models\User::create([
+            'user_login'          => $this->username,
+            'user_pass'           => $passwordHash,
+            'user_nicename'       => $this->first_name,
+            'user_email'          => $this->email,
+            'user_url'            => $this->website ?? 'http://' . $this->first_name,
+            'user_registered'     => Carbon::now()->toDateTimeString(),
+            'user_activation_key' => '',
+            'user_status'         => 0,
+            'display_name'        => $this->first_name . ' ' . $this->last_name,
+        ],);
 
         if ($this->role == '1') {
             $wpRole = 'administrator';
@@ -188,76 +169,109 @@ class User extends Component
         $this->userMeta['use_ssl'] = 0;
         $this->userMeta['show_admin_bar_front'] = true;
         $this->userMeta['locale'] = '';
-        $this->userMeta['wp_capabilities'] = serialize([$wpRole => true]);
+        $this->userMeta['wp_capabilities'] = serialize([$wpRole => true],);
 
-        $ur = \App\Models\UserRole::find($this->role);
+        $ur = \App\Models\UserRole::find($this->role,);
         if ($ur) {
             $this->userMeta['user_role'] = $ur->title;
             $this->userMeta['user_access'] = $ur->accesses;
-            $this->userMeta['access_tags'] = implode(';', json_decode($ur->tag_starter));
+            $this->userMeta['access_tags'] = implode(';', json_decode($ur->tag_starter,),);
+            $this->userMeta['access_tags'] = $this->userMeta['access_tags'] . ';1960';
+        }
+    
+
+        if ($this->skipRevitalize) {
+            if (str_contains($ur->accesses, '"sustain"',)) {
+                $this->userMeta['access_tags'] = $this->userMeta['access_tags'] . ';322';
+            }
+            if (str_contains($ur->accesses, '"transform"',)) {
+                $this->userMeta['access_tags'] = $this->userMeta['access_tags'] . ';1012';
+            }
         }
 
-//        if ($this->keapMailSend){
-//            $contact = Keap::contact()->createOrUpdate([
-//                'given_name' => $this->first_name,
-//                'family_name' => $this->last_name,
-//                'email_addresses' => [['email' => $this->email, 'field' => 'EMAIL1',],],
-//                'custom_fields' => [
-//                    ['id' => '96', 'content' => $this->email],
-//                    ['id' => '98', 'content' => $this->password],
-//                ],
-//            ]);
-//
-//
-//            Keap::contact()->tag($contact['id'], [1942]);
-//        }
+        $contact = $this->updateContact();
+        Keap::contact()->tag($contact['id'], $tag,);
 
-        $contact = Keap::contact()->createOrUpdate([
-            'given_name' => $this->first_name,
-            'family_name' => $this->last_name,
-            'email_addresses' => [['email' => $this->email, 'field' => 'EMAIL1',],],
-            'custom_fields' => [
-                ['id' => '96', 'content' => $this->email],
-                ['id' => '98', 'content' => $this->password],
-            ],
-            ]);
-//        $this->userMeta['keap_contact_id'] = $contact['id'];
-
-        if (str_contains($ur->accesses, 'keap')) {
-//            $contact = Keap::contact()->createOrUpdate(['given_name' => $this->first_name, 'family_name' => $this->last_name, 'email_addresses' => [['email' => $this->email, 'field' => 'EMAIL1',],],]);
+        if ($this->keapIntegration) {
             $this->userMeta['keap_contact_id'] = $contact['id'];
             $this->userMeta['keap_status'] = true;
-            Keap::contact()->tag($contact['id'], json_decode($ur->tag_starter));
+            Keap::contact()->tag($contact['id'], [1958],);
         } else {
             $this->userMeta['keap_status'] = false;
         }
 
-        if ($this->keapMailSend){
-            Keap::contact()->tag($contact['id'], [1942]);
+        if ($this->keapMailSend) {
+            $this->keapMailSend($contact['id'],);
         }
+
 
         $this->userMeta['wp_user_level'] = 0;
         $this->userMeta['dismissed_wp_pointers'] = '';
 
         if ($this->companyId != null) {
             $this->userMeta['company'] = $this->companyId;
-            CompanyEmployee::create(['user_id' => $user->ID, 'company_id' => $this->companyId]);
+            CompanyEmployee::create([
+                'user_id'    => $user->ID,
+                'company_id' => $this->companyId,
+            ],);
         }
 
         foreach ($this->userMeta as $key => $meta) {
-            WpUserMeta::create(['meta_key' => $key, 'user_id' => $user->ID, 'meta_value' => $meta]);
+            WpUserMeta::create([
+                'meta_key'   => $key,
+                'user_id'    => $user->ID,
+                'meta_value' => $meta,
+            ],);
         }
 
-        $this->dispatch('swal:alert', data: ['icon' => 'success', 'title' => 'Successfully added user',]);
+        $this->dispatch('swal:alert', data: [
+            'icon'  => 'success',
+            'title' => 'Successfully added user',
+        ],);
         if ($this->companyId != null) {
-            $this->redirect(route('company.show', $this->companyId));
+            $this->redirect(route('company.show', $this->companyId,),);
         } else {
-            $this->redirect(route('user.index'));
+            $this->redirect(route('user.index',),);
         }
+    }
+
+    public function keapMailSend($contactId,)
+    {
+        Keap::contact()->tag($contactId, [1942],);
+    }
+
+    public function updateOrCreateMeta($key, $value)
+    {
+        WpUserMeta::updateOrCreate(['user_id' => $this->dataId, 'meta_key' => $key], ['meta_value' => $value]);
+    }
+
+    public function updateContact(){
+        if ($this->action == 'create') {
+            $contact = Keap::contact()->createOrUpdate([
+                'given_name' => $this->first_name,
+                'family_name' => $this->last_name,
+                'email_addresses' => [['email' => $this->email, 'field' => 'EMAIL1',],],
+                'custom_fields' => [
+                    ['id' => '96', 'content' => $this->email],
+                    ['id' => '98', 'content' => $this->password],
+                ],
+            ]);
+        } elseif ($this->action == 'update') {
+            $contact = Keap::contact()->createOrUpdate([
+                'given_name' => $this->first_name,
+                'family_name' => $this->last_name,
+                'email_addresses' => [['email' => $this->email, 'field' => 'EMAIL1',],],
+                'custom_fields' => [
+                    ['id' => '96', 'content' => $this->email],
+                ],
+            ]);
+        }
+        // dd($contact);
+        return $contact;
     }
 
     public function render()
     {
-        return view('livewire.form.user');
+        return view('livewire.form.user',);
     }
 }

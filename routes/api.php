@@ -53,13 +53,15 @@ Route::post('/next-course/', function (Request $request) {
     $dataEntry = WpGfEntry::find($data['entry_id']);
     $userId = $dataEntry->created_by;
     $tag = CourseList::where('wp_gf_form_id',$dataEntry->form_id)->first()->keap_tag_next;
-    if ($tag==322){
+    $tag2 = CourseList::where('wp_gf_form_id',$dataEntry->form_id)->first()->keap_tag_next;
+    if ($tag2==322){
         $userId = $dataEntry->created_by;
         $user =  \Corcel\Model\Meta\UserMeta::where('user_id','=',$userId)->where('meta_key','user_access')->first();
         $userAccess = $user->meta_value;
         if (str_contains($userAccess, '"sustain"')) {
-            $tag = 322;
-            if ($tag){
+            $tag2 = 322;
+            if ($tag2){
+                $tag = tag2;
                 $user = User::find($userId);
                 $keapId = $user->meta->where('meta_key','keap_contact_id')->first();
                 $keapTag = $user->meta->where('meta_key','keap_tags')->first();
@@ -81,7 +83,7 @@ Route::post('/next-course/', function (Request $request) {
                 if ($keapTag!=null){
                     $keapTag->update(['meta_value' => $keapTag->meta_value.";$tag"]);
                 }else{
-                    
+
                     WpUserMeta::create([
                         'user_id'=>$user->ID,
                         'meta_key'=>'keap_tags',
@@ -92,8 +94,9 @@ Route::post('/next-course/', function (Request $request) {
         } 
         
         if (str_contains($userAccess, '"transform"')) {
-            $tag = 1012;
-            if ($tag){
+            $tag2 = 1012;
+            if ($tag2){
+                $tag = tag2;
                 $user = User::find($userId);
                 $keapId = $user->meta->where('meta_key','keap_contact_id')->first();
                 $keapTag = $user->meta->where('meta_key','keap_tags')->first();
