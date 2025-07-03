@@ -190,11 +190,12 @@ class User extends Component
         }
 
         $contact = $this->updateContact();
-        if ($contact) {
+        dd($contact);
+        if ($contact['id']) {
             Keap::contact()->tag($contact['id'], $tag,);
         }
 
-        if ($contact) {
+        if ($contact['id']) {
             if ($this->keapIntegration) {
                 $this->userMeta['keap_contact_id'] = $contact['id'];
                 $this->userMeta['keap_status'] = true;
