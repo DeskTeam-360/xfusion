@@ -31,12 +31,12 @@
             </tbody>
         </table>
 
-        <div class="mb-2 mt-2">
-            <label for="mail-send" class="flex align-items-center">
-                <input type="checkbox" id="mail-send" style="margin-right: 10px;" wire:model="keapMailSend">
-                Send email and password access ?
-            </label>
-        </div>
+{{--        <div class="mb-2 mt-2">--}}
+{{--            <label for="mail-send" class="flex align-items-center">--}}
+{{--                <input type="checkbox" id="mail-send" style="margin-right: 10px;" wire:model="keapMailSend">--}}
+{{--                Send email and password access ?--}}
+{{--            </label>--}}
+{{--        </div>--}}
         <br>
         <button wire:click="import" class="btn">Import all users</button>
     @endif

@@ -1,1 +1,8 @@
-First Name,Last Name,Email,Cell,Role,Username,Password
+First Name,Last Name,Email,Cell,Role,Username,Password,Skip Revitalize(0|1),Send Mail (0|1),Keap Integration (0|1)
+testing, user1, testinguser1@gmail.com,628778614141804,Individual Purchase,Username,Password,1,1,1
+testing, user1, testinguser1@gmail.com,628778614141804,Company Manager / Leader Hybrid,Username,Password,1,1,1
+testing, user1, testinguser1@gmail.com,628778614141804,Company Manager / Leader Software Only,Username,Password,1,1,1
+testing, user1, testinguser1@gmail.com,628778614141804,Company Individual Contributor Hybrid,Username,Password,1,1,1
+testing, user1, testinguser1@gmail.com,628778614141804,Company Individual Contributor Software Only,Username,Password,1,1,1
+testing, user1, testinguser1@gmail.com,628778614141804,Company Admin,Username,Password,1,1,1
+
