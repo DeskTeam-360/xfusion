@@ -190,12 +190,15 @@ class User extends Component
         }
 
         $contact = $this->updateContact();
-        Keap::contact()->tag($contact['id'], $tag,);
+        if ($contact) {
+            Keap::contact()->tag($contact['id'], $tag,);
+        }
 
-        if ($this->keapIntegration) {
-            $this->userMeta['keap_contact_id'] = $contact['id'];
-            $this->userMeta['keap_status'] = true;
-            Keap::contact()->tag($contact['id'], [1958],);
+        if ($contact) {
+            if ($this->keapIntegration) {
+                $this->userMeta['keap_contact_id'] = $contact['id'];
+                $this->userMeta['keap_status'] = true;
+                Keap::contact()->tag($contact['id'], [1958],);
         } else {
             $this->userMeta['keap_status'] = false;
         }
@@ -203,7 +206,7 @@ class User extends Component
         if ($this->keapMailSend) {
             $this->keapMailSend($contact['id'],);
         }
-
+    }
 
         $this->userMeta['wp_user_level'] = 0;
         $this->userMeta['dismissed_wp_pointers'] = '';
