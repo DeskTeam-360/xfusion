@@ -79,7 +79,7 @@ class CourseList extends Component
         $this->validate();
         $this->resetErrorBag();
 
-        Log::info($this->courseTag);
+        // Log::info($this->courseTag);
         if (isset($this->courseTag[0])){
             $this->courseTag = $this->courseTag[0];
         }else{
