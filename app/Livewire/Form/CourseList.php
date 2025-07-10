@@ -79,6 +79,7 @@ class CourseList extends Component
         $this->validate();
         $this->resetErrorBag();
 
+        Log::info($this->courseTag);
         if (isset($this->courseTag[0])){
             $this->courseTag = $this->courseTag[0];
         }else{
@@ -112,27 +113,17 @@ class CourseList extends Component
     {
         $this->validate();
         $this->resetErrorBag();
-        if (isset($this->courseTag[0])){
-            $this->courseTag = $this->courseTag[0];
+        if (isset($this->courseTag[0]) || $this->courseTag != null){
+            $this->courseTag = $this->courseTag[0]??$this->courseTag;
         }else{
             $this->courseTag = null;
         }
-        if (isset($this->courseTagNext[0])){
-            $this->courseTagNext = $this->courseTagNext[0];
+        if (isset($this->courseTagNext[0]) || $this->courseTagNext != null){
+            $this->courseTagNext = $this->courseTagNext[0]??$this->courseTagNext;
         }else{
             $this->courseTagNext = null;
         }
-//        if ($this->courseTag == '' or $this->courseTag == [] or empty($this->courseTag)) {
-//            $this->courseTag = null;
-//        } else {
-//            $this->courseTag = $this->courseTag[0];
-//        }
 
-//        if ($this->courseTagNext == '' or $this->courseTagNext == null or empty($this->courseTagNext)) {
-//            $this->courseTagNext = null;
-//        } else {
-//            $this->courseTagNext = $this->courseTagNext[0];
-//        }
 
         \App\Models\CourseList::find($this->dataId)->update([
             'url' => $this->url,

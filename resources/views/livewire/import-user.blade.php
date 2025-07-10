@@ -1,5 +1,8 @@
 <div>
+    <a href="{{ route('template-download') }}" class="btn btn-success">Download template</a>
+    <br><br>
     <div class="flex justify-between gap-3">
+
         <div>
             <label for="" class="form-label mb-3">File CSV</label>
             <input type="file" wire:model="file" class="form-control mt-2"  accept="text/csv">

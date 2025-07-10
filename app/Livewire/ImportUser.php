@@ -21,6 +21,8 @@ class ImportUser extends Component
 
     use WithFileUploads;
 
+    public $duplicateEmail;
+
     public function checkCsv()
     {
         dd($this->file,);
@@ -37,13 +39,60 @@ class ImportUser extends Component
     {
         $path = $this->file->getRealPath();
         $data = array_map('str_getcsv', file($path,),);
-        $this->rows = $data;
+
+        // Filter out blank rows from the display data
+        $this->rows = [];
+        foreach ($data as $row) {
+            // Check if row has any content
+            $hasContent = false;
+            foreach ($row as $cell) {
+                if (!empty(trim($cell))) {
+                    $hasContent = true;
+                    break;
+                }
+            }
+
+            // Only add rows with content
+            if ($hasContent) {
+                $this->rows[] = $row;
+            }
+        }
 
         $headers = array_map('trim', $data[0],); // Baris pertama = header
 
-        $this->users = collect(array_slice($data, 1,),)->map(function ($row,) use ($headers,) {
-            return array_combine(array_map(fn($h,) => strtolower(str_replace(' ', '_', $h,),), $headers,), $row,);
-        },)->toArray();
+        $this->users = [];
+        $dataRows = array_slice($data, 1);
+
+        foreach ($dataRows as $row) {
+            // Check if row has any content
+            $hasContent = false;
+            foreach ($row as $cell) {
+                if (!empty(trim($cell))) {
+                    $hasContent = true;
+                    break;
+                }
+            }
+
+            // Skip blank rows
+            if (!$hasContent) {
+                continue;
+            }
+
+            // Ensure row has same number of elements as headers by padding with empty strings
+            $paddedRow = array_pad($row, count($headers), '');
+
+            // Create associative array with headers as keys
+            $userData = [];
+            foreach ($headers as $index => $header) {
+                $key = strtolower(str_replace(' ', '_', $header));
+                if ($header == "email"){
+                    
+                }
+                $userData[$key] = $paddedRow[$index] ?? '';
+            }
+
+            $this->users[] = $userData;
+        }
     }
 
     public function import()
@@ -62,7 +111,6 @@ class ImportUser extends Component
 
     public function create($row,)
     {
-//        dd($row,);
         $hasher = new PasswordHash(8, true,); // Sama seperti di WordPress
         $passwordHash = $hasher->HashPassword($row['password'],);
 
