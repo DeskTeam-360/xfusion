@@ -24,167 +24,56 @@ Route::get('/home', function () {
 },);
 
 Route::get('/settings', function () {
-   $numbers = [
-     
-       	
-238	,
-239	,
-240	,
-241	,
-242	,
-243	,
-244	,
-245	,
-167	,
-246	,
-247	,
-248	,
-249	,
-250	,
-251	,
-252	,
-253	,
-156	,
-254	,
-256	,
-    257	,
-185	,
-259	,
-158	,
-260	,
-261	,
-262	,
-263	,
-266	,
-264	,
-265	,
-291	,
-268	,
-270	,
-271	,
-269	,
-272	,
-273	,
-274	,
-327	,
-328	,
-330	,
-331	,
-332	,
-334	,
-335	,
-336	,
-337	,
-338	,
-339	,
-340	,
-341	,
-342	,
-343	,
-344	,
-345	,
-346	,
-177	,
-348	,
-349	,
-350	,
-351	,
-352	,
-353	,
-354	,
-355	,
-356	,
-357	,
-358	,
-359	,
-360	,
-361	,
-191	,
-363	,
-364	,
-365	,
-366	,
-367	,
-368	,
-198	,
-199	,
-200	,
-217	,
-202	,
-201	,
-209	,
-213	,
-206	,
-207	,
-208	,
-210	,
-212	,
-226	,
-203	,
-211	,
-214	,
-219	,
-218	,
-215	,
-382	,
-216	,
-220	,
-383	,
-221	,
-205	,
-222	,
-229	,
-225	,
-223	,
-227	,
-224	,
-228	,
-204	,
-362	,
 
-   ];
+    $form_ids = [35,52,51,53,54,55,66,58,65,96,61,97,83,98,77,81,80,99,72,74,87,62,100,101,102,63,88,103,36,67,68,84,86,73,145,144,70,71,69,146,78,147,85,82,56,76,59,64,60,148,79,104,105,106,107,108,109,110,111,112,113,114,115,116,117,118,119,120,121,123,125,290,126,127,128,130,131,132,133,134,135,136,137,138,139,140,142,143,150,151,152,153,154,155,230,231,232,233,234,235,149,236,237,2,3,24,289,7,8,29,9,276,30,4,14,13,15,278,16,279,280,17,281,325,282,323,324,75,122,306,293,292,293,294,295,296,297,300,301,299,298,303,302,373,311,312,313,314,315,316,317,318,322,319,320,371,371,372,238,239,240,241,242,243,244,245,167,246,247,248,249,250,251,252,253,156,254,256,257,185,259,158,260,261,262,263,266,264,265,291,268,270,271,269,272,273,274,327,328,330,331,332,334,335,336,337,338,339,340,341,342,343,344,345,346,347,348,349,350,351,352,353,354,355,356,357,358,359,360,361,191,363,364,365,366,367,368,369,199,200,217,202,201,209,213,206,207,208,210,212,226,203,211,214,219,218,215,382,216,384,383,221,205,222,229,225,223,227,224,228,204,362];
 
-   $metaJson = json_encode([
-       "feedName"                                => "Next Course",
-       "requestURL"                              => "https://admin.demo.xperiencefusion.com/api/next-course",
-       "requestMethod"                           => "POST",
-       "requestFormat"                           => "json",
-       "requestHeaders"                          => [
-           [
-               "key"          => "",
-               "custom_key"   => "",
-               "value"        => "",
-               "custom_value" => "",
-           ],
-       ],
-       "requestBodyType"                         => "select_fields",
-       "fieldValues"                             => [
-           [
-               "key"          => "gf_custom",
-               "custom_key"   => "entry_id",
-               "value"        => "id",
-               "custom_value" => "",
-           ],
-       ],
-       "feed_condition_conditional_logic_object" => [],
-       "feed_condition_conditional_logic"        => "0",
-       "feedCondition"                           => "",
-   ],);
+    $metaJson = json_encode([
+        "feedName"                                => "Next Course",
+        "requestURL"                              => "https://admin.demo.xperiencefusion.com/api/next-course",
+        "requestMethod"                           => "POST",
+        "requestFormat"                           => "json",
+        "requestHeaders"                          => [
+            [
+                "key"          => "",
+                "custom_key"   => "",
+                "value"        => "",
+                "custom_value" => "",
+            ],
+        ],
+        "requestBodyType"                         => "select_fields",
+        "fieldValues"                             => [
+            [
+                "key"          => "gf_custom",
+                "custom_key"   => "entry_id",
+                "value"        => "id",
+                "custom_value" => "",
+            ],
+        ],
+        "feed_condition_conditional_logic_object" => [],
+        "feed_condition_conditional_logic"        => "0",
+        "feedCondition"                           => "",
+    ]);
 
-   foreach ($numbers as $formId) {
-       DB::table('wp_gf_addon_feed',)->insert([
-           'form_id'    => $formId,
-           'is_active'  => 1,
-           'feed_order' => 0,
-           'meta'       => $metaJson,
-           'addon_slug' => 'gravityformswebhooks',
-           'event_type' => null,
-       ],);
-   }
-   return [
-       'code'   => 200,
-       'status' => 'success',
-   ];
+    foreach ($form_ids as $formId) {
+        $exists = DB::table('wp_gf_addon_feed')->where('form_id', $formId)->exists();
+
+        if (!$exists) {
+            DB::table('wp_gf_addon_feed')->insert([
+                'form_id'    => $formId,
+                'is_active'  => 1,
+                'feed_order' => 0,
+                'meta'       => $metaJson,
+                'addon_slug' => 'gravityformswebhooks',
+                'event_type' => null,
+            ]);
+        }
+    }
+
+    return [
+        'code'   => 200,
+        'status' => 'success',
+    ];
+
 },);
 
 Auth::routes();
