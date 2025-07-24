@@ -33,9 +33,11 @@ class CourseList extends \App\Models\CourseList implements View
             ['label' => '#', 'sort' => 'id', 'width' => '7%'],
             ['label' => 'Course title', 'sort' => 'course_title'],
             ['label' => 'Page title', 'sort' => 'page_title'],
-            ['label' => 'Require Tag', 'sort' => 'keap_tag'],
+            ['label' => 'Form id', 'sort' => 'form_id'],
+            ['label' => 'Tag', 'sort' => 'keap_tag'],
+            ['label' => 'Next Tag', 'sort' => 'keap_tag'],
             ['label' => 'Repeat', 'sort' => 'repeat_entry'],
-            ['label' => 'Link', 'sort' => 'url'],
+//            ['label' => 'Link', 'sort' => 'url'],
             ['label' => 'Action'],
         ];
     }
@@ -44,14 +46,20 @@ class CourseList extends \App\Models\CourseList implements View
     {
         $link = route('course-title.edit',$data->id);
         $tag='';
+        $tag2='';
         if ($data->keap_tag!=null){
             $tag = Tag::find($data->keap_tag)->name??"Tag has been deleted";
+        }
+        if ($data->keap_tag_next!=null){
+            $tag2 = Tag::find($data->keap_tag_next)->name??"Tag has been deleted";
         }
         return [
             ['type' => 'string','data'=>$data->id],
             ['type' => 'string', 'data' => $data->course_title],
             ['type' => 'string', 'data' => $data->page_title],
+            ['type' => 'string', 'data' => $data->wp_gf_form_id],
             ['type' => 'string', 'data' => $tag],
+            ['type' => 'string', 'data' => $tag2],
             ['type' => 'string', 'data' => ($data->repeat_entry==1)?'Yes':'No'],
             ['type' => 'raw_html', 'data' => "<b>Main link</b> : <a target='_blank' href='$data->url'>$data->url</a> <br><b> Next Page Link : </b> <a target='_blank' href='$data->url_next'>$data->url_next</a>"],
             ['type' => 'raw_html','text-align'=>'center', 'data' => "
