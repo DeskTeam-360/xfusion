@@ -134,48 +134,54 @@ class User extends Component
 
     public function updateContact()
     {
-        if ($this->action == 'create') {
-            $contact = Keap::contact()->createOrUpdate([
-                'given_name'      => $this->first_name,
-                'family_name'     => $this->last_name,
-                'email_addresses' => [
-                    [
-                        'email' => $this->email,
-                        'field' => 'EMAIL1',
+        try {
+            if ($this->action == 'create') {
+                $contact = Keap::contact()->createOrUpdate([
+                    'given_name'      => $this->first_name,
+                    'family_name'     => $this->last_name,
+                    'email_addresses' => [
+                        [
+                            'email' => $this->email,
+                            'field' => 'EMAIL1',
+                        ],
                     ],
-                ],
-                'custom_fields'   => [
-                    [
-                        'id'      => '96',
-                        'content' => $this->email,
+                    'custom_fields'   => [
+                        [
+                            'id'      => '96',
+                            'content' => $this->email,
+                        ],
+                        [
+                            'id'      => '98',
+                            'content' => $this->password,
+                        ],
                     ],
-                    [
-                        'id'      => '98',
-                        'content' => $this->password,
+                ]);
+            } elseif ($this->action == 'update') {
+                $contact = Keap::contact()->createOrUpdate([
+                    'given_name'      => $this->first_name,
+                    'family_name'     => $this->last_name,
+                    'email_addresses' => [
+                        [
+                            'email' => $this->email,
+                            'field' => 'EMAIL1',
+                        ],
                     ],
-                ],
-            ],);
-        } else if ($this->action == 'update') {
-            $contact = Keap::contact()->createOrUpdate([
-                'given_name'      => $this->first_name,
-                'family_name'     => $this->last_name,
-                'email_addresses' => [
-                    [
-                        'email' => $this->email,
-                        'field' => 'EMAIL1',
+                    'custom_fields'   => [
+                        [
+                            'id'      => '96',
+                            'content' => $this->email,
+                        ],
                     ],
-                ],
-                'custom_fields'   => [
-                    [
-                        'id'      => '96',
-                        'content' => $this->email,
-                    ],
-                ],
-            ],);
+                ]);
+            }
+
+            return $contact;
+        } catch (\Exception $e) {
+            \Log::error('Error updating Keap contact: ' . $e->getMessage());
+            return null;
         }
-        // dd($contact);
-        return $contact;
     }
+
 
     public function updateOrCreateMeta($key, $value,)
     {
@@ -249,11 +255,9 @@ class User extends Component
 
         $contact = $this->updateContact();
 
-        if ($contact['id']) {
+        if (isset($contact['id'])) {
             Keap::contact()->tag($contact['id'], explode(';', $this->userMeta['access_tags'],),);
-        }
 
-        if ($contact['id']) {
             if ($this->keapIntegration) {
                 $this->userMeta['keap_contact_id'] = $contact['id'];
                 $this->userMeta['keap_status'] = true;
