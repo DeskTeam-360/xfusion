@@ -240,10 +240,10 @@ class User extends Component
 
         if ($this->skipRevitalize) {
             if (str_contains($ur->accesses, '"sustain"',)) {
-                $this->userMeta['access_tags'] = $this->userMeta['access_tags'] . ';322';
+                $this->userMeta['access_tags'] = $this->userMeta['access_tags'] . ';322;1840;1864;1870;1888';
             }
             if (str_contains($ur->accesses, '"transform"',)) {
-                $this->userMeta['access_tags'] = $this->userMeta['access_tags'] . ';1012';
+                $this->userMeta['access_tags'] = $this->userMeta['access_tags'] . ';1012;1840;1864;1870;1888';
             }
         }
 
