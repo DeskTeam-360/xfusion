@@ -24,7 +24,7 @@
 {{--    <script src="{{ asset('build/assets/app-CI1Bgkaz.js') }}"></script>--}}
     <link rel="stylesheet" href="{{ asset('vendor/select2/select2.min.css') }}">
 
-    <link rel="stylesheet" href="{{ asset('assets/css/theme.css') }}">
+    <link rel="stylesheet" href="{{ asset('assets/css/theme.css') }}?v=2">
 
 
     <title>{{ config('app.name', 'Laravel') }}</title>
