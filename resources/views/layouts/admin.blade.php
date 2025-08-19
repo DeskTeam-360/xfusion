@@ -190,7 +190,6 @@
                 ss.id = "dark-alert"
                 document.head.appendChild(ss);
                 document.getElementById("light-alert").remove();
-
             });
         });
 
@@ -209,10 +208,11 @@
             var ss = document.createElement('link');
             ss.rel = "stylesheet";
             if (localStorage.getItem("Theme") == "dark") {
+                ss.id = "light-alert"
+            } else {
                 ss.id = "dark-alert"
                 ss.href = "//cdn.jsdelivr.net/npm/@sweetalert2/theme-dark@4/dark.css";
-            } else {
-                ss.id = "light-alert"
+
                 // ss.href = "//cdn.jsdelivr.net/npm/@sweetalert2/theme-minimal/minimal.css";
             }
             document.head.appendChild(ss);
