@@ -116,7 +116,8 @@
     <script src="{{ asset('assets/libs/apexcharts/dist/apexcharts.min.js') }}"></script>
     <script src="{{ asset('vendor/select2/select2.min.js') }}"></script>
     {{-- <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11/dist/sweetalert2.min.js"></script> --}}
-    <script src="//cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+{{--    <script src="//cdn.jsdelivr.net/npm/sweetalert2@11"></script>--}}
+    <script src="//cdn.jsdelivr.net/npm/@sweetalert2/theme-dark@4/dark.css"></script>
     <script src="https://cdn.jsdelivr.net/gh/fcmam5/nightly.js@v1.0/dist/nightly.min.js"></script>
 
     @if(session('swal'))
@@ -195,11 +196,6 @@
 
         document.querySelectorAll("#light-layout").forEach((element) => {
             element.addEventListener("click", () => {
-                // var ss = document.createElement('link');
-                // ss.rel = "stylesheet";
-                // ss.href = "//cdn.jsdelivr.net/npm/@sweetalert2/theme-minimal/minimal.css";
-                // ss.id="light-alert"
-                // document.head.appendChild(ss);
                 document.getElementById("dark-alert").remove();
             });
         });
@@ -208,11 +204,10 @@
             var ss = document.createElement('link');
             ss.rel = "stylesheet";
             if (localStorage.getItem("Theme") == "dark") {
-                ss.id = "light-alert"
-            } else {
                 ss.id = "dark-alert"
                 ss.href = "//cdn.jsdelivr.net/npm/@sweetalert2/theme-dark@4/dark.css";
-
+            } else {
+                ss.id = "light-alert"
                 // ss.href = "//cdn.jsdelivr.net/npm/@sweetalert2/theme-minimal/minimal.css";
             }
             document.head.appendChild(ss);
