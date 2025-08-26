@@ -109,7 +109,9 @@ class User extends Component
         $contactId = $contact['id'];
 
         if ($this->company_id){
-            $this->userMeta['company'] = $this->company_id;
+//            $this->userMeta['company'] = $this->company_id;
+            $this->updateOrCreateMeta('company', $this->company_id,);
+
             CompanyEmployee::where('user_id', $this->dataId)->delete();
             \App\Repository\View\CompanyEmployee::create([
                 'user_id' => $user->ID,

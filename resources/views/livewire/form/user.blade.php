@@ -28,7 +28,7 @@
 
         <div class="mb-2">
             <label for="role" class="form-label mb-2">
-                Role <span class="text-red-600">*</span>
+                Company
             </label>
             <select wire:model="company_id" class="form-control" required>
                 <option value=""></option>
