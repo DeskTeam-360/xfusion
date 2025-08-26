@@ -112,7 +112,7 @@ class User extends Component
             $this->userMeta['company'] = $this->company_id;
             CompanyEmployee::where('user_id', $this->dataId)->delete();
             \App\Repository\View\CompanyEmployee::create([
-                'user_id' => $user->id,
+                'user_id' => $user->ID,
                 'company_id' => $this->company_id
             ]);
         }
@@ -264,7 +264,7 @@ class User extends Component
             $this->userMeta['company'] = $this->company_id;
 
             \App\Repository\View\CompanyEmployee::create([
-                'user_id' => $user->id,
+                'user_id' => $user->ID,
                 'company_id' => $this->company_id
             ]);
         }
