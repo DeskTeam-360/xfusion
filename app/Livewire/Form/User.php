@@ -114,7 +114,7 @@ class User extends Component
 
 
 
-        if ($this->company_id){
+        if ($this->company_id && $this->company_id!=0){
 //            $this->userMeta['company'] = $this->company_id;
             $this->updateOrCreateMeta('company', $this->company_id,);
 
@@ -123,6 +123,9 @@ class User extends Component
                 'user_id' => $user->ID,
                 'company_id' => $this->company_id
             ]);
+        }else{
+            CompanyEmployee::where('user_id', $this->dataId)->delete();
+            WpUserMeta::where('user_id', $user->ID)->where('meta_key','company')->delete();
         }
 
         $this->updateOrCreateMeta('last_name', $this->last_name,);

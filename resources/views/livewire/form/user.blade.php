@@ -31,7 +31,7 @@
                 Company
             </label>
             <select wire:model="company_id" class="form-control">
-                <option value=""></option>
+                <option value="0"></option>
                 @foreach($optionCompany as $key=>$value)
                     <option value="{{ $key }}">{{ $value }}</option>
                 @endforeach
