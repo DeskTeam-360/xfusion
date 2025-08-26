@@ -71,9 +71,14 @@ class User extends Component
             $this->email = $data->user_email;
             $this->website = $data->user_url;
 
+
             $role = $data->meta()->where('meta_key', 'user_role',)->first()->meta_value ?? '';
             if ($role) {
                 $this->role = \App\Models\UserRole::where('title', $role,)->first()->id;
+            }
+            $company = $data->meta()->where('meta_key', 'company',)->first()->meta_value ?? '';
+            if ($company) {
+                $this->company_id = $company;
             }
 
         }
