@@ -111,7 +111,8 @@ class User extends Component
         $currentTag = array_merge($currentTag, [1960],);
 
         $contact = $this->updateContact();
-        $contactId = $contact['id'];
+
+
 
         if ($this->company_id){
 //            $this->userMeta['company'] = $this->company_id;
@@ -129,20 +130,25 @@ class User extends Component
         $this->updateOrCreateMeta('user_access', $ur->accesses,);
         $this->updateOrCreateMeta('access_tags', implode(';', $currentTag,),);
         $this->updateOrCreateMeta('user_role', $ur->title,);
-        Keap::contact()->tag($contactId, $currentTag,);
 
-        if ($this->keapIntegration) {
-            Keap::contact()->tag($contactId, [1958],);
-            $this->updateOrCreateMeta('keap_contact_id', $contactId,);
-            $this->updateOrCreateMeta('keap_status', true,);
-        } else {
-            $this->updateOrCreateMeta('keap_status', false,);
+        if(isset($contact['id'])){
+            $contactId = $contact['id'];
+            Keap::contact()->tag($contactId, $currentTag,);
+
+            if ($this->keapIntegration) {
+                Keap::contact()->tag($contactId, [1958],);
+                $this->updateOrCreateMeta('keap_contact_id', $contactId,);
+                $this->updateOrCreateMeta('keap_status', true,);
+            } else {
+                $this->updateOrCreateMeta('keap_status', false,);
+            }
+
+
+            if ($this->keapMailSend) {
+                $this->keapMailSend($contactId,);
+            }
         }
 
-
-        if ($this->keapMailSend) {
-            $this->keapMailSend($contactId,);
-        }
 
 
         $this->dispatch('swal:alert', data: [
