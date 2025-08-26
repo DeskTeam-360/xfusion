@@ -1,4 +1,5 @@
 <?php
+
 global $wpdb;
 
 /**
@@ -22,7 +23,7 @@ function company_detect()
             window.open(link, '_blank'); // Buka Google di tab baru
         }
 
-        const baseStorage = 'https://demo.xperiencefusion.com/xfusion-laravel/public/storage/';
+        const baseStorage = 'https://xperiencefusion.com/xfusion-laravel/public/storage/';
         var data = {
             url: window.location.href.split('?')[0]
         }
@@ -75,7 +76,6 @@ function company_detect()
                     param: window.location.href.split('?')[1],
                 },
                 success: function (response) {
-                    console.log(response.data)
                     const tools = response.data.tools ?? 0;
                     if (response.data.status === "setId") {
                         addQueryParam('dataId', response.data.dataId)
@@ -88,7 +88,7 @@ function company_detect()
                         alert(response.data.message)
                         if (getUrlParameter('btn-close') == 'true') {
                             window.close()
-                        }else{
+                        } else {
                             window.location.replace(response.data.url)
                         }
                     }
@@ -104,15 +104,23 @@ function company_detect()
                             qrcode[0].src = response.data.qrcode_url.replace("public/", baseStorage);
                             qrcode[0].srcset = "";
                         }
+
+                        const companyLogoLink = document.querySelector("#company-logo > div > a");
+                        if (companyLogoLink) {
+                            if (response.data.company_url) {
+                                companyLogoLink.href = response.data.company_url;
+                            } else {
+                                companyLogoLink.href = '#';
+                            }
+                        }
+
                         //const cll = document.querySelector("#company-logo > div > a");
 
                     } else {
-                        const company_logo = document.getElementsByClassName("wp-image-11067");
-                        if (company_logo) {
-                            company_logo[0].src = "https://demo.xperiencefusion.com/wp-content/uploads/2024/08/FUSION_Transparent-black-font.png";
+                        const companyLogoImg = document.querySelector("#company-logo > div > a > img");
+                        if (companyLogoImg) {
+                            companyLogoImg.src = "http://xperiencefusion.com/wp-content/uploads/2025/08/XFUSION_Transparent.png";
                         }
-
-
                     }
 
                     if (getUrlParameter('btn-close') === 'true') {
@@ -131,6 +139,7 @@ function company_detect()
                                 };
                                 buttonSubmit3.parentNode.replaceChild(button, buttonSubmit3);
                             } else {
+
                                 let forms = document.querySelector("#container-revitlize-center");
                                 let btnClose = document.querySelector(".btn-close");
                                 if (forms) { // Cegah duplikasi tombol
@@ -152,7 +161,6 @@ function company_detect()
                                 }
                             }
 
-
                             const buttonSubmit4 = document.querySelector('#btn-next-revitalize');
                             if (buttonSubmit4) {
                                 buttonSubmit4.remove();
@@ -166,6 +174,26 @@ function company_detect()
                             const buttonSubmit4 = document.querySelector('#btn-next-revitalize');
                             if (buttonSubmit4) {
                                 buttonSubmit4.remove();
+                            }
+
+                            let forms = document.querySelector("#container-revitlize-center");
+                            let btnClose = document.querySelector(".btn-close");
+                            if (forms) { // Cegah duplikasi tombol
+                                if (!btnClose) {
+                                    const buttonSubmit3 = document.querySelector('#btn-prev-revitalize');
+                                    if (buttonSubmit3) {
+                                        buttonSubmit3.remove()
+                                    }
+                                    let button = document.createElement("button");
+                                    button.className = "btn-close";
+                                    button.innerText = "Close tab";
+                                    button.style.display = "block";
+                                    button.style.marginTop = "10px";
+                                    button.onclick = function () {
+                                        window.close()
+                                    };
+                                    forms.appendChild(button);
+                                }
                             }
                         }
                     }
@@ -323,13 +351,18 @@ function company_detect()
 
                                         }
 
+
                                     } else if (key % 1 !== 0) {
                                         if (response.data[0][key] !== '') {
                                             document.getElementsByName('input_' + key)[0].checked = true
                                         }
                                         document.getElementsByName('input_' + key)[0].disabled = true
-                                    }
-                                    if (document.getElementsByName('input_' + key)[0]['type'] === "file") {
+
+                                        const event = new Event('change', {bubbles: true});
+                                        document.getElementsByName('input_' + key)[0].dispatchEvent(event);
+
+
+                                    } else if (document.getElementsByName('input_' + key)[0]['type'] === "file") {
                                         const file = document.getElementsByName('input_' + key)[0]
 
                                         const downloadBtn = document.createElement('a');
@@ -344,12 +377,14 @@ function company_detect()
                                     } else {
                                         // document.getElementsByName('input_' + key)[0].value = response.data[0][key]
                                         const inputElement = document.getElementsByName('input_' + key)[0];
+
                                         inputElement.value = response.data[0][key];
                                         const event = new Event('change', {bubbles: true});
                                         inputElement.dispatchEvent(event);
                                     }
                                     document.getElementsByName('input_' + key)[0].disable = true
                                     document.getElementsByName('input_' + key)[0].readOnly = true
+
                                 }
                             }
                         }
@@ -386,13 +421,7 @@ function get_company_info()
     // Access the "user_login" value
     $user_login = str_replace(' ', '+', strtolower($data[0]['user_login']));
 
-    $arrayLinks = [
-        "https://demo.xperiencefusion.com/user/$user_login/",
-        "https://demo.xperiencefusion.com/lms-home-screen/",
-        "https://demo.xperiencefusion.com/topics/dependability/",
-        "https://demo.xperiencefusion.com/account/",
-        "https://demo.xperiencefusion.com/resources/resource-menu/",
-    ];
+    $arrayLinks = ["https://xperiencefusion.com/user/$user_login/", "https://xperiencefusion.com/lms-home-screen/", "https://xperiencefusion.com/topics/dependability/", "https://xperiencefusion.com/account/", "https://xperiencefusion.com/resources/resource-menu/",];
 
     if (!$limitLinks) {
 
@@ -407,12 +436,10 @@ function get_company_info()
             foreach ($click_logs as $log) {
                 $result['logo_url'] = $log->logo_url;
                 $result['qrcode_url'] = $log->qrcode_url;
+                $result['company_url'] = $log->company_url;
             }
             if (in_array($url, $arrayLinks)) {
-                wp_send_json_success([
-                    'logo_url'   => $result['logo_url'],
-                    'qrcode_url' => $result['qrcode_url'],
-                ]);
+                wp_send_json_success(['logo_url' => $result['logo_url'], 'qrcode_url' => $result['qrcode_url'], 'company_url' => $result['company_url'],]);
                 wp_die();
             }
         }
@@ -439,23 +466,25 @@ function get_company_info()
             } else {
                 $user_access = strtolower(str_replace(' ', '-', $user_access));
                 $course_title_slug = strtolower(str_replace(' ', '-', $limit->course_title));
+                if ($course_title_slug == "revitalize-resources") {
+                    $course_title_slug = 'revitalize';
+                }
+                if ($course_title_slug == "transform-resources") {
+                    $course_title_slug = 'transform-resource';
+                }
+                if ($course_title_slug == "sustain-resources") {
+                    $course_title_slug = 'sustain-resource';
+                }
 
                 if (!stripos($user_access, $course_title_slug)) {
                     $status = 'redirect';
                     $message = "You don't have access to this page";
 
-                    wp_send_json_success([
-                        'url'     => $limit->url_redirect,
-                        'status'  => $status,
-                        'message' => $message,
-                        'access'  => $user_access,
-                        'access2' => $limit->course_title,
-                    ]);
+                    wp_send_json_success(['url' => $limit->url_redirect, 'status' => $status, 'message' => $message, 'access' => $user_access, 'access2' => $limit->course_title,]);
                     wp_die();
                 }
 
             }
-//            ["revitalize","revitalize-facilitation","transform","transform-resource","transform-tools","sustain","sustain-resource","sustain-tools", "admin-portal","-super-admin-site","company","all-report","delete-activity","users"]
 
             foreach ($click_logs as $log) {
                 $result['logo_url'] = $log->logo_url;
@@ -469,73 +498,36 @@ function get_company_info()
                 $message = "You've done the topic";
                 $status = 'return';
                 if (isset($_POST['param']) && strpos($_POST['param'], $check->id) !== false) {
-                    wp_send_json_success([
-                        'logo_url'   => $result['logo_url'],
-                        'qrcode_url' => $result['qrcode_url'],
-                        'form_id'    => $check->form_id,
-                        'url_next'   => $limit->url_next,
-                        'tools'      => $limit->repeat_entry,
-                    ]);
+                    wp_send_json_success(['logo_url' => $result['logo_url'], 'qrcode_url' => $result['qrcode_url'], 'company_url' => $result['company_url'], 'form_id' => $check->form_id, 'url_next' => $limit->url_next, 'tools' => $limit->repeat_entry,]);
                     wp_die();
                 }
 
                 if ($limit->repeat_entry == 1) {
-                    wp_send_json_success([
-                        'logo_url'   => $result['logo_url'],
-                        'qrcode_url' => $result['qrcode_url'],
-                        'form_id'    => $check->form_id,
-                        'url_next'   => $limit->url_next,
-                        'tools'      => $limit->repeat_entry,
-                    ]);
+                    wp_send_json_success(['logo_url' => $result['logo_url'], 'qrcode_url' => $result['qrcode_url'], 'company_url' => $result['company_url'], 'form_id' => $check->form_id, 'url_next' => $limit->url_next, 'tools' => $limit->repeat_entry,]);
                     wp_die();
                 }
 
-                wp_send_json_success([
-                    'url'        => $url . '?dataId=' . $check->id . '&' . $_POST['param'],
-                    'dataId'     => $check->id,
-                    'status'     => $status,
-                    'message'    => $message,
-                    'logo_url'   => $result['logo_url'],
-                    'qrcode_url' => $result['qrcode_url'],
-                    'tools'      => $limit->repeat_entry,
-                    'url_next'   => $limit->url_next,
-                ]);
+                wp_send_json_success(['url' => $url . '?dataId=' . $check->id . '&' . $_POST['param'], 'dataId' => $check->id, 'status' => $status, 'message' => $message, 'logo_url' => $result['logo_url'], 'qrcode_url' => $result['qrcode_url'], 'company_url' => $result['company_url'], 'tools' => $limit->repeat_entry, 'url_next' => $limit->url_next,]);
                 wp_die();
             }
 
             if ($limit->keap_tag == null) {
-                wp_send_json_success([
-                    'logo_url'   => $result['logo_url'],
-                    'qrcode_url' => $result['qrcode_url'],
-                    'tools'      => $limit->repeat_entry,
-                ]);
+                wp_send_json_success(['logo_url' => $result['logo_url'], 'qrcode_url' => $result['qrcode_url'], 'company_url' => $result['company_url'], 'tools' => $limit->repeat_entry,]);
                 wp_die();
             }
 
-            if ($limit->keap_tag==null || $limit->keap_tag==false || $limit->keap_tag=='') {
-                wp_send_json_success([
-                    'logo_url'   => $result['logo_url'],
-                    'qrcode_url' => $result['qrcode_url'],
-                    'tools'      => $limit->repeat_entry,
-                ]);
+            if ($limit->keap_tag == null || $limit->keap_tag == false || $limit->keap_tag == '') {
+                wp_send_json_success(['logo_url' => $result['logo_url'], 'qrcode_url' => $result['qrcode_url'], 'company_url' => $result['company_url'], 'tools' => $limit->repeat_entry,]);
                 wp_die();
             }
 
             if (in_array($limit->keap_tag, explode(';', $keapTags))) {
-                wp_send_json_success([
-                    'logo_url'   => $result['logo_url'],
-                    'qrcode_url' => $result['qrcode_url'],
-                    'tools'      => $limit->repeat_entry,
-                ]);
+                wp_send_json_success(['logo_url' => $result['logo_url'], 'qrcode_url' => $result['qrcode_url'], 'company_url' => $result['company_url'], 'tools' => $limit->repeat_entry,]);
                 wp_die();
             }
 
             if (in_array('administrator', $user_roles, true)) {
-                wp_send_json_success([
-                    'logo_url'   => $result['logo_url'],
-                    'qrcode_url' => $result['qrcode_url'],
-                    'tools'      => $limit->repeat_entry,
-                ]);
+                wp_send_json_success(['logo_url' => $result['logo_url'], 'qrcode_url' => $result['qrcode_url'], 'company_url' => $result['company_url'], 'tools' => $limit->repeat_entry,]);
                 wp_die();
             }
 
@@ -543,22 +535,13 @@ function get_company_info()
             if (in_array($limit->keap_tag_parent, explode(';', $keapTags))) {
                 $status = 'redirect';
                 $message = "You need waiting " . $limit->delay + 5 . "minutes from last submit";
-                wp_send_json_success([
-                    'url'     => $limit->url_redirect,
-                    'status'  => $status,
-                    'message' => $message,
-                    'tools'   => $limit->repeat_entry,
-                ]);
+                wp_send_json_success(['url' => $limit->url_redirect, 'status' => $status, 'message' => $message, 'tools' => $limit->repeat_entry,]);
                 wp_die();
             }
 
             $status = 'redirect';
             $message = "You don't have access to this page";
-            wp_send_json_success([
-                'url'     => $limit->url_redirect,
-                'status'  => $status,
-                'message' => $message,
-                'tools'   => $limit->repeat_entry,
+            wp_send_json_success(['url' => $limit->url_redirect, 'status' => $status, 'message' => $message, 'tools' => $limit->repeat_entry,
 
             ]);
             wp_die();
@@ -566,20 +549,11 @@ function get_company_info()
         $url = $limit->redirect_url;
         $status = 'redirect';
         $message = "You need login ";
-        wp_send_json_success([
-            'url'     => "https://demo.xperiencefusion.com/lms-home-screen/",
-            'status'  => $status,
-            'message' => $message,
-            'tools'   => $limit->repeat_entry,
-        ]);
+        wp_send_json_success(['url' => "https://xperiencefusion.com/lms-home-screen/", 'status' => $status, 'message' => $message, 'tools' => $limit->repeat_entry,]);
         wp_die();
     }
 
-    wp_send_json_success([
-        'logo_url'   => null,
-        'qrcode_url' => null,
-        'tools'      => $limit->repeat_entry,
-    ]);
+    wp_send_json_success(['logo_url' => null, 'qrcode_url' => null, 'tools' => $limit->repeat_entry,]);
     wp_die();
 }
 

@@ -34,6 +34,8 @@ class User extends Component
     #[Validate('required|max:255')]
     public $role;
 
+    public $company_id=null;
+
     public $userMeta;
     public $keap;
     public $keapMailSend;
@@ -41,6 +43,7 @@ class User extends Component
     public $skipRevitalize;
 
     public $optionAccess;
+    public $optionCompany;
 
 
     public function mount()
@@ -49,6 +52,11 @@ class User extends Component
 
         foreach (\App\Models\UserRole::get() as $role) {
             $this->optionAccess[$role->id] = $role->title;
+        }
+        $this->optionCompany = [];
+
+        foreach (\App\Models\Company::get() as $company) {
+            $this->optionCompany[$company->id] = $company->title;
         }
 
         if ($this->dataId != null) {
@@ -99,6 +107,15 @@ class User extends Component
 
         $contact = $this->updateContact();
         $contactId = $contact['id'];
+
+        if ($this->company_id){
+            $this->userMeta['company'] = $this->company_id;
+            CompanyEmployee::where('user_id', $this->dataId)->delete();
+            \App\Repository\View\CompanyEmployee::create([
+                'user_id' => $user->id,
+                'company_id' => $this->company_id
+            ]);
+        }
 
         $this->updateOrCreateMeta('last_name', $this->last_name,);
         $this->updateOrCreateMeta('first_name', $this->first_name,);
@@ -241,6 +258,15 @@ class User extends Component
             $this->userMeta['user_access'] = $ur->accesses;
             $this->userMeta['access_tags'] = implode(';', json_decode($ur->tag_starter,),);
             $this->userMeta['access_tags'] = $this->userMeta['access_tags'] . ';1960';
+        }
+
+        if ($this->company_id){
+            $this->userMeta['company'] = $this->company_id;
+
+            \App\Repository\View\CompanyEmployee::create([
+                'user_id' => $user->id,
+                'company_id' => $this->company_id
+            ]);
         }
 
 

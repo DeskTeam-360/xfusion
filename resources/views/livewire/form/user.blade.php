@@ -26,6 +26,18 @@
         <x-input title="Re-type password" model="rePassword" type="password" required="true"/>
     @endif
 
+        <div class="mb-2">
+            <label for="role" class="form-label mb-2">
+                Role <span class="text-red-600">*</span>
+            </label>
+            <select wire:model="company_id" class="form-control" required>
+                <option value=""></option>
+                @foreach($optionCompany as $key=>$value)
+                    <option value="{{ $key }}">{{ $value }}</option>
+                @endforeach
+            </select>
+        </div>
+
 
     <div class="mb-2 mt-2">
         <label for="keap-integration" class="flex align-items-center">
