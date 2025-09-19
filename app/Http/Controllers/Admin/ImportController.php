@@ -53,6 +53,11 @@ class ImportController extends Controller
         }
     }
 
+    public function importIndexCompany($id)
+    {
+        return view('admin.company.import-user-company', compact('id'));
+    }
+
 
     public function importCSV(Request $request)
     {

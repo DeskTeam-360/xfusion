@@ -1,5 +1,5 @@
 <x-admin-layout>
-    <div class="container full-container py-5">
+    <div class="container full-container py-5" x-data="{}" @refresh-page.window="location.reload()">
         <div class="w-full">
             <div>
                 <div class="gap-3 p-4 lg:grid lg:grid-cols-12">
@@ -8,6 +8,11 @@
                         {{ \App\Models\WpUserMeta::where('user_id',$id)->where('meta_key','first_name')->first()->meta_value??'' }}
                         {{ \App\Models\WpUserMeta::where('user_id',$id)->where('meta_key','last_name')->first()->meta_value??'' }}
                     </h2>
+                </div>
+                
+                <!-- Add Tag Component -->
+                <div class="p-4">
+                    <livewire:add-tag-to-user :user-id="$id" />
                 </div>
                 <div class="grid grid-cols-1 gap-3 p-4 lg:grid-cols-1 xl:grid-cols-1">
                     <div class="overflow-x-auto relative ">

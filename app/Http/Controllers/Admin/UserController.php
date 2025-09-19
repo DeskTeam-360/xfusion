@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Admin;
 use App\Http\Controllers\Controller;
 use App\Models\User;
 use Illuminate\Http\Request;
+use KeapGeek\Keap\Facades\Keap;
 
 class UserController extends Controller
 {
@@ -62,5 +63,26 @@ class UserController extends Controller
     public function destroy(string $id)
     {
         //
+    }
+
+    /**
+     * Send Keap mail to user
+     */
+    public function keapMailSend($contactId)
+    {
+        try {
+            Keap::contact()->tag($contactId, [1942]);
+            return redirect()->back()->with('swal', [
+                'title' => 'Keap mail sent successfully',
+                'icon' => 'success',
+                'timeout' => 3000
+            ]);
+        } catch (\Exception $e) {
+            return redirect()->back()->with('swal', [
+                'title' => 'Failed to send Keap mail: ' . $e->getMessage(),
+                'icon' => 'error',
+                'timeout' => 5000
+            ]);
+        }
     }
 }

@@ -30,22 +30,25 @@ class Company extends Component
 
     protected $rules = [
         'title' => 'required|max:255',
-        'logo_url' => 'nullable',
+        'logo_url' => 'nullable|image|mimes:jpeg,png,jpg,gif|max:4096|dimensions:min_width=140,min_height=60,max_width=160,max_height=80',
         'company_url' => 'nullable',
         'user_id' => 'required',
     ];
 
     protected $messages = [
         'title.required' => 'Please fill the Company name.',
-//        'logo_url.required' => 'Please select a Company Logo.',
-//        'qrcode_url.required' => 'Please select a Company QRcode.',
+        'logo_url.image' => 'The logo must be an image file.',
+        'logo_url.mimes' => 'The logo must be a file of type: jpeg, png, jpg, gif.',
+        'logo_url.max' => 'The logo may not be greater than 4MB.',
+        'logo_url.dimensions' => 'The logo must be between 140x60 and 160x80 pixels (recommended: 150x70).',
         'user_id.required' => 'Please select a Company leader.',
     ];
 
     public function mount()
     {
         $this->usersOption = [];
-        foreach (\App\Models\User::get() as $item) {
+        // Only get users who don't have a company
+        foreach (\App\Models\User::whereDoesntHave('companyEmployee')->get() as $item) {
             $this->usersOption[] = ['value' => $item->ID, 'title' => $item->user_email];
         }
 
@@ -56,13 +59,13 @@ class Company extends Component
             $this->logo_url = $data->logo_url;
             $this->qrcode_url = $data->qrcode_url;
             $this->company_url = $data->company_url;
+            $this->usersOption[] = ['value' => $data->user_id, 'title' => \App\Models\User::find($data->user_id)->user_email. " - Current Company Leader"];
         }
     }
 
     public function create()
     {
         $this->validate();
-        $this->resetErrorBag();
 
         if ($this->logo_url != null) {
             $logoUrl = $this->logo_url->store(path: 'public/photos');
@@ -97,8 +100,8 @@ class Company extends Component
         $this->validate([
             'user_id' => 'required',
             'title' => 'required|string|max:255',
+            'logo_url' => 'nullable|image|mimes:jpeg,png,jpg,gif|max:4096|dimensions:min_width=140,min_height=60,max_width=160,max_height=80',
         ]);
-        $this->resetErrorBag();
         $data_compare = \App\Models\Company::find($this->dataId);
 
         if ($data_compare->logo_url != $this->logo_url) {

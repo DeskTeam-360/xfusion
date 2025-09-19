@@ -3,6 +3,8 @@
         <div class="w-full">
             <a href="{{ route('company.add-employee',$id) }}" class="btn btn-primary">Add Employee</a>
             <a href="{{ route('export-user-company',$id) }}" class="btn btn-secondary">Export to CSV</a>
+            <a href="{{ route('to-import-user-company',$id) }}" class="btn btn-secondary">Import from CSV</a>
+            <a href="{{ route('company.add-employee-from-users',$id) }}" class="btn btn-info">Add Employee from Users</a>
             <livewire:table.master name="User" :param1="$id"/>
         </div>
     </div>

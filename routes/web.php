@@ -81,6 +81,12 @@ Auth::routes();
 Route::middleware(['auth',],)->group(function () {
     Route::get('/dashboard', function () {
 
+        $cache = Cache::get('keap.access_token');
+
+        if (!$cache) {
+            return redirect('/keap/auth');
+        }
+
         $user = Auth::user();
         $ru = $user->meta->where('meta_key', '=', config('app.wp_prefix', 'wp_',) . 'capabilities',);
         $role = '';
@@ -174,6 +180,11 @@ Route::middleware(['auth',],)->group(function () {
         CampaignController::class,
         'listTag',
     ],)->name('user.tag-list',);
+
+    Route::get('/user/keap-mail-send/{contactId}', [
+        UserController::class,
+        'keapMailSend',
+    ],)->name('user.keap-mail-send',);
 //    });
 
 //    Route::middleware([
@@ -240,14 +251,28 @@ Route::middleware(['auth',],)->group(function () {
         ExportController::class,
         'exportToCSVCompany',
     ],)->name('export-user-company',);
+
     Route::get('/template-download', [
         ExportController::class,
         'downloadTemplate',
     ],)->name('template-download',);
+
+    Route::get('/template-download-company/{id}', [
+        ExportController::class,
+        'downloadTemplateCompany',
+    ],)->name('template-download-company',);
+
     Route::get('/import-user', [
         ImportController::class,
         'importIndex',
     ],)->name('to-import-user',);
+
+    Route::get('/import-user-company/{id}', [
+        ImportController::class,
+        'importIndexCompany',
+    ],)->name('to-import-user-company',);
+
+    
     Route::post('/import-user-action', [
         ImportController::class,
         'importCSV',
@@ -262,6 +287,10 @@ Route::middleware(['auth',],)->group(function () {
         CompanyController::class,
         'addEmployee',
     ],)->name('company.add-employee',);
+    Route::get('/company/{id}/add-employee-from-users', [
+        CompanyController::class,
+        'addEmployeeFromUsers',
+    ],)->name('company.add-employee-from-users',);
     Route::get('/company/{id}/edit-employee/{employee}', [
         CompanyController::class,
         'editEmployee',

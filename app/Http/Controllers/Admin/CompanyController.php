@@ -113,6 +113,30 @@ class CompanyController extends Controller
 
     }
 
+    public function addEmployeeFromUsers(string $id)
+    {
+        $user = Auth::user();
+        $ru = $user->meta->where('meta_key', '=', config('app.wp_prefix', 'wp_') . 'capabilities');
+        $role = '';
+        foreach ($ru as $r) {
+            $role = array_key_first(unserialize($r['meta_value']));
+        }
+        if ($role == "administrator" || $role == "editor") {
+            if ($role == "editor") {
+                $user = Auth::user();
+                $companies = $user->meta->where('meta_key', '=', 'company');
+                foreach ($companies as $r) {
+                    if ($r['meta_value'] != $id) {
+                        return redirect(route('company.add-employee-from-users', $r['meta_value']));
+                    }
+                }
+            }
+            return view('admin.company.add-employee-from-users', compact('id'));
+        } else {
+            return redirect('dashboard');
+        }
+    }
+
     public function editEmployee(string $id, string $employee)
     {
         $user = Auth::user();

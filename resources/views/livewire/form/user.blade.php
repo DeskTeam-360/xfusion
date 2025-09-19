@@ -41,11 +41,12 @@
 
     <div class="mb-2 mt-2">
         <label for="keap-integration" class="flex align-items-center">
-            <input type="checkbox" id="keap-integration" style="margin-right: 10px;" wire:model="keapIntegration">
+            <input type="checkbox" id="keap-integration" style="margin-right: 10px;" wire:model="keapIntegration" {{ $keapIntegration ? 'checked' : '' }}>
             Keap integration ?
         </label>
     </div>
 
+    @if($action=="create")
     <div class="mb-2 mt-2">
         <label for="skip-revitalize" class="flex align-items-center">
             <input type="checkbox" id="skip-revitalize" style="margin-right: 10px;" wire:model="skipRevitalize">
@@ -59,6 +60,7 @@
             Send email and password access ?
         </label>
     </div>
+    @endif
 
     <br>
     <button type="submit" class="btn" wire:loading.attr="disabled">Submit</button>

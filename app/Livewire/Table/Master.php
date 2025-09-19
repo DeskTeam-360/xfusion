@@ -112,6 +112,7 @@ class Master extends Component
 
     }
 
+
     public function render()
     {
         $data = $this->get_pagination_data();

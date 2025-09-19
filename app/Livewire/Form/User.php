@@ -53,6 +53,7 @@ class User extends Component
         foreach (\App\Models\UserRole::get() as $role) {
             $this->optionAccess[$role->id] = $role->title;
         }
+
         $this->optionCompany = [];
 
         foreach (\App\Models\Company::get() as $company) {
@@ -81,6 +82,12 @@ class User extends Component
                 $this->company_id = $company;
             }
 
+            $keapStatus = $data->meta()->where('meta_key', 'keap_status',)->first()->meta_value ?? '';
+            if ($keapStatus) {
+                $this->keapIntegration = $keapStatus == '1' ? true : false;
+            }
+            // dd($keapStatus);
+
         }
     }
 
@@ -98,27 +105,38 @@ class User extends Component
 
         $ur = \App\Models\UserRole::find($this->role,);
 
-        $currentTag = json_decode($ur->tag_starter,);
+        $currentTag = $user->meta()->where('meta_key', 'access_tags')->first()->meta_value ?? '';
+        
+        $currentTag = $currentTag ? explode(';', $currentTag) : [];
 
-        if ($this->skipRevitalize) {
-            if (str_contains($ur->accesses, '"sustain"',)) {
-                $currentTag = array_merge($currentTag, [322],);
-            }
-            if (str_contains($ur->accesses, '"transform"',)) {
-                $currentTag = array_merge($currentTag, [1012],);
-            }
-        }
+        $currentTag = array_merge($currentTag, json_decode($ur->tag_starter,));
+        // dd($currentTag);
+        // if ($this->skipRevitalize) {
+        //     if (str_contains($ur->accesses, '"sustain"',)) {
+        //         $currentTag = array_merge($currentTag, [322],);
+        //     }
+        //     if (str_contains($ur->accesses, '"transform"',)) {
+        //         $currentTag = array_merge($currentTag, [1012],);
+        //     }
+        // }
+
         $currentTag = array_merge($currentTag, [1960],);
 
         $contact = $this->updateContact();
 
+        // $currentTag = remove duplicate $currentTag
+        $currentTag = array_unique($currentTag);
+        // $currentTag = implode(';', $currentTag);
+        // $this->updateOrCreateMeta('access_tags', $currentTag,);
+
 
 
         if ($this->company_id && $this->company_id!=0){
-//            $this->userMeta['company'] = $this->company_id;
+
             $this->updateOrCreateMeta('company', $this->company_id,);
 
             CompanyEmployee::where('user_id', $this->dataId)->delete();
+
             \App\Repository\View\CompanyEmployee::create([
                 'user_id' => $user->ID,
                 'company_id' => $this->company_id
@@ -128,27 +146,27 @@ class User extends Component
             WpUserMeta::where('user_id', $user->ID)->where('meta_key','company')->delete();
         }
 
-        $this->updateOrCreateMeta('last_name', $this->last_name,);
-        $this->updateOrCreateMeta('first_name', $this->first_name,);
-        $this->updateOrCreateMeta('user_access', $ur->accesses,);
-        $this->updateOrCreateMeta('access_tags', implode(';', $currentTag,),);
-        $this->updateOrCreateMeta('user_role', $ur->title,);
+        $this->updateOrCreateMeta('last_name', $this->last_name);
+        $this->updateOrCreateMeta('first_name', $this->first_name);
+        $this->updateOrCreateMeta('user_access', $ur->accesses);
+        $this->updateOrCreateMeta('access_tags', implode(';', $currentTag));
+        $this->updateOrCreateMeta('user_role', $ur->title);
 
         if(isset($contact['id'])){
             $contactId = $contact['id'];
-            Keap::contact()->tag($contactId, $currentTag,);
+            Keap::contact()->tag($contactId, $currentTag);
 
             if ($this->keapIntegration) {
-                Keap::contact()->tag($contactId, [1958],);
-                $this->updateOrCreateMeta('keap_contact_id', $contactId,);
-                $this->updateOrCreateMeta('keap_status', true,);
+                Keap::contact()->tag($contactId, [1958]);
+                $this->updateOrCreateMeta('keap_contact_id', $contactId);
+                $this->updateOrCreateMeta('keap_status', true);
             } else {
-                $this->updateOrCreateMeta('keap_status', false,);
+                $this->updateOrCreateMeta('keap_status', false);
             }
 
 
             if ($this->keapMailSend) {
-                $this->keapMailSend($contactId,);
+                $this->keapMailSend($contactId);
             }
         }
 
@@ -216,17 +234,17 @@ class User extends Component
     }
 
 
-    public function updateOrCreateMeta($key, $value,)
+    public function updateOrCreateMeta($key, $value)
     {
         WpUserMeta::updateOrCreate([
             'user_id'  => $this->dataId,
             'meta_key' => $key,
-        ], ['meta_value' => $value],);
+        ], ['meta_value' => $value]);
     }
 
-    public function keapMailSend($contactId,)
+    public function keapMailSend($contactId)
     {
-        Keap::contact()->tag($contactId, [1942],);
+        Keap::contact()->tag($contactId, [1942]);
     }
 
     public function create()
@@ -272,7 +290,7 @@ class User extends Component
         if ($ur) {
             $this->userMeta['user_role'] = $ur->title;
             $this->userMeta['user_access'] = $ur->accesses;
-            $this->userMeta['access_tags'] = implode(';', json_decode($ur->tag_starter,),);
+            $this->userMeta['access_tags'] = implode(';', array_merge($this->userMeta['access_tags'], json_decode($ur->tag_starter,)),);
             $this->userMeta['access_tags'] = $this->userMeta['access_tags'] . ';1960';
         }
 
@@ -298,18 +316,18 @@ class User extends Component
         $contact = $this->updateContact();
 
         if (isset($contact['id'])) {
-            Keap::contact()->tag($contact['id'], explode(';', $this->userMeta['access_tags'],),);
+            Keap::contact()->tag($contact['id'], explode(';', $this->userMeta['access_tags']));
 
             if ($this->keapIntegration) {
                 $this->userMeta['keap_contact_id'] = $contact['id'];
                 $this->userMeta['keap_status'] = true;
-                Keap::contact()->tag($contact['id'], [1958],);
+                Keap::contact()->tag($contact['id'], [1958]);
             } else {
                 $this->userMeta['keap_status'] = false;
             }
 
             if ($this->keapMailSend) {
-                $this->keapMailSend($contact['id'],);
+                $this->keapMailSend($contact['id']);
             }
         }
 

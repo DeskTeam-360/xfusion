@@ -232,6 +232,10 @@
                 const data = d.__livewire.params.data;
                 window.open(data.url, '_blank');
             })
+
+            window.addEventListener('refreshPage', function(d) {
+                location.reload();
+            })
         })
     </script>
 @stack('script')

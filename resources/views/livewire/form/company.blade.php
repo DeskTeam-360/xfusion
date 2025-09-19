@@ -6,9 +6,9 @@
     </div>
 
     <div class="form-group">
-{{--        <label for="logo_url">{{ __('Company logo') }}</label>@error('logo_url') <span style="margin-left: 10px; color: indianred;" >{{ $message }}</span> @enderror--}}
-        <x-input model="logo_url" type="file" accept="image/png" ignore="{{true}}" id="logo_url"  title="Company logo"/>
-
+        <x-input model="logo_url" type="file" accept="image/jpeg,image/png,image/jpg,image/gif" ignore="{{true}}" id="logo_url"  title="Company logo"/>
+        <small class="text-muted">You can resize your logo on <a href="https://www.iloveimg.com/resize-image#resize-options,pixels" target="_blank" class="text-blue-600 hover:text-blue-800">iLoveIMG</a></small>
+        @error('logo_url') <span style="margin-left: 10px; color: indianred;" >{{ $message }}</span> @enderror
     </div>
     <div class="form-group">
 {{--        <label for="title">{{ __('Website company') }}</label>@error('company_url') <span style="margin-left: 10px; color: indianred;" >{{ $message }}</span> @enderror--}}
