@@ -14,26 +14,23 @@ class CustomUserProvider extends EloquentUserProvider
         $plain = $credentials['password'];
         $rawHashed = $user->getAuthPassword();
 
+        // Handle WordPress-style hashes with $wp$ prefix
         if (str_starts_with($rawHashed, '$wp$')) {
             $fixedHash = str_replace('$wp$', '$', trim($rawHashed));
-
-//            dd([
-//                'plain' => $plain,
-//                'stored_hash' => $rawHashed,
-//                'fixed_hash' => $fixedHash,
-//                'verify_result' => password_verify($plain, $fixedHash),
-//                'hash_info' => password_get_info($fixedHash)
-//            ]);
-//            dd($credentials);
-//            dd($plain, $hashed, password_verify($plain, $hashed));
-//            return password_verify($plain, $hashed);
-//            return parent::validateCredentials($user, $credentials);
+            return password_verify($plain, $fixedHash);
         }
 
+        // Handle WordPress PHPass hashes with $P$ prefix
         if (str_starts_with($rawHashed, '$P$')) {
             return $this->checkPhpPass($plain, $rawHashed);
         }
 
+        // Handle standard Laravel Bcrypt hashes
+        if (str_starts_with($rawHashed, '$2y$') || str_starts_with($rawHashed, '$2a$') || str_starts_with($rawHashed, '$2b$')) {
+            return password_verify($plain, $rawHashed);
+        }
+
+        // Fallback to parent method for other hash types
         return parent::validateCredentials($user, $credentials);
     }
 
@@ -45,9 +42,13 @@ class CustomUserProvider extends EloquentUserProvider
 
     public function retrieveByCredentials(array $credentials)
     {
-//        dd($credentials);
-        $credentials['user_email'] = $credentials['email'];
-        unset($credentials['email']);
+        // Map Laravel's 'email' field to WordPress 'user_email' field
+        if (isset($credentials['email'])) {
+            $credentials['user_email'] = $credentials['email'];
+            unset($credentials['email']);
+        }
+        
+        // Remove password from query credentials
         $queryCredentials = array_filter(
             $credentials,
             fn($key) => $key !== 'password',

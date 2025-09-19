@@ -115,7 +115,7 @@
 
                         <div class="icon-nav items-center gap-3 lg:gap-4 flex">
                             <!-- Theme Toggle  -->
-                            <button type="button"
+                            <!-- <button type="button"
                                     class="hs-dark-mode-active:hidden icon-hover block hs-dark-mode group items-center font-medium hover:text-primary text-link dark:text-darklink h-10 w-10 light-dark-hoverbg  justify-center rounded-full"
                                     data-hs-theme-click-value="dark" id="dark-layout">
                                 <i class="ti ti-moon text-xl  text-link dark:text-darklink relative  hover:text-primary"></i>
@@ -124,11 +124,11 @@
                                     class="hs-dark-mode-active:block icon-hover hidden hs-dark-mode group  items-center  font-medium hover:text-primary text-link dark:text-darklink h-10 w-10 light-dark-hoverbg  justify-center rounded-full"
                                     data-hs-theme-click-value="light" id="light-layout">
                                 <i class="ti ti-sun text-xl  text-link dark:text-darklink relative  hover:text-primary"></i>
-                            </button>
+                            </button> -->
 
                             <!-- Notifications DD -->
 
-                            <div
+                            <!-- <div
                                 class="hs-dropdown [--strategy:absolute] [--adaptive:none] sm:[--trigger:hover] sm:relative group/menu">
                                 <a id="hs-dropdown-hover-event-notification"
                                    class="relative hs-dropdown-toggle h-10 w-10 text-link dark:text-darklink cursor-pointer hover:bg-lightprimary  hover:text-primary dark:hover:bg-darkprimary flex justify-center items-center rounded-full group-hover/menu:bg-lightprimary group-hover/menu:text-primary">
@@ -147,20 +147,6 @@
                 new</span>
                                     </div>
                                     <div class="message-body max-h-[350px]" data-simplebar="">
-{{--                                        <a href="javascript:void(0)"--}}
-{{--                                           class="px-7 py-3 flex items-center light-dark-hoverbg">--}}
-{{--                <span--}}
-{{--                    class="flex-shrink-0 h-12 w-12 rounded-full bg-lightprimary dark:bg-darkprimary flex justify-center items-center">--}}
-{{--                <i class="ti ti-dashboard text-primary text-xl"></i>--}}
-{{--                </span>--}}
-{{--                                            <div class="ps-4">--}}
-{{--                                                <h5 class="text-sm">--}}
-{{--                                                    Launch Admin--}}
-{{--                                                </h5>--}}
-{{--                                                <span>Just see the my new--}}
-{{--                        admin!</span>--}}
-{{--                                            </div>--}}
-{{--                                        </a>--}}
 
                                     </div>
                                     <div class="pt-3 pb-6 px-7">
@@ -169,7 +155,7 @@
                                         </a>
                                     </div>
                                 </div>
-                            </div>
+                            </div> -->
                             <!-- Profile DD -->
                             <div
                                 class="hs-dropdown [--strategy:absolute] [--adaptive:none] [--placement:top-left] sm:[--trigger:hover] sm:relative group/menu">
@@ -212,65 +198,6 @@
                                                     </div>
                                                 </div>
 
-{{--                                                <ul class="mt-10">--}}
-{{--                                                    <li class="mb-5">--}}
-{{--                                                        <a href="#"--}}
-{{--                                                           class="flex gap-3 items-center group">--}}
-{{--                                <span--}}
-{{--                                    class="bg-lightgray dark:bg-darkgray    h-12 w-12 flex justify-center items-center rounded-md">--}}
-{{--                                    <img--}}
-{{--                                        src="https://bootstrapdemos.adminmart.com/modernize-tailwind-pro/dist/assets/images/svgs/icon-account.svg"--}}
-{{--                                        class="h-6 w-6">--}}
-{{--                                </span>--}}
-
-{{--                                                            <div class="">--}}
-{{--                                                                <h6 class="text-sm mb-1  group-hover:text-primary">--}}
-{{--                                                                    My Profile--}}
-{{--                                                                </h6>--}}
-{{--                                                                <p class="text-xs text-link dark:text-darklink font-normal">--}}
-{{--                                                                    Account settings</p>--}}
-{{--                                                            </div>--}}
-{{--                                                        </a>--}}
-{{--                                                    </li>--}}
-{{--                                                    <li class="mb-5">--}}
-{{--                                                        <a href="#"--}}
-{{--                                                           class="flex gap-3 items-center  group">--}}
-{{--                                <span--}}
-{{--                                    class="bg-lightgray dark:bg-darkgray    h-12 w-12 flex justify-center items-center rounded-md">--}}
-{{--                                    <img--}}
-{{--                                        src="https://bootstrapdemos.adminmart.com/modernize-tailwind-pro/dist/assets/images/svgs/icon-inbox.svg"--}}
-{{--                                        class="h-6 w-6">--}}
-{{--                                </span>--}}
-{{--                                                            <div class="">--}}
-{{--                                                                <h6 class="fext-sm mb-1  group-hover:text-primary ">--}}
-{{--                                                                    My Inbox--}}
-{{--                                                                </h6>--}}
-{{--                                                                <p class="text-xs text-link dark:text-darklink font-normal">--}}
-{{--                                                                    Messages &amp;--}}
-{{--                                                                    Emails</p>--}}
-{{--                                                            </div>--}}
-{{--                                                        </a>--}}
-{{--                                                    </li>--}}
-{{--                                                    <li class="mb-5">--}}
-{{--                                                        <a href="#"--}}
-{{--                                                           class="flex gap-3 items-center group ">--}}
-{{--                                <span--}}
-{{--                                    class="bg-lightgray dark:bg-darkgray    h-12 w-12 flex justify-center items-center rounded-md">--}}
-{{--                                    <img--}}
-{{--                                        src="https://bootstrapdemos.adminmart.com/modernize-tailwind-pro/dist/assets/images/svgs/icon-tasks.svg"--}}
-{{--                                        class="h-6 w-6">--}}
-{{--                                </span>--}}
-{{--                                                            <div class="">--}}
-{{--                                                                <h6 class="fext-sm mb-1  group-hover:text-primary ">--}}
-{{--                                                                    My Tasks--}}
-{{--                                                                </h6>--}}
-{{--                                                                <p class="text-xs text-link dark:text-darklink font-normal">--}}
-{{--                                                                    To-do and Daily--}}
-{{--                                                                    tasks</p>--}}
-{{--                                                            </div>--}}
-{{--                                                        </a>--}}
-{{--                                                    </li>--}}
-{{--                                                </ul>--}}
                                             </div>
                                         </div>
                                         <div class="mt-5">

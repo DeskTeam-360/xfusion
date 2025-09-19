@@ -75,8 +75,17 @@ class User extends Corcel
     {
         return [
             'email_verified_at' => 'datetime',
-            'password' => 'hashed',
         ];
+    }
+
+    /**
+     * Get the password for the user.
+     *
+     * @return string
+     */
+    public function getAuthPassword()
+    {
+        return $this->user_pass;
     }
 
     public function companyEmployee()

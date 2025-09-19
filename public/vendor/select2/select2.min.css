@@ -68,7 +68,7 @@
 }
 
 .select2-dropdown {
-    background-color: #202936;
+    background-color: #fff;
     border: 1px solid #95A0F4;
     border-radius: 4px;
     box-sizing: border-box;
@@ -231,7 +231,7 @@
 }
 
 .select2-container--default .select2-selection--multiple {
-    background-color: #202936;
+    /* background-color: #202936; */
     border: 1px solid #333F55;
     border-radius: 4px;
     cursor: text

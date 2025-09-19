@@ -5,8 +5,8 @@ namespace App\Http\Controllers\Auth;
 use App\Http\Controllers\Controller;
 use App\Models\User;
 use Illuminate\Foundation\Auth\RegistersUsers;
-use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Validator;
+use Hautelook\Phpass\PasswordHash;
 
 class RegisterController extends Controller
 {
@@ -50,7 +50,7 @@ class RegisterController extends Controller
     {
         return Validator::make($data, [
             'name' => ['required', 'string', 'max:255'],
-            'email' => ['required', 'string', 'email', 'max:255', 'unique:users'],
+            'email' => ['required', 'string', 'email', 'max:255', 'unique:users,user_email'],
             'password' => ['required', 'string', 'min:8', 'confirmed'],
         ]);
     }
@@ -63,10 +63,18 @@ class RegisterController extends Controller
      */
     protected function create(array $data)
     {
+        $hasher = new PasswordHash(8, true);
+        $passwordHash = $hasher->HashPassword($data['password']);
+        
         return User::create([
-            'name' => $data['name'],
-            'email' => $data['email'],
-            'password' => Hash::make($data['password']),
+            'user_login' => $data['name'],
+            'user_nicename' => $data['name'],
+            'user_email' => $data['email'],
+            'user_pass' => $passwordHash,
+            'user_registered' => now()->toDateTimeString(),
+            'user_activation_key' => '',
+            'user_status' => 0,
+            'display_name' => $data['name'],
         ]);
     }
 }

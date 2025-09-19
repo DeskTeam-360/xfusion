@@ -1,4 +1,4 @@
-<div class="bg-white rounded-lg shadow-md p-6 mb-6">
+<div class="">
     <h3 class="text-lg font-semibold text-gray-800 mb-4">Add Access to User</h3>
     
     @if(count($availableTags) > 0)
