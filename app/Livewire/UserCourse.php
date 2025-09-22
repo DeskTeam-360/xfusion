@@ -77,7 +77,8 @@ class UserCourse extends Component
         $wp = WpPost::find($topicId);
         $url = "%/topics/$wp->post_name/";
         $cl = CourseList::where('url', 'like', $url)->first();
-        WpGfEntry::where('source_url', 'like', $url)->where('created_by', '=', $this->user)
+        try {
+            WpGfEntry::where('source_url', 'like', $url)->where('created_by', '=', $this->user)
             ->update([
                 'status' => 'trash',
             ]);
@@ -85,6 +86,10 @@ class UserCourse extends Component
             ->update([
                 'status' => 'trash',
             ]);
+        } catch (\Throwable $th) {
+            //throw $th;
+        }
+        
         $this->courseUser[$lessonId]['topics'][$courseId][$topicId] = 0;
         $this->u->update([
             'meta_value' => serialize($this->courseUser),

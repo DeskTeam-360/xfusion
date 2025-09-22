@@ -18,6 +18,38 @@ function company_detect()
     <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.7.1/jquery.min.js"></script>
     <script>
 
+function moveCloseButton() {
+    const closeButton = document.querySelector('#container-revitlize-center .btn-close');
+    const container = document.querySelector('#container-revitlize-center');
+
+    if (closeButton && container) {
+      // Cari elemen sebelumnya (previous sibling)
+      const prevDiv = container.previousElementSibling;
+
+      if (prevDiv && prevDiv.nodeType === 1) {
+        // Masukkan tombol ke dalam div sebelumnya
+        prevDiv.appendChild(closeButton);
+
+        // Tambahkan CSS agar tetap rata kiri
+        if (!document.querySelector('#custom-close-css')) {
+          const style = document.createElement('style');
+          style.id = 'custom-close-css';
+          style.textContent = `
+            .btn-close {
+              display: block !important;
+              margin: 10px 0 !important;
+            }
+          `;
+          document.head.appendChild(style);
+        }
+
+        console.log('Close button moved into previous div successfully');
+      }
+    }
+  }
+
+  // Initial call
+
 
         function openWindowXfusion(link) {
             window.open(link, '_blank'); // Buka Google di tab baru
@@ -46,6 +78,7 @@ function company_detect()
 
         if (buttonSubmit3 && !buttonSubmit99 && container) {
             container.appendChild(buttonSubmit3);
+
         }
 
         document.addEventListener('DOMContentLoaded', function () {
@@ -126,9 +159,11 @@ function company_detect()
                     if (getUrlParameter('btn-close') === 'true') {
 
                         if (response.data.tools == 1) {
+							
                             const buttonSubmit99 = document.querySelector('.gform_button');
                             const buttonSubmit3 = document.querySelector('#btn-prev-revitalize');
                             if (buttonSubmit3 && buttonSubmit99) {
+								
                                 let button = document.createElement("button");
                                 button.className = "btn-close";
                                 button.innerText = "Close tab";
@@ -159,6 +194,7 @@ function company_detect()
                                         forms.appendChild(button);
                                     }
                                 }
+										
                             }
 
                             const buttonSubmit4 = document.querySelector('#btn-next-revitalize');
@@ -195,6 +231,7 @@ function company_detect()
                                     forms.appendChild(button);
                                 }
                             }
+								  moveCloseButton();
                         }
                     }
                     if (getUrlParameter('dataId')) {
