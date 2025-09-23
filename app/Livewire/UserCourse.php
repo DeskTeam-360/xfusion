@@ -82,7 +82,7 @@ class UserCourse extends Component
             ->update([
                 'status' => 'trash',
             ]);
-        WpGfEntry::where('form_id', 'like', $cl->wp_gf_form_id)->where('created_by', '=', $this->user)
+            WpGfEntry::where('form_id', 'like', $cl->wp_gf_form_id)->where('created_by', '=', $this->user)
             ->update([
                 'status' => 'trash',
             ]);

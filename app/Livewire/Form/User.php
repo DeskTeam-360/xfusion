@@ -290,7 +290,7 @@ class User extends Component
         if ($ur) {
             $this->userMeta['user_role'] = $ur->title;
             $this->userMeta['user_access'] = $ur->accesses;
-            $this->userMeta['access_tags'] = implode(';', array_merge($this->userMeta['access_tags'], json_decode($ur->tag_starter,)),);
+            $this->userMeta['access_tags'] = implode(';', json_decode($ur->tag_starter,),);
             $this->userMeta['access_tags'] = $this->userMeta['access_tags'] . ';1960';
         }
 
