@@ -23,9 +23,10 @@ Route::get('/send-mail-result', function () {
     $contactId = 4718;
     Keap::contact();
     
-Keap::contact()->find($contactId, [
+$c=Keap::contact()->find($contactId, [
     'job_title', 'custom_fields', 'tags'
 ]);
+dd($c);
     // return view('admin.send-mail-result');
 },);
 
