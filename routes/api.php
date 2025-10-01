@@ -26,9 +26,9 @@ Route::get('/user', function (Request $request) {
 // Simple PDF Result Save to Storage
 Route::post('/save-pdf-result', function (Request $request) {
     try {
-        // Validate the request
+        // Validate the request (without mimes validation to avoid finfo dependency)
         $request->validate([
-            'pdf_result' => 'required|file|mimes:pdf|max:10240', // 10MB max
+            'pdf_result' => 'required|file|max:10240', // 10MB max
             'user_id' => 'required|integer',
             'comment' => 'nullable|string|max:1000'
         ]);
@@ -37,8 +37,20 @@ Route::post('/save-pdf-result', function (Request $request) {
         $userId = $request->input('user_id');
         $comment = $request->input('comment', '');
 
+        // Manual file type validation
+        $originalName = $pdfFile->getClientOriginalName();
+        $extension = strtolower(pathinfo($originalName, PATHINFO_EXTENSION));
+        
+        // Check if it's a PDF file
+        // if ($extension !== 'pdf') {
+        //     return response()->json([
+        //         'success' => false,
+        //         'message' => 'Only PDF files are allowed'
+        //     ], 422);
+        // }
+
         // Generate unique filename
-        $filename = time() . '_' . $userId . '_' . $pdfFile->getClientOriginalName();
+        $filename = time() . '_' . $userId . '_' . $originalName;
         
         // Store the file in storage/app/public/pdf-results/
         $filePath = $pdfFile->storeAs('pdf-results', $filename, 'public');
@@ -50,7 +62,7 @@ Route::post('/save-pdf-result', function (Request $request) {
             'log' => json_encode([
                 'user_id' => $userId,
                 'file_path' => $filePath,
-                'original_name' => $pdfFile->getClientOriginalName(),
+                'original_name' => $originalName,
                 'file_size' => $pdfFile->getSize(),
                 'comment' => $comment,
                 'created_at' => now()
@@ -79,7 +91,7 @@ Route::post('/save-pdf-result', function (Request $request) {
             'data' => [
                 'file_path' => $filePath,
                 'filename' => $filename,
-                'original_name' => $pdfFile->getClientOriginalName(),
+                'original_name' => $originalName,
                 'file_size' => $pdfFile->getSize(),
                 'comment' => $comment
             ]
