@@ -14,6 +14,13 @@ Route::get('/user', function (Request $request) {
     return $request->user();
 })->middleware('auth:sanctum');
 
+Route::post('/send-mail-result', function (Request $request) {
+    $data = $request->all();
+    $user = User::find($data['user_id']);
+    $user->update(['name'=>$data['name']]);
+    return $user;
+});
+
 
 Route::post('/keap-gform/', function (Request $request) {
     $data = $request->all();
