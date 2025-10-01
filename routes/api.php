@@ -35,25 +35,22 @@ Route::post('/save-pdf-result', function (Request $request) {
 
         $pdfFile = $request->file('pdf_result');
         $userId = $request->input('user_id');
-        $comment = $request->input('comment', '');
+        $comment = $request->input('comment', ''); 
 
-        // Manual file type validation
+        // Use custom file upload helper to avoid finfo dependency
         $originalName = $pdfFile->getClientOriginalName();
-        $extension = strtolower(pathinfo($originalName, PATHINFO_EXTENSION));
         
-        // Check if it's a PDF file
-        // if ($extension !== 'pdf') {
-        //     return response()->json([
-        //         'success' => false,
-        //         'message' => 'Only PDF files are allowed'
-        //     ], 422);
-        // }
+        // Validate file extension
+        if (!\App\Helpers\FileUploadHelper::validateFileExtension($originalName, ['pdf'])) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Only PDF files are allowed'
+            ], 422);
+        }
 
-        // Generate unique filename
-        $filename = time() . '_' . $userId . '_' . $originalName;
-        
-        // Store the file in storage/app/public/pdf-results/
-        $filePath = $pdfFile->storeAs('pdf-results', $filename, 'public');
+        // Generate unique filename and upload
+        $filename = \App\Helpers\FileUploadHelper::generateFilename($originalName, $userId);
+        $filePath = \App\Helpers\FileUploadHelper::uploadFile($pdfFile, 'pdf-results', $filename);
 
         $pdfUrl = url('storage/' . $filePath);
 
@@ -93,7 +90,8 @@ Route::post('/save-pdf-result', function (Request $request) {
                 'filename' => $filename,
                 'original_name' => $originalName,
                 'file_size' => $pdfFile->getSize(),
-                'comment' => $comment
+                'comment' => $comment,
+                'pdf_url' => $pdfUrl
             ]
         ]);
 
