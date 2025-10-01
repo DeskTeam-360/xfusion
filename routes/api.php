@@ -82,7 +82,7 @@ Route::post('/save-pdf-result', function (Request $request) {
                 ]
             ],
         ]);
-        Keap::contact()->tag($contact['id'], $tagId);
+        Keap::contact()->tag($contact['id'], [$tagId]);
         return response()->json([
             'success' => true,
             'message' => 'PDF result saved successfully',
