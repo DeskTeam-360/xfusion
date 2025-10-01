@@ -19,16 +19,16 @@ Route::get('/', function () {
     return redirect()->route('dashboard',);
 },);
 
-Route::get('/send-mail-result', function () {
-    $contactId = 4718;
-    Keap::contact();
+// Route::get('/send-mail-result', function () {
+//     $contactId = 4718;
+//     Keap::contact();
     
-$c=Keap::contact()->find($contactId, [
-    'job_title', 'custom_fields',
-]);
-dd($c);
-    // return view('admin.send-mail-result');
-},);
+// $c=Keap::contact()->find($contactId, [
+//     'job_title', 'custom_fields',
+// ]);
+// dd($c);
+//     // return view('admin.send-mail-result');
+// },);
 
 Route::get('/home', function () {
     return redirect()->route('dashboard',);

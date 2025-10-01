@@ -1,0 +1,580 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>PDF Generation Example</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+        .grit-for-print {
+            border: 1px solid #ddd;
+            padding: 20px;
+            margin: 20px 0;
+            background: white;
+        }
+        .report-header {
+            text-align: center;
+            border-bottom: 2px solid #333;
+            padding-bottom: 10px;
+            margin-bottom: 20px;
+        }
+        .report-content {
+            line-height: 1.6;
+        }
+        .chart-container {
+            width: 100%;
+            height: 300px;
+            border: 1px solid #eee;
+            margin: 20px 0;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background: #f9f9f9;
+        }
+        button {
+            background-color: #007bff;
+            color: white;
+            padding: 12px 24px;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 16px;
+            margin: 10px 5px;
+        }
+        button:hover {
+            background-color: #0056b3;
+        }
+        .user-input {
+            margin: 20px 0;
+            padding: 15px;
+            background: #f8f9fa;
+            border-radius: 5px;
+        }
+        .user-input input {
+            padding: 8px;
+            margin: 5px;
+            border: 1px solid #ddd;
+            border-radius: 3px;
+        }
+    </style>
+</head>
+<body>
+    <h1>PDF Generation and Upload Example</h1>
+    
+    <div class="user-input">
+        <label for="user_id">User ID:</label>
+        <input type="number" id="user_id" name="user_id" value="123" required>
+        <br>
+        <label for="comment">Comment (optional):</label>
+        <input type="text" id="comment" name="comment" placeholder="Enter comment here...">
+    </div>
+
+    <button id="printReportBtn">Generate & Save PDF</button>
+    <button onclick="testUpload()">Test Direct Upload</button>
+
+    <div class="grit-for-print">
+        <div class="report-header">
+            <h2>Sample Report</h2>
+            <p>Generated on: <span id="currentDate"></span></p>
+        </div>
+        
+        <div class="report-content">
+            <h3>Executive Summary</h3>
+            <p>This is a sample report that demonstrates PDF generation and automatic upload to storage. The report includes various elements that can be captured and converted to PDF format.</p>
+            
+            <h3>Data Analysis</h3>
+            <p>Here we would typically include charts, graphs, and other data visualizations. For demonstration purposes, we'll show a placeholder chart area.</p>
+            
+            <div class="chart-container">
+                <canvas id="sampleChart" width="400" height="200"></canvas>
+            </div>
+            
+            <h3>Key Findings</h3>
+            <ul>
+                <li>Sample finding 1: Important data point</li>
+                <li>Sample finding 2: Another significant insight</li>
+                <li>Sample finding 3: Additional analysis result</li>
+            </ul>
+            
+            <h3>Recommendations</h3>
+            <p>Based on the analysis, we recommend the following actions:</p>
+            <ol>
+                <li>Implement the suggested improvements</li>
+                <li>Monitor progress regularly</li>
+                <li>Review results in 30 days</li>
+            </ol>
+        </div>
+    </div>
+
+    <!-- Include the PDF upload script -->
+    <script src="/assets/js/pdf-upload.js"></script>
+    
+    <!-- Include html2canvas for better PDF generation -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+    
+    <!-- Include html2pdf for PDF generation -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
+
+    <script>
+        // Set current date
+        document.getElementById('currentDate').textContent = new Date().toLocaleDateString();
+        
+        // Create a simple chart using canvas
+        function createSampleChart() {
+            const canvas = document.getElementById('sampleChart');
+            const ctx = canvas.getContext('2d');
+            
+            // Simple bar chart
+            const data = [65, 59, 80, 81, 56, 55, 40];
+            const labels = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul'];
+            
+            // Clear canvas
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+            
+            // Draw bars
+            const barWidth = 40;
+            const barSpacing = 20;
+            const maxValue = Math.max(...data);
+            
+            data.forEach((value, index) => {
+                const barHeight = (value / maxValue) * 150;
+                const x = 50 + index * (barWidth + barSpacing);
+                const y = canvas.height - 50 - barHeight;
+                
+                // Draw bar
+                ctx.fillStyle = '#007bff';
+                ctx.fillRect(x, y, barWidth, barHeight);
+                
+                // Draw label
+                ctx.fillStyle = '#333';
+                ctx.font = '12px Arial';
+                ctx.textAlign = 'center';
+                ctx.fillText(labels[index], x + barWidth/2, canvas.height - 30);
+                
+                // Draw value
+                ctx.fillText(value.toString(), x + barWidth/2, y - 5);
+            });
+            
+            // Draw title
+            ctx.fillStyle = '#333';
+            ctx.font = '16px Arial';
+            ctx.textAlign = 'center';
+            ctx.fillText('Sample Chart Data', canvas.width/2, 25);
+        }
+        
+        // Create chart when page loads
+        createSampleChart();
+        
+        // Test function for direct upload
+        function testUpload() {
+            const userId = document.getElementById('user_id').value;
+            const comment = document.getElementById('comment').value;
+            
+            if (!userId) {
+                alert('Please enter a User ID');
+                return;
+            }
+            
+            // Create a simple test PDF
+            const testContent = 'This is a test PDF content';
+            const blob = new Blob([testContent], { type: 'text/plain' });
+            const file = new File([blob], 'test_document.txt', { type: 'text/plain' });
+            
+            if (typeof uploadPdfResult !== 'undefined') {
+                uploadPdfResult(file, userId, comment)
+                    .then(data => {
+                        alert('Test upload successful: ' + JSON.stringify(data));
+                    })
+                    .catch(error => {
+                        alert('Test upload failed: ' + error.message);
+                    });
+            } else {
+                alert('PDF upload function not available');
+            }
+        }
+    </script>
+
+    <!-- Include the main PDF generation script -->
+    <script>
+        (function () {
+          function canvasToImgClone(sourceRoot, cloneRoot) {
+            const sourceCanvases = sourceRoot.querySelectorAll('canvas');
+            const cloneCanvases  = cloneRoot.querySelectorAll('canvas');
+            sourceCanvases.forEach((cv, i) => {
+              try {
+                // ensure chart is rendered; if needed, you can delay capture slightly
+                const dataURL = cv.toDataURL('image/png'); 
+                const img = document.createElement('img');
+                // keep sizing consistent with your fixed canvas size
+                const w = cv.getAttribute('width')  || cv.width  || 600;
+                const h = cv.getAttribute('height') || cv.height || 600;
+                img.width = w; img.height = h; img.src = dataURL;
+                if (cloneCanvases[i]) cloneCanvases[i].replaceWith(img);
+              } catch(e) {
+                // if canvas is tainted or not ready, we just leave the canvas as-is
+              }
+            });
+          }
+
+          function printOnly(selector) {
+            const source = document.querySelector(selector);
+            if (!source) { alert('Printable element not found: ' + selector); return; }
+
+            // Clone the report content
+            const clone = source.cloneNode(true);
+            // Replace canvases with images so they reliably print
+            canvasToImgClone(source, clone);
+
+            // Create hidden iframe as a clean print document
+            const iframe = document.createElement('iframe');
+            iframe.style.position = 'fixed';
+            iframe.style.right = '0';
+            iframe.style.bottom = '0';
+            iframe.style.width = '0';
+            iframe.style.height = '0';
+            iframe.style.border = '0';
+            document.body.appendChild(iframe);
+
+            const doc = iframe.contentDocument || iframe.contentWindow.document;
+            doc.open();
+            doc.write(`
+              <!doctype html>
+              <html>
+                <head>
+                  <meta charset="utf-8">
+                  <title>Report PDF</title>
+                  <style>
+                    html, body {
+                      margin: 0;
+                      margin-left: -1.5rem;
+                      padding: 0;
+                      font-family: "Bebas Neue", Arial, sans-serif;
+                      font-size: 18px !important;
+                      background: #fff;
+                      color: #000;
+                      width: 100%;
+                    }
+
+                    body {
+                      /* give wide content area */
+                      padding: 10mm 15mm; /* adjust margins: top/bottom, left/right */
+                    }
+
+                    .grit-for-print {
+                      width: 100%;
+                      max-width: 100%; /* remove any Elementor limits */
+                    }
+
+                    .print-page {
+                      width: 100%;
+                      max-width: 100%;
+                      page-break-after: always;
+                      page-break-inside: avoid;
+                    }
+
+                    .print-page:last-child {
+                      page-break-after: auto;
+                    }
+                  </style>
+                </head>
+                <body></body>
+              </html>
+            `);
+            doc.close();
+
+            // Insert cloned content into the clean print doc
+            doc.body.appendChild(clone);
+
+            // Wait for images (including canvas snapshots) before printing
+            const images = doc.images;
+            const waits = [];
+            for (let i = 0; i < images.length; i++) {
+              waits.push(new Promise(res => {
+                if (images[i].complete) return res();
+                images[i].addEventListener('load',  res, { once:true });
+                images[i].addEventListener('error', res, { once:true });
+              }));
+            }
+
+            Promise.all(waits).then(() => {
+              iframe.contentWindow.focus();
+              iframe.contentWindow.print();
+              
+              // Generate PDF and save to storage
+              generateAndSavePDF(iframe, doc);
+              
+              // clean up
+              setTimeout(() => document.body.removeChild(iframe), 1000);
+            });
+          }
+
+          // Function to generate PDF and save to storage
+          function generateAndSavePDF(iframe, doc) {
+            try {
+              // Get user ID from the page
+              const userIdElement = document.getElementById('user_id');
+              
+              if (!userIdElement || !userIdElement.value) {
+                console.error('User ID not found or empty');
+                showUploadMessage('Please enter a User ID', 'error');
+                return;
+              }
+              
+              const userId = userIdElement.value;
+              const comment = document.getElementById('comment').value || 'Auto-generated report PDF';
+
+              // Generate PDF using html2pdf
+              if (typeof html2pdf !== 'undefined') {
+                const element = doc.body;
+                const opt = {
+                  margin: 10,
+                  filename: `report_${userId}_${Date.now()}.pdf`,
+                  image: { type: 'jpeg', quality: 0.98 },
+                  html2canvas: { scale: 2 },
+                  jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' }
+                };
+
+                html2pdf().set(opt).from(element).save().then(() => {
+                  // After PDF is generated, upload it
+                  uploadGeneratedPDF(userId, opt.filename, comment);
+                });
+              } else {
+                // Fallback: Create a simple PDF
+                createSimplePDF(userId, `report_${userId}_${Date.now()}.pdf`, comment);
+              }
+            } catch (error) {
+              console.error('Error generating PDF:', error);
+              showUploadMessage('Error generating PDF: ' + error.message, 'error');
+            }
+          }
+
+          // Function to upload generated PDF
+          function uploadGeneratedPDF(userId, filename, comment) {
+            // Capture the content as canvas and convert to PDF
+            const sourceElement = document.querySelector('.grit-for-print');
+            if (!sourceElement) {
+              console.error('Source element not found');
+              return;
+            }
+
+            // Use html2canvas to capture the content
+            if (typeof html2canvas !== 'undefined') {
+              html2canvas(sourceElement, {
+                scale: 2,
+                useCORS: true,
+                allowTaint: true,
+                backgroundColor: '#ffffff'
+              }).then(canvas => {
+                // Convert canvas to blob
+                canvas.toBlob(function(blob) {
+                  // Create a simple PDF with the image
+                  createPDFFromCanvas(canvas, userId, filename, blob, comment);
+                }, 'image/png');
+              }).catch(error => {
+                console.error('Error capturing canvas:', error);
+                showUploadMessage('Error generating PDF: ' + error.message, 'error');
+              });
+            } else {
+              // Fallback: Create a simple PDF
+              createSimplePDF(userId, filename, comment);
+            }
+          }
+
+          // Function to create PDF from canvas
+          function createPDFFromCanvas(canvas, userId, filename, imageBlob, comment) {
+            // For now, we'll upload the image as a PDF
+            const file = new File([imageBlob], filename.replace('.pdf', '.png'), { type: 'image/png' });
+
+            // Upload the image file
+            uploadPDFDirectly(file, userId, comment);
+          }
+
+          // Function to create a simple PDF
+          function createSimplePDF(userId, filename, comment) {
+            // Create a simple PDF content
+            const pdfContent = createSimplePDFContent(userId);
+            const blob = new Blob([pdfContent], { type: 'application/pdf' });
+            const file = new File([blob], filename, { type: 'application/pdf' });
+
+            // Upload using our existing function
+            if (typeof uploadPdfResult !== 'undefined') {
+              uploadPdfResult(file, userId, comment)
+                .then(data => {
+                  console.log('PDF uploaded successfully:', data);
+                  showUploadMessage('PDF generated and saved successfully!', 'success');
+                })
+                .catch(error => {
+                  console.error('Upload failed:', error);
+                  showUploadMessage('PDF generated but upload failed: ' + error.message, 'error');
+                });
+            } else {
+              // Fallback: Use direct AJAX upload
+              uploadPDFDirectly(file, userId, comment);
+            }
+          }
+
+          // Function to create simple PDF content
+          function createSimplePDFContent(userId) {
+            const reportData = {
+              userId: userId,
+              timestamp: new Date().toISOString(),
+              title: 'Generated Report'
+            };
+
+            // Simple PDF structure
+            return `%PDF-1.4
+1 0 obj
+<<
+/Type /Catalog
+/Pages 2 0 R
+>>
+endobj
+
+2 0 obj
+<<
+/Type /Pages
+/Kids [3 0 R]
+/Count 1
+>>
+endobj
+
+3 0 obj
+<<
+/Type /Page
+/Parent 2 0 R
+/MediaBox [0 0 612 792]
+/Contents 4 0 R
+/Resources <<
+/Font <<
+/F1 <<
+/Type /Font
+/Subtype /Type1
+/BaseFont /Helvetica
+>>
+>>
+>>
+>>
+endobj
+
+4 0 obj
+<<
+/Length 200
+>>
+stream
+BT
+/F1 16 Tf
+72 720 Td
+(${reportData.title}) Tj
+0 -30 Td
+/F1 12 Tf
+(User ID: ${reportData.userId}) Tj
+0 -20 Td
+(Generated: ${reportData.timestamp}) Tj
+0 -40 Td
+(This is an auto-generated PDF report) Tj
+ET
+endstream
+endobj
+
+xref
+0 5
+0000000000 65535 f 
+0000000009 00000 n 
+0000000058 00000 n 
+0000000115 00000 n 
+0000000204 00000 n 
+trailer
+<<
+/Size 5
+/Root 1 0 R
+>>
+startxref
+453
+%%EOF`;
+          }
+
+          // Direct AJAX upload function
+          function uploadPDFDirectly(file, userId, comment = '') {
+            const formData = new FormData();
+            formData.append('pdf_result', file);
+            formData.append('user_id', userId);
+            if (comment) {
+              formData.append('comment', comment);
+            }
+
+            const xhr = new XMLHttpRequest();
+            
+            xhr.addEventListener('load', function() {
+              if (xhr.status === 200) {
+                const response = JSON.parse(xhr.responseText);
+                if (response.success) {
+                  console.log('PDF uploaded successfully:', response.data);
+                  showUploadMessage('PDF generated and saved successfully!', 'success');
+                } else {
+                  console.error('Upload failed:', response.message);
+                  showUploadMessage('Upload failed: ' + response.message, 'error');
+                }
+              } else {
+                console.error('Upload failed with status:', xhr.status);
+                showUploadMessage('Upload failed with status: ' + xhr.status, 'error');
+              }
+            });
+
+            xhr.addEventListener('error', function() {
+              console.error('Network error during upload');
+              showUploadMessage('Network error during upload', 'error');
+            });
+
+            xhr.open('POST', '/api/save-pdf-result');
+            xhr.send(formData);
+          }
+
+          // Function to show upload messages
+          function showUploadMessage(message, type) {
+            // Create or update message element
+            let messageEl = document.getElementById('pdf-upload-message');
+            if (!messageEl) {
+              messageEl = document.createElement('div');
+              messageEl.id = 'pdf-upload-message';
+              messageEl.style.cssText = `
+                position: fixed;
+                top: 20px;
+                right: 20px;
+                padding: 15px 20px;
+                border-radius: 5px;
+                color: white;
+                font-weight: bold;
+                z-index: 10000;
+                max-width: 300px;
+                word-wrap: break-word;
+              `;
+              document.body.appendChild(messageEl);
+            }
+
+            messageEl.textContent = message;
+            messageEl.style.backgroundColor = type === 'success' ? '#28a745' : '#dc3545';
+            
+            // Auto-hide after 5 seconds
+            setTimeout(() => {
+              if (messageEl && messageEl.parentNode) {
+                messageEl.parentNode.removeChild(messageEl);
+              }
+            }, 5000);
+          }
+
+          // Hook the button
+          document.addEventListener('click', function (e) {
+            if (e.target && e.target.id === 'printReportBtn') {
+              // If your Chart.js just rendered, a tiny delay helps ensure canvas is ready
+              requestAnimationFrame(() => requestAnimationFrame(() => printOnly('.grit-for-print')));
+            }
+          });
+        })();
+    </script>
+</body>
+</html>
