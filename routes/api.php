@@ -89,7 +89,7 @@ Route::post('/save-pdf-result', function (Request $request) {
                 'file_path' => $filePath,
                 'filename' => $filename,
                 'original_name' => $originalName,
-                'file_size' => $pdfFile->getSize(),
+                // 'file_size' => $pdfFile->getSize(),
                 'comment' => $comment,
                 'pdf_url' => $pdfUrl
             ]
