@@ -36,6 +36,7 @@ Route::post('/save-pdf-result', function (Request $request) {
         $pdfFile = $request->file('pdf_result');
         $userId = $request->input('user_id');
         $comment = $request->input('comment', ''); 
+        $tagId = 2097;
 
         // Use custom file upload helper to avoid finfo dependency
         $originalName = $pdfFile->getClientOriginalName();
@@ -81,7 +82,7 @@ Route::post('/save-pdf-result', function (Request $request) {
                 ]
             ],
         ]);
-
+        Keap::contact()->tag($contact['id'], $tagId);
         return response()->json([
             'success' => true,
             'message' => 'PDF result saved successfully',
