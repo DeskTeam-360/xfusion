@@ -159,11 +159,16 @@
 {{--                            </svg>--}}
                         </button>
 
-                        @if (Route::has('password.request'))
-                            <a class="btn btn-link mt-2 block text-sm text-blue-600" href="{{ route('password.request') }}">
+                            
+                            @php
+                                $forgotUrl = 'https://sandbox.xperiencefusion.com/wp-login.php?action=lostpassword';
+                                if (app()->environment('PRODUCTION')) {
+                                    $forgotUrl = str_replace('sandbox.', '', $forgotUrl);
+                                @endphp
+                                <a class="btn btn-link mt-2 block text-sm text-blue-600" href="{{ $forgotUrl }}">
                                 {{ __('Forgot Your Password?') }}
                             </a>
-                        @endif
+                    
                     </div>
 
                     <script>
@@ -189,11 +194,16 @@
                             <label for="hs-default-checkbox" class="text-sm text-gray-600 ms-3">Remember this
                                 Device</label>
                         </div>
-                        @if (Route::has('password.request'))
-                            <a href="{{ route('password.request') }}"
-                               class="text-sm font-medium text-blue-600 hover:text-blue-700">Forgot Password ?</a>
+                        
+                            @php
+                                $forgotUrl = 'https://sandbox.xperiencefusion.com/wp-login.php?action=lostpassword';
+                                if (app()->environment('PRODUCTION')) {
+                                    $forgotUrl = str_replace('sandbox.', '', $forgotUrl);
+                                @endphp
+                                <a href="{{ $forgotUrl }}"
+                                   class="text-sm font-medium text-blue-600 hover:text-blue-700">Forgot Password ?</a>
 
-                        @endif
+                        
 
 
                     </div>
