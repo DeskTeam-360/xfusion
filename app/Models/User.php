@@ -3,6 +3,7 @@
 namespace App\Models;
 
 // use Illuminate\Contracts\Auth\MustVerifyEmail;
+use Illuminate\Contracts\Auth\CanResetPassword;
 use Corcel\Model\User as Corcel;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Foundation\Auth\User as Authenticatable;
@@ -24,7 +25,7 @@ use Illuminate\Notifications\Notifiable;
  */
 
 
-class User extends Corcel
+class User extends Corcel implements CanResetPassword
 {
     use HasFactory, Notifiable;
 
@@ -96,5 +97,26 @@ class User extends Corcel
     public function wpGfEntry()
     {
         return $this->hasMany(WpGfEntry::class,'created_by');
+    }
+
+    /**
+     * Get the e-mail address where password reset links are sent.
+     *
+     * @return string
+     */
+    public function getEmailForPasswordReset()
+    {
+        return $this->user_email;
+    }
+
+    /**
+     * Send the password reset notification.
+     *
+     * @param  string  $token
+     * @return void
+     */
+    public function sendPasswordResetNotification($token)
+    {
+        $this->notify(new \Illuminate\Auth\Notifications\ResetPassword($token));
     }
 }

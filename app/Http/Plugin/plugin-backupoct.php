@@ -9,7 +9,6 @@ global $wpdb;
  * Author: Deskteam360
  */
 
-
 function company_detect()
 {
     ?>
@@ -17,36 +16,31 @@ function company_detect()
 
     <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.7.1/jquery.min.js"></script>
     <script>
+        function moveCloseButton() {
+            const closeButton = document.querySelector('#container-revitlize-center .btn-close');
+            const container = document.querySelector('#container-revitlize-center');
 
-function moveCloseButton() {
-    const closeButton = document.querySelector('#container-revitlize-center .btn-close');
-    const container = document.querySelector('#container-revitlize-center');
+            if (closeButton && container) {
+                const prevDiv = container.previousElementSibling;
 
-    if (closeButton && container) {
-      // Cari elemen sebelumnya (previous sibling)
-      const prevDiv = container.previousElementSibling;
+                if (prevDiv && prevDiv.nodeType === 1) {
+                    prevDiv.appendChild(closeButton);
 
-      if (prevDiv && prevDiv.nodeType === 1) {
-        // Masukkan tombol ke dalam div sebelumnya
-        prevDiv.appendChild(closeButton);
-
-        // Tambahkan CSS agar tetap rata kiri
-        if (!document.querySelector('#custom-close-css')) {
-          const style = document.createElement('style');
-          style.id = 'custom-close-css';
-          style.textContent = `
-            .btn-close {
-              display: block !important;
-              margin: 10px 0 !important;
+                    // Tambahkan CSS agar tetap rata kiri
+                    if (!document.querySelector('#custom-close-css')) {
+                    const style = document.createElement('style');
+                    style.id = 'custom-close-css';
+                    style.textContent = `
+                        .btn-close {
+                        display: block !important;
+                        margin: 10px 0 !important;
+                        }
+                    `;
+                    document.head.appendChild(style);
+                    }
+                }
             }
-          `;
-          document.head.appendChild(style);
         }
-
-        console.log('Close button moved into previous div successfully');
-      }
-    }
-  }
 
   // Initial call
 
@@ -55,7 +49,10 @@ function moveCloseButton() {
             window.open(link, '_blank'); // Buka Google di tab baru
         }
 
-        const baseStorage = 'https://xperiencefusion.com/xfusion-laravel/public/storage/';
+        const { protocol, host } = window.location;
+        const baseStorage = `${protocol}//admin.${host}/storage/`;
+
+
         var data = {
             url: window.location.href.split('?')[0]
         }
@@ -101,7 +98,7 @@ function moveCloseButton() {
 
 
             jQuery.ajax({
-                url: '<?php echo admin_url('admin-ajax.php'); ?>',
+                url: '<?php echo admin_url("admin-ajax.php"); ?>',
                 type: 'post',
                 dataType: "json",
                 data: {
@@ -157,18 +154,11 @@ function moveCloseButton() {
                         }
                     }
 
-					console.log(1)
                     if (getUrlParameter('btn-close') === 'true') {
-
-					console.log(21)
                         if (response.data.tools == 1) {
-							
-					console.log(2)
                             const buttonSubmit99 = document.querySelector('.gform_button');
                             const buttonSubmit3 = document.querySelector('#btn-prev-revitalize');
                             if (buttonSubmit3 && buttonSubmit99) {
-								
-					console.log(3)
                                 let button = document.createElement("button");
                                 button.className = "btn-close";
                                 button.innerText = "Close tab";
@@ -179,8 +169,6 @@ function moveCloseButton() {
                                 };
                                 buttonSubmit3.parentNode.replaceChild(button, buttonSubmit3);
                             } else {
-
-					console.log(4)
                                 let forms = document.querySelector("#container-revitlize-center");
                                 let btnClose = document.querySelector(".btn-close");
                                 if (forms) { // Cegah duplikasi tombol
@@ -199,16 +187,18 @@ function moveCloseButton() {
                                         };
                                         forms.appendChild(button);
                                     }
-                                }
-										
+                                }		
                             }
-
+                            if(buttonSubmit99) {
+                                moveCloseButton();
+                            }
                             const buttonSubmit4 = document.querySelector('#btn-next-revitalize');
                             if (buttonSubmit4) {
                                 buttonSubmit4.remove();
                             }
-
                         } else {
+                            
+                            const buttonSubmit99 = document.querySelector('.gform_button');
                             const buttonSubmit3 = document.querySelector('#btn-prev-revitalize');
                             if (buttonSubmit3) {
                                 buttonSubmit3.remove();
@@ -220,7 +210,7 @@ function moveCloseButton() {
 
                             let forms = document.querySelector("#container-revitlize-center");
                             let btnClose = document.querySelector(".btn-close");
-                            if (forms) { // Cegah duplikasi tombol
+                            if (forms) { 
                                 if (!btnClose) {
                                     const buttonSubmit3 = document.querySelector('#btn-prev-revitalize');
                                     if (buttonSubmit3) {
@@ -237,7 +227,10 @@ function moveCloseButton() {
                                     forms.appendChild(button);
                                 }
                             }
-								  moveCloseButton();
+                            if(buttonSubmit99) {
+                                moveCloseButton();
+                            }
+							
                         }
                     }
                     if (getUrlParameter('dataId')) {
@@ -302,7 +295,7 @@ function moveCloseButton() {
 
                                 newLink.style.cssText = buttonSubmit.style.cssText + '; text-align: center; position:static'; // Salin inline style
 
-                                if (buttonSubmit.value === "" || buttonSubmit.value === undefined || buttonSubmit.value === "Next Lesson" || buttonSubmit.value === "Done" || buttonSubmit.value === "Submit") {
+                                if (buttonSubmit.value === "" || buttonSubmit.value === undefined || buttonSubmit.value === "Next Lesson" || buttonSubmit.value === "Done" || buttonSubmit.value === "Submit" || buttonSubmit.value === "Complete Session") {
                                     newLink.textContent = "Return to menu"; // Salin inline style
                                     const buttonSubmit = document.querySelector('#gform_submit_button_13');
                                     if (buttonSubmit) {
@@ -440,17 +433,16 @@ function moveCloseButton() {
     <?php
 }
 
-add_action('wp_head', 'company_detect');
+add_action("wp_head", "company_detect");
 
 function get_company_info()
 {
     global $wpdb;
 
-    $url = $_POST['url'];
+    $url = $_POST["url"];
     $query = "select * from course_lists where url='$url'";
 
     $limitLinks = $wpdb->get_results($query);
-
 
     $userID = get_current_user_id();
     $query_user = "select * from wp_users where id='$userID'";
@@ -462,39 +454,53 @@ function get_company_info()
     $data = json_decode($t5, true);
 
     // Access the "user_login" value
-    $user_login = str_replace(' ', '+', strtolower($data[0]['user_login']));
+    $user_login = str_replace(" ", "+", strtolower($data[0]["user_login"]));
 
-    $arrayLinks = ["https://xperiencefusion.com/user/$user_login/", "https://xperiencefusion.com/lms-home-screen/", "https://xperiencefusion.com/topics/dependability/", "https://xperiencefusion.com/account/", "https://xperiencefusion.com/resources/resource-menu/",];
+    $arrayLinks = [
+        "/user/$user_login/",
+        "/lms-home-screen/",
+        "/topics/dependability/",
+        "/account/",
+        "/resources/resource-menu/",
+    ];
 
     if (!$limitLinks) {
-
         if ($userID != null) {
-            $companyID = get_usermeta($userID, 'company');
+            $companyID = get_usermeta($userID, "company");
 
-            $query = "select * from companies where id=$companyID";
-            $click_logs = $wpdb->get_results($query);
-
+            $query = "SELECT * FROM companies WHERE id = %d";
+            $click_logs = $wpdb->get_results(
+                $wpdb->prepare($query, $companyID)
+            );
 
             $result = [];
             foreach ($click_logs as $log) {
-                $result['logo_url'] = $log->logo_url;
-                $result['qrcode_url'] = $log->qrcode_url;
-                $result['company_url'] = $log->company_url;
+                $result["logo_url"] = $log->logo_url;
+                $result["qrcode_url"] = $log->qrcode_url;
+                $result["company_url"] = $log->company_url;
             }
-            if (in_array($url, $arrayLinks)) {
-                wp_send_json_success(['logo_url' => $result['logo_url'], 'qrcode_url' => $result['qrcode_url'], 'company_url' => $result['company_url'],]);
+
+            // Ambil hanya path dari $url
+            $urlPath = parse_url($url, PHP_URL_PATH);
+
+            if (in_array($urlPath, $arrayLinks, true)) {
+                wp_send_json_success([
+                    "logo_url" => $result["logo_url"] ?? "",
+                    "qrcode_url" => $result["qrcode_url"] ?? "",
+                    "company_url" => $result["company_url"] ?? "",
+                ]);
+                wp_die();
+            } else {
                 wp_die();
             }
         }
-
     }
 
     foreach ($limitLinks as $limit) {
-
         $userID = get_current_user_id();
         if ($userID != null) {
-            $companyID = get_usermeta($userID, 'company');
-            $keapTags = get_usermeta($userID, 'access_tags');
+            $companyID = get_usermeta($userID, "company");
+            $keapTags = get_usermeta($userID, "access_tags");
 
             $query = "select * from companies where id=$companyID";
             $click_logs = $wpdb->get_results($query);
@@ -503,35 +509,46 @@ function get_company_info()
             $user = get_userdata($userID);
             $user_roles = $user->roles;
 
-            $user_access = get_user_meta($userID, 'user_access', true);
-            if (in_array('administrator', $user_roles, true) or in_array('editor', $user_roles, true)) {
-
+            $user_access = get_user_meta($userID, "user_access", true);
+            if (
+                in_array("administrator", $user_roles, true) or
+                in_array("editor", $user_roles, true)
+            ) {
             } else {
-                $user_access = strtolower(str_replace(' ', '-', $user_access));
-                $course_title_slug = strtolower(str_replace(' ', '-', $limit->course_title));
+                $user_access = strtolower(str_replace(" ", "-", $user_access));
+                $course_title_slug = strtolower(
+                    str_replace(" ", "-", $limit->course_title)
+                );
                 if ($course_title_slug == "revitalize-resources") {
-                    $course_title_slug = 'revitalize';
+                    $course_title_slug = "revitalize";
                 }
                 if ($course_title_slug == "transform-resources") {
-                    $course_title_slug = 'transform-resource';
+                    $course_title_slug = "transform-resource";
                 }
                 if ($course_title_slug == "sustain-resources") {
-                    $course_title_slug = 'sustain-resource';
+                    $course_title_slug = "sustain-resource";
                 }
 
                 if (!stripos($user_access, $course_title_slug)) {
-                    $status = 'redirect';
+                    $status = "redirect";
                     $message = "You don't have access to this page";
 
-                    wp_send_json_success(['url' => $limit->url_redirect, 'status' => $status, 'message' => $message, 'access' => $user_access, 'access2' => $limit->course_title,]);
+                    wp_send_json_success([
+                        "url" => $limit->url_redirect,
+                        "status" => $status,
+                        "message" => $message,
+                        "access" => $user_access,
+                        "access2" => $limit->course_title,
+                    ]);
                     wp_die();
                 }
-
             }
 
             foreach ($click_logs as $log) {
-                $result['logo_url'] = $log->logo_url;
-                $result['qrcode_url'] = $log->qrcode_url;
+                $result["logo_url"] = $log->logo_url ? $log->logo_url : null;
+                $result["qrcode_url"] = $log->qrcode_url
+                    ? $log->qrcode_url
+                    : null;
             }
 
             $query = "SELECT id,form_id FROM wp_gf_entry where form_id = '$limit->wp_gf_form_id' and created_by = '$userID' and status='active'";
@@ -539,96 +556,211 @@ function get_company_info()
 
             foreach ($checkEntry as $check) {
                 $message = "You've done the topic";
-                $status = 'return';
-                if (isset($_POST['param']) && strpos($_POST['param'], $check->id) !== false) {
-                    wp_send_json_success(['logo_url' => $result['logo_url'], 'qrcode_url' => $result['qrcode_url'], 'company_url' => $result['company_url'], 'form_id' => $check->form_id, 'url_next' => $limit->url_next, 'tools' => $limit->repeat_entry,]);
+                $status = "return";
+                if (
+                    isset($_POST["param"]) &&
+                    strpos($_POST["param"], $check->id) !== false
+                ) {
+                    wp_send_json_success([
+                        "logo_url" => $result["logo_url"],
+                        "qrcode_url" => $result["qrcode_url"],
+                        "company_url" => $result["company_url"],
+                        "form_id" => $check->form_id,
+                        "url_next" => $limit->url_next,
+                        "tools" => $limit->repeat_entry,
+                    ]);
                     wp_die();
                 }
 
                 if ($limit->repeat_entry == 1) {
-                    wp_send_json_success(['logo_url' => $result['logo_url'], 'qrcode_url' => $result['qrcode_url'], 'company_url' => $result['company_url'], 'form_id' => $check->form_id, 'url_next' => $limit->url_next, 'tools' => $limit->repeat_entry,]);
+                    wp_send_json_success([
+                        "logo_url" => $result["logo_url"],
+                        "qrcode_url" => $result["qrcode_url"],
+                        "company_url" => $result["company_url"],
+                        "form_id" => $check->form_id,
+                        "url_next" => $limit->url_next,
+                        "tools" => $limit->repeat_entry,
+                    ]);
                     wp_die();
                 }
 
-                wp_send_json_success(['url' => $url . '?dataId=' . $check->id . '&' . $_POST['param'], 'dataId' => $check->id, 'status' => $status, 'message' => $message, 'logo_url' => $result['logo_url'], 'qrcode_url' => $result['qrcode_url'], 'company_url' => $result['company_url'], 'tools' => $limit->repeat_entry, 'url_next' => $limit->url_next,]);
+                wp_send_json_success([
+                    "url" =>
+                        $url . "?dataId=" . $check->id . "&" . $_POST["param"],
+                    "dataId" => $check->id,
+                    "status" => $status,
+                    "message" => $message,
+                    "logo_url" => $result["logo_url"],
+                    "qrcode_url" => $result["qrcode_url"],
+                    "company_url" => $result["company_url"],
+                    "tools" => $limit->repeat_entry,
+                    "url_next" => $limit->url_next,
+                ]);
                 wp_die();
             }
 
             if ($limit->keap_tag == null) {
-                wp_send_json_success(['logo_url' => $result['logo_url'], 'qrcode_url' => $result['qrcode_url'], 'company_url' => $result['company_url'], 'tools' => $limit->repeat_entry,]);
+                wp_send_json_success([
+                    "logo_url" => $result["logo_url"],
+                    "qrcode_url" => $result["qrcode_url"],
+                    "company_url" => $result["company_url"],
+                    "tools" => $limit->repeat_entry,
+                ]);
                 wp_die();
             }
 
-            if ($limit->keap_tag == null || $limit->keap_tag == false || $limit->keap_tag == '') {
-                wp_send_json_success(['logo_url' => $result['logo_url'], 'qrcode_url' => $result['qrcode_url'], 'company_url' => $result['company_url'], 'tools' => $limit->repeat_entry,]);
+            if (
+                $limit->keap_tag == null ||
+                $limit->keap_tag == false ||
+                $limit->keap_tag == ""
+            ) {
+                wp_send_json_success([
+                    "logo_url" => $result["logo_url"],
+                    "qrcode_url" => $result["qrcode_url"],
+                    "company_url" => $result["company_url"],
+                    "tools" => $limit->repeat_entry,
+                ]);
                 wp_die();
             }
 
-            if (in_array($limit->keap_tag, explode(';', $keapTags))) {
-                wp_send_json_success(['logo_url' => $result['logo_url'], 'qrcode_url' => $result['qrcode_url'], 'company_url' => $result['company_url'], 'tools' => $limit->repeat_entry,]);
+            if (in_array($limit->keap_tag, explode(";", $keapTags))) {
+                wp_send_json_success([
+                    "logo_url" => $result["logo_url"],
+                    "qrcode_url" => $result["qrcode_url"],
+                    "company_url" => $result["company_url"],
+                    "tools" => $limit->repeat_entry,
+                ]);
                 wp_die();
             }
 
-            if (in_array('administrator', $user_roles, true)) {
-                wp_send_json_success(['logo_url' => $result['logo_url'], 'qrcode_url' => $result['qrcode_url'], 'company_url' => $result['company_url'], 'tools' => $limit->repeat_entry,]);
+            if (in_array("administrator", $user_roles, true)) {
+                wp_send_json_success([
+                    "logo_url" => $result["logo_url"],
+                    "qrcode_url" => $result["qrcode_url"],
+                    "company_url" => $result["company_url"],
+                    "tools" => $limit->repeat_entry,
+                ]);
                 wp_die();
             }
 
-
-            if (in_array($limit->keap_tag_parent, explode(';', $keapTags))) {
-                $status = 'redirect';
-                $message = "You need waiting " . $limit->delay + 5 . "minutes from last submit";
-                wp_send_json_success(['url' => $limit->url_redirect, 'status' => $status, 'message' => $message, 'tools' => $limit->repeat_entry,]);
+            if (in_array($limit->keap_tag_parent, explode(";", $keapTags))) {
+                $status = "redirect";
+                $message =
+                    "You need waiting " .
+                    $limit->delay +
+                    5 .
+                    "minutes from last submit";
+                wp_send_json_success([
+                    "url" => $limit->url_redirect,
+                    "status" => $status,
+                    "message" => $message,
+                    "tools" => $limit->repeat_entry,
+                ]);
                 wp_die();
             }
 
-            $status = 'redirect';
+            $status = "redirect";
             $message = "You don't have access to this page";
-            wp_send_json_success(['url' => $limit->url_redirect, 'status' => $status, 'message' => $message, 'tools' => $limit->repeat_entry,
-
+            wp_send_json_success([
+                "url" => $limit->url_redirect,
+                "status" => $status,
+                "message" => $message,
+                "tools" => $limit->repeat_entry,
             ]);
             wp_die();
         }
         $url = $limit->redirect_url;
-        $status = 'redirect';
+        $status = "redirect";
         $message = "You need login ";
-        wp_send_json_success(['url' => "https://xperiencefusion.com/lms-home-screen/", 'status' => $status, 'message' => $message, 'tools' => $limit->repeat_entry,]);
+
+        $protocol =
+            !empty($_SERVER["HTTPS"]) && $_SERVER["HTTPS"] !== "off"
+                ? "https://"
+                : "http://";
+        $domain = $_SERVER["HTTP_HOST"];
+
+        $fullDomain = $protocol . $domain;
+
+        wp_send_json_success([
+            "url" => "$fullDomain/lms-home-screen/",
+            "status" => $status,
+            "message" => $message,
+            "tools" => $limit->repeat_entry,
+        ]);
         wp_die();
     }
 
-    wp_send_json_success(['logo_url' => null, 'qrcode_url' => null, 'tools' => $limit->repeat_entry,]);
+    wp_send_json_success([
+        "logo_url" => null,
+        "qrcode_url" => null,
+        "tools" => $limit->repeat_entry,
+    ]);
     wp_die();
 }
 
-add_action('wp_ajax_get_company_info', 'get_company_info');
-add_action('wp_ajax_nopriv_get_company_info', 'get_company_info', 1, 3);
+add_action("wp_ajax_get_company_info", "get_company_info");
+add_action("wp_ajax_nopriv_get_company_info", "get_company_info", 1, 3);
 
-add_filter('wp_hash_password', 'custom_wp_hash_password', 10, 2);
+add_filter("wp_hash_password", "custom_wp_hash_password", 10, 2);
 
 function custom_wp_hash_password($password, $user_id = null)
 {
-    require_once ABSPATH . WPINC . '/class-phpass.php';
+    require_once ABSPATH . WPINC . "/class-phpass.php";
     $wp_hasher = new PasswordHash(8, true);
     return $wp_hasher->HashPassword(trim($password));
 }
 
-
-if (!function_exists('wp_hash_password')) {
+if (!function_exists("wp_hash_password")) {
     function wp_hash_password($password)
     {
-        require_once ABSPATH . WPINC . '/class-phpass.php';
+        require_once ABSPATH . WPINC . "/class-phpass.php";
         $hasher = new PasswordHash(8, true); // 8 adalah strength, true untuk portable
         return $hasher->HashPassword(trim($password));
     }
 }
 
-if (!function_exists('wp_check_password')) {
-    function wp_check_password($password, $hash, $user_id = '')
+if (!function_exists("wp_check_password")) {
+    function wp_check_password($password, $hash, $user_id = "")
     {
-        require_once ABSPATH . WPINC . '/class-phpass.php';
+        require_once ABSPATH . WPINC . "/class-phpass.php";
         $hasher = new PasswordHash(8, true);
         $check = $hasher->CheckPassword($password, $hash);
 
-        return apply_filters('check_password', $check, $password, $hash, $user_id);
+        return apply_filters(
+            "check_password",
+            $check,
+            $password,
+            $hash,
+            $user_id
+        );
     }
 }
+// Disable WordPress search hanya di homepage frontend
+function disable_wp_search_homepage($query)
+{
+    // Hanya jalan di frontend, bukan wp-admin
+    if (
+        !is_admin() &&
+        $query->is_main_query() &&
+        is_search() &&
+        is_front_page()
+    ) {
+        $query->is_search = false;
+        $query->set("s", false);
+
+        // Redirect ke homepage
+        wp_redirect(home_url());
+        exit();
+    }
+}
+add_action("pre_get_posts", "disable_wp_search_homepage");
+
+// Optional: sembunyikan form search hanya di homepage
+function disable_search_form_homepage($form)
+{
+    if (is_front_page()) {
+        return "";
+    }
+    return $form;
+}
+add_filter("get_search_form", "disable_search_form_homepage");

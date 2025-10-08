@@ -1,210 +1,183 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Test finfo Fix</title>
-    <style>
-        body {
-            font-family: Arial, sans-serif;
-            max-width: 600px;
-            margin: 50px auto;
-            padding: 20px;
-            background: #f5f5f5;
-        }
-        .container {
-            background: white;
-            padding: 30px;
-            border-radius: 8px;
-            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
-        }
-        .form-group {
-            margin-bottom: 20px;
-        }
-        label {
-            display: block;
-            margin-bottom: 5px;
-            font-weight: bold;
-            color: #333;
-        }
-        input[type="file"], input[type="number"], textarea {
-            width: 100%;
-            padding: 12px;
-            border: 2px solid #ddd;
-            border-radius: 4px;
-            box-sizing: border-box;
-            font-size: 14px;
-        }
-        input[type="file"]:focus, input[type="number"]:focus, textarea:focus {
-            border-color: #007bff;
-            outline: none;
-        }
-        textarea {
-            height: 100px;
-            resize: vertical;
-        }
-        button {
-            background-color: #007bff;
-            color: white;
-            padding: 12px 24px;
-            border: none;
-            border-radius: 4px;
-            cursor: pointer;
-            font-size: 16px;
-            width: 100%;
-        }
-        button:hover {
-            background-color: #0056b3;
-        }
-        button:disabled {
-            background-color: #6c757d;
-            cursor: not-allowed;
-        }
-        .message {
-            margin-top: 20px;
-            padding: 15px;
-            border-radius: 4px;
-            font-weight: bold;
-        }
-        .success {
-            background-color: #d4edda;
-            color: #155724;
-            border: 1px solid #c3e6cb;
-        }
-        .error {
-            background-color: #f8d7da;
-            color: #721c24;
-            border: 1px solid #f5c6cb;
-        }
-        .info {
-            background-color: #d1ecf1;
-            color: #0c5460;
-            border: 1px solid #bee5eb;
-        }
-        .status {
-            margin-bottom: 20px;
-            padding: 10px;
-            border-radius: 4px;
-            font-size: 14px;
-        }
-    </style>
-</head>
-<body>
-    <div class="container">
-        <h1>🔧 Test finfo Fix</h1>
-        
-        <div class="status info">
-            <strong>Testing:</strong> This form tests the PDF upload functionality after fixing the "finfo" extension error.
-        </div>
-        
-        <form id="pdfUploadForm">
-            <div class="form-group">
-                <label for="pdf_result">Select PDF File:</label>
-                <input type="file" id="pdf_result" name="pdf_result" accept=".pdf" required>
-            </div>
-            
-            <div class="form-group">
-                <label for="user_id">User ID:</label>
-                <input type="number" id="user_id" name="user_id" value="1" required>
-            </div>
-            
-            <div class="form-group">
-                <label for="comment">Comment (optional):</label>
-                <textarea id="comment" name="comment" placeholder="Enter your comment here..."></textarea>
-            </div>
-            
-            <button type="submit" id="submitBtn">🚀 Upload PDF (Test finfo Fix)</button>
-        </form>
-        
-        <div id="message"></div>
-    </div>
 
-    <script>
-        document.getElementById('pdfUploadForm').addEventListener('submit', function(e) {
-            e.preventDefault();
-            
-            const formData = new FormData();
-            const pdfFile = document.getElementById('pdf_result').files[0];
-            const userId = document.getElementById('user_id').value;
-            const comment = document.getElementById('comment').value;
-            
-            if (!pdfFile) {
-                showMessage('Please select a PDF file.', 'error');
-                return;
-            }
-            
-            if (!userId) {
-                showMessage('Please enter a User ID.', 'error');
-                return;
-            }
-            
-            // Add form data
-            formData.append('pdf_result', pdfFile);
-            formData.append('user_id', userId);
-            formData.append('comment', comment);
-            
-            // Disable form
-            const submitBtn = document.getElementById('submitBtn');
-            submitBtn.disabled = true;
-            submitBtn.textContent = '⏳ Uploading...';
-            
-            // Make AJAX request
-            const xhr = new XMLHttpRequest();
-            
-            xhr.addEventListener('load', function() {
-                submitBtn.disabled = false;
-                submitBtn.textContent = '🚀 Upload PDF (Test finfo Fix)';
-                
-                if (xhr.status === 200) {
-                    const response = JSON.parse(xhr.responseText);
-                    if (response.success) {
-                        showMessage(`✅ SUCCESS! PDF uploaded successfully!
-                        
-📁 File: ${response.data.filename}
-📊 Size: ${(response.data.file_size / 1024).toFixed(2)} KB
-🔗 URL: ${response.data.pdf_url}
-💬 Comment: ${response.data.comment || 'None'}`, 'success');
-                        
-                        // Reset form
-                        document.getElementById('pdfUploadForm').reset();
-                        document.getElementById('user_id').value = '1';
-                    } else {
-                        showMessage(`❌ Upload failed: ${response.message}`, 'error');
-                    }
-                } else {
-                    try {
-                        const response = JSON.parse(xhr.responseText);
-                        showMessage(`❌ Upload failed: ${response.message || 'Unknown error'}`, 'error');
-                    } catch (e) {
-                        showMessage(`❌ Upload failed with status: ${xhr.status}`, 'error');
-                    }
-                }
-            });
-            
-            xhr.addEventListener('error', function() {
-                submitBtn.disabled = false;
-                submitBtn.textContent = '🚀 Upload PDF (Test finfo Fix)';
-                showMessage('❌ Upload failed: Network error', 'error');
-            });
-            
-            // Use the dynamic domain from your script
-            const domain = window.location.hostname;
-            xhr.open('POST', "https://admin." + domain + '/api/save-pdf-result');
-            xhr.send(formData);
+
+<div style="width: 100%; text-align: center; color: #3a4a69">
+    <b style="font-size: 24px; font-weight: bolder">DIRECTIONS :</b> <br>
+     Use the index below to quantitively assess the current state of empowerment individually and within your team or company
+</div>
+<br>
+<div class="lms-21-responsive">
+    <div style="background: white; padding: 20px; border-radius: 20px;">
+        <div class="row bullets-responsive">
+            <div class="columns"
+                 style="background: #ec6c6c; text-align: center; border-radius: 50%;border: 1px;border-color: #fff; margin: 0px 10px 0px 10px;">
+                <input id="measure_0" name="measure" onchange="setValue(value)" type="radio" value="0">
+            </div>
+            <div class="columns" style="background: #ec6c6c; text-align: center; border-radius: 50%;border: 1px;border-color: #fff; margin: 0px 10px 0px 10px;">
+                <input id="measure_1" name="measure" onchange="setValue(value)" type="radio" value="1" placeholder="1">
+            </div>
+            <div class="columns" style="background: #ec6c6c; text-align: center; border-radius: 50%;border: 1px;border-color: #fff; margin: 0px 10px 0px 10px;">
+                <input id="measure_2" name="measure" onchange="setValue(value)" type="radio" value="2">
+            </div>
+            <div class="columns" style="background: #ec6c6c; text-align: center; border-radius: 50%;border: 1px;border-color: #fff; margin: 0px 10px 0px 10px;">
+                <input id="measure_3" name="measure" onchange="setValue(value)" type="radio" value="3">
+            </div>
+            <div class="columns" style="background: #84b454; text-align: center; border-radius: 50%;border: 1px;border-color: #fff; margin: 0px 10px 0px 10px;">
+                <input id="measure_4" name="measure" onchange="setValue(value)" type="radio" value="4">
+            </div>
+            <div class="columns" style="background: #84b454; text-align: center; border-radius: 50%;border: 1px;border-color: #fff; margin: 0px 10px 0px 10px;">
+                <input id="measure_5" name="measure" onchange="setValue(value)" type="radio" value="5">
+            </div>
+            <div class="columns" style="background: #84b454; text-align: center; border-radius: 50%;border: 1px;border-color: #fff; margin: 0px 10px 0px 10px;">
+                <input id="measure_6" name="measure" onchange="setValue(value)" type="radio" value="6">
+            </div>
+            <div class="columns" style="background: #3a4a69; text-align: center; border-radius: 50%;border: 1px;border-color: #fff; margin: 0px 10px 0px 10px;">
+                <input id="measure_7" name="measure" onchange="setValue(value)" type="radio" value="7">
+            </div>
+            <div class="columns" style="background: #3a4a69; text-align: center; border-radius: 50%;border: 1px;border-color: #fff; margin: 0px 10px 0px 10px;">
+                <input id="measure_8" name="measure" onchange="setValue(value)" type="radio" value="8">
+            </div>
+            <div class="columns" style="background: #3a4a69; text-align: center; border-radius: 50%;border: 1px;border-color: #fff; margin: 0px 10px 0px 10px;">
+                <input id="measure_9" name="measure" onchange="setValue(value)" type="radio" value="9">
+            </div>
+            <div class="columns"
+                 style="background: #3a4a69; text-align: center; border-radius: 50%;border: 1px;border-color: #fff; margin: 0px 10px 0px 10px;">
+                <input id="measure_10" name="measure" onchange="setValue(value)" type="radio" value="10">
+            </div>
+        </div>
+
+        <div class="row text-bullets-lms">
+            <div class="columns">
+                <label for="measure_0" style="margin-left: 50%;">Manipulate</label>
+            </div>
+            <div class="columns">
+                <label for="measure_1"></label>
+            </div>
+            <div class="columns">
+                <label for="measure_2" style="margin-left: 50%;">Influence</label>
+            </div>
+            <div class="columns">
+                <label for="measure_3"></label>
+            </div>
+            <div class="columns">
+                <label for="measure_4" style="margin-left: 50%;">Enable</label>
+            </div>
+            <div class="columns">
+                <label for="measure_5" style="margin-left: 50%;">Inspire</label>
+            </div>
+            <div class="columns">
+                <label for="measure_6"></label>
+            </div>
+            <div class="columns">
+                <label for="measure_7" style="margin-left: 50%;">Motivate</label>
+            </div>
+            <div class="columns">
+                <label for="measure_8"></label>
+            </div>
+            <div class="columns">
+                <label for="measure_9" style="margin-left: 50%;">Empower</label>
+            </div>
+            <div class="columns">
+                <label for="measure_10"></label>
+            </div>
+
+        </div>
+        <div class="row">
+            <div class="columns">
+                <div class="wrapper-score">
+                    <input style="background: #3a4a69;" id="individual-score" name="score" onchange="setValue(value)" type="number" min="0" max="10">
+                    <label for="individual-score">Individual Score</label>
+                </div>
+            </div>
+            <div class="columns">
+            </div>
+            <div class="columns">
+            </div>
+            <div class="columns">
+                <div class="wrapper-score">
+                    <input style="background: #3a4a69;" id="team-company-score" name="score" onchange="setValue(value)" type="number" min="0" max="10">
+                    <label for="team-company-score">Team or Company Score</label>
+                </div>
+            </div>
+
+        </div>
+    </div>
+</div>
+
+<script>
+document.addEventListener('DOMContentLoaded', function () {
+
+    const $ = id => document.getElementById(id);
+
+    // === INDIVIDUAL SCORE ===
+    if ($("individual-score") && $("input_477_12")) {
+        $("individual-score").addEventListener("change", function () {
+            $("input_477_12").value = this.value;
         });
-        
-        function showMessage(message, type) {
-            const messageDiv = document.getElementById('message');
-            messageDiv.innerHTML = message.replace(/\n/g, '<br>');
-            messageDiv.className = 'message ' + type;
-            messageDiv.style.display = 'block';
-            
-            // Hide message after 10 seconds for success, 5 seconds for error
-            const timeout = type === 'success' ? 10000 : 5000;
-            setTimeout(function() {
-                messageDiv.style.display = 'none';
-            }, timeout);
+        $("input_477_12").addEventListener("change", function () {
+            $("individual-score").value = this.value;
+            $("individual-score").disabled = true;
+            $("individual-score").readOnly = true;
+        });
+    }
+
+    // === TEAM COMPANY SCORE ===
+    if ($("team-company-score") && $("input_477_13")) {
+        $("team-company-score").addEventListener("change", function () {
+            $("input_477_13").value = this.value;
+        });
+        $("input_477_13").addEventListener("change", function () {
+            $("team-company-score").value = this.value;
+            $("team-company-score").disabled = true;
+            $("team-company-score").readOnly = true;
+        });
+    }
+
+    // === MEASURES ↔ input_477_7 ===
+    const measureIds = [
+        "measure_1","measure_2","measure_3","measure_4",
+        "measure_5","measure_6","measure_7","measure_8",
+        "measure_9","measure_10"
+    ];
+
+    measureIds.forEach(id => {
+        const el = $(id);
+        if (el) {
+            el.addEventListener("change", function () {
+                $("input_477_7").value = this.value;
+            });
         }
-    </script>
-</body>
-</html>
+    });
+
+    const radios = document.querySelectorAll("input[type='radio'][name='measure']");
+
+    // Saat input_477_7 berubah → update radio + disable semua
+    if ($("input_477_7")) {
+        $("input_477_7").addEventListener("change", function () {
+            const valueToCheck = this.value;
+
+            // centang radio sesuai value
+            radios.forEach(radio => {
+                radio.checked = (radio.value === valueToCheck);
+                // langsung disable semua setelah diisi
+                radio.disabled = true;
+            });
+            console.log(valueToCheck);
+
+            // disable input_477_7 juga
+            this.disabled = true;
+            this.readOnly = true;
+        });
+    }
+
+    // Radio → input_477_7 (hanya jika belum diisi)
+    radios.forEach(radio => {
+        radio.addEventListener("change", function () {
+            const input = $("input_477_7");
+            if (!input.value) {
+                input.value = this.value;
+            }
+        });
+    });
+
+});
+</script>

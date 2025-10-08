@@ -186,7 +186,7 @@
                         <div class="flex">
                             <input type="checkbox" name="remember" id="remember"
                                    class="shrink-0 mt-0.5 border-gray-200 rounded-[4px] text-blue-600 focus:ring-blue-500 " {{ old('remember') ? 'checked' : '' }}>
-                            <label for="hs-default-checkbox" class="text-sm text-gray-600 ms-3">Remeber this
+                            <label for="hs-default-checkbox" class="text-sm text-gray-600 ms-3">Remember this
                                 Device</label>
                         </div>
                         @if (Route::has('password.request'))
