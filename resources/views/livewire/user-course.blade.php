@@ -18,8 +18,8 @@
            
                 <button wire:click="bulkDelete" 
                         class="bg-blue-500 hover:bg-blue-600 text-white px-4 py-2 rounded mr-2"
-                        onclick="return confirm('Are you sure you want to delete {{ count($selectedItems) }} selected items?')">
-                    Delete Selected ({{ count($selectedItems) }})
+                        onclick="return confirm('Are you sure you want to delete selected items?')">
+                    Delete Selected
                 </button>
                 <button wire:click="clearSelection" 
                         class="bg-gray-500 hover:bg-gray-600 text-white px-4 py-2 rounded">
