@@ -267,11 +267,13 @@ class User extends Component
             'display_name'        => $this->first_name . ' ' . $this->last_name,
         ],);
 
-        if ($this->role == '1') {
-            $wpRole = 'administrator';
-        } else {
-            $wpRole = 'subscriber';
-        }
+        // if ($this->role == '1') {
+        //     $wpRole = 'administrator';
+        // } else {
+        //     $wpRole = 'subscriber';
+        // }
+
+        $wpRole = 'subscriber';
 
         $this->userMeta['nickname'] = $this->first_name;
         $this->userMeta['first_name'] = $this->first_name;
