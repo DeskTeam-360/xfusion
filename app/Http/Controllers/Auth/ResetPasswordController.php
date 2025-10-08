@@ -26,6 +26,7 @@ class ResetPasswordController extends Controller
 
     use ResetsPasswords, CorcelResetsPasswords {
         CorcelResetsPasswords::resetPassword insteadof ResetsPasswords;
+        CorcelResetsPasswords::guard insteadof ResetsPasswords;
     }
 
     /**
