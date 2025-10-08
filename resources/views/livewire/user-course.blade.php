@@ -13,6 +13,20 @@
                    placeholder="Search topic or course..."
                    class="border border-gray-300 p-2 rounded mt-2 w-6/12 py-2.5 px-4 form-control"/>
         </div>
+        
+        <div class="lg:col-span-6 md:col-span-6 sm:col-span-6 col-span-12 flex items-end">
+            @if(count($selectedItems) > 0)
+                <button wire:click="bulkDelete" 
+                        class="bg-red-500 hover:bg-red-600 text-white px-4 py-2 rounded mr-2"
+                        onclick="return confirm('Are you sure you want to delete {{ count($selectedItems) }} selected items?')">
+                    Delete Selected ({{ count($selectedItems) }})
+                </button>
+                <button wire:click="clearSelection" 
+                        class="bg-gray-500 hover:bg-gray-600 text-white px-4 py-2 rounded">
+                    Clear Selection
+                </button>
+            @endif
+        </div>
     </div>
     <br>
 
@@ -29,6 +43,12 @@
                style="width: 100%">
             <thead class="text-md text-uppercase uppercase dark:bg-dark  text-bold">
             <tr class="border-b-[3px] border-gray-200 border-collapse">
+                <td style="padding: 10px">
+                    <input type="checkbox" 
+                           class="select-all-checkbox" 
+                           data-lesson="{{ $lessonId }}"
+                           onchange="toggleSelectAll(this, '{{ $lessonId }}')">
+                </td>
                 <td style="padding: 10px">TopicId</td>
                 <td style="padding: 10px">Course</td>
                 <td style="padding: 10px">Topic</td>
@@ -42,6 +62,15 @@
                 @foreach($courses as $topicId=>$topic)
                     @if($filteredCourseUser[$lessonId]['topics'][$courseId][$topicId]['value']==1)
                         <tr class="border-b border-gray-200 text-md" style="height: 50px" wire:key="{{ $topicId }}">
+                            <td style="padding: 10px">
+                                <input type="checkbox" 
+                                       class="item-checkbox" 
+                                       data-lesson="{{ $lessonId }}"
+                                       data-course="{{ $courseId }}"
+                                       data-topic="{{ $topicId }}"
+                                       value="{{ $lessonId }}-{{ $courseId }}-{{ $topicId }}"
+                                       wire:model="selectedItems">
+                            </td>
                             <td style="padding: 10px">{{ $topicId }}</td>
                             <td style="padding: 10px">{{ WpPost::find($courseId)->post_title }}</td>
                             <td style="padding: 10px">{{ WpPost::find($topicId)->post_title }}</td>
@@ -80,6 +109,37 @@
                     element.querySelector(".localized-time").innerText = formattedDate;
                 }
             });
+        });
+
+        function toggleSelectAll(selectAllCheckbox, lessonId) {
+            const isChecked = selectAllCheckbox.checked;
+            const itemCheckboxes = document.querySelectorAll(`.item-checkbox[data-lesson="${lessonId}"]`);
+            
+            itemCheckboxes.forEach(checkbox => {
+                checkbox.checked = isChecked;
+                // Trigger Livewire model update
+                checkbox.dispatchEvent(new Event('change', { bubbles: true }));
+            });
+        }
+
+        // Update select all checkbox state when individual checkboxes change
+        document.addEventListener('change', function(e) {
+            if (e.target.classList.contains('item-checkbox')) {
+                const lessonId = e.target.getAttribute('data-lesson');
+                const selectAllCheckbox = document.querySelector(`.select-all-checkbox[data-lesson="${lessonId}"]`);
+                const itemCheckboxes = document.querySelectorAll(`.item-checkbox[data-lesson="${lessonId}"]`);
+                const checkedCheckboxes = document.querySelectorAll(`.item-checkbox[data-lesson="${lessonId}"]:checked`);
+                
+                if (checkedCheckboxes.length === 0) {
+                    selectAllCheckbox.indeterminate = false;
+                    selectAllCheckbox.checked = false;
+                } else if (checkedCheckboxes.length === itemCheckboxes.length) {
+                    selectAllCheckbox.indeterminate = false;
+                    selectAllCheckbox.checked = true;
+                } else {
+                    selectAllCheckbox.indeterminate = true;
+                }
+            }
         });
 
     </script>

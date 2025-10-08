@@ -18,6 +18,7 @@ class UserCourse extends Component
 //    public $search = [];
 
     public $search = '';
+    public $selectedItems = [];
 
     public function mount()
     {
@@ -74,6 +75,53 @@ class UserCourse extends Component
 
     public function removeProgress($lessonId, $courseId, $topicId)
     {
+        $this->deleteSingleProgress($lessonId, $courseId, $topicId);
+
+        $this->dispatch('swal:alert', data: [
+            'icon' => 'success',
+            'title' => 'Delete progress user',
+        ]);
+    }
+
+    public function bulkDelete()
+    {
+        if (empty($this->selectedItems)) {
+            $this->dispatch('swal:alert', data: [
+                'icon' => 'warning',
+                'title' => 'No items selected',
+            ]);
+            return;
+        }
+
+        $deletedCount = 0;
+        foreach ($this->selectedItems as $item) {
+            $parts = explode('-', $item);
+            if (count($parts) === 3) {
+                $lessonId = $parts[0];
+                $courseId = $parts[1];
+                $topicId = $parts[2];
+                
+                $this->deleteSingleProgress($lessonId, $courseId, $topicId);
+                $deletedCount++;
+            }
+        }
+
+        // Clear selection after bulk delete
+        $this->selectedItems = [];
+
+        $this->dispatch('swal:alert', data: [
+            'icon' => 'success',
+            'title' => "Successfully deleted {$deletedCount} progress entries",
+        ]);
+    }
+
+    public function clearSelection()
+    {
+        $this->selectedItems = [];
+    }
+
+    private function deleteSingleProgress($lessonId, $courseId, $topicId)
+    {
         $wp = WpPost::find($topicId);
         $url = "%/topics/$wp->post_name/";
         $cl = CourseList::where('url', 'like', $url)->first();
@@ -93,12 +141,6 @@ class UserCourse extends Component
         $this->courseUser[$lessonId]['topics'][$courseId][$topicId] = 0;
         $this->u->update([
             'meta_value' => serialize($this->courseUser),
-        ]);
-
-
-        $this->dispatch('swal:alert', data: [
-            'icon' => 'success',
-            'title' => 'Delete progress user',
         ]);
     }
 
