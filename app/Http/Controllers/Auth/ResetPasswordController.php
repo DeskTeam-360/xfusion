@@ -9,6 +9,7 @@ use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Password;
 use Illuminate\Auth\Events\PasswordReset;
 use Hautelook\Phpass\PasswordHash;
+use Corcel\Laravel\Auth\ResetsPasswords as CorcelResetsPasswords;
 
 class ResetPasswordController extends Controller
 {
@@ -23,7 +24,9 @@ class ResetPasswordController extends Controller
     |
     */
 
-    use ResetsPasswords;
+    use ResetsPasswords, CorcelResetsPasswords {
+        CorcelResetsPasswords::resetPassword insteadof ResetsPasswords;
+    }
 
     /**
      * Where to redirect users after resetting their password.
