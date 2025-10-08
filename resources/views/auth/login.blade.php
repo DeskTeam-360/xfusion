@@ -162,7 +162,7 @@
                             
                             @php
                                 $forgotUrl = 'https://sandbox.xperiencefusion.com/wp-login.php?action=lostpassword';
-                                if (app()->environment('PRODUCTION')) {
+                                if (app()->environment('PRODUCTION')=="true") {
                                     $forgotUrl = str_replace('sandbox.', '', $forgotUrl);
                                 }
                                 @endphp
@@ -198,7 +198,7 @@
                         
                             @php
                                 $forgotUrl = 'https://sandbox.xperiencefusion.com/wp-login.php?action=lostpassword';
-                                if (app()->environment('PRODUCTION')) {
+                                if (app()->environment('PRODUCTION')=="true") {
                                     $forgotUrl = str_replace('sandbox.', '', $forgotUrl);
                                 }
                                 @endphp
