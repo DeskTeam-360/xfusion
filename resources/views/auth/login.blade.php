@@ -164,6 +164,7 @@
                                 $forgotUrl = 'https://sandbox.xperiencefusion.com/wp-login.php?action=lostpassword';
                                 if (app()->environment('PRODUCTION')) {
                                     $forgotUrl = str_replace('sandbox.', '', $forgotUrl);
+                                }
                                 @endphp
                                 <a class="btn btn-link mt-2 block text-sm text-blue-600" href="{{ $forgotUrl }}">
                                 {{ __('Forgot Your Password?') }}
@@ -199,6 +200,7 @@
                                 $forgotUrl = 'https://sandbox.xperiencefusion.com/wp-login.php?action=lostpassword';
                                 if (app()->environment('PRODUCTION')) {
                                     $forgotUrl = str_replace('sandbox.', '', $forgotUrl);
+                                }
                                 @endphp
                                 <a href="{{ $forgotUrl }}"
                                    class="text-sm font-medium text-blue-600 hover:text-blue-700">Forgot Password ?</a>
