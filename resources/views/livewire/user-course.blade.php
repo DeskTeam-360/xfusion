@@ -15,7 +15,7 @@
         </div>
         
         <div class="lg:col-span-6 md:col-span-6 sm:col-span-6 col-span-12 flex items-end">
-            <!-- @if(count($selectedItems) > 0) -->
+           
                 <button wire:click="bulkDelete" 
                         class="bg-red-500 hover:bg-red-600 text-white px-4 py-2 rounded mr-2"
                         onclick="return confirm('Are you sure you want to delete {{ count($selectedItems) }} selected items?')">
@@ -25,7 +25,7 @@
                         class="bg-gray-500 hover:bg-gray-600 text-white px-4 py-2 rounded">
                     Clear Selection
                 </button>
-            <!-- @endif -->
+           
         </div>
     </div>
     <br>
