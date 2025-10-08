@@ -117,6 +117,6 @@ class User extends Corcel implements CanResetPassword
      */
     public function sendPasswordResetNotification($token)
     {
-        $this->notify(new \Illuminate\Auth\Notifications\ResetPassword($token));
+        $this->notify(new \App\Notifications\CustomResetPasswordNotification($token));
     }
 }
