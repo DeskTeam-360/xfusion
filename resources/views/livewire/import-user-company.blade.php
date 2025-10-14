@@ -5,12 +5,53 @@
 
         <div>
             <label for="" class="form-label mb-3">File CSV</label>
-            <input type="file" wire:model="file" class="form-control mt-2"  accept="text/csv">
-            <button wire:click="updatedFile()" class="btn btn-primary">Check CSV</button>
+            <div style="position: relative;">
+                <input type="file" wire:model="file" class="form-control mt-2" accept="text/csv">
+                <div wire:loading wire:target="file" style="position:absolute;left:0;top:0;width:100%;height:100%;display:flex;align-items:center;justify-content:center;z-index:10;background:rgba(255,255,255,0.5);">
+                    <div class="spinner-border text-success" role="status">
+                        <span class="visually-hidden">Loading...</span>
+                    </div>
+                </div>
+            </div>
+            <!-- <button wire:click="updatedFile()" class="btn btn-primary">Check CSV</button> -->
         </div>
     </div>
 
     @error('file') <span class="text-red-500">{{ $message }}</span> @enderror
+
+    @if($errorMessage)
+        <div class="alert alert-danger mt-3" role="alert">
+            <strong>Error:</strong> {{ $errorMessage }}
+        </div>
+    @endif
+
+    @if($successMessage)
+        <div class="alert alert-success mt-3" role="alert">
+            <strong>Success:</strong> {{ $successMessage }}
+        </div>
+    @endif
+
+    @if(!empty($importErrors))
+        <div class="alert alert-warning mt-3" role="alert">
+            <strong>Import Errors:</strong>
+            <ul class="mb-0 mt-2">
+                @foreach($importErrors as $error)
+                    <li>{{ $error }}</li>
+                @endforeach
+            </ul>
+        </div>
+    @endif
+
+    @if(!empty($importSuccess))
+        <div class="alert alert-info mt-3" role="alert">
+            <strong>Successful Imports:</strong>
+            <ul class="mb-0 mt-2">
+                @foreach($importSuccess as $success)
+                    <li>{{ $success }}</li>
+                @endforeach
+            </ul>
+        </div>
+    @endif
 
     @if($rows)
         <table class="table-auto mt-4 border-collapse border border-gray-300 w-full">
