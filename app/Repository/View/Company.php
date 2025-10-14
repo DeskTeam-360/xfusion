@@ -46,10 +46,14 @@ class Company extends \App\Models\Company implements View
             ? "<div class='text-center' style=' display: flex;justify-content: center;'><img style='width: 100px' src='$logo_url'></div>"
             : "<div class='text-center' style=' display: flex;justify-content: center;'><span class='text-muted'>No Logo</span></div>";
             
+            $user_nicename = \App\Models\User::find($data->user_id)->user_nicename;
+            if ($user_nicename == null) {
+                $user_nicename = 'User has been deleted';
+            }
         return [
             ['type' => 'string','data'=>$data->id],
             ['type' => 'string', 'data' => $data->title],
-            ['type' => 'string', 'data' =>  \App\Models\User::find($data->user_id)->user_nicename],
+            ['type' => 'string', 'data' =>  $user_nicename],
             ['type' => 'raw_html','text-align'=>'center', 'data' => $logo_display],
 //            ['type' => 'raw_html','text-align'=>'center', 'data' => "<div class='text-center' style=' display: flex;justify-content: center;'><img style='width: 100px' src='$qrcode_url'></div>"],
             ['type' => 'raw_html','text-align'=>'center', 'data' => "
