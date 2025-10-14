@@ -46,9 +46,11 @@ class Company extends \App\Models\Company implements View
             ? "<div class='text-center' style=' display: flex;justify-content: center;'><img style='width: 100px' src='$logo_url'></div>"
             : "<div class='text-center' style=' display: flex;justify-content: center;'><span class='text-muted'>No Logo</span></div>";
             
-            $user_nicename = \App\Models\User::find($data->user_id)->user_nicename;
-            if ($user_nicename == null) {
+            $user = \App\Models\User::find($data->user_id);
+            if ($user == null) {
                 $user_nicename = 'User has been deleted';
+            } else {
+                $user_nicename = $user->user_nicename;
             }
         return [
             ['type' => 'string','data'=>$data->id],
