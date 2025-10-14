@@ -72,8 +72,12 @@
                                        wire:model.live="selectedItems">
                             </td>
                             <td style="padding: 10px">{{ $topicId }}</td>
-                            <td style="padding: 10px">{{ WpPost::find($courseId)->post_title }}</td>
-                            <td style="padding: 10px">{{ WpPost::find($topicId)->post_title }}</td>
+                            @php
+                                $coursePost = WpPost::find($courseId);
+                                $topicPost = WpPost::find($topicId);
+                            @endphp
+                            <td style="padding: 10px">{{ $coursePost ? $coursePost->post_title : '—' }}</td>
+                            <td style="padding: 10px">{{ $topicPost ? $topicPost->post_title : '—' }}</td>
                             <td style="padding: 10px" wire:ignore>
 {{--                                {{ $filteredCourseUser[$lessonId]['topics'][$courseId][$topicId]['date_created'] }}--}}
 
