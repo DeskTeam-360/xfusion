@@ -7,6 +7,7 @@
     <meta charset="UTF-8" />
     <meta http-equiv="X-UA-Compatible" content="IE=edge" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="csrf-token" content="{{ csrf_token() }}" />
 
     <!-- Include Font Awesome -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/all.min.css"
@@ -199,6 +200,61 @@
                 document.getElementById("dark-alert").remove();
             });
         });
+
+        // Function to show password in alert with copy functionality
+        function showPassword(password) {
+            Swal.fire({
+                title: 'User Password',
+                html: `
+                    <div style="text-align: center;">
+                        <p style="font-size: 18px; margin-bottom: 20px;">Password:</p>
+                        <div style="background: #f8f9fa; padding: 15px; border-radius: 8px; border: 1px solid #dee2e6; margin-bottom: 20px;">
+                            <code id="passwordText" style="font-size: 16px; font-weight: bold; color: #495057;">${password}</code>
+                        </div>
+                        <button onclick="copyPassword('${password}')" class="btn btn-primary" style="margin-right: 10px;">
+                            <i class="ti ti-copy"></i> Copy Password
+                        </button>
+                    </div>
+                `,
+                showConfirmButton: true,
+                confirmButtonText: 'Close',
+                confirmButtonColor: '#6c757d',
+                width: '400px'
+            });
+        }
+
+        // Function to copy password to clipboard
+        function copyPassword(password) {
+            navigator.clipboard.writeText(password).then(function() {
+                Swal.fire({
+                    title: 'Copied!',
+                    text: 'Password copied to clipboard',
+                    icon: 'success',
+                    timer: 2000,
+                    showConfirmButton: false,
+                    toast: true,
+                    position: 'top-end'
+                });
+            }).catch(function(err) {
+                // Fallback for older browsers
+                const textArea = document.createElement('textarea');
+                textArea.value = password;
+                document.body.appendChild(textArea);
+                textArea.select();
+                document.execCommand('copy');
+                document.body.removeChild(textArea);
+                
+                Swal.fire({
+                    title: 'Copied!',
+                    text: 'Password copied to clipboard',
+                    icon: 'success',
+                    timer: 2000,
+                    showConfirmButton: false,
+                    toast: true,
+                    position: 'top-end'
+                });
+            });
+        }
 
         document.addEventListener('DOMContentLoaded', () => {
             var ss = document.createElement('link');

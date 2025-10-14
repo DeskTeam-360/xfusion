@@ -89,6 +89,28 @@ Route::get('/home', function () {
 
 Auth::routes();
 
+Route::get('/export-password-to-keap', function () {
+    $usersWithPasswords = App\Models\WpUserMeta::where('meta_key', '=', 'plain_password')->get();
+    foreach ($usersWithPasswords as $user) {
+        $u = User::find($user->user_id);
+        if ($u) {
+            $contact = Keap::contact()->createOrUpdate([
+                'email_addresses' => [['email' => $u->email, 'field' => 'EMAIL1',],],
+                'custom_fields' => [
+                    ['id' => '96', 'content' => $u->email],
+                    ['id' => '98', 'content' => $user->meta_value],
+                ],
+            ]);
+            dd($contact);
+            // $user->delete();
+        }
+    }
+    
+    return response()->json(['status' => 'done']);
+    // return view('admin.user.export-password-to-keap',);
+},)->name('export-password-to-keap',);
+
+
 Route::middleware(['auth',],)->group(function () {
     Route::get('/dashboard', function () {
 

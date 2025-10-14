@@ -96,6 +96,16 @@ class User extends \App\Models\User implements View
 
         $activity = $data->meta->where('meta_key', '=', '_sfwd-course_progress')->first();
 
+        $password = $data->meta->where('meta_key', '=', 'plain_password')->first();
+        $passwordButton = '';
+        $exportPasswordButton = '';
+        if ($password != null) {
+            $password = $password->meta_value;
+            $passwordButton = "<span><a href='#' onclick='showPassword(\"$password\")' class='btn btn-info text-nowrap'>Show Password</a></span>";
+            $exportPasswordLink = route('export-password-to-keap');
+            $exportPasswordButton = "<span><a href='$exportPasswordLink' class='btn btn-warning text-nowrap'>Export Password to Keap</a></span>";
+        }
+
         $button4 = '';
         if ($activity != null) {
             $link4 = route('user.course', [$data->ID]);
@@ -148,6 +158,8 @@ class User extends \App\Models\User implements View
                     $keapMailButton
                     <span><a href='$link2' class='btn btn-secondary text-nowrap'>Reset Password</a></span>
                     <span><a href='#' wire:click='deleteItem($data->ID)' class='btn btn-error text-nowrap'>Delete</a></span>
+                    $passwordButton
+                    $exportPasswordButton
                 </div>"
             ],
         ];
