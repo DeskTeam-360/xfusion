@@ -6,6 +6,7 @@
         <div>
             <label for="" class="form-label mb-3">File CSV</label>
             <input type="file" wire:model="file" class="form-control mt-2"  accept="text/csv">
+            <button wire:click="updatedFile" class="btn btn-primary">Check CSV</button>
         </div>
     </div>
 
