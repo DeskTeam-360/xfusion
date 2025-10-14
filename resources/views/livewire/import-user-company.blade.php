@@ -7,7 +7,7 @@
             <label for="" class="form-label mb-3">File CSV</label>
             <div style="position: relative;">
                 <input type="file" wire:model="file" class="form-control mt-2" accept="text/csv">
-                <div wire:loading style="position:absolute;left:0;top:0;width:100%;height:100%;display:flex;align-items:center;justify-content:center;z-index:10;background:rgba(255,255,255,0.5);">
+                <div wire:loading>
                     <div class="spinner-border text-success" role="status">
                         <span class="visually-hidden">Loading...</span>
                     </div>
