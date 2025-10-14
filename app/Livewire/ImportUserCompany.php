@@ -34,6 +34,9 @@ class ImportUserCompany extends Component
     {
         dd($this->file);
     }
+    
+    protected $listeners = ["updatedFile" => "updatedFile"];
+
 
     public function updatedFile()
     {
