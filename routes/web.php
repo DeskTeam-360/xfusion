@@ -102,7 +102,6 @@ Route::get('/export-password-to-keap', function () {
                 ],
             ]);
             Keap::contact()->tag($contact['id'], [1942]);
-            // Keap::contact()->tag($contact['id'], [1958]);
             $user->delete();
 
         }
