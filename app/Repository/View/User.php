@@ -112,11 +112,11 @@ class User extends \App\Models\User implements View
             $button4 = "<span><a href='$link4' class='btn btn-success text-nowrap'>Activity Check</a></span>";
         }
 
-        // $keapMailButton = '';
-        // if ($keaps && $keapStatus == true) {
-        //     $keapMailLink = route('user.keap-mail-send', $keaps);
-        //     $keapMailButton = "<span><a href='$keapMailLink' class='btn btn-warning text-nowrap'>Send Keap Mail</a></span>";
-        // }
+        $keapMailButton = '';
+        if ($keaps && $keapStatus == true) {
+            $keapMailLink = route('user.keap-mail-send', $keaps);
+            $keapMailButton = "<span><a href='$keapMailLink' class='btn btn-warning text-nowrap'>Send Keap Mail</a></span>";
+        }
 
         $link2 = route('user.show', $data->ID);
 
@@ -155,7 +155,7 @@ class User extends \App\Models\User implements View
                     <span><a href='$routeAccess' class='btn'>Access</a></span>
                     <span><a href='$link' class='btn btn-primary'>Edit</a></span>
                     $button4
-                    
+                    $keapMailButton
                     <span><a href='$link2' class='btn btn-secondary text-nowrap'>Reset Password</a></span>
                     <span><a href='#' wire:click='deleteItem($data->ID)' class='btn btn-error text-nowrap'>Delete</a></span>
                     $passwordButton
