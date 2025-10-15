@@ -101,11 +101,18 @@ Route::get('/export-password-to-keap', function () {
                     ['id' => '98', 'content' => $user->meta_value],
                 ],
             ]);
+            Keap::contact()->tag($contact['id'], [1942]);
+            // Keap::contact()->tag($contact['id'], [1958]);
             $user->delete();
+
         }
     }
     return response()->json(['status' => 'done']);
 },)->name('export-password-to-keap',);
+
+// Route::get('/export-password-to-keap', function () {
+    
+// }
 
 
 Route::middleware(['auth',],)->group(function () {
