@@ -155,7 +155,7 @@ class User extends \App\Models\User implements View
                     <span><a href='$routeAccess' class='btn'>Access</a></span>
                     <span><a href='$link' class='btn btn-primary'>Edit</a></span>
                     $button4
-                    $keapMailButton
+                    
                     <span><a href='$link2' class='btn btn-secondary text-nowrap'>Reset Password</a></span>
                     <span><a href='#' wire:click='deleteItem($data->ID)' class='btn btn-error text-nowrap'>Delete</a></span>
                     $passwordButton
