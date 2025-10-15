@@ -147,7 +147,7 @@ if (!class_exists('um\core\Fields')) {
                        style="background: <?php echo esc_attr($arr['color']); ?>;"
                        target="<?php echo esc_attr($arr['url_target']); ?>" class="um-tip-n"
                        title="<?php echo esc_attr($arr['title']); ?>"><i
-                            class="<?php echo esc_attr($arr['icon']); ?>"></i></a>
+                                class="<?php echo esc_attr($arr['icon']); ?>"></i></a>
 
                     <?php
                 }
@@ -4764,7 +4764,38 @@ if (!class_exists('um\core\Fields')) {
 
                     global $wpdb;
 
-                    $query = "SELECT * FROM course_groups where tools=0 order by order_group ";
+                    $user_id = get_current_user_id();
+                    $access_raw = get_user_meta($user_id, 'user_access', true);
+                    
+                    // Decode JSON
+                    $access = json_decode($access_raw, true);
+                    if (!is_array($access)) {
+                        $access = json_decode(stripslashes($access_raw), true);
+                    }
+                    $access = array_map('strtolower', (array)$access);
+                    
+                    // Daftar grup yang dikenali
+                    $allowed_groups = ['revitalize', 'transform', 'sustain'];
+                    
+                    // Ambil hanya yang dimiliki user
+                    $user_groups = array_values(array_intersect($allowed_groups, $access));
+                    
+                    global $wpdb;
+                    
+                    if (!empty($user_groups)) {
+                        // Buat bagian WHERE IN
+                        $placeholders = implode(',', array_fill(0, count($user_groups), '%s'));
+                        $query = $wpdb->prepare(
+                            "SELECT * FROM course_groups WHERE tools = 0 AND title IN ($placeholders) ORDER BY order_group",
+                            ...$user_groups
+                        );
+                    } else {
+                        // Jika tidak punya akses ke 3 grup utama, bisa dikosongkan atau tampilkan semua
+                        $query = "SELECT * FROM course_groups WHERE tools = 0 ORDER BY order_group";
+                    }
+                    
+
+                    // $query = "SELECT * FROM course_groups where tools=0 order by order_group ";
                     $cg_list = $wpdb->get_results($query);
 
 
@@ -4856,74 +4887,163 @@ if (!class_exists('um\core\Fields')) {
                             background-color: #0056b3;
                             transform: scale(1.05);
                         }
-                    </style>';
+                        
+                        .accordion-tools {
+                          background-color: #eee;
+                          color: #444;
+                          cursor: pointer;
+                          padding: 5px;
+                          width: 100%;
+                          border: none;
+                          text-align: left;
+                          outline: none;
+                          font-size: 15px;
+                          transition: 0.4s;
+                          margin-bottom: 10px;
+                        }
 
-                    $output .= "<h1 style='text-align: center'>Course List</h1>";
+                        .active-tools, .accordion-tools:hover {
+                          background-color: #ccc; 
+                        }
+                        
+                        .panel-tools {
+                          display: none;
+                          background-color: white;
+                        
+                        }
+                        
+                        
+.accordion-item {
+    margin-bottom: 10px;
+    border: 1px solid #ccc;
+    border-radius: 8px;
+    overflow: hidden;
+}
+.accordion-header:hover {
+    background-color: #e0e0e0;
+}
+.note-column {
+    display: block;
+    padding: 8px;
+    margin: 5px 0;
+    background-color: #fafafa;
+    border: 1px solid #ddd;
+    border-radius: 4px;
+    text-decoration: none;
+}
+.accordion-level1, .accordion-level2 {
+    background-color: #f1f1f1;
+    border: 1px solid #ccc;
+    padding: 10px;
+    border-radius: 5px;
+    margin-bottom: 5px;
+}
+
+.accordion-level1:hover, .accordion-level2:hover {
+    background-color: #ddd;
+    cursor: pointer;
+}
+
+.panel-level1, .panel-level2 {
+  background-color: white;
+                        
+    transition: all 0.3s ease;
+}
+
+.accordion-box {
+    background-color: #f9f9f9;
+
+    padding: 15px;
+    margin-bottom: 10px;
+    cursor: pointer;
+    border-radius: 6px;
+    transition: all 0.3s ease;
+}
+
+.accordion-box:hover {
+    background-color: #f0f0f0;
+}
+
+.accordion-content {
+    
+    padding: 10px;
+    margin-bottom: 15px;
+    background: #fff;
+}
+.accordion-header{
+font-weight: 900;
+}
+
+  
+                    </style>
+                    <script>
+function toggleAccordion(id) {
+    var content = document.getElementById(id);
+    if (content.style.display === "none" || content.style.display === "") {
+        content.style.display = "block";
+    } else {
+        content.style.display = "none";
+    }
+}
+</script>
+                    ';
+
+                    $output .= "<h2 style='text-align: center'>Course List</h2>";
 
                     foreach ($cg_list as $cg) {
-                        $output .= "<h2 style='font-size: 35px'>$cg->title - $cg->sub_title </h2>";
+                        $accordion_id = 'accordion_' . uniqid(); // unique ID for each accordion
+
+                        // Accordion header
+                        $output .= "<div class='accordion-item'>";
+                        $output .= "<div class=' accordion-box accordion-header' onclick=\"toggleAccordion('$accordion_id')\" style='font-size: 26px; cursor: pointer; margin: 0;'>$cg->title - $cg->sub_title</div>";
+
+                        // Accordion content
+                        $output .= "<div id='$accordion_id' class='accordion-content' style='display: none; padding: 10px;'>";
+
                         $query = "SELECT * FROM course_group_details where course_group_id = $cg->id order by orders";
                         $q_list = $wpdb->get_results($query);
-
-//                        $c = count($q_list);
 
                         if (count($q_list) == 0) {
                             $output .= "<div style='font-size: 24px'>Coming soon </div>";
                         }
 
-
-                        $output .= "<div class='profile-notes'> ";
+                        $output .= "<div class='profile-notes' style='gap: 10px'>";
                         foreach ($q_list as $q) {
-
-
                             $temp_id = (int)$q->course_list_id;
                             $query = "SELECT * FROM course_lists WHERE id = $temp_id";
                             $c_list = $wpdb->get_results($query);
-//                            if($c_list[0]->repeat_entry==1){
-//                                continue
-//                            }
-                            // print_r($c_list);
 
                             $form_id = $c_list[0]->wp_gf_form_id;
-
                             $link_child = $c_list[0]->url;
 
                             try {
-                                // Subquery for getting latest created_by
                                 $subquery = $wpdb->prepare("
-                                SELECT created_by, MAX(date_created) as max_date
-                                FROM {$wpdb->prefix}gf_entry
-                                WHERE form_id = %d AND created_by IS NOT NULL
-                                GROUP BY created_by
-                            ", $form_id);
+                SELECT created_by, MAX(date_created) as max_date
+                FROM {$wpdb->prefix}gf_entry
+                WHERE form_id = %d AND created_by IS NOT NULL
+                GROUP BY created_by
+            ", $form_id);
 
-                                // Main query for getting entry_id
                                 $query = $wpdb->prepare("
-                                SELECT id, created_by, date_created
-                                FROM {$wpdb->prefix}gf_entry
-                                WHERE form_id = %d AND created_by = %d AND created_by IS NOT NULL
-                                AND (created_by, date_created) IN ($subquery)
-                            ", $form_id, $user_id);
+                SELECT id, created_by, date_created
+                FROM {$wpdb->prefix}gf_entry
+                WHERE form_id = %d AND created_by = %d AND created_by IS NOT NULL AND status ='active'
+                AND (created_by, date_created) IN ($subquery)
+            ", $form_id, $user_id);
 
-                                // get entry_id
                                 $entry_id = $wpdb->get_var($query);
-
                             } catch (Exception $e) {
                                 $entry_id = false;
                             }
 
                             $data = $wpdb->get_row($wpdb->prepare("SELECT * FROM {$wpdb->prefix}gf_form_meta WHERE form_id = %d", $form_id));
 
-
                             $data_entry = $wpdb->get_results($wpdb->prepare("
-                            SELECT * FROM {$wpdb->prefix}gf_entry_meta
-                            WHERE form_id = %d AND entry_id = %d
-                        ", $form_id, $entry_id));
+            SELECT * FROM {$wpdb->prefix}gf_entry_meta
+            WHERE form_id = %d AND entry_id = %d
+        ", $form_id, $entry_id));
 
-
-                            $count_fields = 0;
                             $array_entry = [];
-
                             $fields = json_decode($data->display_meta);
 
                             if (isset($fields->fields)) {
@@ -4936,98 +5056,145 @@ if (!class_exists('um\core\Fields')) {
                                 $array_entry[$entry->meta_key] = $entry->meta_value;
                             }
 
-
                             if ($entry_id) {
-                                $output .= '<a href="' . $link_child . '?dataId=' . $entry_id . '" target="_blank" class="note-column" style="color: #666; font-weight: bold" ><span>' . $c_list[0]->page_title . '</span></a>';
+                                $output .= '<a 
+                onclick="openWindowXfusion(\'' . $link_child . '?dataId=' . $entry_id . '&btn-close=true\')"
+                 class="note-column" style="color: #666; font-weight: bold">
+                <span>' . $c_list[0]->page_title . '</span>
+            </a>';
                             } else {
-                                $output .= '<a href="'.$link_child.'" target="_blank" class="note-column" style="color: red; pointer-events: none;"><span>' . $c_list[0]->page_title . '</span></a>';
+                                $output .= '<a href="' . $link_child . '" class="note-column" style="color: red; pointer-events: none;">
+                <span>' . $c_list[0]->page_title . '</span>
+            </a>';
                             }
-
-
                         }
-                        $output .= '</div>';
 
+                        $output .= "</div></div></div>"; // close profile-notes, accordion-content, and accordion-item
                     }
 
-                    $query = "SELECT * FROM course_groups where tools=1 order by order_group ";
+                    $user_id = get_current_user_id();
+$access_raw = get_user_meta($user_id, 'user_access', true);
+
+// Decode JSON
+$access = json_decode($access_raw, true);
+if (!is_array($access)) {
+    $access = json_decode(stripslashes($access_raw), true);
+}
+$access = array_map('strtolower', (array)$access);
+
+// Daftar grup yang dikenali
+$allowed_groups = ['revitalize', 'transform', 'sustain'];
+
+// Ambil hanya yang dimiliki user
+$user_groups = array_values(array_intersect($allowed_groups, $access));
+
+global $wpdb;
+
+if (!empty($user_groups)) {
+    // Buat bagian WHERE IN
+    $placeholders = implode(',', array_fill(0, count($user_groups), '%s'));
+    $query = $wpdb->prepare(
+        "SELECT * FROM course_groups WHERE tools = 1 AND title IN ($placeholders) ORDER BY order_group",
+        ...$user_groups
+    );
+} else {
+    // Jika tidak punya akses ke 3 grup utama, bisa dikosongkan atau tampilkan semua
+    $query = "SELECT * FROM course_groups WHERE tools = 1 ORDER BY order_group";
+}
+
+
+                    // $query = "SELECT * FROM course_groups WHERE tools=1 ORDER BY order_group";
                     $cg_list = $wpdb->get_results($query);
 
-                    $output .= "<h1 style='text-align: center'>Tool List</h1>";
+                    $output .= "<h2 style='text-align: center'>Tool List</h2>";
 
                     foreach ($cg_list as $cg) {
-                        $output .= "<h2 style='font-size: 35px'>$cg->title</h2>";
-                        $query = "SELECT * FROM course_group_details where course_group_id = $cg->id order by orders";
+                        // Level 1 Accordion
+                        $output .= "<div class='accordion-item'>";
+                        $output .= "<div class='accordion-tools accordion-box accordion-header' style='font-size: 26px; margin: 0'>$cg->title</div>";
+                        $output .= "<div class='panel-tools accordion-content' style='display: none; flex-direction: column'>";
+
+                        $query = "SELECT * FROM course_group_details WHERE course_group_id = $cg->id ORDER BY orders";
                         $q_list = $wpdb->get_results($query);
 
-
-//                        $c = count($q_list);
-
                         if (count($q_list) == 0) {
-                            $output .= "<div style='font-size: 24px'>Coming soon </div>";
+                            $output .= "<div style='font-size: 20px; padding: 10px;'>Coming soon</div>";
                         }
 
-
-
                         foreach ($q_list as $q) {
-
-
-
                             $temp_id = (int)$q->course_list_id;
                             $query = "SELECT * FROM course_lists WHERE id = $temp_id";
                             $c_list = $wpdb->get_results($query);
 
-//                            if($c_list[0]->repeat_entry==1){
-//                                continue
-//                            }
-                            // print_r($c_list);
-
                             $form_id = $c_list[0]->wp_gf_form_id;
-
                             $link_child = $c_list[0]->url;
 
                             try {
-
-                                // Main query for getting entry_id
                                 $query = $wpdb->prepare("
-                                SELECT id, created_by, date_created
-                                FROM {$wpdb->prefix}gf_entry
-                                WHERE form_id = %d AND created_by = %d AND created_by IS NOT NULL
-
-                            ", $form_id, $user_id);
-//                                AND (created_by, date_created) IN ($subquery)
-
-                                // get entry_id
-
+                SELECT id, created_by, date_created
+                FROM {$wpdb->prefix}gf_entry
+                WHERE form_id = %d AND created_by = %d AND created_by IS NOT NULL AND status ='active'
+            ", $form_id, $user_id);
                                 $entry_ids = $wpdb->get_results($query);
-
                             } catch (Exception $e) {
                                 $entry_ids = [];
                             }
 
-                            $output .= "<div style='font-size: 24px'> {$c_list[0]->page_title} </div>";
-                            $output .= "<div class='profile-notes'> ";
+                            $c = count($entry_ids);
+
+                            // Level 2 Accordion
+                            $output .= "<div class='accordion-tools accordion-box' style='font-size: 22px; border: 1px solid #ccc;'> {$c_list[0]->page_title} ($c)</div>";
+                            $output .= "<div class='panel-tools' style='display: none;margin-bottom: 10px; flex-direction: row; flex-wrap: wrap'>";
+
                             foreach ($entry_ids as $entry_id) {
-
                                 $timestamp = $entry_id->date_created;
-                                $formatted_date = date("F j, Y", strtotime($timestamp));
-                                $output .= '<a href="' . $link_child . '?dataId=' . $entry_id->id . '" target="_blank" class="note-column" style="color: #666; font-weight: bold" ><span>' .$formatted_date . '</span></a>';
+                                $formatted_date = date("F j, Y H:i:s", strtotime($timestamp));
+
+                                $output .= '<a onclick="openWindowXfusion(\'' . $link_child . '?dataId=' . $entry_id->id . '&btn-close=true\')" 
+                target="_blank" class="note-column" 
+                style="color: #666; font-weight: bold; margin: 10px 10px 0 0; display: inline-block;" 
+                data-timestamp="' . strtotime($timestamp) . '">
+                <span class="localized-time">' . $formatted_date . '</span>
+            </a>';
                             }
-                            $output .= "</div>";
 
-
-
-//
-//                            if ($entry_id) {
-//
-//                            } else {
-//                                $output .= '<a href="'.$link_child.'" target="_blank" class="note-column" style="color: red; pointer-events: none;"><span>' . $c_list[0]->page_title . '</span></a>';
-//                            }
-
-
+                            $output .= "</div>"; // end panel-tools (level 2)
                         }
-                        $output .= '</div>';
 
+                        $output .= "</div>"; // end panel-tools (level 1)
+                        $output .= "</div>"; // end panel-tools (level 1)
                     }
+
+// Script
+                    $output .= '
+<script>
+document.addEventListener("DOMContentLoaded", function () {
+    // Time Localization
+    document.querySelectorAll(".note-column").forEach(function (element) {
+        let timestamp = element.getAttribute("data-timestamp");
+        if (timestamp) {
+            let date = new Date(timestamp * 1000);
+            let options = { year: "numeric", month: "long", day: "numeric", hour: "2-digit", minute: "2-digit" };
+            let formattedDate = date.toLocaleString(undefined, options);
+            element.querySelector(".localized-time").innerText = formattedDate;
+        }
+    });
+
+    // Accordion behavior
+    var acc = document.getElementsByClassName("accordion-tools");
+    for (var i = 0; i < acc.length; i++) {
+        acc[i].addEventListener("click", function () {
+            this.classList.toggle("active-tools");
+            var panel = this.nextElementSibling;
+            if (panel.style.display === "flex" || panel.style.display === "block") {
+                panel.style.display = "none";
+            } else {
+                panel.style.display = "flex";
+            }
+        });
+    }
+});
+</script>';
 
 
 

@@ -101,13 +101,10 @@ Route::get('/export-password-to-keap', function () {
                     ['id' => '98', 'content' => $user->meta_value],
                 ],
             ]);
-            // dd($contact);
             $user->delete();
         }
     }
-    
     return response()->json(['status' => 'done']);
-    // return view('admin.user.export-password-to-keap',);
 },)->name('export-password-to-keap',);
 
 
