@@ -137,6 +137,7 @@ class User extends \App\Models\User implements View
         } else {
             $link = route('company.edit-employee', [$companyId, $data->ID]);
         }
+        
 
         return [
             ['type' => 'raw_html', 'data' => "<div>

@@ -22,13 +22,13 @@
                     Delete Selected
                 </button>
                 <button wire:click="clearSelection" 
-                        class="bg-gray-500 hover:bg-gray-600 text-white px-4 py-2 rounded">
+                        class="bg-gray-500 hover:bg-gray-600 text-white px-4 py-2 rounded mr-2">
                     Clear Selection
                 </button>
                 <button 
                     onclick="runFreshProgress('{{ route('fresh-progress', $user) }}')" 
                     class="bg-blue-500 hover:bg-blue-600 text-white px-4 py-2 rounded">
-                    Fresh Progress
+                    Refresh Progress
                 </button>
 
                 <div id="fresh-progress-response" class="mt-2"></div>

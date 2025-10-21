@@ -3,6 +3,7 @@
         <div class="w-full">
             <a href="{{ route('user.create') }}" class="btn btn-primary">Create new user</a>
             <a style="margin-left: 5px;" href="{{ route('to-import-user') }}" class="btn btn-secondary">Import CSV</a>
+            <!-- <button style="margin-left: 5px;" onclick="refreshAllUsers()" class="btn btn-warning text-nowrap">Refresh All Users</button> -->
            
             @if(App\Models\WpUserMeta::where('meta_key', '=', 'plain_password')->get()->isNotEmpty())
                 @php
@@ -112,6 +113,85 @@
                                 });
                                 
                                 console.error('Export error:', error);
+                            });
+                        }
+                    });
+                }
+                
+                function refreshAllUsers() {
+                    Swal.fire({
+                        title: 'Refresh All Users Progress',
+                        text: 'This will refresh the course progress for all users. This may take a while. Are you sure you want to continue?',
+                        icon: 'question',
+                        showCancelButton: true,
+                        confirmButtonColor: '#f39c12',
+                        cancelButtonColor: '#d33',
+                        confirmButtonText: 'Yes, Refresh All!',
+                        cancelButtonText: 'Cancel',
+                        width: '500px'
+                    }).then((result) => {
+                        if (result.isConfirmed) {
+                            // Show loading
+                            Swal.fire({
+                                title: 'Refreshing All Users...',
+                                text: 'Please wait while we refresh progress for all users',
+                                icon: 'info',
+                                allowOutsideClick: false,
+                                showConfirmButton: false,
+                                willOpen: () => {
+                                    Swal.showLoading();
+                                }
+                            });
+                            
+                            // Make AJAX request to refresh all users route
+                            fetch('{{ route("refresh-all-users") }}', {
+                                method: 'GET',
+                                headers: {
+                                    'X-Requested-With': 'XMLHttpRequest',
+                                    'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content')
+                                }
+                            })
+                            .then(response => response.json())
+                            .then(data => {
+                                console.log(data);
+                                // Close loading
+                                Swal.close();
+                                
+                                // Show success message
+                                Swal.fire({
+                                    title: 'Refresh Completed!',
+                                    html: `
+                                        <div style="text-align: left;">
+                                            <p><strong>Total Users Processed:</strong> ${data.total_users || 0}</p>
+                                            <p><strong>Users Updated:</strong> ${data.users_updated || 0}</p>
+                                            <p><strong>Total Entries Processed:</strong> ${data.total_entries || 0}</p>
+                                            <p><strong>Progress Entries Updated:</strong> ${data.progress_updated || 0}</p>
+                                            ${data.errors && data.errors.length > 0 ? `<p><strong>Errors:</strong> ${data.errors.length}</p>` : ''}
+                                        </div>
+                                    `,
+                                    icon: 'success',
+                                    confirmButtonText: 'OK',
+                                    confirmButtonColor: '#28a745',
+                                    width: '500px'
+                                }).then(() => {
+                                    // Reload the page to update any changes
+                                    window.location.reload();
+                                });
+                            })
+                            .catch(error => {
+                                // Close loading
+                                Swal.close();
+                                
+                                // Show error message
+                                Swal.fire({
+                                    title: 'Refresh Failed!',
+                                    text: 'There was an error refreshing all users. Please try again.',
+                                    icon: 'error',
+                                    confirmButtonText: 'OK',
+                                    confirmButtonColor: '#dc3545'
+                                });
+                                
+                                console.error('Refresh all users error:', error);
                             });
                         }
                     });

@@ -208,6 +208,106 @@ Route::get('/fresh-progress/{userId}', function ($userId) {
 
 })->name('fresh-progress');
 
+Route::get('/refresh-all-users', function () {
+    $users = User::all();
+    $totalUsers = $users->count();
+    $usersUpdated = 0;
+    $totalEntries = 0;
+    $progressUpdated = 0;
+    $allErrors = [];
+    
+    foreach ($users as $user) {
+        try {
+            // Get user's course progress meta
+            $userMeta = WpUserMeta::where('user_id', $user->ID)->where('meta_key', '=', '_sfwd-course_progress')->first();
+            
+            if (!$userMeta) {
+                continue; // Skip users without course progress
+            }
+            
+            $courseUser = unserialize($userMeta->meta_value);
+            $userUpdatedCount = 0;
+            $userProcessedCount = 0;
+            $userErrors = [];
+            
+            // Get all active WpGfEntry records for this user
+            $activeEntries = WpGfEntry::where('created_by', $user->ID)
+                ->where('status', 'active')
+                ->where('is_read', 0)
+                ->get();
+            
+            foreach ($activeEntries as $entry) {
+                $userProcessedCount++;
+                $totalEntries++;
+                
+                // Try to find the topic ID from the source_url
+                $topicId = null;
+                $courseId = null;
+                $lessonId = null;
+                
+                try {
+                    if ($entry->source_url) {
+                        // Extract topic ID from URL like: /topic/12345/
+                        if (preg_match('/\/topic\/(\d+)\//', $entry->source_url, $matches)) {
+                            $topicId = $matches[1];
+                        }
+                        
+                        // Extract course ID from URL like: /course/12345/
+                        if (preg_match('/\/course\/(\d+)\//', $entry->source_url, $matches)) {
+                            $courseId = $matches[1];
+                        }
+                        
+                        // Extract lesson ID from URL like: /lesson/12345/
+                        if (preg_match('/\/lesson\/(\d+)\//', $entry->source_url, $matches)) {
+                            $lessonId = $matches[1];
+                        }
+                    }
+                    
+                    // Update course progress if we found a topic ID
+                    if ($topicId && isset($courseUser[$courseId][$lessonId][$topicId])) {
+                        $courseUser[$courseId][$lessonId][$topicId] = 1;
+                        $userUpdatedCount++;
+                        $progressUpdated++;
+                    }
+                    
+                    // Mark entry as read
+                    $entry->is_read = 1;
+                    $entry->save();
+                    
+                } catch (Exception $e) {
+                    $userErrors[] = "Error processing entry {$entry->id}: " . $e->getMessage();
+                }
+            }
+            
+            // Update user meta if there were changes
+            if ($userUpdatedCount > 0) {
+                $userMeta->meta_value = serialize($courseUser);
+                $userMeta->save();
+                $usersUpdated++;
+            }
+            
+            // Collect errors for this user
+            if (!empty($userErrors)) {
+                $allErrors = array_merge($allErrors, $userErrors);
+            }
+            
+        } catch (Exception $e) {
+            $allErrors[] = "Error processing user {$user->ID}: " . $e->getMessage();
+        }
+    }
+    
+    return response()->json([
+        'status' => 'success',
+        'message' => 'All users progress refresh completed',
+        'data' => [
+            'total_users' => $totalUsers,
+            'users_updated' => $usersUpdated,
+            'total_entries' => $totalEntries,
+            'progress_updated' => $progressUpdated,
+            'errors' => $allErrors
+        ]
+    ]);
+})->name('refresh-all-users');
 
 Route::middleware(['auth',],)->group(function () {
     Route::get('/dashboard', function () {
