@@ -43,8 +43,8 @@ class UserCourse extends Component
 
             foreach ($lessons['topics'] as $courseId => $topics) {
                 foreach ($topics as $topicId => $value) {
-                    $courseTitle = strtolower(WpPost::find($courseId)->post_title);
-                    $topicTitle = strtolower(WpPost::find($topicId)->post_title);
+                    $courseTitle = strtolower(WpPost::find($courseId)->post_title??'');
+                    $topicTitle = strtolower(WpPost::find($topicId)->post_title??'');
                     if ($value == 1 && (str_contains($courseTitle, $search) || str_contains($topicTitle, $search))) {
                         $url = $this->getUrl($topicId);
                         $filteredTopics[$courseId][$topicId] = [
