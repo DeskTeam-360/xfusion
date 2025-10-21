@@ -16,6 +16,8 @@ class WpPostMeta extends Model
 {
 
     public $timestamps = false;
+    protected $table = 'wp_postmeta';
+    protected $primaryKey = 'meta_id';
     use HasFactory;
 
     protected $fillable = [
