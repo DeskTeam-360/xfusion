@@ -353,6 +353,10 @@ Route::middleware(['auth',],)->group(function () {
         return view('admin.user.roles',);
     },)->name('user.roles',);
 
+    Route::get('user-progress-only', function () {
+        return view('admin.user.index-progress-only',);
+    },)->name('user-progress-only',);
+
     Route::resource('campaign', CampaignController::class,)->only('index', 'create', 'edit',);
     Route::resource('company', CompanyController::class,)->only('index', 'create', 'edit',);
     Route::resource('user', UserController::class,)->only('index', 'create', 'edit', 'show',);

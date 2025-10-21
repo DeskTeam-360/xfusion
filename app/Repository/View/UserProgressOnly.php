@@ -15,8 +15,10 @@ class User extends \App\Models\User implements View
         $query = $params['query'];
         $params = $params['param1'];
         if ($params == null) {
-            return empty($query) ? static::query() : static::query()->where('user_nicename', 'like', "%$query%")->orWhereHas('meta', function ($q2) use ($query) {
-                $q2->where('meta_value', 'like', "%$query%");
+            return empty($query) ? static::query() : static::query()
+            ->where('user_nicename', 'like', "%$query%")
+            ->hereHas('meta', function ($q2) use ($query) {
+                $q2->where('meta_key', '=', '_sfwd-course_progress');
             });
         } else {
             return empty($query) ? static::
