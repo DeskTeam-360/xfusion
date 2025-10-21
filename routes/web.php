@@ -16,6 +16,7 @@ use App\Models\CourseList;
 use App\Models\User;
 use App\Models\WpGfEntry;
 use App\Models\WpPost;
+use App\Models\WpPostMeta;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Route;
 
