@@ -125,7 +125,8 @@ Route::get('/fresh-progress/{userId}', function ($userId) {
     }
 
     // Get user's course progress meta
-    $userMeta = $user->meta->where('meta_key', '=', '_sfwd-course_progress')->first();
+    // $userMeta = $user->meta->where('meta_key', '=', '_sfwd-course_progress')->first();
+    $userMeta = WpUserMeta::where('user_id', $userId)->where('meta_key', '=', '_sfwd-course_progress')->first();
     
     if (!$userMeta) {
         return response()->json([
