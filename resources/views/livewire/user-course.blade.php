@@ -49,6 +49,7 @@
                             });
                             let data;
                             if (!response.ok) {
+                                console.log(response);
                                 throw new Error('Server error'.response.statusText);
                             }
                             data = await response.json();
