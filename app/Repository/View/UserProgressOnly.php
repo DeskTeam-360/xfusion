@@ -8,7 +8,7 @@ use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Support\Facades\Auth;
 use KeapGeek\Keap\Facades\Keap;
 
-class User extends \App\Models\User implements View
+class UserProgressOnly extends \App\Models\User implements View
 {
     public static function tableSearch($params = null): Builder
     {
