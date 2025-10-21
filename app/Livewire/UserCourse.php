@@ -43,6 +43,7 @@ class UserCourse extends Component
 
             foreach ($lessons['topics'] as $courseId => $topics) {
                 foreach ($topics as $topicId => $value) {
+                
                     $courseTitle = strtolower(WpPost::find($courseId)->post_title??'');
                     $topicTitle = strtolower(WpPost::find($topicId)->post_title??'');
                     if ($value == 1 && (str_contains($courseTitle, $search) || str_contains($topicTitle, $search))) {
@@ -150,6 +151,9 @@ class UserCourse extends Component
     public function getUrl($topicId)
     {
         $wp = WpPost::find($topicId);
+        if ($wp == null) {
+            return ['url'=>'','orders'=>999,'date_created'=>'Invalid Progress'];
+        }
         $url = "%/topics/$wp->post_name/";
         $cl = CourseList::where('url', 'like', $url)->first();
         $id='Invalid Progress';
