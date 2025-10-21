@@ -152,28 +152,35 @@ Route::get('/fresh-progress/{userId}', function ($userId) {
         $courseId = null;
         $lessonId = null;
 
-        if ($entry->source_url) {
-            // Extract topic name from URL pattern: %/topics/topic-name/
-            if (preg_match('/\/topics\/([^\/]+)\//', $entry->source_url, $matches)) {
-                $topicName = $matches[1];
-                $topic = WpPost::where('post_name', $topicName)->first();
-                
-                if ($topic) {
-                    $topicId = $topic->ID;
-                    $lessonId = WpPostMeta::where('post_id', $topicId)->where('meta_key', '=', 'lesson_id')->first()->meta_value;
-                    $courseId = WpPostMeta::where('post_id', $topicId)->where('meta_key', '=', 'course_id')->first()->meta_value;
+        try {
+            if ($entry->source_url) {
+                // Extract topic name from URL pattern: %/topics/topic-name/
+                if (preg_match('/\/topics\/([^\/]+)\//', $entry->source_url, $matches)) {
+                    $topicName = $matches[1];
+                    $topic = WpPost::where('post_name', $topicName)->first();
+                    
+                    if ($topic) {
+                        $topicId = $topic->ID;
+                        $lessonId = WpPostMeta::where('post_id', $topicId)->where('meta_key', '=', 'lesson_id')->first()->meta_value;
+                        $courseId = WpPostMeta::where('post_id', $topicId)->where('meta_key', '=', 'course_id')->first()->meta_value;
+                    }
                 }
             }
+    
+            // If we found all required IDs and the current progress is 0, update to 1
+            if ($topicId && $courseId && $lessonId && 
+                isset($courseUser[$lessonId]['topics'][$courseId][$topicId]) && 
+                $courseUser[$lessonId]['topics'][$courseId][$topicId] == 0) {
+                
+                $courseUser[$lessonId]['topics'][$courseId][$topicId] = 1;
+                $updatedCount++;
+            }
+            
+        } catch (\Throwable $th) {
+            //throw $th;
         }
 
-        // If we found all required IDs and the current progress is 0, update to 1
-        if ($topicId && $courseId && $lessonId && 
-            isset($courseUser[$lessonId]['topics'][$courseId][$topicId]) && 
-            $courseUser[$lessonId]['topics'][$courseId][$topicId] == 0) {
-            
-            $courseUser[$lessonId]['topics'][$courseId][$topicId] = 1;
-            $updatedCount++;
-        }
+        
         $entry->update([
             'is_read' => 1
         ]);
