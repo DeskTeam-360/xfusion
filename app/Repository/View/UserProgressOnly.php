@@ -18,7 +18,8 @@ class UserProgressOnly extends \App\Models\User implements View
             return empty($query) ? static::query() : static::query()
             ->where('user_nicename', 'like', "%$query%")
             ->hereHas('meta', function ($q2) use ($query) {
-                $q2->where('meta_key', '=', '_sfwd-course_progress');
+                $q2->where('meta_key', '=', '_sfwd-course_progress')
+                ->where('meta_value', '!=', null);
             });
         } else {
             return empty($query) ? static::
