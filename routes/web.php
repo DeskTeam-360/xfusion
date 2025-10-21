@@ -175,7 +175,7 @@ Route::get('/fresh-progress/{userId}', function ($userId) {
             //     isset($courseUser[$lessonId]['topics'][$courseId][$topicId]) && 
             //     $courseUser[$lessonId]['topics'][$courseId][$topicId] == 0) {
                 
-                $courseUser[$lessonId]['topics'][$courseId][$topicId] = 1;
+                $courseUser[$courseId]['topics'][$lessonId][$topicId] = 1;
                 $updatedCount++;
             // }
             
