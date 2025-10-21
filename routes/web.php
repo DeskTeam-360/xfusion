@@ -15,6 +15,7 @@ use App\Models\CourseGroupDetail;
 use App\Models\CourseList;
 use App\Models\User;
 use App\Models\WpGfEntry;
+use App\Models\WpUserMeta;
 use App\Models\WpPost;
 use App\Models\WpPostMeta;
 use Illuminate\Support\Facades\Auth;
