@@ -79,6 +79,7 @@
         $filteredCourseUser = $this->filteredCourseUser;
     @endphp
     @foreach($filteredCourseUser as $lessonId=>$lessons)
+    @if(WpPost::find($lessonId)->post_name)
         <h3 class="text-2xl">
             Lesson {{ WpPost::find($lessonId)->post_name??'-' }}
         </h3>
@@ -145,6 +146,7 @@
             @endforeach
         </table>
         <br><br>
+        @endif
     @endforeach
     <script>
         document.addEventListener("DOMContentLoaded", function () {
