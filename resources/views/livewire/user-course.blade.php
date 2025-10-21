@@ -49,7 +49,7 @@
                             });
                             let data;
                             if (!response.ok) {
-                                throw new Error('Server error');
+                                throw new Error('Server error'.response.statusText);
                             }
                             data = await response.json();
                             Swal.fire({
