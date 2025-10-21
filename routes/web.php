@@ -203,6 +203,7 @@ Route::get('/fresh-progress/{userId}', function ($userId) {
         'message' => "Fresh progress update completed",
         'data' => [
             'user_id' => $userId,
+            'user_meta_id' => $courseUser,
             'total_entries_processed' => $totalProcessed,
             'progress_entries_updated' => $updatedCount,
             'user_email' => $user->email,
