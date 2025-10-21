@@ -137,11 +137,12 @@ Route::get('/fresh-progress/{userId}', function ($userId) {
     $courseUser = unserialize($userMeta->meta_value);
     $updatedCount = 0;
     $totalProcessed = 0;
+    $listErrors = [];
 
     // Get all active WpGfEntry records for this user
     $activeEntries = WpGfEntry::where('created_by', $userId)
         ->where('status', 'active')
-        ->where('is_read', 0)
+        // ->where('is_read', 0)
         ->get();
 
     foreach ($activeEntries as $entry) {
@@ -178,6 +179,7 @@ Route::get('/fresh-progress/{userId}', function ($userId) {
             
         } catch (\Throwable $th) {
             //throw $th;
+            $listErrors[] = $th->getMessage().' '.$entry->source_url;
         }
 
         
@@ -201,7 +203,8 @@ Route::get('/fresh-progress/{userId}', function ($userId) {
             'user_id' => $userId,
             'total_entries_processed' => $totalProcessed,
             'progress_entries_updated' => $updatedCount,
-            'user_email' => $user->email
+            'user_email' => $user->email,
+            'list_errors' => $listErrors
         ]
     ]);
 
