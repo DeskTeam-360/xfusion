@@ -80,7 +80,7 @@
     @endphp
     @foreach($filteredCourseUser as $lessonId=>$lessons)
         <h3 class="text-2xl">
-            Lesson {{ WpPost::find($lessonId)->post_name }}
+            Lesson {{ WpPost::find($lessonId)->post_name??'-' }}
         </h3>
         <br>
         <table class="border-collapse border-wishka-400 w-full text-sm text-left rounded table-auto "
