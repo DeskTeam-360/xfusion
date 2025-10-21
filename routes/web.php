@@ -169,13 +169,13 @@ Route::get('/fresh-progress/{userId}', function ($userId) {
             }
     
             // If we found all required IDs and the current progress is 0, update to 1
-            if ($topicId && $courseId && $lessonId && 
-                isset($courseUser[$lessonId]['topics'][$courseId][$topicId]) && 
-                $courseUser[$lessonId]['topics'][$courseId][$topicId] == 0) {
+            // if ($topicId && $courseId && $lessonId && 
+            //     isset($courseUser[$lessonId]['topics'][$courseId][$topicId]) && 
+            //     $courseUser[$lessonId]['topics'][$courseId][$topicId] == 0) {
                 
                 $courseUser[$lessonId]['topics'][$courseId][$topicId] = 1;
                 $updatedCount++;
-            }
+            // }
             
         } catch (\Throwable $th) {
             //throw $th;
