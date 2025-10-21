@@ -83,6 +83,7 @@ class UserCourse extends Component
         ]);
     }
 
+
     public function bulkDelete()
     {
         if (empty($this->selectedItems)) {
@@ -115,6 +116,7 @@ class UserCourse extends Component
         ]);
     }
 
+
     public function clearSelection()
     {
         $this->selectedItems = [];
@@ -143,6 +145,7 @@ class UserCourse extends Component
             'meta_value' => serialize($this->courseUser),
         ]);
     }
+
 
     public function getUrl($topicId)
     {

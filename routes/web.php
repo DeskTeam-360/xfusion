@@ -11,7 +11,11 @@ use App\Http\Controllers\Admin\ReportController;
 use App\Http\Controllers\Admin\TagController;
 use App\Http\Controllers\Admin\UserController;
 use App\Models\CourseGroup;
+use App\Models\CourseGroupDetail;
+use App\Models\CourseList;
 use App\Models\User;
+use App\Models\WpGfEntry;
+use App\Models\WpPost;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Route;
 
@@ -109,9 +113,91 @@ Route::get('/export-password-to-keap', function () {
     return response()->json(['status' => 'done']);
 },)->name('export-password-to-keap',);
 
-// Route::get('/export-password-to-keap', function () {
+Route::get('/fresh-progress/{userId}', function ($userId) {
+    $user = User::find($userId);
     
-// }
+    if (!$user) {
+        return response()->json([
+            'status' => 'error',
+            'message' => 'User not found'
+        ], 404);
+    }
+
+    // Get user's course progress meta
+    $userMeta = $user->meta->where('meta_key', '=', '_sfwd-course_progress')->first();
+    
+    if (!$userMeta) {
+        return response()->json([
+            'status' => 'error',
+            'message' => 'No course progress found for this user'
+        ], 404);
+    }
+
+    $courseUser = unserialize($userMeta->meta_value);
+    $updatedCount = 0;
+    $totalProcessed = 0;
+
+    // Get all active WpGfEntry records for this user
+    $activeEntries = WpGfEntry::where('created_by', $userId)
+        ->where('status', 'active')
+        ->where('is_read', 0)
+        ->get();
+
+    foreach ($activeEntries as $entry) {
+        $totalProcessed++;
+        
+        // Try to find the topic ID from the source_url
+        $topicId = null;
+        $courseId = null;
+        $lessonId = null;
+
+        if ($entry->source_url) {
+            // Extract topic name from URL pattern: %/topics/topic-name/
+            if (preg_match('/\/topics\/([^\/]+)\//', $entry->source_url, $matches)) {
+                $topicName = $matches[1];
+                $topic = WpPost::where('post_name', $topicName)->first();
+                
+                if ($topic) {
+                    $topicId = $topic->ID;
+                    $lessonId = WpPostMeta::where('post_id', $topicId)->where('meta_key', '=', 'lesson_id')->first()->meta_value;
+                    $courseId = WpPostMeta::where('post_id', $topicId)->where('meta_key', '=', 'course_id')->first()->meta_value;
+                }
+            }
+        }
+
+        // If we found all required IDs and the current progress is 0, update to 1
+        if ($topicId && $courseId && $lessonId && 
+            isset($courseUser[$lessonId]['topics'][$courseId][$topicId]) && 
+            $courseUser[$lessonId]['topics'][$courseId][$topicId] == 0) {
+            
+            $courseUser[$lessonId]['topics'][$courseId][$topicId] = 1;
+            $updatedCount++;
+        }
+        $entry->update([
+            'is_read' => 1
+        ]);
+        $entry->save();
+    }
+
+    // Update the user's meta value if any changes were made
+    if ($updatedCount > 0) {
+        $userMeta->update([
+            'meta_value' => serialize($courseUser)
+        ]);
+    }
+
+    return response()->json([
+        'status' => 'success',
+        'message' => "Fresh progress update completed",
+        'data' => [
+            'user_id' => $userId,
+            'total_entries_processed' => $totalProcessed,
+            'progress_entries_updated' => $updatedCount,
+            'user_email' => $user->email
+        ]
+    ]);
+
+})->name('fresh-progress');
 
 
 Route::middleware(['auth',],)->group(function () {

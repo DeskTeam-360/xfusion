@@ -25,6 +25,49 @@
                         class="bg-gray-500 hover:bg-gray-600 text-white px-4 py-2 rounded">
                     Clear Selection
                 </button>
+                <button 
+                    onclick="runFreshProgress('{{ route('fresh-progress', $user) }}')" 
+                    class="bg-green-500 hover:bg-green-600 text-white px-4 py-2 rounded">
+                    Fresh Progress
+                </button>
+
+                <div id="fresh-progress-response" class="mt-2"></div>
+
+                <script>
+                    async function runFreshProgress(url) {
+                        const btn = event.currentTarget;
+                        btn.disabled = true;
+                        btn.innerText = "Processing...";
+
+                        try {
+                            const response = await fetch(url, {
+                                method: 'GET',
+                                headers: {
+                                    'X-Requested-With': 'XMLHttpRequest',
+                                    'Accept': 'application/json'
+                                }
+                            });
+                            let data;
+                            if (!response.ok) {
+                                throw new Error('Server error');
+                            }
+                            data = await response.json();
+                            Swal.fire({
+                                icon: 'success',
+                                title: 'Fresh Progress',
+                                text: data.message || "Done!"
+                            });
+                        } catch (e) {
+                            Swal.fire({
+                                icon: 'error',
+                                title: 'Error',
+                                text: e.message
+                            });
+                        }
+                        btn.disabled = false;
+                        btn.innerText = "Fresh Progress";
+                    }
+                </script>
            
         </div>
     </div>
