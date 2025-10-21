@@ -14,24 +14,24 @@ class UserProgressOnly extends \App\Models\User implements View
     {
         $query = $params['query'];
         $params = $params['param1'];
-        if ($params == null) {
+        // if ($params == null) {
             return empty($query) ? static::query() : static::query()
             ->where('user_nicename', 'like', "%$query%")
             ->hereHas('meta', function ($q2) use ($query) {
                 $q2->where('meta_key', '=', '_sfwd-course_progress')
                 ->where('meta_value', '!=', null);
             });
-        } else {
-            return empty($query) ? static::
-            query()->whereHas('companyEmployee', function ($q) use ($params) {
-                $q->where('company_id', '=', $params);
-            })->where('user_nicename', 'like', "%$query%") :
+//         } else {
+//             return empty($query) ? static::
+//             query()->whereHas('companyEmployee', function ($q) use ($params) {
+//                 $q->where('company_id', '=', $params);
+//             })->where('user_nicename', 'like', "%$query%") :
 
-                static::query()->whereHas('companyEmployee', function ($q) use ($params) {
-                $q->where('company_id', '=', $params);
-            })->where('user_nicename', 'like', "%$query%")
-;
-        }
+//                 static::query()->whereHas('companyEmployee', function ($q) use ($params) {
+//                 $q->where('company_id', '=', $params);
+//             })->where('user_nicename', 'like', "%$query%")
+// ;
+//         }
 
     }
 
@@ -51,7 +51,7 @@ class UserProgressOnly extends \App\Models\User implements View
         if ($roleUser == "administrator") {
             return [
 //                ['label' => '#', 'sort' => 'id', 'width' => '7%'],
-                ['label' => 'Profile', 'sort' => 'user_nicename'],
+                ['label' => 'Profilea', 'sort' => 'user_nicename'],
 //                ['label' => 'Keap'],
                 ['label' => 'Status'],
 //                ['label' => 'Access',],
