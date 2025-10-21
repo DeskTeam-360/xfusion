@@ -197,7 +197,7 @@ Route::get('/fresh-progress/{userId}', function ($userId) {
             'meta_value' => serialize($courseUser)
         ]);
     }
-
+    dd($courseUser);
     return response()->json([
         'status' => 'success',
         'message' => "Fresh progress update completed",
