@@ -56,7 +56,7 @@
                             console.log(data);
                             Swal.fire({
                                 icon: 'success',
-                                title: 'Fresh Progress',
+                                title: 'Refresh Progress',
                                 text: data.message || "Done!"
                             });
                         } catch (e) {
@@ -67,7 +67,7 @@
                             });
                         }
                         btn.disabled = false;
-                        btn.innerText = "Fresh Progress";
+                        btn.innerText = "Refresh Progress";
                     }
                 </script>
            
