@@ -117,11 +117,7 @@
                         }
                     });
                 }
-                
-                
                 </script>
-                
-                
             @endif
             <style>
                 .swal2-popup-custom {
