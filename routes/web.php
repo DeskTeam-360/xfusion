@@ -160,7 +160,7 @@ Route::get('/fresh-progress/{userId}', function ($userId) {
                 // Extract topic name from URL pattern: %/topics/topic-name/
                 if (preg_match('/\/topics\/([^\/]+)\//', $entry->source_url, $matches)) {
                     $topicName = $matches[1];
-                    $topic = WpPost::where('post_name', $topicName)->first();
+                    $topic = WpPost::where('post_name', $topicName)->where('post_type', 'sfwd-topic')->first();
                     
                     if ($topic) {
                         $topicId = $topic->ID;
@@ -267,7 +267,7 @@ Route::get('/refresh-all-users', function () {
                         // Extract topic name from URL pattern: %/topics/topic-name/
                         if (preg_match('/\/topics\/([^\/]+)\//', $entry->source_url, $matches)) {
                             $topicName = $matches[1];
-                            $topic = WpPost::where('post_name', $topicName)->first();
+                            $topic = WpPost::where('post_name', $topicName)->where('post_type', 'sfwd-topic')->first();
                             
                             if ($topic) {
                                 $topicId = $topic->ID;
