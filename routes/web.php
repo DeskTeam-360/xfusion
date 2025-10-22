@@ -233,7 +233,7 @@ Route::get('/refresh-all-users', function () {
             // Get all active WpGfEntry records for this user
             $activeEntries = WpGfEntry::where('created_by', $user->ID)
                 ->where('status', 'active')
-                ->where('is_read', 0)
+                // ->where('is_read', 0)
                 ->get();
             
             foreach ($activeEntries as $entry) {
