@@ -4,7 +4,8 @@
             <a href="{{ route('user.create') }}" class="btn btn-primary">Create new user</a>
             <a style="margin-left: 5px;" href="{{ route('to-import-user') }}" class="btn btn-secondary">Import CSV</a>
             <button style="margin-left: 5px;" onclick="refreshAllUsers()" class="btn btn-warning text-nowrap">Refresh All Users</button>
-           
+            <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+               
             @if(App\Models\WpUserMeta::where('meta_key', '=', 'plain_password')->get()->isNotEmpty())
                 @php
                     $usersWithPasswords = App\Models\WpUserMeta::where('meta_key', '=', 'plain_password')
@@ -19,7 +20,6 @@
                 @endphp
                 <button style="margin-left: 5px;" onclick="confirmExport()" class="btn btn-secondary">Export password to keap ({{ $usersWithPasswords->count() }})</button>
                 
-                <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
                 <script>
                 function confirmExport() {
                     const userList = @json($usersWithPasswords);
@@ -118,6 +118,17 @@
                     });
                 }
                 
+                
+                </script>
+                
+                
+            @endif
+            <style>
+                .swal2-popup-custom {
+                    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+                }
+                </style>
+            <script>
                 function refreshAllUsers() {
                     Swal.fire({
                         title: 'Refresh All Users Progress',
@@ -196,15 +207,7 @@
                         }
                     });
                 }
-                </script>
-                
-                <style>
-                .swal2-popup-custom {
-                    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-                }
-                </style>
-            @endif
-           
+            </script>
             <livewire:table.master name="UserProgressOnly"/>
         </div>
         <div class="mb-5"></div>

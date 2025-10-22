@@ -3,7 +3,7 @@
         <div class="w-full">
             <a href="{{ route('user.create') }}" class="btn btn-primary">Create new user</a>
             <a style="margin-left: 5px;" href="{{ route('to-import-user') }}" class="btn btn-secondary">Import CSV</a>
-            <button style="margin-left: 5px;" onclick="refreshAllUsers()" class="btn btn-warning text-nowrap">Refresh All Users</button>
+            <!-- <button style="margin-left: 5px;" onclick="refreshAllUsers()" class="btn btn-warning text-nowrap">Refresh All Users</button> -->
            
             @if(App\Models\WpUserMeta::where('meta_key', '=', 'plain_password')->get()->isNotEmpty())
                 @php
