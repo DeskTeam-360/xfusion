@@ -246,20 +246,34 @@ Route::get('/refresh-all-users', function () {
                 $lessonId = null;
                 
                 try {
+                    // if ($entry->source_url) {
+                    //     // Extract topic ID from URL like: /topic/12345/
+                    //     if (preg_match('/\/topic\/(\d+)\//', $entry->source_url, $matches)) {
+                    //         $topicId = $matches[1];
+                    //     }
+                        
+                    //     // Extract course ID from URL like: /course/12345/
+                    //     if (preg_match('/\/course\/(\d+)\//', $entry->source_url, $matches)) {
+                    //         $courseId = $matches[1];
+                    //     }
+                        
+                    //     // Extract lesson ID from URL like: /lesson/12345/
+                    //     if (preg_match('/\/lesson\/(\d+)\//', $entry->source_url, $matches)) {
+                    //         $lessonId = $matches[1];
+                    //     }
+                    // }
+
                     if ($entry->source_url) {
-                        // Extract topic ID from URL like: /topic/12345/
-                        if (preg_match('/\/topic\/(\d+)\//', $entry->source_url, $matches)) {
-                            $topicId = $matches[1];
-                        }
-                        
-                        // Extract course ID from URL like: /course/12345/
-                        if (preg_match('/\/course\/(\d+)\//', $entry->source_url, $matches)) {
-                            $courseId = $matches[1];
-                        }
-                        
-                        // Extract lesson ID from URL like: /lesson/12345/
-                        if (preg_match('/\/lesson\/(\d+)\//', $entry->source_url, $matches)) {
-                            $lessonId = $matches[1];
+                        // Extract topic name from URL pattern: %/topics/topic-name/
+                        if (preg_match('/\/topics\/([^\/]+)\//', $entry->source_url, $matches)) {
+                            $topicName = $matches[1];
+                            $topic = WpPost::where('post_name', $topicName)->first();
+                            
+                            if ($topic) {
+                                $topicId = $topic->ID;
+                                $lessonId = WpPostMeta::where('post_id', $topicId)->where('meta_key', '=', 'lesson_id')->first()->meta_value;
+                                $courseId = WpPostMeta::where('post_id', $topicId)->where('meta_key', '=', 'course_id')->first()->meta_value;
+                            }
                         }
                     }
                     
