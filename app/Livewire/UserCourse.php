@@ -209,7 +209,7 @@ class UserCourse extends Component
             $id = $wf1->id;
         } else {
             $wf2 = WpGfEntry::where('form_id', 'like', $cl->wp_gf_form_id)->where('created_by', '=', $this->user)
-                >where('status','active')->first();
+                ->where('status','active')->first();
             if ($wf2 != null) {
                 $id = $wf2->id;
             }
