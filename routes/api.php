@@ -277,7 +277,7 @@ Route::post('/next-course/', function (Request $request) {
     // Get all active WpGfEntry records for this user
     $activeEntries = WpGfEntry::where('created_by', $userId)
         ->where('status', 'active')
-        ->where('is_read', 0)
+        // ->where('is_read', 0)
         ->get();
 
     foreach ($activeEntries as $entry) {
