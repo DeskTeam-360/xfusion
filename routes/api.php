@@ -248,7 +248,80 @@ Route::post('/next-course/', function (Request $request) {
             }
         }    
     }
+    if (!$user) {
+        return response()->json([
+            'status' => 'error',
+            'message' => 'User not found'
+        ], 404);
+    }
+
+    // Get user's course progress meta
+    // $userMeta = $user->meta->where('meta_key', '=', '_sfwd-course_progress')->first();
+    $userMeta = WpUserMeta::where('user_id', $userId)->where('meta_key', '=', '_sfwd-course_progress')->first();
     
+    if (!$userMeta) {
+        return response()->json([
+            'status' => 'error',
+            'message' => 'No course progress found for this user'
+        ], 404);
+    }
+
+    $courseUser = unserialize($userMeta->meta_value);
+    $updatedCount = 0;
+    $totalProcessed = 0;
+    $listErrors = [];
+
+    // Get all active WpGfEntry records for this user
+    $activeEntries = WpGfEntry::where('created_by', $userId)
+        ->where('status', 'active')
+        ->where('is_read', 0)
+        ->get();
+
+    foreach ($activeEntries as $entry) {
+        $totalProcessed++;
+        
+        // Try to find the topic ID from the source_url
+        $topicId = null;
+        $courseId = null;
+        $lessonId = null;
+
+        try {
+            if ($entry->source_url) {
+                // Extract topic name from URL pattern: %/topics/topic-name/
+                if (preg_match('/\/topics\/([^\/]+)\//', $entry->source_url, $matches)) {
+                    $topicName = $matches[1];
+                    $topic = WpPost::where('post_name', $topicName)->where('post_type', 'sfwd-topic')->first();
+                    
+                    if ($topic) {
+                        $topicId = $topic->ID;
+                        $lessonId = WpPostMeta::where('post_id', $topicId)->where('meta_key', '=', 'lesson_id')->first()->meta_value;
+                        $courseId = WpPostMeta::where('post_id', $topicId)->where('meta_key', '=', 'course_id')->first()->meta_value;
+                    }
+                }
+            }
+    
+                $courseUser[$courseId]['topics'][$lessonId][$topicId] = 1;
+                $updatedCount++;
+            // }
+            
+        } catch (\Throwable $th) {
+            //throw $th;
+            $listErrors[] = $th->getMessage().' '.$entry->source_url;
+        }
+
+        
+        $entry->update([
+            'is_read' => 1
+        ]);
+        $entry->save();
+    }
+
+    // Update the user's meta value if any changes were made
+    if ($updatedCount > 0) {
+        $userMeta->update([
+            'meta_value' => serialize($courseUser)
+        ]);
+    }    
 });
 Route::get('/next-course/', function (Request $request) {
     return [
