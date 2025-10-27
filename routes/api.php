@@ -255,6 +255,9 @@ Route::post('/next-course/', function (Request $request) {
         ], 404);
     }
 
+    
+    $userId = $dataEntry->created_by;
+
     // Get user's course progress meta
     // $userMeta = $user->meta->where('meta_key', '=', '_sfwd-course_progress')->first();
     $userMeta = WpUserMeta::where('user_id', $userId)->where('meta_key', '=', '_sfwd-course_progress')->first();
