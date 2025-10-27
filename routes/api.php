@@ -151,7 +151,6 @@ Route::post('/next-course/', function (Request $request) {
 
 
     
-
     $userId = $dataEntry->created_by;
 
     // Get user's course progress meta
@@ -171,13 +170,13 @@ Route::post('/next-course/', function (Request $request) {
     $listErrors = [];
 
     // Get all active WpGfEntry records for this user
-    $activeEntries = WpGfEntry::where('created_by', $userId)
-        ->where('status', 'active')
-        // ->where('is_read', 0)
-        ->get();
+    // $activeEntries = WpGfEntry::where('created_by', $userId)
+    //     ->where('status', 'active')
+    //     // ->where('is_read', 0)
+    //     ->get();
 
-    foreach ($activeEntries as $entry) {
-        $totalProcessed++;
+    // foreach ($activeEntries as $entry) {
+        // $totalProcessed++;
         
         // Try to find the topic ID from the source_url
         $topicId = null;
@@ -187,7 +186,7 @@ Route::post('/next-course/', function (Request $request) {
         try {
             if ($entry->source_url) {
                 // Extract topic name from URL pattern: %/topics/topic-name/
-                if (preg_match('/\/topics\/([^\/]+)\//', $entry->source_url, $matches)) {
+                if (preg_match('/\/topics\/([^\/]+)\//', $dataEntry->source_url, $matches)) {
                     $topicName = $matches[1];
                     $topic = WpPost::where('post_name', $topicName)->where('post_type', 'sfwd-topic')->first();
                     
@@ -213,7 +212,7 @@ Route::post('/next-course/', function (Request $request) {
             'is_read' => 1
         ]);
         $entry->save();
-    }
+    // }
 
     // Update the user's meta value if any changes were made
     if ($updatedCount > 0) {
