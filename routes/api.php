@@ -144,31 +144,62 @@ Route::post('/keap-gform/', function (Request $request) {
 
 Route::post('/register/',function(Request $request){
     $data =  $request->all();
-    $user = User::find($data['user_id']);
-    if ($user) {
-        $contactData = [
-            'email' => $user->user_email,
-        ];
-        if (!empty($user->first_name ?? '')) {
-            $contactData['given_name'] = $user->first_name;
-        }
-        if (!empty($user->last_name ?? '')) {
-            $contactData['family_name'] = $user->last_name;
-        }
-        try {
-            $keapContact = \Keap::contact()->create($contactData);
-            if (isset($keapContact['id'])) {
-                \App\Models\WpUserMeta::updateOrCreate(
-                    ['user_id' => $user->ID, 'meta_key' => 'keap_contact_id'],
-                    ['meta_value' => $keapContact['id']]
-                );
-                \Keap::contact()->addTags($keapContact['id'], [1942]);
-            }
-        } catch (\Exception $e) {
-     
-        }
+
+    if (empty($data['user_id'])) {
+        return response()->json([
+            'success' => false,
+            'message' => 'user_id is required'
+        ], 422);
     }
-    return;
+
+    $user = User::find($data['user_id']);
+    if (!$user) {
+        return response()->json([
+            'success' => false,
+            'message' => 'User not found'
+        ], 404);
+    }
+
+    $contactData = [
+        'email' => $user->user_email,
+    ];
+    if (!empty($user->first_name ?? '')) {
+        $contactData['given_name'] = $user->first_name;
+    }
+    if (!empty($user->last_name ?? '')) {
+        $contactData['family_name'] = $user->last_name;
+    }
+
+    try {
+        $keapContact = \Keap::contact()->create($contactData);
+        if (isset($keapContact['id'])) {
+            \App\Models\WpUserMeta::updateOrCreate(
+                ['user_id' => $user->ID, 'meta_key' => 'keap_contact_id'],
+                ['meta_value' => $keapContact['id']]
+            );
+            \Keap::contact()->addTags($keapContact['id'], [1942]);
+
+            return response()->json([
+                'success' => true,
+                'message' => 'Keap contact created and tagged',
+                'data' => [
+                    'keap_contact_id' => $keapContact['id'],
+                    'user_id' => $user->ID,
+                ]
+            ], 201);
+        }
+
+        return response()->json([
+            'success' => false,
+            'message' => 'Failed to create Keap contact'
+        ], 502);
+    } catch (\Throwable $e) {
+        return response()->json([
+            'success' => false,
+            'message' => 'Registration failed',
+            'error' => $e->getMessage()
+        ], 500);
+    }
 });
 
 Route::post('/next-course/', function (Request $request) {
