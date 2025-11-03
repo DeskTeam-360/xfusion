@@ -192,7 +192,7 @@ Route::post('/register/',function(Request $request){
             ],
         ]);
 
-        $keapContact = \Keap::contact()->createOrUpdate($contactData);
+        // $keapContact = \Keap::contact()->createOrUpdate($contactData);
         if (isset($keapContact['id'])) {
             \App\Models\WpUserMeta::updateOrCreate(
                 ['user_id' => $user->ID, 'meta_key' => 'keap_contact_id'],
