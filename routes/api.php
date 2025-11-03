@@ -198,7 +198,7 @@ Route::post('/register/',function(Request $request){
                 ['user_id' => $user->ID, 'meta_key' => 'keap_contact_id'],
                 ['meta_value' => $keapContact['id']]
             );
-            \Keap::contact()->addTags($keapContact['id'], [1942]);
+            \Keap::contact()->tag($keapContact['id'], [1942]);
 
             return response()->json([
                 'success' => true,
