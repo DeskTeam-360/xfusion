@@ -191,7 +191,7 @@ Route::post('/register/',function(Request $request){
 
         return response()->json([
             'success' => false,
-            'message' => 'Failed to create Keap contact'
+            'message' => 'Failed to create Keap contact'. json_encode($keapContact)
         ], 502);
     } catch (\Throwable $e) {
         return response()->json([
