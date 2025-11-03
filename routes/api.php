@@ -142,6 +142,35 @@ Route::post('/keap-gform/', function (Request $request) {
     }
 });
 
+Route::post('/register/',function(Request $request){
+    $data =  $request->all();
+    $user = User::find($data['user_id']);
+    if ($user) {
+        $contactData = [
+            'email' => $user->user_email,
+        ];
+        if (!empty($user->first_name ?? '')) {
+            $contactData['given_name'] = $user->first_name;
+        }
+        if (!empty($user->last_name ?? '')) {
+            $contactData['family_name'] = $user->last_name;
+        }
+        try {
+            $keapContact = \Keap::contact()->create($contactData);
+            if (isset($keapContact['id'])) {
+                \App\Models\WpUserMeta::updateOrCreate(
+                    ['user_id' => $user->ID, 'meta_key' => 'keap_contact_id'],
+                    ['meta_value' => $keapContact['id']]
+                );
+                \Keap::contact()->addTags($keapContact['id'], [1942]);
+            }
+        } catch (\Exception $e) {
+     
+        }
+    }
+    return;
+});
+
 Route::post('/next-course/', function (Request $request) {
     $data = $request->all();
     $dataEntry = WpGfEntry::find($data['entry_id']);
