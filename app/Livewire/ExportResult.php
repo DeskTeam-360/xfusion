@@ -4,7 +4,9 @@ namespace App\Livewire;
 
 use App\Models\Company;
 use App\Models\CourseList;
+use App\Models\CourseGroup;
 use App\Models\User;
+
 use App\Models\WpGfEntryMeta;
 use App\Models\WpGfFormMeta;
 use Livewire\Component;
@@ -27,16 +29,29 @@ class ExportResult extends Component
     public $optionFields = [];
     public $optionCourseTitle = [];
 
+    public $optionCourseGroupLists = [];
+    public $optionCourseLists2 = [];
+
+    public $courseGroupLists = [];
+    public $courseLists2 = [];
+    
     public function mount()
     {
         $this->optionTypeUser = [
             ['value' => 'users', 'title' => 'Users'],
             ['value' => 'companies', 'title' => 'companies'],
         ];
-        $this->optionCourseTitle = [];
-        foreach (CourseList::get() as $cl){
-            $this->optionCourseTitle[] = ['value'=>$cl->id,'title'=>$cl->course_title.' - '.$cl->page_title];
+        
+        foreach (CourseGroup::get() as $cg){
+            
+            $this->optionCourseLists2[$cg->id] = $cg->courseGroupDetails->pluck('course_list_id')->toArray();
+            $this->optionCourseGroupLists[] = ['value'=>$cg->id, 'title'=>$cg->title.' - '.$cg->sub_title .' ('.count($cg->courseGroupDetails).')'];
         }
+        foreach (CourseList::get() as $cl){
+            $this->optionCourseTitle[] = ['value'=>$cl->id, 'title'=>$cl->course_title.' - '.$cl->page_title];
+        }
+
+        // dd($this->courseGroupLists);
 
         foreach (User::get() as $user) {
             $this->optionUsers[] = ['value' => $user->ID, 'title' => $user->first_name . ' ' . $user->last_name];

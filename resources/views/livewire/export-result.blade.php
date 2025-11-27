@@ -75,6 +75,103 @@
                     });
 
                 </script>
+            </div>
+
+
+            <div class="mt-3" wire:ignore>
+                <label for="{{'courseGroupLists'}}"
+                       class="block text-sm font-bold dark:text-light">
+                    Course Group
+                </label>
+                <select id="{{'courseGroupLists'}}"
+                        class=" appearance-none border-1 border border-gray-100 rounded w-full
+                        text-gray-700 leading-tight focus:outline-none dark:border-primary-light focus:bg-gray-100
+                        dark:bg-dark
+                        dark:text-light
+                        bg-white
+                        focus:dark:border-white select2"
+                        multiple=""
+                        name="users"
+                        style="padding:0  100px" wire:model="{{'courseGroupLists'}}">
+                    @foreach($optionCourseGroupLists as $option)
+                        <option value="{{$option['value']}}"
+                                style="padding: 0 25px">
+                            {{$option['title']}}
+                        </option>
+                    @endforeach
+                </select>
+
+                
+            </div>
+
+
+            <div class="mt-3" wire:ignore>
+                <label for="{{'datacourseLists'}}"
+                       class="block text-sm font-bold dark:text-light">
+                    Course List
+                    <span class="text-sm text-gray-500 cursor-pointer float-right" onclick="clearCourseLists()">Clear</span>
+                    </label>
+                    <script>
+                        function clearCourseLists() {
+                            console.log('clear');
+                            @this.set('courseLists', []);
+                            $('#datacourseLists').val([]).trigger('change');
+                        }
+                    </script>
+                <select id="{{'datacourseLists'}}"
+                        class="bg-gray-200 appearance-none border-1 border border-gray-100 rounded w-full text-gray-700 leading-tight focus:outline-none dark:border-primary-light focus:bg-gray-100 dark:bg-dark dark:text-light focus:dark:border-white select2"
+                        multiple=""
+
+                        name="courseLists"
+                        style="padding:0  100px" wire:model="{{'form.courseLists'}}">
+                    @for($i=0;$i<count($optionCourseTitle) ;$i++)
+                        <option value="{{$optionCourseTitle[$i]['value']}}"
+                                style="padding: 0 25px"
+                            {{ in_array($optionCourseTitle[$i]['value'],$courseLists)?'selected':''}}
+                        >
+                            {{$optionCourseTitle[$i]['title']}} . {{$optionCourseTitle[$i]['value']}}
+                        </option>
+                    @endfor
+                </select>
+                <script>
+                  
+                  document.addEventListener('livewire:init', function () {
+    let data;
+    $('#datacourseLists').select2();
+
+    $('#datacourseLists').on('change', function () {
+        data = $('#datacourseLists').select2("val");
+        @this.set('courseLists', data);
+    });
+});
+
+
+document.addEventListener('livewire:init', function () {
+    let data;
+    $('#courseGroupLists').select2();
+
+    $('#courseGroupLists').on('change', function () {
+        data = $('#courseGroupLists').select2("val");
+
+        @this.set('courseGroupLists', data);
+
+        data.forEach(d => {
+            const data2 = Object.values(@this.get('optionCourseLists2')[d] || {});
+            const data3 = @this.get('courseLists') || [];
+
+            // merge + remove duplicates
+            const unique = [...new Set([...data3, ...data2])];
+
+            // set ke Livewire
+            @this.set('courseLists', unique);
+
+            // set ke Select2
+            $('#datacourseLists').val(unique).trigger('change');
+        });
+    });
+});
+
+                </script>
 
             </div>
 
@@ -82,7 +179,24 @@
                 <label for="{{'fields'}}"
                        class="block text-sm font-bold dark:text-light">
                     Field Export
+                    <span class="text-sm text-gray-500 cursor-pointer float-right" onclick="clearFields()">Clear</span> 
+                    <span class="text-sm text-gray-500 mx-2 float-right"> | </span>
+                    <span class="text-sm text-gray-500 cursor-pointer float-right" onclick="addAllFields()">Add All</span>
                 </label>
+                <script>
+                    function clearFields() {
+                        console.log('clear');
+                        @this.set('fields', []);
+                        $('#fields').val([]).trigger('change');
+                    }
+                </script>
+                <script>
+                    function addAllFields() {
+                        console.log('add all');
+                        @this.set('fields', @json($optionFields));
+                        $('#fields').val(@json($optionFields)).trigger('change');
+                    }
+                </script>
                 <select id="{{'fields'}}"
                         class=" appearance-none border-1 border border-gray-100 rounded w-full
                         text-gray-700 leading-tight focus:outline-none dark:border-primary-light focus:bg-gray-100
@@ -110,43 +224,9 @@
                         })
                     });
                 </script>
-
             </div>
 
-            <div class="mt-3" wire:ignore>
-                <label for="{{'datacourseLists'}}"
-                       class="block text-sm font-bold dark:text-light">
-                    Course List
-                </label>
-                <select id="{{'datacourseLists'}}"
-                        class="bg-gray-200 appearance-none border-1 border border-gray-100 rounded w-full text-gray-700 leading-tight focus:outline-none dark:border-primary-light focus:bg-gray-100 dark:bg-dark dark:text-light focus:dark:border-white select2"
-                        multiple=""
-
-                        name="courseLists"
-                        style="padding:0  100px" wire:model="{{'form.courseLists'}}">
-                    @for($i=0;$i<count($optionCourseTitle) ;$i++)
-                        <option value="{{$optionCourseTitle[$i]['value']}}"
-                                style="padding: 0 25px"
-                            {{ in_array($optionCourseTitle[$i]['value'],$courseLists)?'selected':''}}
-                        >
-                            {{$optionCourseTitle[$i]['title']}} . {{$optionCourseTitle[$i]['value']}}
-                        </option>
-                    @endfor
-                </select>
-                <script>
-                    document.addEventListener('livewire:init', function () {
-                        let data;
-                        $('#datacourseLists').select2();
-                        $('#datacourseLists').on('change', function (e) {
-                            data = $('#{{'datacourseLists'}}').select2("val");
-                            @this.
-                            set('{{'courseLists'}}', data);
-                        })
-                    });
-
-                </script>
-
-            </div>
+            
             <button class="btn btn-success" wire:click="getData">Show Data</button>
             <button wire:click="exportCsv"
                     class="px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600">
