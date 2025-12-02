@@ -235,17 +235,37 @@ document.addEventListener('livewire:init', function () {
 <br><br><br>
 
             
-            <button class="btn btn-success" wire:click="getData">Show Data</button>
-            <button wire:click="exportCsv"
-                    class="btn btn-primary">
-                Download CSV
-            </button>
-            @if($loading)
-                <div class="spinner-border text-primary" role="status">
-                    <span class="visually-hidden">Loading...</span>
-                </div>
-            @endif
+<button class="btn btn-success" 
+        wire:click="getData" 
+        wire:loading.attr="disabled" 
+        wire:target="getData">
+    Show Data
+</button>
 
+<button wire:click="exportCsv" 
+        class="btn btn-primary"
+        wire:loading.attr="disabled"
+        wire:target="exportCsv">
+    Download CSV
+</button>
+
+<!-- Spinner hanya tampil saat getData loading -->
+<div class="spinner-border text-primary" 
+     role="status" 
+     wire:loading 
+     wire:target="getData">
+    <span class="visually-hidden">Loading...</span>
+</div>
+
+
+
+<div class="spinner-border text-primary" 
+     role="status" 
+     wire:loading 
+     wire:target="exportCsv">
+    <span class="visually-hidden">Loading...</span>
+</div>
+            
 
         </div>
         <br>

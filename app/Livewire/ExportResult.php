@@ -111,11 +111,17 @@ class ExportResult extends Component
         $headerFormat = str_replace('[clean_course_title]', $clean_course_title, $headerFormat);
         return $headerFormat;
     }
-
     public function getData()
     {
-
         $this->loading = true;
+        $this->getData2();
+        $this->loading = false;
+    }
+
+    public function getData2()
+    {
+
+     
         $field_types = $this->fields;
         $course_ids = $this->courseLists;
         $companies = $this->companies;
