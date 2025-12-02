@@ -34,6 +34,7 @@ class ExportResult extends Component
 
     public $courseGroupLists = [];
     public $courseLists2 = [];
+    public $headerFormat="[course_title] - [clean_question]";
     
     public function mount()
     {
@@ -60,6 +61,54 @@ class ExportResult extends Component
             $this->optionCompanies[] = ['value' => $user->id, 'title' => $user->title];
         }
         $this->optionFields=['text', 'checkbox', 'number', 'select', 'multiselect', 'radio', 'email', 'name','textarea'];
+    }
+
+    public function getHeaderFormat($course_title, $question)
+    {   
+        $headerFormat = $this->headerFormat;
+        $clean_question = $question;
+        $clean_course_title = $course_title;
+
+        // daftar kata yang ingin dibersihkan
+        $blacklist = [
+            'Rate your current ability to',
+            '1-5 (5 highest)',
+            '1-5 (5 highest).',
+            'with yourself and others',
+            'Rate your current level of',
+            'Rate your ability to',
+            'Rate the current status of',
+            'Rate your current practices for maintaining',
+        'Rate your',
+        '(1-5-highest)',
+        '(1-5-highest).',
+        '(1-5-highest)',
+        'Course - Topic : ',
+        'Course - Topic'
+        ];
+        // hapus tanda petik satu dan dua
+        $clean_question = str_replace(["'", '"','“','”',' .','.'], '', $clean_question);
+        $clean_course_title = str_replace(["'", '"','“','”',' .','.'], '', $clean_course_title);
+
+        // hapus kata-kata blacklist
+        $clean_question = str_ireplace($blacklist, '', $clean_question);
+        $clean_course_title = str_ireplace($blacklist, '', $clean_course_title);    
+
+        // ganti banyak spasi jadi satu spasi
+        $clean_question = preg_replace('/\s+/', ' ', $clean_question);
+        $clean_course_title = preg_replace('/\s+/', ' ', $clean_course_title);
+        // trim
+        $clean_question = trim($clean_question);
+        $clean_course_title = trim($clean_course_title);
+        // ganti spasi dengan underscore
+
+        
+
+        $headerFormat = str_replace('[course_title]', $course_title, $headerFormat);
+        $headerFormat = str_replace('[question]', $question, $headerFormat);
+        $headerFormat = str_replace('[clean_question]', $clean_question, $headerFormat);
+        $headerFormat = str_replace('[clean_course_title]', $clean_course_title, $headerFormat);
+        return $headerFormat;
     }
 
     public function getData()
@@ -128,25 +177,25 @@ class ExportResult extends Component
             $handle = fopen('php://output', 'w');
 
             // ===== BARIS 1: Form Titles (rowspan/colspan header) =====
-            $header1 = ['Nama']; // Kolom pertama: Nama
-            foreach ($this->field_target as $field) {
-                if (isset($field['title'])) {
-                    $colspan = count($field['title']);
-                    // Tambahkan form_title, lalu isi colspan-1 dengan string kosong (agar sejajar dengan header2)
-                    $header1[] = $field['form_title'];
-                    for ($i = 1; $i < $colspan; $i++) {
-                        $header1[] = '';
-                    }
-                }
-            }
-            fputcsv($handle, $header1);
+            // $header1 = ['Nama']; // Kolom pertama: Nama
+            // foreach ($this->field_target as $field) {
+            //     if (isset($field['title'])) {
+            //         $colspan = count($field['title']);
+            //         // Tambahkan form_title, lalu isi colspan-1 dengan string kosong (agar sejajar dengan header2)
+            //         $header1[] = $field['form_title'];
+            //         for ($i = 1; $i < $colspan; $i++) {
+            //             $header1[] = '';
+            //         }
+            //     }
+            // }
+            // fputcsv($handle, $header1);
 
             // ===== BARIS 2: Field Titles (judul per kolom) =====
-            $header2 = [''];
+            $header2 = ['Nama'];
             foreach ($this->field_target as $field) {
                 if (isset($field['title'])) {
                     foreach ($field['title'] as $title) {
-                        $header2[] = $title;
+                        $header2[] = $this->getHeaderFormat($field['form_title'], $title);
                     }
                 }
             }

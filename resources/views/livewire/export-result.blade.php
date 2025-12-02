@@ -2,6 +2,14 @@
     <div class="overflow-auto " style="width: 100%">
         <div>
             <x-input title="Title file export" model="title"/>
+            <div class="mt-3">
+
+            <x-input title="Header format" model="headerFormat"/>
+            <div><b>[course_title]</b> for full course title</div>
+            <div><b>[clean_course_title]</b> for clean course title</div>
+            <div><b>[question]</b> for full question</div>
+            <div><b>[clean_question]</b> for clean question</div>
+            </div>
             {{--            <x-select title="Type" model="typeUser" :options="$optionTypeUser" required="true"/>--}}
             <div class="mt-3" wire:ignore>
                 <label for="{{'dataUsers'}}"
@@ -185,14 +193,12 @@ document.addEventListener('livewire:init', function () {
                 </label>
                 <script>
                     function clearFields() {
-                        console.log('clear');
                         @this.set('fields', []);
                         $('#fields').val([]).trigger('change');
                     }
                 </script>
                 <script>
                     function addAllFields() {
-                        console.log('add all');
                         @this.set('fields', @json($optionFields));
                         $('#fields').val(@json($optionFields)).trigger('change');
                     }
@@ -242,20 +248,13 @@ document.addEventListener('livewire:init', function () {
             <table
                 class="border-collapse border-wishka-400 w-full text-sm text-center rounded table-auto">
                 <thead class=" text-md text-uppercase uppercase dark:bg-dark  text-bold">
+         
                 <tr class="border border-gray-200 border-collapse">
-                    <td rowspan="2" class="border" style="width: 200px !important; padding:10px 100px">Nama</td>
-                    @foreach($field_target as $field)
-                        @isset($field['title'])
-                            <td colspan="{{ count($field['title']) }}" class="text-nowrap font-bold border py-4 px-6"
-                                style="width: 100px">{{ $field['form_title'] }}</td>
-                        @endisset
-                    @endforeach
-                </tr>
-                <tr class="border border-gray-200 border-collapse">
+                    <td class="text-nowrap border py-4 px-6 font-bold">Name</td>
                     @foreach($field_target as $field)
                         @isset($field['title'])
                             @foreach($field['title'] as $k=>$f)
-                                <td class="text-nowrap border py-4 px-6 font-bold">{{ $f }}</td>
+                                <td class="text-nowrap border py-4 px-6 font-bold">{{ $this->getHeaderFormat($field['form_title'], $f) }}</td>
                             @endforeach
                         @endisset
                     @endforeach
@@ -280,101 +279,7 @@ document.addEventListener('livewire:init', function () {
             </table>
             <br><br>
 
-{{--            <table--}}
-{{--                class="border-collapse border-wishka-400 w-full text-sm text-center rounded table-auto">--}}
-{{--                <thead class=" text-md text-uppercase uppercase dark:bg-dark  text-bold">--}}
-{{--                <tr class="border border-gray-200 border-collapse">--}}
-{{--                    <td rowspan="2" class="border" style="width: 200px !important; padding:10px 100px">Name</td>--}}
-{{--                    <td rowspan="2" class="border" style="width: 200px !important; padding:10px 100px">Page Title</td>--}}
-{{--                    <td rowspan="2" class="border" style="width: 200px !important; padding:10px 100px">Field Title</td>--}}
-{{--                    <td rowspan="2" class="border" style="width: 200px !important; padding:10px 100px">Answer</td>--}}
-{{--                </tr>--}}
 
-{{--                </thead>--}}
-{{--                <tbody>--}}
-{{--                @foreach($userLists as $user)--}}
-{{--                    <tr class="border border-gray-200 ">--}}
-{{--                        @php--}}
-{{--                            $count = 0;--}}
-{{--                            foreach($field_target as $field){--}}
-{{--                            foreach($field['title'] as $k=>$f){--}}
-{{--                            $count++;--}}
-{{--                            }--}}
-{{--                            }--}}
-{{--                            $c1=0;--}}
-{{--                            $c2=0;--}}
-{{--                        @endphp--}}
-{{--                        <td class="py-4 px-6 border font-bold" rowspan="{{$count}}">{{ $user->user_nicename }}</td>--}}
-
-{{--                        @foreach($field_target as $field)--}}
-{{--                                @isset($field['title'])--}}
-{{--                                    @if($c1==0)--}}
-{{--                                    <td rowspan="{{ count($field['title']) }}"--}}
-{{--                                        class="text-nowrap font-bold border py-4 px-6"--}}
-{{--                                        style="width: 100px">{{ $field['form_title'] }}</td>--}}
-{{--                                    @foreach($field['title'] as $k=>$f)--}}
-{{--                                        @if($count==0)--}}
-{{--                                            <td class="border py-4 px-6">--}}
-{{--                                                {{ $f }}--}}
-{{--                                            </td>--}}
-{{--                                            <td class="border py-4 px-6">--}}
-{{--                                                {{ $results[$user->ID][$form_id]['data'][$k]??'-' }}--}}
-{{--                                            </td>--}}
-{{--                                        @endif--}}
-{{--                                        @php($count+=1)--}}
-{{--                                    @endforeach--}}
-{{--                                </tr>--}}
-{{--                                @else--}}
-{{--                                    <tr>--}}
-{{--                                    <td rowspan="{{ count($field['title']) }}"--}}
-{{--                                        class="text-nowrap font-bold border py-4 px-6"--}}
-{{--                                        style="width: 100px">{{ $field['form_title'] }}</td>--}}
-{{--                                    @foreach($field['title'] as $k=>$f)--}}
-{{--                                        @if($count==0)--}}
-{{--                                            <td class="border py-4 px-6">--}}
-{{--                                                {{ $f }}--}}
-{{--                                            </td>--}}
-{{--                                            <td class="border py-4 px-6">--}}
-{{--                                                {{ $results[$user->ID][$form_id]['data'][$k]??'-' }}--}}
-{{--                                            </td>--}}
-{{--                                            @endif--}}
-{{--                                            @php($count+=1)--}}
-{{--                                            @endforeach--}}
-{{--                                            </tr>--}}
-
-{{--                                @endif--}}
-{{--                                    @php($c1++)--}}
-
-{{--                                @endisset--}}
-{{--                        @endforeach--}}
-{{--                    </tr>--}}
-
-{{--                    @php($count=0)--}}
-{{--                    @foreach($field_target as $field)--}}
-
-{{--                        @isset($field['title'])--}}
-{{--                            @foreach($field['title'] as $k=>$f)--}}
-
-{{--                                @if($count!=0)--}}
-{{--                                    <tr>--}}
-{{--                                        <td class="border  py-4 px-6">--}}
-{{--                                            {{ $f }}--}}
-{{--                                        </td>--}}
-{{--                                        <td class="border  py-4 px-6">--}}
-{{--                                            {{ $results[$user->ID][$form_id]['data'][$k]??'-' }}--}}
-{{--                                        </td>--}}
-{{--                                    </tr>--}}
-{{--                                @endif--}}
-{{--                                @php($count+=1)--}}
-
-{{--                            @endforeach--}}
-{{--                        @endisset--}}
-
-{{--                    @endforeach--}}
-
-{{--                @endforeach--}}
-{{--                </tbody>--}}
-{{--            </table>--}}
         @endif
 
     </div>
