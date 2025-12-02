@@ -35,6 +35,7 @@ class ExportResult extends Component
     public $courseGroupLists = [];
     public $courseLists2 = [];
     public $headerFormat="[clean_course_title] - [clean_question]";
+    public $loading = false;
     
     public function mount()
     {
@@ -114,6 +115,7 @@ class ExportResult extends Component
     public function getData()
     {
 
+        $this->loading = true;
         $field_types = $this->fields;
         $course_ids = $this->courseLists;
         $companies = $this->companies;
@@ -162,10 +164,12 @@ class ExportResult extends Component
         $this->results = $results;
         $this->field_target = $field_target;
         $this->form_ids = $form_ids;
+        $this->loading = false;
     }
 
     public function exportCsv()
     {
+        $this->loading = true;
         $this->getData();
         $filename = ($this->title?$this->title."-":'') . time() . '.csv';
         $headers = [
@@ -218,6 +222,7 @@ class ExportResult extends Component
 
             fclose($handle);
         };
+        $this->loading = false;
 
         return response()->stream($callback, 200, $headers);
     }

@@ -240,6 +240,11 @@ document.addEventListener('livewire:init', function () {
                     class="btn btn-primary">
                 Download CSV
             </button>
+            @if($loading)
+                <div class="spinner-border text-primary" role="status">
+                    <span class="visually-hidden">Loading...</span>
+                </div>
+            @endif
 
 
         </div>
