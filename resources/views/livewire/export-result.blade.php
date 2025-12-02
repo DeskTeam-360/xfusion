@@ -2,15 +2,7 @@
     <div class="overflow-auto " style="width: 100%">
         <div>
             <x-input title="Title file export" model="title"/>
-            <div class="mt-3">
 
-            <x-input title="Header format" model="headerFormat"/>
-            <div><b>[course_title]</b> for full course title</div>
-            <div><b>[clean_course_title]</b> for clean course title</div>
-            <div><b>[question]</b> for full question</div>
-            <div><b>[clean_question]</b> for clean question</div>
-            </div>
-            {{--            <x-select title="Type" model="typeUser" :options="$optionTypeUser" required="true"/>--}}
             <div class="mt-3" wire:ignore>
                 <label for="{{'dataUsers'}}"
                        class="block text-sm font-bold dark:text-light">
@@ -231,11 +223,21 @@ document.addEventListener('livewire:init', function () {
                     });
                 </script>
             </div>
+            <div class="mt-3 ">
+
+<x-input title="Header format" model="headerFormat"/>
+<div><b>[course_title]</b> for full course title</div>
+<div><b>[clean_course_title]</b> for clean course title</div>
+<div><b>[question]</b> for full question</div>
+<div><b>[clean_question]</b> for clean question</div>
+</div>
+
+<br><br><br>
 
             
             <button class="btn btn-success" wire:click="getData">Show Data</button>
             <button wire:click="exportCsv"
-                    class="px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600">
+                    class="btn btn-primary">
                 Download CSV
             </button>
 
@@ -283,4 +285,11 @@ document.addEventListener('livewire:init', function () {
         @endif
 
     </div>
+
+
+
+
+
+
+
 </div>

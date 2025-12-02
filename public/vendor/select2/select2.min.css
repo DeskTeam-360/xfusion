@@ -232,7 +232,7 @@
 
 .select2-container--default .select2-selection--multiple {
     /* background-color: #202936; */
-    border: 1px solid #333F55;
+    border: 1px solid #dfe5ef;
     border-radius: 4px;
     cursor: text
 }

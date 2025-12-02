@@ -34,7 +34,7 @@ class ExportResult extends Component
 
     public $courseGroupLists = [];
     public $courseLists2 = [];
-    public $headerFormat="[course_title] - [clean_question]";
+    public $headerFormat="[clean_course_title] - [clean_question]";
     
     public function mount()
     {
