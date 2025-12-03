@@ -95,7 +95,7 @@ class CompanyEmployee2 extends \App\Models\CompanyEmployee implements View
 
         return [
             ['type' => 'index', 'data' => $data->id],
-            ['type' => 'string', 'data' => $user->user_nicename],
+            ['type' => 'string', 'data' => $user->user_nicename??'User has been deleted'],
             ['type' => 'raw_html', 'text-align' => 'left', 'data' => $courseProgress],
             // ['type' => 'raw_html', 'text-align' => 'center', 'data' => $lastCourseCompletedAt],
             ['type' => 'raw_html', 'text-align' => 'left', 'data' => $userInfo],
