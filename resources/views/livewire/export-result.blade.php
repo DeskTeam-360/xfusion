@@ -223,6 +223,10 @@ document.addEventListener('livewire:init', function () {
                     });
                 </script>
             </div>
+            <div class="text-center">
+
+                <hr style="display: inline-block; width: 40%; margin: 0 10px;"> Human readable <hr style="display: inline-block; width: 40%; margin: 0 10px;">
+            </div>
             <div class="mt-3 ">
 
 <x-input title="Header format" model="headerFormat"/>
@@ -231,8 +235,8 @@ document.addEventListener('livewire:init', function () {
 <div><b>[question]</b> for full question</div>
 <div><b>[clean_question]</b> for clean question</div>
 </div>
+<br>
 
-<br><br><br>
 
             
 <button class="btn btn-success" 
@@ -248,7 +252,6 @@ document.addEventListener('livewire:init', function () {
         wire:target="exportCsv">
     Download CSV
 </button>
-
 <!-- Spinner hanya tampil saat getData loading -->
 <div class="spinner-border text-primary" 
      role="status" 
@@ -265,13 +268,10 @@ document.addEventListener('livewire:init', function () {
      wire:target="exportCsv">
     <span class="visually-hidden">Loading...</span>
 </div>
-            
 
-        </div>
-        <br>
-    </div>
-    <div class="overflow-auto " style="width: 100%; padding: 10px">
-        @if($field_target!=[])
+
+<div class="overflow-auto " style="width: 100%; padding: 10px">
+        @if($field_target!=[] and $table==1)
             <table
                 class="border-collapse border-wishka-400 w-full text-sm text-center rounded table-auto">
                 <thead class=" text-md text-uppercase uppercase dark:bg-dark  text-bold">
@@ -311,10 +311,118 @@ document.addEventListener('livewire:init', function () {
 
     </div>
 
+<div class="text-center mt-3">
+
+<hr style="display: inline-block; width: 40%; margin: 0 10px;"> Pivot readable <hr style="display: inline-block; width: 40%; margin: 0 10px;">
+</div>
+
+<div class="mt-3">
+<label for="headerFormatPivot1">Course Title Format</label>
+<select wire:model.live="headerFormatPivot1" class="form-control">
+    @foreach($headerFormatPivotOption as $option)
+        <option value="{{$option}}">{{$option}}</option>
+        @endforeach
+    </select>
+</div>
+<div class="mt-3">
+    <label for="headerFormatPivot2">Question Format</label>
+    <select wire:model.live="headerFormatPivot2" class="form-control">
+        @foreach($headerFormatPivotOption as $option)
+            <option value="{{$option}}">{{$option}}</option>
+        @endforeach
+    </select>
+</div>
+<div class="mt-3">
+    <button class="btn btn-success" 
+            wire:click="getData2" 
+            wire:loading.attr="disabled" 
+            wire:target="getData2">
+        Show Data
+    </button>
+
+    <button wire:click="exportCsv2" 
+            class="btn btn-success"
+            wire:loading.attr="disabled"
+            wire:target="exportCsv2">
+        Download CSV
+    </button>
+
+    <!-- Spinner hanya tampil saat getData loading -->
+    <div class="spinner-border text-primary" 
+        role="status" 
+        wire:loading 
+        wire:target="getData2">
+        <span class="visually-hidden">Loading...</span>
+    </div>
 
 
 
+    <div class="spinner-border text-success" 
+        role="status" 
+        wire:loading 
+        wire:target="exportCsv2">
+        <span class="visually-hidden">Loading...</span>
+    </div>
+</div>
+            
+
+        </div>
+        <br>
+    </div>
+   
 
 
+    <div class="overflow-auto " style="width: 100%; padding: 10px">
+        @if($field_target!=[] and $table==2)
+            <table
+                class="border-collapse border-wishka-400 w-full text-sm text-center rounded table-auto">
+                <thead class=" text-md text-uppercase uppercase dark:bg-dark  text-bold">
+         
+                <tr class="border border-gray-200 border-collapse">
+                    <td class="text-nowrap border py-4 px-6 font-bold">Name</td>
+                    <td class="text-nowrap border py-4 px-6 font-bold">Course Title</td>
+                    <td class="text-nowrap border py-4 px-6 font-bold">Question</td>
+                    <td class="text-nowrap border py-4 px-6 font-bold">Answer</td>
+                </tr>
+                </thead>
+                <tbody>
+                @foreach($userLists as $user)
+                    @foreach ($this->field_target as $form_id => $field)
+                        @isset($field['title'])
+                            @foreach($field['title'] as $k=>$f)
+                                @php    
+                                if ($headerFormatPivot1 == 'Clean') {
+                                    $clean_course_title = $this->getCleanHeaderFormat($field['form_title']);
+                                } else {
+                                    $clean_course_title = $field['form_title'];
+                                }
+                                if ($headerFormatPivot2 == 'Clean') {
+                                    $clean_question = $this->getCleanHeaderFormat($f);
+                                } else {
+                                    $clean_question = $f;
+                                }
+                                @endphp
+                                <tr class="border border-gray-200 ">
+                                    <td class="py-4 px-6 border font-bold">{{ $user->user_nicename }}</td>
+                                    <td class="border ">
+                                        {{ $clean_course_title }}
+                                    </td>
+                                    <td class="border ">
+                                        {{ $clean_question }}
+                                    </td>
+                                    <td class="border ">
+                                        {{ $results[$user->ID][$form_id]['data'][$k]??'-' }}
+                                    </td>
+                                </tr>
+                            @endforeach
+                            
+                        @endisset
+                    @endforeach
+                @endforeach
+                    
+                </tbody>
+            </table>
+            @endif
+        </div>
 
 </div>

@@ -35,7 +35,12 @@ class ExportResult extends Component
     public $courseGroupLists = [];
     public $courseLists2 = [];
     public $headerFormat="[clean_course_title] - [clean_question]";
-    public $loading = false;
+
+    public $headerFormatPivot1='Clean';
+    public $headerFormatPivot2='Clean';
+    public $headerFormatPivotOption=['Full', 'Clean'];
+    public $table=0;
+    
     
     public function mount()
     {
@@ -111,14 +116,20 @@ class ExportResult extends Component
         $headerFormat = str_replace('[clean_course_title]', $clean_course_title, $headerFormat);
         return $headerFormat;
     }
+
     public function getData()
     {
-        $this->loading = true;
-        $this->getData2();
-        $this->loading = false;
+        $this->table = 1;
+        $this->getMainData();
     }
-
     public function getData2()
+    {
+        $this->table = 2;
+        $this->getMainData();
+    }
+    
+
+    public function getMainData()
     {
 
      
@@ -170,13 +181,100 @@ class ExportResult extends Component
         $this->results = $results;
         $this->field_target = $field_target;
         $this->form_ids = $form_ids;
-        $this->loading = false;
+        
+    }
+    public function getCleanHeaderFormat($title)
+    {
+        $clean_title = $title;
+
+        // daftar kata yang ingin dibersihkan
+        $blacklist = [
+            'Rate your current ability to',
+            '1-5 (5 highest)',
+            '1-5 (5 highest).',
+            'with yourself and others',
+            'Rate your current level of',
+            'Rate your ability to',
+            'Rate the current status of',
+            'Rate your current practices for maintaining',
+        'Rate your',
+        '(1-5-highest)',
+        '(1-5-highest).',
+        '(1-5-highest)',
+        'Course - Topic : ',
+        'Course - Topic'
+        ];
+        // hapus tanda petik satu dan dua
+        $clean_title = str_replace(["'", '"','“','”',' .','.'], '', $clean_title);
+
+        // hapus kata-kata blacklist
+        $clean_title = str_ireplace($blacklist, '', $clean_title);
+
+        // ganti banyak spasi jadi satu spasi
+        $clean_title = preg_replace('/\s+/', ' ', $clean_title);
+        // trim
+        $clean_title = trim($clean_title);
+        // ganti spasi dengan underscore
+
+        return $clean_title;
+    }
+
+    public function exportCsv2()
+    {
+        $this->getMainData();
+        $filename = ($this->title?$this->title."-":'') . time() . '.csv';
+        $headers = [
+            'Content-Type' => 'text/csv',
+            'Content-Disposition' => "attachment; filename=\"$filename\"",
+        ];
+
+        $callback = function () {
+            $handle = fopen('php://output', 'w');
+
+    
+            $header2 = ['Name', 'Course title', 'Question', 'Answer'];
+            fputcsv($handle, $header2);
+
+            // Data Baris
+            foreach ($this->userLists as $user) {
+                $clean_course_title = '';
+                $clean_question = '';
+
+                foreach ($this->field_target as $form_id => $field) {
+                    if (isset($field['title'])) {
+                        if ($this->headerFormatPivot1 == 'Clean') {
+                            $clean_course_title = $this->getCleanHeaderFormat($field['form_title']);
+                        } else {
+                            $clean_course_title = $field['form_title'];
+                        }
+                        
+                        foreach ($field['title'] as $k => $f) {
+                            if ($this->headerFormatPivot2 == 'Clean') {
+                                $clean_question = $this->getCleanHeaderFormat($f);
+                            } else {
+                                $clean_question = $f;
+                            }
+                            $row = [];
+                            $row = [$user->user_nicename];
+                            $row[] = $clean_course_title;
+                            $row[] = $clean_question;
+                            $row[] = $this->results[$user->ID][$form_id]['data'][$k] ?? '-';
+                            fputcsv($handle, $row);
+                        }
+                    }
+                }
+
+            }
+
+            fclose($handle);
+        };
+
+        return response()->stream($callback, 200, $headers);
     }
 
     public function exportCsv()
     {
-        $this->loading = true;
-        $this->getData();
+        $this->getMainData();
         $filename = ($this->title?$this->title."-":'') . time() . '.csv';
         $headers = [
             'Content-Type' => 'text/csv',
@@ -187,7 +285,7 @@ class ExportResult extends Component
             $handle = fopen('php://output', 'w');
 
             // ===== BARIS 1: Form Titles (rowspan/colspan header) =====
-            // $header1 = ['Nama']; // Kolom pertama: Nama
+            // $header1 = ['Name']; // Kolom pertama: Name
             // foreach ($this->field_target as $field) {
             //     if (isset($field['title'])) {
             //         $colspan = count($field['title']);
@@ -201,7 +299,7 @@ class ExportResult extends Component
             // fputcsv($handle, $header1);
 
             // ===== BARIS 2: Field Titles (judul per kolom) =====
-            $header2 = ['Nama'];
+            $header2 = ['Name'];
             foreach ($this->field_target as $field) {
                 if (isset($field['title'])) {
                     foreach ($field['title'] as $title) {
@@ -214,7 +312,6 @@ class ExportResult extends Component
             // Data Baris
             foreach ($this->userLists as $user) {
                 $row = [$user->user_nicename];
-
                 foreach ($this->field_target as $form_id => $field) {
                     if (isset($field['title'])) {
                         foreach ($field['title'] as $k => $f) {
@@ -222,7 +319,6 @@ class ExportResult extends Component
                         }
                     }
                 }
-
                 fputcsv($handle, $row);
             }
 

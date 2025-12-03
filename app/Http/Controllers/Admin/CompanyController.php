@@ -5,7 +5,7 @@ namespace App\Http\Controllers\Admin;
 use App\Http\Controllers\Controller;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
-
+use App\Models\Company;
 class CompanyController extends Controller
 {
     /**
@@ -62,6 +62,18 @@ class CompanyController extends Controller
         }
 
 
+    }
+
+    public function showDetail(string $id)
+    {
+        $company = Company::find($id);
+
+        $companyEmployees = $company->companyEmployees()->get()->pluck('user_id')->toArray();
+        $companyEmployeesEntries = \App\Models\WpGfEntry::whereIn('created_by', $companyEmployees)->where('status', 'Active')->get();
+        // dd($companyEmployeesEntries);
+        // dd($companyEmployees);
+        // dd($companyEmployees);
+        return view('admin.company.show-detail', compact('id', 'company', 'companyEmployeesEntries'));
     }
 
     /**

@@ -31,12 +31,8 @@ class CourseList extends \App\Models\CourseList implements View
     {
         return [
             ['label' => '#', 'sort' => 'id', 'width' => '7%'],
-            ['label' => 'Course title', 'sort' => 'course_title'],
-            ['label' => 'Page title', 'sort' => 'page_title'],
-            ['label' => 'Form id', 'sort' => 'form_id'],
-            ['label' => 'Tag', 'sort' => 'keap_tag'],
-            ['label' => 'Next Tag', 'sort' => 'keap_tag'],
-            ['label' => 'Repeat', 'sort' => 'repeat_entry'],
+            ['label' => 'Course Info', 'sort' => 'course_title'],
+            ['label' => 'User finished', 'sort' => 'form_id'],
 //            ['label' => 'Link', 'sort' => 'url'],
             ['label' => 'Action'],
         ];
@@ -53,15 +49,53 @@ class CourseList extends \App\Models\CourseList implements View
         if ($data->keap_tag_next!=null){
             $tag2 = Tag::find($data->keap_tag_next)->name??"Tag has been deleted";
         }
+        $info = '';
+        if($data->wp_gf_form_id){
+            $info = '<br><b>Form id</b>: '.$data->wp_gf_form_id;
+        }
+        if($data->keap_tag){
+            $info .= '<br> <b>Tag</b>: '.$tag;
+        }
+        if($data->keap_tag_next){
+            $info .= '<br> <b>Next Tag</b>: '.$tag2;
+        }
+
+        $linkUrl = $data->url;
+        $path = parse_url($linkUrl, PHP_URL_PATH);
+        $query = parse_url($linkUrl, PHP_URL_QUERY);
+        $cleanUrl = $query ? $path . '?' . $query : $path;
+
+        $linkUrlNext = $data->url_next;
+        $pathNext = parse_url($linkUrlNext, PHP_URL_PATH);
+        $queryNext = parse_url($linkUrlNext, PHP_URL_QUERY);
+        $cleanUrlNext = $queryNext ? $pathNext . '?' . $queryNext : $pathNext;
+
+        if($cleanUrl){
+            $info .= "<br><b>Main link</b> : <a target='_blank' href='$cleanUrl'>$cleanUrl</a>";
+        }else{
+            $info .= '';
+        }
+
+        $linkNextUrl = '';
+        if($cleanUrlNext){
+            $info .= "<br><b> Next Page Link</b> : <a target='_blank' href='$cleanUrlNext'>$cleanUrlNext</a>";
+        }else{
+            $info .= '';
+        }
+
+
+        $courseInfo = "<b>Course Title</b>: ".$data->course_title.' <br> <b>Page Title</b>: '.$data->page_title . '<br> <b>Tools</b>: '.($data->repeat_entry==1?'Yes':'No');
+
+        $courseInfo .= $info;
+
+
+        $userFinished = $data->wp_gf_form_id?\App\Models\WpGfEntry::where('form_id',$data->wp_gf_form_id)->where('status','active')->count():0;
+
+        $totalUser = \App\Models\User::get()->count();
         return [
             ['type' => 'string','data'=>$data->id],
-            ['type' => 'string', 'data' => $data->course_title],
-            ['type' => 'string', 'data' => $data->page_title],
-            ['type' => 'string', 'data' => $data->wp_gf_form_id],
-            ['type' => 'string', 'data' => $tag],
-            ['type' => 'string', 'data' => $tag2],
-            ['type' => 'string', 'data' => ($data->repeat_entry==1)?'Yes':'No'],
-            ['type' => 'raw_html', 'data' => "<b>Main link</b> : <a target='_blank' href='$data->url'>$data->url</a> <br><b> Next Page Link : </b> <a target='_blank' href='$data->url_next'>$data->url_next</a>"],
+            ['type' => 'raw_html', 'data' => $courseInfo],
+            ['type' => 'string', 'data' => $userFinished.'/'.$totalUser],
             ['type' => 'raw_html','text-align'=>'center', 'data' => "
 <div class='flex gap-1'>
 <button href='#' wire:click='deleteItem($data->id)' class='btn btn-error'>Delete</button>

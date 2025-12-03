@@ -25,9 +25,7 @@ class Company extends \App\Models\Company implements View
     {
         return [
             ['label' => '#', 'sort' => 'id', 'width' => '7%'],
-            ['label' => 'Company Name', 'sort' => 'title'],
-            ['label' => 'Company Leader', 'sort' => 'user_id'],
-            ['label' => 'Company Logo', 'text-align'=>'center'],
+            ['label' => 'Company Info', 'sort' => 'title'],
 //            ['label' => 'Company Qrcode',],
             ['label' => 'Action'],
         ];
@@ -43,7 +41,7 @@ class Company extends \App\Models\Company implements View
         
         // Handle logo display - show "No Logo" if logo_url is null
         $logo_display = $logo_url 
-            ? "<div class='text-center' style=' display: flex;justify-content: center;'><img style='width: 100px' src='$logo_url'></div>"
+            ? "<img style='width: 100px' src='$logo_url'>"
             : "<div class='text-center' style=' display: flex;justify-content: center;'><span class='text-muted'>No Logo</span></div>";
             
             $user = \App\Models\User::find($data->user_id);
@@ -52,17 +50,22 @@ class Company extends \App\Models\Company implements View
             } else {
                 $user_nicename = $user->user_nicename;
             }
+
+            $companyInfo = "<b>Company Name</b>: ".$data->title.' <br> <b>Company Leader</b>: '.$user_nicename;
+            $companyInfo .= "<br> <b>Company Website</b>: ".$data->company_url;
+            $companyInfo .= "<br> <b>Company Logo</b>:<br> ".$logo_display;
+            $companyInfo .= "<br> <b>Company Employees</b>: ".$data->companyEmployees()->count();
+            $link3 = route('company.show-detail',$data->id);
         return [
             ['type' => 'string','data'=>$data->id],
-            ['type' => 'string', 'data' => $data->title],
-            ['type' => 'string', 'data' =>  $user_nicename],
-            ['type' => 'raw_html','text-align'=>'center', 'data' => $logo_display],
-//            ['type' => 'raw_html','text-align'=>'center', 'data' => "<div class='text-center' style=' display: flex;justify-content: center;'><img style='width: 100px' src='$qrcode_url'></div>"],
+            ['type' => 'raw_html', 'data' => $companyInfo],
             ['type' => 'raw_html','text-align'=>'center', 'data' => "
         <div class='flex gap-1'>
         <span><a href='$link' class='btn btn-primary'>Edit</a></span>
         <span><a href='#' wire:click='deleteItem($data->id)' class='btn btn-error'>Delete</a></span>
         <span><a href='$link2' class='btn btn-secondary' style='overflow: hidden;white-space: nowrap;'>Show Employee</a></span>
+        
+        <span><a href='$link3' class='btn btn-secondary' style='overflow: hidden;white-space: nowrap;'>Show Detail</a></span>
         $company_url
         </div>"],
 

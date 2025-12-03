@@ -45,6 +45,7 @@ class User extends Corcel implements CanResetPassword
         'user_status',
         'display_name',
     ];
+    protected $table='users';
 
     protected static $aliases = [
         'login' => 'user_login',

@@ -479,18 +479,7 @@ Route::middleware(['auth',],)->group(function () {
         'courseDetail',
     ],)->name('course-detail',);
 
-//        Route::get('/report/season-{seasonId}', [ReportController::class, 'seasonCourseEmployee'])->name('season-course-employee');
-//        Route::get('/report/company-{companyId}/season-{seasonId}', [ReportController::class, 'seasonCourseCompany'])->name('season-course-company');
-//
-//        Route::get('/report/company-{companyId}/level-{levelId}', [ReportController::class, 'levelCourseCompany'])->name('level-course-company');
-//        Route::get('/report/level-{levelId}', [ReportController::class, 'levelCourseEmployee'])->name('level-course-employee');
-//        Route::get('/report/level-{levelId}/user-{userId}/course', [ReportController::class, 'levelCourseIndex'])->name('level-course-index');
-//        Route::get('/report/level-{levelId}/user-{userId}/form-{formId}/entry-{entryId}/detail', [ReportController::class, 'levelDetail'])->name('level-detail');
 
-
-//        Route::get('course-group', function (){
-//            return view();
-//        });
 
     Route::get('/export-user/', [
         ExportController::class,
@@ -532,6 +521,13 @@ Route::middleware(['auth',],)->group(function () {
         CompanyController::class,
         'show',
     ],)->name('company.show',);
+
+    Route::get('company/{id}/detail', [
+        CompanyController::class,
+        'showDetail',
+    ],)->name('company.show-detail',);
+
+
     Route::get('/company/{id}/add-employee', [
         CompanyController::class,
         'addEmployee',

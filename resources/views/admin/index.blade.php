@@ -1,10 +1,13 @@
-@php use App\Models\Company;use App\Models\CompanyEmployee;use App\Models\CourseList;use App\Models\User;use Carbon\Carbon; @endphp
+@php use App\Models\Company;use App\Models\CompanyEmployee;use App\Models\CourseList;use App\Models\User;use Carbon\Carbon; use App\Models\WpViewAllLog; @endphp
 <x-admin-layout xmlns:livewire="http://www.w3.org/1999/html">
 
     <div class="px-5 text-3xl">
         Dashboard
     </div>
     <div class="px-5 py-5">
+
+    
+
         <div class="col-span-12 grid grid-cols-12 gap-3">
 
             <div class="lg:col-span-3 md:col-span-6 sm:col-span-6 col-span-12">
@@ -88,8 +91,8 @@
                             <div class="">
                                 <h5 class="xl:text-xl text-base leading-normal">
                                     {{ User::whereHas('meta',function ($q){
-$q->where('meta_key',config('app.wp_prefix', 'wp_') . 'capabilities')->where('meta_value','like','%subscriber%');
-})->count() }}
+                $q->where('meta_key',config('app.wp_prefix', 'wp_') . 'capabilities')->where('meta_value','like','%subscriber%');
+                })->count() }}
                                 </h5>
                                 <span class="text-lg flex items-center gap-1">
                                     Employee
@@ -174,12 +177,7 @@ $q->where('meta_key',config('app.wp_prefix', 'wp_') . 'capabilities')->where('me
                                 </td>
                                 <td class=" whitespace-nowrap  dark:text-darklink p-2 text-center">
                                     <a href="{{ route('company.show',$c->id) }}"><i class="ti ti-eye text-xl"></i></a>
-                                    <svg width="19" height="7" viewBox="0 0 19 7" fill="none"
-                                         xmlns="http://www.w3.org/2000/svg" class="m-auto">
-                                        <ellipse cx="9.38496" cy="3.37143" rx="2.62074" ry="3.09552" fill="#AB9AE0"/>
-                                        <ellipse cx="3.09517" cy="3.37143" rx="2.62074" ry="3.09552" fill="#AB9AE0"/>
-                                        <ellipse cx="15.6747" cy="3.37143" rx="2.62074" ry="3.09552" fill="#4E51BF"/>
-                                    </svg>
+                                    
                                 </td>
                             </tr>
 
@@ -188,6 +186,8 @@ $q->where('meta_key',config('app.wp_prefix', 'wp_') . 'capabilities')->where('me
                     </table>
                 </div>
             </div>
+
+           
             <div class="lg:col-span-6 md:col-span-6 sm:col-span-12 col-span-12">
                 <div class="card">
                     <div class="card-body pb-8">
@@ -399,5 +399,17 @@ $q->where('meta_key',config('app.wp_prefix', 'wp_') . 'capabilities')->where('me
             });
         </script>
     </div>
+    
+    <div class="px-5 py-5 mb-5">
+    <div class="col-span-12 grid grid-cols-12 gap-3">
+        <div class="lg:col-span-12 md:col-span-12 sm:col-span-12 col-span-12">
+                <h2 class="text-2xl">Activity Log</h2>
+
+                <livewire:table.master name="WpViewAllLog"/>
+                
+        </div>
     </div>
+    </div>
+
+
 </x-admin-layout>
