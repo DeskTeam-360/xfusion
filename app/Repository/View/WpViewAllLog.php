@@ -60,7 +60,11 @@ class WpViewAllLog extends \App\Models\WpViewAllLog implements View
         if($data->user){
             $user = $data->user->user_email;
         }else{
-            $user = 'Deleted User with ID: '.$data->user_id;
+            if($data->user_id){
+                $user = 'Deleted User with ID: '.$data->user_id;
+            }else{
+                $user = 'User not logged in';
+            }
         }
         $source = str_replace('_', ' ', $data->source);
         $source = ucwords($source);
