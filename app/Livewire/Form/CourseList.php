@@ -24,6 +24,7 @@ class CourseList extends Component
     public $optionCourseTag;
     public $optionWpGfForm;
     public $repeatEntry=0;
+    public $legacy=0;
 
     public function getRules()
     {
@@ -71,6 +72,8 @@ class CourseList extends Component
             $this->gfFormId = $data->wp_gf_form_id;
             $this->delay = $data->delay;
             $this->urlNext = $data->url_next;
+            $this->repeatEntry = $data->repeat_entry;
+            $this->legacy = $data->legacy;
         }
     }
 
@@ -101,6 +104,7 @@ class CourseList extends Component
             'delay'=>10,
             'url_next'=>$this->urlNext,
             'repeat_entry'=>$this->repeatEntry,
+            'legacy'=>$this->legacy,
         ]);
         $this->dispatch('swal:alert', data: [
             'icon' => 'success',
@@ -133,7 +137,9 @@ class CourseList extends Component
             'keap_tag'=>$this->courseTag,
             'keap_tag_next' => $this->courseTagNext,
             'delay'=>$this->delay,
-            'url_next'=>$this->urlNext
+            'url_next'=>$this->urlNext,
+            'repeat_entry'=>$this->repeatEntry,
+            'legacy'=>$this->legacy,
         ]);
         $this->dispatch('swal:alert', data: [
             'icon' => 'success',

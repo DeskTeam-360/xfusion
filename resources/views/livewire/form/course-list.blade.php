@@ -6,10 +6,6 @@
 
 
     <x-select title="Gravity Form" model="gfFormId" :options="$optionWpGfForm"/>
-{{--    <x-select title="Course tag require" model="courseTag" :options="$optionCourseTag"/>--}}
-{{--    <x-select title="Course tag next" model="courseTagNext" :options="$optionCourseTag"/>--}}
-
-
 
     <div class="mt-3" wire:ignore>
         <label for="{{'courseTag'}}"
@@ -81,15 +77,15 @@
     </div>
 
 
-{{--    @if($courseTagNext!=null)--}}
-{{--        <x-input title="Delay between this course with parent" model="delay" type="number"/>--}}
-{{--    @endif--}}
-
     <div style="width: 100px">
-        <x-input type="checkbox" title="Repeat Entry" model="repeatEntry"/>
+        <x-input type="checkbox" title="Repeat Entry (tools)?" model="repeatEntry"/>
     </div>
 
-{{--    <x-select title="Direct input from Gravity Form if user finish course" model="courseTagParent" :options="$optionCourseTag"/>--}}
+    <div style="width: 100px">
+        <x-input type="checkbox" title="Legacy form ?" model="legacy"/>
+    </div>
+    <br>
+
 
     <button type="submit" class="btn" wire:loading.attr="disabled">Submit</button>
 </form>
