@@ -77,11 +77,11 @@
     </div>
 
 
-    <div style="width: 100px">
+    <div style="width: 300px">
         <x-input type="checkbox" title="Repeat Entry (tools)?" model="repeatEntry"/>
     </div>
 
-    <div style="width: 100px">
+    <div style="width: 300px">
         <x-input type="checkbox" title="Legacy form ?" model="legacy"/>
     </div>
     <br>
