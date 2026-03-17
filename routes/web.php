@@ -127,7 +127,8 @@ Route::get('/fresh-progress/{userId}', function ($userId) {
 
     // Get user's course progress meta
     // $userMeta = $user->meta->where('meta_key', '=', '_sfwd-course_progress')->first();
-    $userMeta = WpUserMeta::where('user_id', $userId)->where('meta_key', '=', '_sfwd-course_progress')->first();
+    $userMeta = WpUserMeta::where('user_id', $userId)
+    ->where('meta_key', '=', '_sfwd-course_progress')->first();
     
     if (!$userMeta) {
         return response()->json([
@@ -218,8 +219,10 @@ Route::get('/refresh-all-users', function () {
     
     foreach ($users as $user) {
         try {
+            $userId=$user->ID;
             // Get user's course progress meta
-            $userMeta = WpUserMeta::where('user_id', $user->ID)->where('meta_key', '=', '_sfwd-course_progress')->first();
+            $userMeta = WpUserMeta::where('user_id', $userId)
+            ->where('meta_key', '=', '_sfwd-course_progress')->first();
             
             if (!$userMeta) {
                 continue; // Skip users without course progress
@@ -231,7 +234,7 @@ Route::get('/refresh-all-users', function () {
             $userErrors = [];
             
             // Get all active WpGfEntry records for this user
-            $activeEntries = WpGfEntry::where('created_by', $user->ID)
+            $activeEntries = WpGfEntry::where('created_by', $userId)
                 ->where('status', 'active')
                 // ->where('is_read', 0)
                 ->get();
@@ -246,23 +249,7 @@ Route::get('/refresh-all-users', function () {
                 $lessonId = null;
                 
                 try {
-                    // if ($entry->source_url) {
-                    //     // Extract topic ID from URL like: /topic/12345/
-                    //     if (preg_match('/\/topic\/(\d+)\//', $entry->source_url, $matches)) {
-                    //         $topicId = $matches[1];
-                    //     }
-                        
-                    //     // Extract course ID from URL like: /course/12345/
-                    //     if (preg_match('/\/course\/(\d+)\//', $entry->source_url, $matches)) {
-                    //         $courseId = $matches[1];
-                    //     }
-                        
-                    //     // Extract lesson ID from URL like: /lesson/12345/
-                    //     if (preg_match('/\/lesson\/(\d+)\//', $entry->source_url, $matches)) {
-                    //         $lessonId = $matches[1];
-                    //     }
-                    // }
-
+            
                     if ($entry->source_url) {
                         // Extract topic name from URL pattern: %/topics/topic-name/
                         if (preg_match('/\/topics\/([^\/]+)\//', $entry->source_url, $matches)) {
@@ -276,10 +263,14 @@ Route::get('/refresh-all-users', function () {
                             }
                         }
                     }
+
+
+                    // $courseUser[$courseId]['topics'][$lessonId][$topicId] = 1;
+                    // $updatedCount++;
                     
                     // Update course progress if we found a topic ID
-                    if ($topicId && isset($courseUser[$courseId][$lessonId][$topicId])) {
-                        $courseUser[$courseId][$lessonId][$topicId] = 1;
+                    if ($topicId && isset($courseUser[$courseId]['topics'][$lessonId][$topicId]) && $courseUser[$courseId]['topics'][$lessonId][$topicId] == 0) {
+                        $courseUser[$courseId]['topics'][$lessonId][$topicId] = 1;
                         $userUpdatedCount++;
                         $progressUpdated++;
                     }
@@ -295,8 +286,11 @@ Route::get('/refresh-all-users', function () {
             
             // Update user meta if there were changes
             if ($userUpdatedCount > 0) {
-                $userMeta->meta_value = serialize($courseUser);
-                $userMeta->save();
+                // $userMeta->meta_value = serialize($courseUser);
+                // $userMeta->save();
+                $userMeta->update([
+                    'meta_value' => serialize($courseUser)
+                ]);
                 $usersUpdated++;
             }
             
