@@ -169,11 +169,11 @@
                                     title: 'Refresh Completed!',
                                     html: `
                                         <div style="text-align: left;">
-                                            <p><strong>Total Users Processed:</strong> ${data.total_users || 0}</p>
-                                            <p><strong>Users Updated:</strong> ${data.users_updated || 0}</p>
-                                            <p><strong>Total Entries Processed:</strong> ${data.total_entries || 0}</p>
-                                            <p><strong>Progress Entries Updated:</strong> ${data.progress_updated || 0}</p>
-                                            ${data.errors && data.errors.length > 0 ? `<p><strong>Errors:</strong> ${data.errors.length}</p>` : ''}
+                                            <p><strong>Total Users Processed:</strong> ${data.data.total_users || 0}</p>
+                                            <p><strong>Users Updated:</strong> ${data.data.users_updated || 0}</p>
+                                            <p><strong>Total Entries Processed:</strong> ${data.data.total_entries || 0}</p>
+                                            <p><strong>Progress Entries Updated:</strong> ${data.data.progress_updated || 0}</p>
+                                            ${data.data.errors && data.data.errors.length > 0 ? `<p><strong>Errors:</strong> ${data.data.errors.length}</p>` : ''}
                                         </div>
                                     `,
                                     icon: 'success',
