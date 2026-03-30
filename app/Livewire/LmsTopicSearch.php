@@ -3,6 +3,7 @@
 namespace App\Livewire;
 
 use App\Models\WpPost;
+use App\Support\WordpressPublicUrl;
 use Livewire\Component;
 
 class LmsTopicSearch extends Component
@@ -63,7 +64,7 @@ class LmsTopicSearch extends Component
 
     private function topicUrl(WpPost $post): string
     {
-        $base = rtrim((string) config('app.wordpress_url'), '/');
+        $base = WordpressPublicUrl::base();
         $path = trim((string) config('app.wordpress_topic_path', 'topics'), '/');
         $slug = $post->post_name;
 

@@ -128,10 +128,10 @@ return [
     'keap_category'=> env('KEAP_CATEGORY_ID','wp_'),
 
     /*
-    | Public WordPress (LMS / LearnDash) base URL. Used for topic links from this admin.
-    | If Laravel admin is on another host/subdomain, set this to the WordPress site root.
+    | Optional override for public WordPress (LMS) base URL.
+    | Leave unset so URLs are derived: admin.{host} → {host} (e.g. admin.sandbox.* → sandbox.*).
     */
-    'wordpress_url' => rtrim((string) env('WORDPRESS_URL', env('APP_URL', 'http://localhost')), '/'),
+    'wordpress_url' => env('WORDPRESS_URL'),
 
     /* URL segment before the topic slug, e.g. topics → .../topics/my-topic-slug/ */
     'wordpress_topic_path' => trim((string) env('WORDPRESS_TOPIC_PATH', 'topics'), '/'),

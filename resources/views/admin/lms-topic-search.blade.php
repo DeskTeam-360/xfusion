@@ -4,7 +4,7 @@
         <p class="mb-6 max-w-2xl text-gray-600">
             Search LearnDash topics (<code class="rounded bg-gray-100 px-1">sfwd-topic</code>) using the
             <code class="rounded bg-gray-100 px-1">_search_index</code> post meta built in WordPress.
-            Set <code class="rounded bg-gray-100 px-1">WORDPRESS_URL</code> in <code class="rounded bg-gray-100 px-1">.env</code> to your public WordPress site URL if it differs from this Laravel admin URL.
+            Topic links use the same host as this app with the <code class="rounded bg-gray-100 px-1">admin.</code> subdomain removed (e.g. <code class="rounded bg-gray-100 px-1">admin.sandbox.example.com</code> → <code class="rounded bg-gray-100 px-1">sandbox.example.com</code>). Set <code class="rounded bg-gray-100 px-1">WORDPRESS_URL</code> in <code class="rounded bg-gray-100 px-1">.env</code> only if you need a different public URL.
         </p>
         <livewire:lms-topic-search />
     </div>
