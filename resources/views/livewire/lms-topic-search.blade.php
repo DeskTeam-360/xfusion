@@ -1,29 +1,28 @@
 <div class="w-full max-w-4xl">
     <form wire:submit.prevent="search" class="flex flex-col gap-4 sm:flex-row sm:items-end">
         <div class="flex-1">
-            <label for="lms-topic-q" class="mb-1 block text-sm font-medium text-gray-700">Cari topic LMS</label>
+            <label for="lms-topic-q" class="mb-1 block text-sm font-medium text-gray-700">Search LMS topics</label>
             <input
                 id="lms-topic-q"
                 type="search"
                 wire:model="q"
-                placeholder="Kata kunci (menggunakan indeks WordPress _search_index)…"
+                placeholder="Keywords (uses WordPress _search_index)…"
                 class="w-full rounded-lg border border-gray-300 px-4 py-2 focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary"
                 autocomplete="off"
             />
         </div>
-        <button
+        <input
             type="submit"
             class="rounded-lg bg-primary px-6 py-2 font-medium text-white hover:opacity-90"
-        >
-            Cari
-        </button>
+        value="Search"
+    />
     </form>
     @if($q !== '' && strlen(trim($q)) < 2)
-        <p class="mt-3 text-sm text-gray-500">Minimal 2 karakter.</p>
+        <p class="mt-3 text-sm text-gray-500">Enter at least 2 characters.</p>
     @endif
 
     @if($searched && strlen(trim($q)) >= 2 && count($results) === 0)
-        <p class="mt-6 text-gray-600">Tidak ada topic yang cocok. Pastikan topic sudah pernah disimpan di WordPress agar indeks <code class="rounded bg-gray-100 px-1">_search_index</code> terisi.</p>
+        <p class="mt-6 text-gray-600">No matching topics. Save each topic again in WordPress so the <code class="rounded bg-gray-100 px-1">_search_index</code> meta is populated.</p>
     @endif
 
     @if(count($results) > 0)

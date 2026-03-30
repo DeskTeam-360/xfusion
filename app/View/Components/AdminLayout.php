@@ -109,7 +109,7 @@ class AdminLayout extends Component
             $this->sidebar[0]['lists'][] = ['title' => 'LMS topic search', 'type' => 'link', 'route' => route('lms-topic-search'), 'icon' => '<i class="ti ti-search  text-xl flex-shrink-0"></i> '];
         }
 
-        // Contributor & role WP lain yang pakai dashboard admin (bukan administrator/editor)
+        // Contributor and other WP roles that use this admin dashboard (not administrator/editor)
         if (! in_array($role, ['administrator', 'editor'], true)) {
             $this->sidebar[0]['lists'][] = [
                 'title' => 'LMS topic search',
