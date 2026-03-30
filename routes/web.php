@@ -365,6 +365,10 @@ Route::middleware(['auth',],)->group(function () {
         return view('admin.user.index-progress-only',);
     },)->name('user-progress-only',);
 
+    Route::get('lms-topic-search', function () {
+        return view('admin.lms-topic-search');
+    },)->name('lms-topic-search',);
+
     Route::resource('campaign', CampaignController::class,)->only('index', 'create', 'edit',);
     Route::resource('company', CompanyController::class,)->only('index', 'create', 'edit',);
     Route::resource('user', UserController::class,)->only('index', 'create', 'edit', 'show',);

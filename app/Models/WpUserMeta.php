@@ -14,9 +14,14 @@ use Illuminate\Database\Eloquent\Model;
 
 class WpUserMeta extends Model
 {
-    public $timestamps=false;
+    public $timestamps = false;
+
+    protected $connection = 'wordpress';
+
     protected $primaryKey = 'umeta_id';
-    protected $table= 'wp_usermeta' ;
+
+    /** Prefix wp_ ditambahkan oleh connection "wordpress" di config/database.php */
+    protected $table = 'usermeta';
     use HasFactory;
     protected $fillable =['user_id', 'meta_key', 'meta_value'];
 

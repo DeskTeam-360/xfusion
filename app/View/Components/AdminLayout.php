@@ -86,6 +86,7 @@ class AdminLayout extends Component
             $this->sidebar[0]['lists'][] = ['title' => 'User-role', 'type' => 'link', 'route' => route('user.roles'), 'icon' => '<i class="ti ti-users  text-xl flex-shrink-0"></i> '];
             $this->sidebar[0]['lists'][] = ['title' => 'Course Group', 'type' => 'link', 'route' => route('course-group.index'), 'icon' => '<i class="ti ti-webhook  text-xl flex-shrink-0"></i> '];
             $this->sidebar[0]['lists'][] = ['title' => 'Course list', 'type' => 'link', 'route' => route('course-title.index'), 'icon' => '<i class="ti ti-webhook  text-xl flex-shrink-0"></i> '];
+            $this->sidebar[0]['lists'][] = ['title' => 'LMS topic search', 'type' => 'link', 'route' => route('lms-topic-search'), 'icon' => '<i class="ti ti-search  text-xl flex-shrink-0"></i> '];
 //            $this->sidebar[0]['lists'][] = ['title' => 'All Schedule', 'type' => 'link', 'route' => route('schedule-all'), 'icon' => '<i class="ti ti-clock  text-xl flex-shrink-0"></i> '];
             //$this->sidebar[0]['lists'][] = ['title' => 'Schedule generate', 'type' => 'link', 'route' => route('course-schedule-generate'), 'icon' => '<i class="ti ti-template  text-xl flex-shrink-0"></i> '];
             $this->sidebar[0]['lists'][] = ['title' => 'Report', 'type' => 'link', 'route' => route('report.index'), 'icon' => '<i class="ti ti-report  text-xl flex-shrink-0"></i> '];
@@ -105,6 +106,17 @@ class AdminLayout extends Component
                     $this->sidebar[0]['lists'][] = ['title' => 'Report', 'type' => 'link', 'route' => route('report.index'), 'icon' => '<i class="ti ti-report  text-xl flex-shrink-0"></i> '];
                 }
             }
+            $this->sidebar[0]['lists'][] = ['title' => 'LMS topic search', 'type' => 'link', 'route' => route('lms-topic-search'), 'icon' => '<i class="ti ti-search  text-xl flex-shrink-0"></i> '];
+        }
+
+        // Contributor & role WP lain yang pakai dashboard admin (bukan administrator/editor)
+        if (! in_array($role, ['administrator', 'editor'], true)) {
+            $this->sidebar[0]['lists'][] = [
+                'title' => 'LMS topic search',
+                'type' => 'link',
+                'route' => route('lms-topic-search'),
+                'icon' => '<i class="ti ti-search  text-xl flex-shrink-0"></i> ',
+            ];
         }
     }
 

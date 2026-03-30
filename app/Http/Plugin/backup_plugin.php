@@ -1197,3 +1197,238 @@ document.addEventListener("DOMContentLoaded", function () {
 }
 
 add_action('um_profile_content_main', 'custom_um_section');
+
+// =====================================
+// LearnDash topic global search (index + shortcode)
+// =====================================
+
+/**
+ * Tarik teks dari data JSON Elementor (rekursif).
+ */
+function ld_extract_elementor_text($data)
+{
+    $text = '';
+    if (!is_array($data)) {
+        return $text;
+    }
+    foreach ($data as $key => $value) {
+        if (is_string($value) && in_array(
+            $key,
+            ['editor', 'title', 'text', 'caption', 'heading', 'description', 'html', 'alert_title', 'alert_description',
+                'tab_title', 'tab_content', 'before_text', 'after_text', 'prefix', 'suffix', 'sub_title', 'link_text',],
+            true
+        )) {
+            $text .= ' ' . wp_strip_all_tags($value);
+        } elseif ($key === 'elements' && is_array($value)) {
+            foreach ($value as $element) {
+                $text .= ' ' . ld_extract_elementor_text($element);
+            }
+        } elseif ($key === 'settings' && is_array($value)) {
+            $text .= ' ' . ld_extract_elementor_text($value);
+        } elseif (is_array($value)) {
+            $text .= ' ' . ld_extract_elementor_text($value);
+        }
+    }
+
+    return trim(preg_replace('/\s+/', ' ', $text));
+}
+
+add_action('save_post', 'ld_build_topic_search_index', 20, 3);
+add_action('save_post_sfwd-topic', 'ld_build_topic_search_index', 20, 3);
+add_action('wp_after_insert_post', 'ld_build_topic_search_index_fallback', 20, 4);
+
+/**
+ * @param WP_Post                $post
+ * @param bool                   $update
+ * @param WP_Post|null           $post_before
+ */
+function ld_build_topic_search_index_fallback($post_id, $post, $update, $post_before)
+{
+    if (!$post instanceof WP_Post || $post->post_type !== 'sfwd-topic') {
+        return;
+    }
+    ld_build_topic_search_index($post_id, $post, $update);
+}
+
+/**
+ * Bangun meta _search_index untuk pencarian global topic LMS.
+ *
+ * @param int      $post_id
+ * @param WP_Post|null $post
+ */
+function ld_build_topic_search_index($post_id, $post = null, $update = null)
+{
+    if (wp_is_post_revision($post_id) || wp_is_post_autosave($post_id)) {
+        return;
+    }
+    $post = $post instanceof WP_Post ? $post : get_post($post_id);
+    if (!$post || $post->post_type !== 'sfwd-topic') {
+        return;
+    }
+
+    $title = get_the_title($post_id);
+    $content = get_post_field('post_content', $post_id);
+    $final_text = $title;
+
+    // Elementor template shortcode
+    preg_match_all('/\[elementor-template[^\]]*id=[\'"]?(\d+)/i', $content, $tpl_matches);
+    if (!empty($tpl_matches[1])) {
+        foreach ($tpl_matches[1] as $tpl_id) {
+            $tpl_content = get_post_field('post_content', (int) $tpl_id);
+            if (!$tpl_content) {
+                continue;
+            }
+            if (strpos($tpl_content, '"widgetType"') !== false) {
+                $decoded = json_decode($tpl_content, true);
+                if (is_array($decoded)) {
+                    $final_text .= ' ' . ld_extract_elementor_text($decoded);
+                }
+            } else {
+                $final_text .= ' ' . wp_strip_all_tags($tpl_content);
+            }
+        }
+    }
+
+    // Gravity Forms shortcode
+    preg_match_all('/\[gravityform[^\]]*id=[\'"]?(\d+)/i', $content, $gf_matches);
+    if (!empty($gf_matches[1]) && class_exists('GFAPI')) {
+        foreach ($gf_matches[1] as $form_id) {
+            $form = GFAPI::get_form((int) $form_id);
+            if ($form && !empty($form['fields'])) {
+                foreach ($form['fields'] as $field) {
+                    if (!empty($field->label)) {
+                        $final_text .= ' ' . $field->label;
+                    }
+                    if (!empty($field->placeholder)) {
+                        $final_text .= ' ' . $field->placeholder;
+                    }
+                }
+            }
+        }
+    }
+
+    $final_text = preg_replace('/\[elementor-template[^\]]*\]/i', '', $final_text);
+    $final_text = preg_replace('/\[gravityform[^\]]*\]/i', '', $final_text);
+    $final_text = strtolower($final_text);
+    $final_text = html_entity_decode($final_text, ENT_QUOTES | ENT_HTML5, 'UTF-8');
+    $final_text = preg_replace('/[^a-z0-9\s]/u', ' ', $final_text);
+    $final_text = preg_replace('/\s+/', ' ', $final_text);
+    $final_text = trim($final_text);
+
+    if (defined('WP_DEBUG') && WP_DEBUG) {
+        error_log('LD topic search index saved: ' . $post_id);
+    }
+
+    update_post_meta($post_id, '_search_index', $final_text);
+}
+
+/**
+ * Generate hingga $max_snippets potongan teks dengan highlight keyword.
+ */
+function ld_generate_snippets($text, $keywords, $radius = 10, $max_snippets = 3)
+{
+    $text = strtolower(strip_tags($text));
+    $words = explode(' ', $text);
+    $total = count($words);
+
+    $snippets = [];
+    $used_indexes = [];
+
+    foreach ($words as $index => $word) {
+        foreach ($keywords as $keyword) {
+            if (strpos($word, $keyword) !== false && !in_array($index, $used_indexes, true)) {
+                $start = max(0, $index - $radius);
+                $end = min($total - 1, $index + $radius);
+
+                $slice = array_slice($words, $start, $end - $start + 1);
+                $snippet = implode(' ', $slice);
+
+                foreach ($keywords as $kw) {
+                    $snippet = preg_replace(
+                        '/(' . preg_quote($kw, '/') . ')/i',
+                        '<strong>$1</strong>',
+                        $snippet
+                    );
+                }
+
+                $snippets[] = '...' . $snippet . '...';
+
+                for ($i = $start; $i <= $end; $i++) {
+                    $used_indexes[] = $i;
+                }
+
+                if (count($snippets) >= $max_snippets) {
+                    return $snippets;
+                }
+            }
+        }
+    }
+
+    return $snippets;
+}
+
+/**
+ * Shortcode: [ld_topic_search] — gunakan ?q=keyword di URL atau sesuaikan form GET.
+ */
+function ld_topic_search_results()
+{
+    $keyword = isset($_GET['q']) ? sanitize_text_field(wp_unslash($_GET['q'])) : '';
+
+    if ($keyword === '') {
+        return '<p>' . esc_html__('Enter a keyword to search…', 'xfusion') . '</p>';
+    }
+
+    $keywords = array_filter(explode(' ', strtolower($keyword)));
+
+    $meta_query = ['relation' => 'AND'];
+    foreach ($keywords as $word) {
+        $meta_query[] = [
+            'key' => '_search_index',
+            'value' => $word,
+            'compare' => 'LIKE',
+        ];
+    }
+
+    $args = [
+        'post_type' => 'sfwd-topic',
+        'posts_per_page' => 20,
+        'post_status' => 'publish',
+        'meta_query' => $meta_query,
+    ];
+
+    $query = new WP_Query($args);
+
+    ob_start();
+
+    if ($query->have_posts()) {
+        echo '<div class="ld-search-results">';
+        while ($query->have_posts()) {
+            $query->the_post();
+            $index_text = get_post_meta(get_the_ID(), '_search_index', true);
+            $snippets = ld_generate_snippets((string) $index_text, $keywords, 8, 5);
+
+            echo '<div style="margin-bottom:20px;padding:15px;border:1px solid #1c1c1c;border-radius:8px;">';
+            echo '<a href="' . esc_url(get_permalink()) . '"><strong>' . esc_html(get_the_title()) . '</strong></a>';
+
+            if (!empty($snippets)) {
+                foreach ($snippets as $snippet) {
+                    echo '<p style="margin:5px 0;color:#555;">' . wp_kses_post($snippet) . '</p>';
+                }
+            }
+            echo '</div>';
+        }
+        echo '</div>';
+    } else {
+        echo '<p>' . sprintf(
+            /* translators: %s: search keyword */
+            esc_html__('No results found for: %s', 'xfusion'),
+            '<strong>' . esc_html($keyword) . '</strong>'
+        ) . '</p>';
+    }
+
+    wp_reset_postdata();
+
+    return ob_get_clean();
+}
+
+add_shortcode('ld_topic_search', 'ld_topic_search_results');

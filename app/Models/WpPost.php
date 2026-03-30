@@ -33,9 +33,13 @@ use Illuminate\Database\Eloquent\Model;
 
 class WpPost extends Model
 {
-
     public $timestamps = false;
+
     use HasFactory;
+
+    protected $primaryKey = 'ID';
+
+    protected $table = 'wp_posts';
 
     protected $fillable = [
         'ID',
@@ -65,8 +69,11 @@ class WpPost extends Model
 
     public function user()
     {
-        return $this->belongsTo(User::class,'post_author');
+        return $this->belongsTo(User::class, 'post_author');
     }
 
-
+    public function postMeta()
+    {
+        return $this->hasMany(WpPostMeta::class, 'post_id', 'ID');
+    }
 }

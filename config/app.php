@@ -127,4 +127,13 @@ return [
     'wp_prefix'=> env('WP_PREFIX','wp_'),
     'keap_category'=> env('KEAP_CATEGORY_ID','wp_'),
 
+    /*
+    | URL publik WordPress (LMS / LearnDash). Dipakai link ke topic dari admin.
+    | Jika admin di subdomain terpisah, set ke root site WordPress, mis. https://xperiencefusion.com
+    */
+    'wordpress_url' => rtrim((string) env('WORDPRESS_URL', env('APP_URL', 'http://localhost')), '/'),
+
+    /* Segmen path sebelum post_name topic, contoh: topics → .../topics/my-topic-slug/ */
+    'wordpress_topic_path' => trim((string) env('WORDPRESS_TOPIC_PATH', 'topics'), '/'),
+
 ];
