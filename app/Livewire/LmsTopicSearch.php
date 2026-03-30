@@ -62,20 +62,17 @@ class LmsTopicSearch extends Component
         }
     }
 
+    /**
+     * Public topic URL: same host as this Laravel app, with "admin." stripped — never use wp_posts.guid
+     * (it often keeps an old domain after site moves).
+     */
     private function topicUrl(WpPost $post): string
     {
         $base = WordpressPublicUrl::base();
         $path = trim((string) config('app.wordpress_topic_path', 'topics'), '/');
-        $slug = $post->post_name;
+        $slug = (string) $post->post_name;
 
-        if ($post->guid !== '' && filter_var($post->guid, FILTER_VALIDATE_URL)) {
-            $g = (string) $post->guid;
-            if (! str_contains(strtolower($g), '?p=')) {
-                return $g;
-            }
-        }
-
-        return $base . '/' . $path . '/' . rawurlencode((string) $slug) . '/';
+        return $base . '/' . $path . '/' . rawurlencode($slug) . '/';
     }
 
     /**

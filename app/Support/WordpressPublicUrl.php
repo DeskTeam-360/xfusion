@@ -3,8 +3,13 @@
 namespace App\Support;
 
 /**
- * Resolves the public WordPress site base URL (LMS front-end).
- * When this app runs on admin.{domain}, the public site is typically {domain} (admin. removed).
+ * Public WordPress/LMS base URL = same host as Laravel, with the leading "admin." label removed.
+ *
+ * Examples:
+ * - https://admin.sandbox.example.com → https://sandbox.example.com
+ * - https://admin.example.com → https://example.com
+ *
+ * Optional WORDPRESS_URL in .env overrides this when the public site is not on the derived host.
  */
 final class WordpressPublicUrl
 {
@@ -15,18 +20,27 @@ final class WordpressPublicUrl
             return rtrim($explicit, '/');
         }
 
-        if (function_exists('request') && request()->getHost() !== '') {
-            $scheme = request()->getScheme();
-            $host = request()->getHost();
-        } else {
-            $appUrl = (string) config('app.url', 'http://localhost');
-            $scheme = parse_url($appUrl, PHP_URL_SCHEME) ?: 'https';
-            $host = parse_url($appUrl, PHP_URL_HOST) ?: 'localhost';
-        }
+        [$scheme, $host] = self::schemeAndHostFromRequestOrAppUrl();
 
         $host = self::stripAdminSubdomain($host);
 
         return rtrim($scheme . '://' . $host, '/');
+    }
+
+    /**
+     * @return array{0: string, 1: string} [scheme, host]
+     */
+    private static function schemeAndHostFromRequestOrAppUrl(): array
+    {
+        if (function_exists('request') && request()->getHost() !== '') {
+            return [request()->getScheme(), request()->getHost()];
+        }
+
+        $appUrl = (string) config('app.url', 'http://localhost');
+        $scheme = parse_url($appUrl, PHP_URL_SCHEME) ?: 'https';
+        $host = parse_url($appUrl, PHP_URL_HOST) ?: 'localhost';
+
+        return [$scheme, $host];
     }
 
     private static function stripAdminSubdomain(string $host): string
