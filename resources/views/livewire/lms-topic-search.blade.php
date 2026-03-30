@@ -1,12 +1,11 @@
 <div class="w-full max-w-4xl">
     <form wire:submit.prevent="search" class="flex flex-col gap-4 sm:flex-row sm:items-end">
         <div class="flex-1">
-            <label for="lms-topic-q" class="mb-1 block text-sm font-medium text-gray-700">Search LMS topics</label>
             <input
                 id="lms-topic-q"
                 type="search"
                 wire:model="q"
-                placeholder="Keywords (uses WordPress _search_index)…"
+                placeholder="Search LMS topics using keywords (uses WordPress _search_index)…"
                 class="w-full rounded-lg border border-gray-300 px-4 py-2 focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary"
                 autocomplete="off"
             />
