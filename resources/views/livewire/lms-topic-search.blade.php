@@ -5,7 +5,7 @@
                 id="lms-topic-q"
                 type="search"
                 wire:model="q"
-                placeholder="Search LMS topics using keywords (uses WordPress _search_index)…"
+                placeholder="Search LMS Topics using keywords..."
                 class="w-full rounded-lg border border-gray-300 px-4 py-2 focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary"
                 autocomplete="off"
             />
