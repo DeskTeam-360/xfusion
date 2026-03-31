@@ -21,7 +21,7 @@
     @endif
 
     @if($searched && strlen(trim($q)) >= 2 && count($results) === 0)
-        <p class="mt-6 text-gray-600">No matching topics. Save each topic again in WordPress so the <code class="rounded bg-gray-100 px-1">_search_index</code> meta is populated.</p>
+        <p class="mt-6 text-gray-600">No matching topics.</p>
     @endif
 
     @if(count($results) > 0)
