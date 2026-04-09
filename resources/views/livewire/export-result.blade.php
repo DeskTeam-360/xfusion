@@ -412,16 +412,16 @@ document.addEventListener('livewire:init', function () {
                                     <td class="border ">
                                         {{ $field['ld_lesson_title'] }}
                                     </td>
-                                    <td class="border ">
+                                    <td class="border text-left">
                                     {{ $field['sort_order'] }}. {{ $field['ld_topic_title'] }}
                                     </td>
                                     <!-- <td class="border ">
                                         {{ $clean_course_title }}
                                     </td> -->
-                                    <td class="border ">
+                                    <td class="border text-left">
                                         {{ $clean_question }}
                                     </td>
-                                    <td class="border ">
+                                    <td class="border text-left">
                                         {{ $results[$user->ID][$form_id]['data'][$k]??'-' }}
                                     </td>
                                 </tr>
