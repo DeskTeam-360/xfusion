@@ -165,7 +165,7 @@ class ExportResult extends Component
 
             $f = json_decode($meta->display_meta)->fields;
             foreach ($f as $field) {
-                $field_target[$meta->form_id]['form_title'] = $courseGroup->orders??['-'].' - '.$meta->wpGfForm->title;
+                $field_target[$meta->form_id]['form_title'] = ($courseGroup->orders??'No Orders').' - '.$meta->wpGfForm->title;
                 if (in_array($field->type, $field_types)) {
                     $field_target[$meta->form_id]['id'][] = $field->id;
                     $field_target[$meta->form_id]['title'][$field->id] = $field->label;
