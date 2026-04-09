@@ -6,9 +6,10 @@ use App\Models\Company;
 use App\Models\CourseList;
 use App\Models\CourseGroup;
 use App\Models\User;
-
 use App\Models\WpGfEntryMeta;
 use App\Models\WpGfFormMeta;
+use App\Models\WpPost;
+use App\Models\WpPostMeta;
 use Livewire\Component;
 
 class ExportResult extends Component
@@ -151,9 +152,17 @@ class ExportResult extends Component
         $field_target = [];
 
         foreach ($form_meta as $meta) {
+            $courseList = CourseList::where('wp_gf_form_id', $meta->form_id)->first();
+            $ld = $this->learnDashCourseLessonTopic($courseList);
+
+            $field_target[$meta->form_id]['url'] = $courseList->url ?? '';
+            $field_target[$meta->form_id]['ld_course_title'] = $ld['course'];
+            $field_target[$meta->form_id]['ld_lesson_title'] = $ld['lesson'];
+            $field_target[$meta->form_id]['ld_topic_title'] = $ld['topic'];
+
             $f = json_decode($meta->display_meta)->fields;
             foreach ($f as $field) {
-                $field_target[$meta->form_id]['form_title'] = $meta->wpGfForm->title;
+                $field_target[$meta->form_id]['form_title'] = $ld['lesson'].' - '.$meta->wpGfForm->title;
                 if (in_array($field->type, $field_types)) {
                     $field_target[$meta->form_id]['id'][] = $field->id;
                     $field_target[$meta->form_id]['title'][$field->id] = $field->label;
@@ -183,6 +192,70 @@ class ExportResult extends Component
         $this->form_ids = $form_ids;
         
     }
+    /**
+     * Resolve LearnDash course / lesson / topic titles from course_lists.url → topic slug → wp_posts + postmeta.
+     *
+     * @return array{course: string, lesson: string, topic: string}
+     */
+    private function learnDashCourseLessonTopic(?CourseList $courseList): array
+    {
+        $fallbackCourse = $courseList?->course_title ?? '';
+        $fallbackTopic = $courseList?->page_title ?? '';
+
+        if ($courseList === null || $courseList->url === null || $courseList->url === '') {
+            return [
+                'course' => $fallbackCourse,
+                'lesson' => '',
+                'topic' => $fallbackTopic,
+            ];
+        }
+
+        $topicPath = trim((string) config('app.wordpress_topic_path', 'topics'), '/');
+        $pattern = '/\/' . preg_quote($topicPath, '/') . '\/([^\/]+)\/?/';
+
+        if (! preg_match($pattern, $courseList->url, $m)) {
+            return [
+                'course' => $fallbackCourse,
+                'lesson' => '',
+                'topic' => $fallbackTopic,
+            ];
+        }
+
+        $slug = rawurldecode(str_replace('+', ' ', $m[1]));
+
+        $topicPost = WpPost::query()
+            ->where('post_name', $slug)
+            ->where('post_type', 'sfwd-topic')
+            ->where('post_status', 'publish')
+            ->first();
+
+        if ($topicPost === null) {
+            return [
+                'course' => $fallbackCourse,
+                'lesson' => '',
+                'topic' => $fallbackTopic,
+            ];
+        }
+
+        $metas = WpPostMeta::query()
+            ->where('post_id', $topicPost->ID)
+            ->whereIn('meta_key', ['course_id', 'lesson_id'])
+            ->get()
+            ->keyBy('meta_key');
+
+        $courseId = isset($metas['course_id']) ? (int) $metas['course_id']->meta_value : 0;
+        $lessonId = isset($metas['lesson_id']) ? (int) $metas['lesson_id']->meta_value : 0;
+
+        $coursePost = $courseId > 0 ? WpPost::find($courseId) : null;
+        $lessonPost = $lessonId > 0 ? WpPost::find($lessonId) : null;
+
+        return [
+            'course' => $coursePost->post_title ?? $fallbackCourse,
+            'lesson' => $lessonPost->post_title ?? '',
+            'topic' => $topicPost->post_title ?? $fallbackTopic,
+        ];
+    }
+
     public function getCleanHeaderFormat($title)
     {
         $clean_title = $title;
