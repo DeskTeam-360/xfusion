@@ -380,10 +380,12 @@ document.addEventListener('livewire:init', function () {
          
                 <tr class="border border-gray-200 border-collapse">
                     <td class="text-nowrap border py-4 px-6 font-bold">Name</td>
-                    <td class="text-nowrap border py-4 px-6 font-bold">Course Title</td>
+                    <td class="text-nowrap border py-4 px-6 font-bold">Course</td>
+                    <td class="text-nowrap border py-4 px-6 font-bold">Lesson</td>
+                    <td class="text-nowrap border py-4 px-6 font-bold">Topic</td>
                     <td class="text-nowrap border py-4 px-6 font-bold">Question</td>
                     <td class="text-nowrap border py-4 px-6 font-bold">Answer</td>
-                </tr>
+                </tr>  
                 </thead>
                 <tbody>
                 @foreach($userLists as $user)
@@ -405,8 +407,17 @@ document.addEventListener('livewire:init', function () {
                                 <tr class="border border-gray-200 ">
                                     <td class="py-4 px-6 border font-bold">{{ $user->user_nicename }}</td>
                                     <td class="border ">
-                                        {{ $clean_course_title }}
+                                        {{ $field['ld_course_title'] }}
                                     </td>
+                                    <td class="border ">
+                                        {{ $field['ld_lesson_title'] }}
+                                    </td>
+                                    <td class="border ">
+                                    {{ $field['sort_order'] }}. {{ $field['ld_topic_title'] }}
+                                    </td>
+                                    <!-- <td class="border ">
+                                        {{ $clean_course_title }}
+                                    </td> -->
                                     <td class="border ">
                                         {{ $clean_question }}
                                     </td>

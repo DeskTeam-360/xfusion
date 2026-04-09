@@ -162,6 +162,7 @@ class ExportResult extends Component
             $courseGroup = $courseList
                 ? CourseGroupDetail::where('course_list_id', $courseList->id)->first()
                 : null;
+                
 
             // `orders` from course_group_details drives column / form order in exports & UI
             $sortOrder = (int) (optional($courseGroup)->orders ?? 999999);
@@ -171,8 +172,13 @@ class ExportResult extends Component
 
             $gfTitle = $meta->wpGfForm->title ?? '';
 
+            $ld = $this->learnDashCourseLessonTopic($courseList);
+
             $field_target[$meta->form_id]['sort_order'] = $sortOrder;
             $field_target[$meta->form_id]['form_title'] = $ordersLabel . ' - ' . $gfTitle;
+            $field_target[$meta->form_id]['ld_course_title'] = $ld['course'];
+            $field_target[$meta->form_id]['ld_lesson_title'] = $ld['lesson'];
+            $field_target[$meta->form_id]['ld_topic_title'] = $ld['topic'];
 
             $f = json_decode($meta->display_meta)->fields ?? [];
             foreach ($f as $field) {
