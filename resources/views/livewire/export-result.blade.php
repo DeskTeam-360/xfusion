@@ -406,22 +406,22 @@ document.addEventListener('livewire:init', function () {
                                 @endphp
                                 <tr class="border border-gray-200 ">
                                     <td class="py-4 px-6 border font-bold">{{ $user->user_nicename }}</td>
-                                    <td class="border ">
+                                    <td class="border py-4 px-6 ">
                                         {{ $field['ld_course_title'] }}
                                     </td>
-                                    <td class="border ">
+                                    <td class="border py-4 px-6 ">
                                         {{ $field['ld_lesson_title'] }}
                                     </td>
-                                    <td class="border text-left">
+                                    <td class="border text-left py-4 px-6 ">
                                     {{ $field['sort_order'] }}. {{ $field['ld_topic_title'] }}
                                     </td>
                                     <!-- <td class="border ">
                                         {{ $clean_course_title }}
                                     </td> -->
-                                    <td class="border text-left">
+                                    <td class="border text-left py-4 px-6 ">
                                         {{ $clean_question }}
                                     </td>
-                                    <td class="border text-left">
+                                    <td class="border text-left py-4 px-6 ">
                                         {{ $results[$user->ID][$form_id]['data'][$k]??'-' }}
                                     </td>
                                 </tr>
