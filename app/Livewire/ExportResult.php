@@ -5,6 +5,8 @@ namespace App\Livewire;
 use App\Models\Company;
 use App\Models\CourseList;
 use App\Models\CourseGroup;
+
+use App\Models\CourseGroupDetail;
 use App\Models\User;
 use App\Models\WpGfEntryMeta;
 use App\Models\WpGfFormMeta;
