@@ -150,28 +150,40 @@ class ExportResult extends Component
 
         $form_ids = CourseList::whereIn('id', $course_ids)->pluck('wp_gf_form_id')->toArray();
 
-        $form_meta = WpGfFormMeta::whereIn('form_id', $form_ids)->get(['display_meta', 'form_id']);
+        $form_meta = WpGfFormMeta::query()
+            ->whereIn('form_id', $form_ids)
+            ->with('wpGfForm')
+            ->get(['display_meta', 'form_id']);
+
         $field_target = [];
 
         foreach ($form_meta as $meta) {
             $courseList = CourseList::where('wp_gf_form_id', $meta->form_id)->first();
-            $courseGroup = CourseGroupDetail::where('course_list_id', $courseList->id)->first();
-            // $ld = $this->learnDashCourseLessonTopic($courseList);
+            $courseGroup = $courseList
+                ? CourseGroupDetail::where('course_list_id', $courseList->id)->first()
+                : null;
 
-            // $field_target[$meta->form_id]['url'] = $courseList->url ?? '';
-            // $field_target[$meta->form_id]['ld_course_title'] = $ld['course'];
-            // $field_target[$meta->form_id]['ld_lesson_title'] = $ld['lesson'];
-            // $field_target[$meta->form_id]['ld_topic_title'] = $ld['topic'];
+            // `orders` from course_group_details drives column / form order in exports & UI
+            $sortOrder = (int) (optional($courseGroup)->orders ?? 999999);
+            $ordersLabel = ($courseGroup !== null && $courseGroup->orders !== null && $courseGroup->orders !== '')
+                ? (string) $courseGroup->orders
+                : 'No Orders';
 
-            $f = json_decode($meta->display_meta)->fields;
+            $gfTitle = $meta->wpGfForm->title ?? '';
+
+            $field_target[$meta->form_id]['sort_order'] = $sortOrder;
+            $field_target[$meta->form_id]['form_title'] = $ordersLabel . ' - ' . $gfTitle;
+
+            $f = json_decode($meta->display_meta)->fields ?? [];
             foreach ($f as $field) {
-                $field_target[$meta->form_id]['form_title'] = ($courseGroup->orders??'No Orders').' - '.$meta->wpGfForm->title;
                 if (in_array($field->type, $field_types)) {
                     $field_target[$meta->form_id]['id'][] = $field->id;
                     $field_target[$meta->form_id]['title'][$field->id] = $field->label;
                 }
             }
         }
+
+        $this->sortFieldTargetByCourseGroupOrder($field_target);
         $entries = WpGfEntryMeta::whereIn('form_id', $form_ids)->whereHas('wpGfEntry', function ($q) use ($user_ids) {
             $q->whereIn('created_by', $user_ids)->where('status', 'Active');
         })->get();
@@ -193,8 +205,20 @@ class ExportResult extends Component
         $this->results = $results;
         $this->field_target = $field_target;
         $this->form_ids = $form_ids;
-        
     }
+
+    /**
+     * Keep forms in the same order as course group detail `orders` (lower first).
+     *
+     * @param  array<int|string, array<string, mixed>>  $field_target
+     */
+    private function sortFieldTargetByCourseGroupOrder(array &$field_target): void
+    {
+        uasort($field_target, function ($a, $b) {
+            return ($a['sort_order'] ?? 999999) <=> ($b['sort_order'] ?? 999999);
+        });
+    }
+
     /**
      * Resolve LearnDash course / lesson / topic titles from course_lists.url → topic slug → wp_posts + postmeta.
      *
