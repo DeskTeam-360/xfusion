@@ -153,16 +153,17 @@ class ExportResult extends Component
 
         foreach ($form_meta as $meta) {
             $courseList = CourseList::where('wp_gf_form_id', $meta->form_id)->first();
-            $ld = $this->learnDashCourseLessonTopic($courseList);
+            $courseGroup = CourseGroupDetail::where('course_list_id', $courseList->id)->first();
+            // $ld = $this->learnDashCourseLessonTopic($courseList);
 
-            $field_target[$meta->form_id]['url'] = $courseList->url ?? '';
-            $field_target[$meta->form_id]['ld_course_title'] = $ld['course'];
-            $field_target[$meta->form_id]['ld_lesson_title'] = $ld['lesson'];
-            $field_target[$meta->form_id]['ld_topic_title'] = $ld['topic'];
+            // $field_target[$meta->form_id]['url'] = $courseList->url ?? '';
+            // $field_target[$meta->form_id]['ld_course_title'] = $ld['course'];
+            // $field_target[$meta->form_id]['ld_lesson_title'] = $ld['lesson'];
+            // $field_target[$meta->form_id]['ld_topic_title'] = $ld['topic'];
 
             $f = json_decode($meta->display_meta)->fields;
             foreach ($f as $field) {
-                $field_target[$meta->form_id]['form_title'] = $ld['lesson'].' - '.$meta->wpGfForm->title;
+                $field_target[$meta->form_id]['form_title'] = $courseGroup->orders??['-'].' - '.$meta->wpGfForm->title;
                 if (in_array($field->type, $field_types)) {
                     $field_target[$meta->form_id]['id'][] = $field->id;
                     $field_target[$meta->form_id]['title'][$field->id] = $field->label;
