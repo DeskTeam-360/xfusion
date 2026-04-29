@@ -56,6 +56,7 @@ class Company extends \App\Models\Company implements View
             $companyInfo .= "<br> <b>Company Logo</b>:<br> ".$logo_display;
             $companyInfo .= "<br> <b>Company Employees</b>: ".$data->companyEmployees()->count();
             $link3 = route('company.show-detail',$data->id);
+            $link4 = route('company.dashboard',$data->id);
         return [
             ['type' => 'string','data'=>$data->id],
             ['type' => 'raw_html', 'data' => $companyInfo],
@@ -64,6 +65,7 @@ class Company extends \App\Models\Company implements View
         <span><a href='$link' class='btn btn-primary'>Edit</a></span>
         <span><a href='#' wire:click='deleteItem($data->id)' class='btn btn-error'>Delete</a></span>
         <span><a href='$link2' class='btn btn-secondary' style='overflow: hidden;white-space: nowrap;'>Show Employee</a></span>
+        <span><a href='$link4' class='btn btn-secondary' style='overflow: hidden;white-space: nowrap;'>Dashboard</a></span>
         
         <span><a href='$link3' class='btn btn-secondary' style='overflow: hidden;white-space: nowrap;'>Show Detail</a></span>
         $company_url
