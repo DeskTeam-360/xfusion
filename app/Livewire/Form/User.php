@@ -36,6 +36,9 @@ class User extends Component
 
     public $company_id=null;
 
+    #[Validate('nullable|max:255')]
+    public $work_type = '';
+
     public $userMeta;
     public $keap;
     public $keapMailSend;
@@ -86,8 +89,8 @@ class User extends Component
             if ($keapStatus) {
                 $this->keapIntegration = $keapStatus == '1' ? true : false;
             }
-            // dd($keapStatus);
 
+            $this->work_type = $data->meta()->where('meta_key', 'work_type')->first()->meta_value ?? '';
         }
     }
 
@@ -151,6 +154,7 @@ class User extends Component
         $this->updateOrCreateMeta('user_access', $ur->accesses);
         $this->updateOrCreateMeta('access_tags', implode(';', $currentTag));
         $this->updateOrCreateMeta('user_role', $ur->title);
+        $this->updateOrCreateMeta('work_type', $this->work_type ?? '');
 
         if(isset($contact['id'])){
             $contactId = $contact['id'];
@@ -343,6 +347,8 @@ class User extends Component
                 'company_id' => $this->companyId,
             ],);
         }
+
+        $this->userMeta['work_type'] = $this->work_type ?? '';
 
         foreach ($this->userMeta as $key => $meta) {
             WpUserMeta::create([

@@ -38,6 +38,7 @@
             </select>
         </div>
 
+    <x-input title="Work Type" model="work_type"/>
 
     <div class="mb-2 mt-2">
         <label for="keap-integration" class="flex align-items-center">
