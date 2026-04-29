@@ -535,7 +535,7 @@ document.addEventListener('livewire:init', function () {
             var chartPie = new ApexCharts(elPie, {
                 series: [pie.participating, pie.non_participating],
                 chart: {
-                    type: 'donut',
+                    type: 'pie',
                     height: 280,
                     fontFamily: 'inherit',
                     foreColor: '#94a3b8',
@@ -544,7 +544,7 @@ document.addEventListener('livewire:init', function () {
                 labels: ['Participating', 'Non-participating'],
                 colors: ['#2563eb', '#cbd5e1'],
                 legend: { position: 'bottom' },
-                plotOptions: { pie: { donut: { size: '68%' } } },
+                plotOptions: { pie: { size: '68%' } },
                 dataLabels: { enabled: true },
                 tooltip: { theme: 'dark' },
             });
@@ -565,7 +565,7 @@ document.addEventListener('livewire:init', function () {
             var c = new ApexCharts(el, {
                 series: [p, np],
                 chart: {
-                    type: 'donut',
+                    type: 'pie',
                     height: 200,
                     fontFamily: 'inherit',
                     foreColor: '#94a3b8',
@@ -579,7 +579,7 @@ document.addEventListener('livewire:init', function () {
                     style: { fontSize: '11px', fontWeight: 600 },
                 },
                 legend: { show: true, position: 'bottom', fontSize: '10px' },
-                plotOptions: { pie: { donut: { size: '62%' } } },
+                plotOptions: { pie: { size: '62%' } },
                 dataLabels: { enabled: true },
                 tooltip: { theme: 'dark' },
             });
@@ -615,7 +615,7 @@ document.addEventListener('livewire:init', function () {
                 dataLabels: {
                     enabled: true,
                     formatter: function (val) { return val; },
-                    offsetX: 4,
+                    
                     style: { fontSize: '11px' },
                 },
                 stroke: { width: 1, colors: ['#fff'] },
