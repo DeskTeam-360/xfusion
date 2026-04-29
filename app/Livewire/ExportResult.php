@@ -46,7 +46,7 @@ class ExportResult extends Component
     public $headerFormatPivotOption=['Full', 'Clean'];
     public $table=0;
 
-    /** Skala asumsi skor (mis. rating 1–5) untuk pie “% vs sisa” */
+    /** Assumed max score (e.g. 1–5 ratings) for pie “% vs remainder” */
     private const SCORE_SCALE_MAX = 5.0;
 
     /** @var array<int, string> */
@@ -55,20 +55,20 @@ class ExportResult extends Component
     /** @var array<int, array{complete: int, pct: float|null, avg_score: float|null}> */
     public array $userRowStats = [];
 
-    /** @var list<array{form_id: int|string, field_id: mixed, label: string, participation_count: int, participation_rate: float|null, avg_assessment: float|null}> */
+    /** @var list<array{form_id: int|string, field_id: mixed, label: string, form_title: string, participation_count: int, participation_rate: float|null, avg_assessment: float|null}> */
     public array $activityFooterStats = [];
 
     public int $totalActivitiesCount = 0;
 
     public ?float $grandAvgActivityAssessment = null;
 
-    /** 0–100 untuk pie keseluruhan (rata skor / SCORE_SCALE_MAX × 100) */
+    /** 0–100 for overall pie (mean score / SCORE_SCALE_MAX × 100) */
     public float $chartOverallPiePct = 0.0;
 
     /** @var list<array{label: string, pct: float}> */
     public array $chartWorkTypePies = [];
 
-    /** @var list<array{label: string, count: int, width_pct: float}> */
+    /** @var list<array{label: string, full_label: string, count: int, width_pct: float}> */
     public array $chartParticipationBar = [];
 
     public function mount()
@@ -104,7 +104,7 @@ class ExportResult extends Component
         $clean_question = $question;
         $clean_course_title = $course_title;
 
-        // daftar kata yang ingin dibersihkan
+        // Phrases stripped from labels (human-readable headers)
         $blacklist = [
             'Rate your current ability to',
             '1-5 (5 highest)',
@@ -121,23 +121,17 @@ class ExportResult extends Component
         'Course - Topic : ',
         'Course - Topic'
         ];
-        // hapus tanda petik satu dan dua
+        // Remove quotes and stray punctuation
         $clean_question = str_replace(["'", '"','“','”',' .','.'], '', $clean_question);
         $clean_course_title = str_replace(["'", '"','“','”',' .','.'], '', $clean_course_title);
 
-        // hapus kata-kata blacklist
         $clean_question = str_ireplace($blacklist, '', $clean_question);
         $clean_course_title = str_ireplace($blacklist, '', $clean_course_title);    
 
-        // ganti banyak spasi jadi satu spasi
         $clean_question = preg_replace('/\s+/', ' ', $clean_question);
         $clean_course_title = preg_replace('/\s+/', ' ', $clean_course_title);
-        // trim
         $clean_question = trim($clean_question);
         $clean_course_title = trim($clean_course_title);
-        // ganti spasi dengan underscore
-
-        
 
         $headerFormat = str_replace('[course_title]', $course_title, $headerFormat);
         $headerFormat = str_replace('[question]', $question, $headerFormat);
@@ -242,7 +236,7 @@ class ExportResult extends Component
     }
 
     /**
-     * Statistik baris user, footer per aktivitas (kolom), dan data chart untuk tampilan human-readable.
+     * Per-user row stats, per-activity footer columns, and chart payloads for the human-readable table.
      */
     private function computeHumanReadableStats(): void
     {
@@ -314,6 +308,7 @@ class ExportResult extends Component
                 'form_id' => $act['form_id'],
                 'field_id' => $act['field_id'],
                 'label' => $act['label'],
+                'form_title' => $act['form_title'],
                 'participation_count' => $participation,
                 'participation_rate' => $rate,
                 'avg_assessment' => $colAvg,
@@ -359,8 +354,10 @@ class ExportResult extends Component
         $counts = array_column($this->activityFooterStats, 'participation_count');
         $maxPart = $counts === [] ? 1 : max(max($counts), 1);
         foreach ($this->activityFooterStats as $row) {
+            $headerLabel = $this->getHeaderFormat($row['form_title'], $row['label']);
             $this->chartParticipationBar[] = [
-                'label' => Str::limit($row['label'], 56),
+                'label' => Str::limit($headerLabel, 140),
+                'full_label' => $headerLabel,
                 'count' => $row['participation_count'],
                 'width_pct' => ($row['participation_count'] / $maxPart) * 100.0,
             ];
@@ -368,7 +365,7 @@ class ExportResult extends Component
     }
 
     /**
-     * @return list<array{form_id: int|string, field_id: mixed, label: string}>
+     * @return list<array{form_id: int|string, field_id: mixed, label: string, form_title: string}>
      */
     private function flattenActivityColumns(): array
     {
@@ -377,11 +374,13 @@ class ExportResult extends Component
             if (! isset($field['title']) || ! is_array($field['title'])) {
                 continue;
             }
+            $formTitle = (string) ($field['form_title'] ?? '');
             foreach ($field['title'] as $fieldId => $label) {
                 $list[] = [
                     'form_id' => $formId,
                     'field_id' => $fieldId,
                     'label' => (string) $label,
+                    'form_title' => $formTitle,
                 ];
             }
         }
@@ -532,7 +531,7 @@ class ExportResult extends Component
     {
         $clean_title = $title;
 
-        // daftar kata yang ingin dibersihkan
+        // Phrases stripped from labels (human-readable headers)
         $blacklist = [
             'Rate your current ability to',
             '1-5 (5 highest)',
@@ -549,17 +548,10 @@ class ExportResult extends Component
         'Course - Topic : ',
         'Course - Topic'
         ];
-        // hapus tanda petik satu dan dua
         $clean_title = str_replace(["'", '"','“','”',' .','.'], '', $clean_title);
-
-        // hapus kata-kata blacklist
         $clean_title = str_ireplace($blacklist, '', $clean_title);
-
-        // ganti banyak spasi jadi satu spasi
         $clean_title = preg_replace('/\s+/', ' ', $clean_title);
-        // trim
         $clean_title = trim($clean_title);
-        // ganti spasi dengan underscore
 
         return $clean_title;
     }
@@ -580,7 +572,6 @@ class ExportResult extends Component
             $header2 = ['Name', 'Course title', 'Question', 'Answer'];
             fputcsv($handle, $header2);
 
-            // Data Baris
             foreach ($this->userLists as $user) {
                 $clean_course_title = '';
                 $clean_question = '';

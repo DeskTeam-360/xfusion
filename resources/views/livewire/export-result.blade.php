@@ -159,13 +159,10 @@ document.addEventListener('livewire:init', function () {
             const data2 = Object.values(@this.get('optionCourseLists2')[d] || {});
             const data3 = @this.get('courseLists') || [];
 
-            // merge + remove duplicates
             const unique = [...new Set([...data3, ...data2])];
 
-            // set ke Livewire
             @this.set('courseLists', unique);
 
-            // set ke Select2
             $('#datacourseLists').val(unique).trigger('change');
         });
     });
@@ -224,7 +221,7 @@ document.addEventListener('livewire:init', function () {
                 </script>
             </div>
 
-            {{-- Pivot readable (atas) --}}
+            {{-- Pivot readable --}}
             <div class="text-center mt-4">
                 <hr style="display: inline-block; width: 40%; margin: 0 10px;"> Pivot readable <hr style="display: inline-block; width: 40%; margin: 0 10px;">
             </div>
@@ -333,7 +330,7 @@ document.addEventListener('livewire:init', function () {
                 @endif
             </div>
 
-            {{-- Human readable (bawah) --}}
+            {{-- Human readable --}}
             <div class="text-center mt-5">
                 <hr style="display: inline-block; width: 40%; margin: 0 10px;"> Human readable <hr style="display: inline-block; width: 40%; margin: 0 10px;">
             </div>
@@ -400,7 +397,7 @@ document.addEventListener('livewire:init', function () {
                             @endphp
                             <tr class="border border-gray-200 ">
                                 <td class="py-4 px-6 border font-bold">{{ $user->user_nicename }}</td>
-                                <td class="py-4 px-6 border">{{ $wt !== '' ? $wt : '—' }}</td>
+                                <td class="py-4 px-6 border">{{ $wt !== '' ? $wt : '-' }}</td>
                                 @foreach($field_target as $form_id=>$field)
                                     @isset($field['title'])
                                         @foreach($field['title'] as $k=>$f)
@@ -411,8 +408,8 @@ document.addEventListener('livewire:init', function () {
                                     @endisset
                                 @endforeach
                                 <td class="border bg-slate-50 dark:bg-slate-800 font-medium">{{ $uStats['complete'] }}</td>
-                                <td class="border bg-slate-50 dark:bg-slate-800 font-medium">{{ $uStats['pct'] !== null ? $uStats['pct'].'%' : '—' }}</td>
-                                <td class="border bg-slate-50 dark:bg-slate-800 font-medium">{{ $uStats['avg_score'] !== null ? $uStats['avg_score'] : '—' }}</td>
+                                <td class="border bg-slate-50 dark:bg-slate-800 font-medium">{{ $uStats['pct'] !== null ? $uStats['pct'].'%' : '-' }}</td>
+                                <td class="border bg-slate-50 dark:bg-slate-800 font-medium">{{ $uStats['avg_score'] !== null ? $uStats['avg_score'] : '-' }}</td>
                             </tr>
                         @endforeach
                         </tbody>
@@ -426,16 +423,16 @@ document.addEventListener('livewire:init', function () {
                                 <td colspan="3" class="border"></td>
                             </tr>
                             <tr class="border border-gray-200 bg-amber-50/60 dark:bg-amber-900/15 font-semibold">
-                                <td colspan="2" class="text-left border py-3 px-4">Activity Participation</td>
+                                <td colspan="2" class="text-left border py-3 px-4">Activity participation %</td>
                                 @foreach($activityFooterStats as $fs)
-                                    <td class="border py-3 px-2">{{ $fs['participation_rate'] !== null ? $fs['participation_rate'].'%' : '—' }}</td>
+                                    <td class="border py-3 px-2">{{ $fs['participation_rate'] !== null ? $fs['participation_rate'].'%' : '-' }}</td>
                                 @endforeach
                                 <td colspan="3" class="border"></td>
                             </tr>
                             <tr class="border border-gray-200 bg-amber-50/40 dark:bg-amber-900/10 font-semibold">
                                 <td colspan="2" class="text-left border py-3 px-4">Avg Activity Assessment</td>
                                 @foreach($activityFooterStats as $fs)
-                                    <td class="border py-3 px-2">{{ $fs['avg_assessment'] !== null ? $fs['avg_assessment'] : '—' }}</td>
+                                    <td class="border py-3 px-2">{{ $fs['avg_assessment'] !== null ? $fs['avg_assessment'] : '-' }}</td>
                                 @endforeach
                                 <td colspan="3" class="border"></td>
                             </tr>
@@ -445,9 +442,9 @@ document.addEventListener('livewire:init', function () {
 
                     @if($activityFooterStats !== [])
                     <div class="mt-8 grid gap-8 lg:grid-cols-2">
-                        {{-- 5.1 Pie keseluruhan --}}
+                        {{-- Overall assessment pie --}}
                         <div class="rounded-lg border border-gray-200 p-4 dark:border-gray-600">
-                            <h3 class="mb-3 text-sm font-bold">Pie: rata assessment vs sisa (hingga 100%)</h3>
+                            <h3 class="mb-3 text-sm font-bold">Average assessment vs remainder (to 100%)</h3>
                             @php
                                 $pie1 = $chartOverallPiePct;
                                 $rest1 = max(0, min(100, 100 - $pie1));
@@ -456,21 +453,21 @@ document.addEventListener('livewire:init', function () {
                                 <div
                                     class="shrink-0 rounded-full border-4 border-white shadow"
                                     style="width:140px;height:140px;background:conic-gradient(#2563eb 0% {{ $pie1 }}%, #e2e8f0 {{ $pie1 }}% 100%);"
-                                    title="Avg ({{ number_format($pie1, 1) }}%) vs sisa ({{ number_format($rest1, 1) }}%)"
+                                    title="Average {{ number_format($pie1, 1) }}% vs remainder {{ number_format($rest1, 1) }}%"
                                 ></div>
                                 <div class="text-sm text-left space-y-1">
-                                    <div><span class="inline-block h-3 w-3 rounded-sm bg-blue-600 align-middle mr-2"></span> Bagian rata (dari skor /5 × 100): <strong>{{ number_format($pie1, 1) }}%</strong></div>
-                                    <div><span class="inline-block h-3 w-3 rounded-sm bg-slate-200 align-middle mr-2"></span> Sisa hingga 100%: <strong>{{ number_format($rest1, 1) }}%</strong></div>
+                                    <div><span class="inline-block h-3 w-3 rounded-sm bg-blue-600 align-middle mr-2"></span> Average (score / 5 × 100): <strong>{{ number_format($pie1, 1) }}%</strong></div>
+                                    <div><span class="inline-block h-3 w-3 rounded-sm bg-slate-200 align-middle mr-2"></span> Remainder to 100%: <strong>{{ number_format($rest1, 1) }}%</strong></div>
                                     @if($grandAvgActivityAssessment !== null)
-                                        <div class="text-gray-600 dark:text-gray-400">Mean kolom numerik (1–5): {{ $grandAvgActivityAssessment }}</div>
+                                        <div class="text-gray-600 dark:text-gray-400">Mean numeric column average (1–5): {{ $grandAvgActivityAssessment }}</div>
                                     @endif
                                 </div>
                             </div>
                         </div>
 
-                        {{-- 5.2 Pie per work_type --}}
+                        {{-- Pie by work type --}}
                         <div class="rounded-lg border border-gray-200 p-4 dark:border-gray-600">
-                            <h3 class="mb-3 text-sm font-bold">Per work type (rata skor user → % dari maks)</h3>
+                            <h3 class="mb-3 text-sm font-bold">By work type (mean user score as % of max)</h3>
                             <div class="flex flex-wrap gap-6">
                                 @forelse($chartWorkTypePies as $pieWt)
                                     @php $rp = max(0, min(100, 100 - $pieWt['pct'])); @endphp
@@ -483,19 +480,19 @@ document.addEventListener('livewire:init', function () {
                                         <div class="text-xs text-gray-600">{{ number_format($pieWt['pct'], 0) }}% / {{ number_format($rp, 0) }}%</div>
                                     </div>
                                 @empty
-                                    <p class="text-sm text-gray-500">Tidak ada data skor numerik per work type.</p>
+                                    <p class="text-sm text-gray-500">No numeric score data by work type.</p>
                                 @endforelse
                             </div>
                         </div>
                     </div>
 
-                    {{-- 5.3 Batang horizontal Participation Count --}}
+                    {{-- Horizontal bar: participation by activity (header format) --}}
                     <div class="mt-8 rounded-lg border border-gray-200 p-4 dark:border-gray-600">
-                        <h3 class="mb-4 text-sm font-bold">Participation count per aktivitas</h3>
+                        <h3 class="mb-4 text-sm font-bold">Participation count by activity (same as header format)</h3>
                         <div class="space-y-3">
                             @foreach($chartParticipationBar as $bar)
                                 <div class="flex items-center gap-3 text-sm">
-                                    <div class="w-48 shrink-0 truncate text-left text-xs" title="{{ $bar['label'] }}">{{ $bar['label'] }}</div>
+                                    <div class="min-w-0 max-w-xl shrink truncate text-left text-xs pr-2" title="{{ $bar['full_label'] ?? $bar['label'] }}">{{ $bar['label'] }}</div>
                                     <div class="min-w-0 flex-1 h-6 rounded bg-slate-100 dark:bg-slate-700 overflow-hidden">
                                         <div class="h-full rounded bg-indigo-500 transition-all" style="width: {{ number_format($bar['width_pct'], 1) }}%"></div>
                                     </div>
