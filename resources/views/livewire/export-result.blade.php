@@ -615,8 +615,8 @@ document.addEventListener('livewire:init', function () {
                 dataLabels: {
                     enabled: true,
                     formatter: function (val) { return val; },
-                    
-                    style: { fontSize: '11px' },
+                    offsetX: 20,
+                    style: { fontSize: '11px', color: '#000' },
                 },
                 stroke: { width: 1, colors: ['#fff'] },
                 xaxis: {
