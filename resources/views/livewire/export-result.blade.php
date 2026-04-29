@@ -609,16 +609,35 @@ document.addEventListener('livewire:init', function () {
                         borderRadius: 4,
                         barHeight: '72%',
                         distributed: true,
-                        dataLabels: { position: 'start' },
+                        // 'end' = di ujung kanan batang (sering putih & “bablas” ke luar). 'center' = tetap di area warna.
+                        dataLabels: {
+                            position: 'center',
+                            hideOverflowingLabels: false,
+                        },
                     },
                 },
                 dataLabels: {
                     enabled: true,
-                    formatter: function (val) { return val; },
-                    offsetX: 20,
-                    style: { fontSize: '11px', color: '#000' },
+                    formatter: function (val) { return val != null ? String(val) : ''; },
+                    offsetX: 0,
+                    offsetY: 0,
+                    textAnchor: 'middle',
+                    // Warna angka: array panjang = jumlah batang (wajib untuk distributed), jangan biarkan default putih.
+                    style: {
+                        fontSize: '12px',
+                        fontWeight: 700,
+                        colors: counts.map(function () { return '#0f172a'; }),
+                    },
+                    dropShadow: {
+                        enabled: true,
+                        top: 0,
+                        left: 0,
+                        blur: 1,
+                        color: '#ffffff',
+                        opacity: 0.85,
+                    },
                 },
-                stroke: { width: 1, colors: ['#fff'] },
+                stroke: { width: 1, colors: ['#ffffff'] },
                 xaxis: {
                     categories: categories,
                     labels: {
