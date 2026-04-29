@@ -8,10 +8,12 @@ use App\Models\CourseGroup;
 
 use App\Models\CourseGroupDetail;
 use App\Models\User;
+use App\Models\WpUserMeta;
 use App\Models\WpGfEntryMeta;
 use App\Models\WpGfFormMeta;
 use App\Models\WpPost;
 use App\Models\WpPostMeta;
+use Illuminate\Support\Str;
 use Livewire\Component;
 
 class ExportResult extends Component
@@ -43,8 +45,32 @@ class ExportResult extends Component
     public $headerFormatPivot2='Clean';
     public $headerFormatPivotOption=['Full', 'Clean'];
     public $table=0;
-    
-    
+
+    /** Skala asumsi skor (mis. rating 1–5) untuk pie “% vs sisa” */
+    private const SCORE_SCALE_MAX = 5.0;
+
+    /** @var array<int, string> */
+    public array $workTypeByUser = [];
+
+    /** @var array<int, array{complete: int, pct: float|null, avg_score: float|null}> */
+    public array $userRowStats = [];
+
+    /** @var list<array{form_id: int|string, field_id: mixed, label: string, participation_count: int, participation_rate: float|null, avg_assessment: float|null}> */
+    public array $activityFooterStats = [];
+
+    public int $totalActivitiesCount = 0;
+
+    public ?float $grandAvgActivityAssessment = null;
+
+    /** 0–100 untuk pie keseluruhan (rata skor / SCORE_SCALE_MAX × 100) */
+    public float $chartOverallPiePct = 0.0;
+
+    /** @var list<array{label: string, pct: float}> */
+    public array $chartWorkTypePies = [];
+
+    /** @var list<array{label: string, count: int, width_pct: float}> */
+    public array $chartParticipationBar = [];
+
     public function mount()
     {
         $this->optionTypeUser = [
@@ -211,6 +237,219 @@ class ExportResult extends Component
         $this->results = $results;
         $this->field_target = $field_target;
         $this->form_ids = $form_ids;
+
+        $this->computeHumanReadableStats();
+    }
+
+    /**
+     * Statistik baris user, footer per aktivitas (kolom), dan data chart untuk tampilan human-readable.
+     */
+    private function computeHumanReadableStats(): void
+    {
+        $this->workTypeByUser = [];
+        $this->userRowStats = [];
+        $this->activityFooterStats = [];
+        $this->totalActivitiesCount = 0;
+        $this->grandAvgActivityAssessment = null;
+        $this->chartOverallPiePct = 0.0;
+        $this->chartWorkTypePies = [];
+        $this->chartParticipationBar = [];
+
+        if ($this->userLists->isEmpty() || $this->field_target === []) {
+            return;
+        }
+
+        $activities = $this->flattenActivityColumns();
+        $this->totalActivitiesCount = count($activities);
+
+        $userIds = $this->userLists->map(fn ($u) => (int) ($u->ID ?? $u->id))->unique()->values()->all();
+        $this->workTypeByUser = WpUserMeta::query()
+            ->where('meta_key', 'work_type')
+            ->whereIn('user_id', $userIds)
+            ->pluck('meta_value', 'user_id')
+            ->map(fn ($v) => (string) $v)
+            ->all();
+
+        $participantCount = $this->userLists->count();
+
+        foreach ($this->userLists as $user) {
+            $complete = 0;
+            $scores = [];
+            foreach ($activities as $act) {
+                $raw = $this->rawAnswerFor($user->ID, $act['form_id'], $act['field_id']);
+                if ($this->isAnswered($raw)) {
+                    $complete++;
+                    $n = $this->parseNumericScore($raw);
+                    if ($n !== null) {
+                        $scores[] = $n;
+                    }
+                }
+            }
+            $total = $this->totalActivitiesCount;
+            $pct = $total > 0 ? round(($complete / $total) * 100, 1) : null;
+            $avgScore = count($scores) > 0 ? round(array_sum($scores) / count($scores), 2) : null;
+            $this->userRowStats[$user->ID] = [
+                'complete' => $complete,
+                'pct' => $pct,
+                'avg_score' => $avgScore,
+            ];
+        }
+
+        foreach ($activities as $act) {
+            $numericValues = [];
+            $participation = 0;
+            foreach ($this->userLists as $user) {
+                $raw = $this->rawAnswerFor($user->ID, $act['form_id'], $act['field_id']);
+                if ($this->isAnswered($raw)) {
+                    $participation++;
+                    $n = $this->parseNumericScore($raw);
+                    if ($n !== null) {
+                        $numericValues[] = $n;
+                    }
+                }
+            }
+            $rate = $participantCount > 0 ? round(($participation / $participantCount) * 100, 1) : null;
+            $colAvg = count($numericValues) > 0 ? round(array_sum($numericValues) / count($numericValues), 2) : null;
+            $this->activityFooterStats[] = [
+                'form_id' => $act['form_id'],
+                'field_id' => $act['field_id'],
+                'label' => $act['label'],
+                'participation_count' => $participation,
+                'participation_rate' => $rate,
+                'avg_assessment' => $colAvg,
+            ];
+        }
+
+        $colAvgs = array_filter(
+            array_column($this->activityFooterStats, 'avg_assessment'),
+            fn ($v) => $v !== null,
+        );
+        if ($colAvgs !== []) {
+            $this->grandAvgActivityAssessment = round(array_sum($colAvgs) / count($colAvgs), 2);
+            $this->chartOverallPiePct = min(
+                100.0,
+                max(0.0, ($this->grandAvgActivityAssessment / self::SCORE_SCALE_MAX) * 100.0),
+            );
+        }
+
+        $byWorkType = [];
+        foreach ($this->userLists as $user) {
+            $wt = $this->workTypeByUser[$user->ID] ?? '';
+            $wtLabel = $wt !== '' ? $wt : '(none)';
+            $avg = $this->userRowStats[$user->ID]['avg_score'] ?? null;
+            if ($avg === null) {
+                continue;
+            }
+            if (! isset($byWorkType[$wtLabel])) {
+                $byWorkType[$wtLabel] = [];
+            }
+            $byWorkType[$wtLabel][] = $avg;
+        }
+        foreach ($byWorkType as $label => $vals) {
+            if ($vals === []) {
+                continue;
+            }
+            $m = array_sum($vals) / count($vals);
+            $this->chartWorkTypePies[] = [
+                'label' => $label,
+                'pct' => min(100.0, max(0.0, ($m / self::SCORE_SCALE_MAX) * 100.0)),
+            ];
+        }
+
+        $counts = array_column($this->activityFooterStats, 'participation_count');
+        $maxPart = $counts === [] ? 1 : max(max($counts), 1);
+        foreach ($this->activityFooterStats as $row) {
+            $this->chartParticipationBar[] = [
+                'label' => Str::limit($row['label'], 56),
+                'count' => $row['participation_count'],
+                'width_pct' => ($row['participation_count'] / $maxPart) * 100.0,
+            ];
+        }
+    }
+
+    /**
+     * @return list<array{form_id: int|string, field_id: mixed, label: string}>
+     */
+    private function flattenActivityColumns(): array
+    {
+        $list = [];
+        foreach ($this->field_target as $formId => $field) {
+            if (! isset($field['title']) || ! is_array($field['title'])) {
+                continue;
+            }
+            foreach ($field['title'] as $fieldId => $label) {
+                $list[] = [
+                    'form_id' => $formId,
+                    'field_id' => $fieldId,
+                    'label' => (string) $label,
+                ];
+            }
+        }
+
+        return $list;
+    }
+
+    private function rawAnswerFor(int|string $userId, int|string $formId, int|string $fieldId): mixed
+    {
+        return data_get($this->results, "{$userId}.{$formId}.data.{$fieldId}");
+    }
+
+    public function displayAnswer(int|string $userId, int|string $formId, int|string $fieldId): string
+    {
+        $v = $this->rawAnswerFor($userId, $formId, $fieldId);
+        if ($v === null || $v === '') {
+            return '-';
+        }
+
+        return (string) $v;
+    }
+
+    private function isAnswered(mixed $raw): bool
+    {
+        if ($raw === null) {
+            return false;
+        }
+        $s = trim((string) $raw);
+
+        return $s !== '' && $s !== '-';
+    }
+
+    private function parseNumericScore(mixed $raw): ?float
+    {
+        if ($raw === null) {
+            return null;
+        }
+        $s = trim((string) $raw);
+        if ($s === '' || $s === '-') {
+            return null;
+        }
+        if (str_contains($s, '|')) {
+            $parts = array_filter(array_map('trim', explode('|', $s)));
+            $nums = [];
+            foreach ($parts as $p) {
+                $n = $this->parseSingleNumber($p);
+                if ($n !== null) {
+                    $nums[] = $n;
+                }
+            }
+
+            return $nums === [] ? null : array_sum($nums) / count($nums);
+        }
+
+        return $this->parseSingleNumber($s);
+    }
+
+    private function parseSingleNumber(string $s): ?float
+    {
+        $s = str_replace(',', '.', preg_replace('/[^\d\.\-]/', '', $s) ?? '');
+        if ($s === '' || $s === '-' || $s === '.' || $s === '-.') {
+            return null;
+        }
+        if (! is_numeric($s)) {
+            return null;
+        }
+
+        return (float) $s;
     }
 
     /**
@@ -390,22 +629,7 @@ class ExportResult extends Component
         $callback = function () {
             $handle = fopen('php://output', 'w');
 
-            // ===== BARIS 1: Form Titles (rowspan/colspan header) =====
-            // $header1 = ['Name']; // Kolom pertama: Name
-            // foreach ($this->field_target as $field) {
-            //     if (isset($field['title'])) {
-            //         $colspan = count($field['title']);
-            //         // Tambahkan form_title, lalu isi colspan-1 dengan string kosong (agar sejajar dengan header2)
-            //         $header1[] = $field['form_title'];
-            //         for ($i = 1; $i < $colspan; $i++) {
-            //             $header1[] = '';
-            //         }
-            //     }
-            // }
-            // fputcsv($handle, $header1);
-
-            // ===== BARIS 2: Field Titles (judul per kolom) =====
-            $header2 = ['Name'];
+            $header2 = ['Name', 'Work Type'];
             foreach ($this->field_target as $field) {
                 if (isset($field['title'])) {
                     foreach ($field['title'] as $title) {
@@ -413,24 +637,61 @@ class ExportResult extends Component
                     }
                 }
             }
+            $header2[] = 'Activities Complete';
+            $header2[] = '% Complete';
+            $header2[] = 'Average Score';
             fputcsv($handle, $header2);
 
-            // Data Baris
             foreach ($this->userLists as $user) {
-                $row = [$user->user_nicename];
+                $row = [
+                    $user->user_nicename,
+                    $this->workTypeByUser[$user->ID] ?? '',
+                ];
                 foreach ($this->field_target as $form_id => $field) {
                     if (isset($field['title'])) {
                         foreach ($field['title'] as $k => $f) {
-                            $row[] = $this->results[$user->ID][$form_id]['data'][$k] ?? '-';
+                            $row[] = $this->displayAnswer($user->ID, $form_id, $k);
                         }
                     }
                 }
+                $st = $this->userRowStats[$user->ID] ?? ['complete' => 0, 'pct' => null, 'avg_score' => null];
+                $row[] = $st['complete'];
+                $row[] = $st['pct'] !== null ? $st['pct'].'%' : '-';
+                $row[] = $st['avg_score'] !== null ? (string) $st['avg_score'] : '-';
+                fputcsv($handle, $row);
+            }
+
+            if ($this->activityFooterStats !== []) {
+                $row = ['Participation Count', ''];
+                foreach ($this->activityFooterStats as $s) {
+                    $row[] = $s['participation_count'];
+                }
+                $row[] = '';
+                $row[] = '';
+                $row[] = '';
+                fputcsv($handle, $row);
+
+                $row = ['Activity Participation %', ''];
+                foreach ($this->activityFooterStats as $s) {
+                    $row[] = $s['participation_rate'] !== null ? $s['participation_rate'].'%' : '-';
+                }
+                $row[] = '';
+                $row[] = '';
+                $row[] = '';
+                fputcsv($handle, $row);
+
+                $row = ['Avg Activity Assessment', ''];
+                foreach ($this->activityFooterStats as $s) {
+                    $row[] = $s['avg_assessment'] !== null ? (string) $s['avg_assessment'] : '-';
+                }
+                $row[] = '';
+                $row[] = '';
+                $row[] = '';
                 fputcsv($handle, $row);
             }
 
             fclose($handle);
         };
-        $this->loading = false;
 
         return response()->stream($callback, 200, $headers);
     }
