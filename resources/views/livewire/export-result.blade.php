@@ -490,27 +490,24 @@ document.addEventListener('livewire:init', function () {
                         </div>
                     </div>
 
-                    {{-- 5.3 Horizontal bar chart (Terra-style): sorted desc, grid, end labels --}}
+                    {{-- 5.3 Horizontal participation (thin rule, not thick bars); title once; labels left only --}}
                     <div class="mt-8 rounded-lg border border-gray-200 bg-white p-5 dark:border-gray-600 dark:bg-dark">
-                        <div class="mb-1 text-xs font-semibold text-gray-700 dark:text-gray-300">Participants (n)</div>
-                        <h3 class="mb-4 text-sm font-bold text-gray-900 dark:text-light">Participation count by activity</h3>
-                        <div class="space-y-1">
+                        <h3 class="mb-4 border-b border-gray-200 pb-2 text-left text-sm font-bold text-gray-900 dark:border-gray-600 dark:text-light">Participation count by activity</h3>
+                        <div class="divide-y divide-gray-100 dark:divide-gray-700">
                             @foreach($chartParticipationBar as $bar)
-                                <div class="flex min-h-[32px] items-stretch gap-2 text-xs">
-                                    <div class="flex w-[11rem] shrink-0 items-center justify-end pr-2 text-right leading-tight text-gray-700 dark:text-gray-300" title="{{ $bar['full_label'] ?? '' }}">{{ $bar['axis_label'] }}</div>
-                                    <div class="relative min-h-[28px] min-w-0 flex-1">
+                                <div class="flex items-center gap-4 py-2.5">
+                                    <div
+                                        class="min-w-0 max-w-[min(42vw,22rem)] shrink-0 text-left text-xs leading-snug text-gray-800 dark:text-gray-200 sm:text-sm"
+                                        title="{{ $bar['full_label'] ?? $bar['axis_label'] }}"
+                                    >{{ $bar['axis_label'] }}</div>
+                                    <div class="relative min-h-[6px] min-w-0 flex-1">
+                                        <div class="h-[6px] w-full rounded-full bg-gray-100 dark:bg-gray-700"></div>
                                         <div
-                                            class="pointer-events-none absolute inset-y-1 left-0 right-0 rounded opacity-60 dark:opacity-40"
-                                            style="background: repeating-linear-gradient(90deg, transparent 0, transparent calc(10% - 1px), rgba(148,163,184,0.35) calc(10% - 1px), rgba(148,163,184,0.35) 10%);"
+                                            class="absolute left-0 top-0 h-[6px] rounded-full transition-[width] duration-300"
+                                            style="width: {{ number_format($bar['width_pct'], 1) }}%; min-width: {{ $bar['count'] > 0 ? '4px' : '0' }}; background-color: {{ $bar['color'] }};"
                                         ></div>
-                                        <div class="relative flex h-full min-h-[28px] items-center py-1">
-                                            <div
-                                                class="h-5 shrink-0 rounded-sm shadow-sm"
-                                                style="width: {{ number_format($bar['width_pct'], 1) }}%; min-width: 2px; background-color: {{ $bar['color'] }};"
-                                            ></div>
-                                            <span class="ml-2 min-w-0 flex-1 whitespace-normal leading-snug text-gray-800 dark:text-gray-200">{{ $bar['end_label'] }}</span>
-                                        </div>
                                     </div>
+                                    <div class="w-9 shrink-0 text-right text-sm font-semibold tabular-nums text-gray-900 dark:text-light">{{ $bar['count'] }}</div>
                                 </div>
                             @endforeach
                         </div>

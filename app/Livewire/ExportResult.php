@@ -69,7 +69,7 @@ class ExportResult extends Component
     /** Same counts, grouped by work_type meta. */
     public array $chartUserParticipationPieByWorkType = [];
 
-    /** @var list<array{label: string, full_label: string, axis_label: string, end_label: string, count: int, width_pct: float, color: string}> */
+    /** @var list<array{label: string, full_label: string, axis_label: string, count: int, width_pct: float, color: string}> */
     public array $chartParticipationBar = [];
 
     /** Pastel bar colors (Terra-style horizontal chart). */
@@ -387,7 +387,6 @@ class ExportResult extends Component
                 'label' => Str::limit($headerLabel, 140),
                 'full_label' => $headerLabel,
                 'axis_label' => $axisLabel,
-                'end_label' => 'Participants (n), '.$axisLabel.' , '.$cnt,
                 'count' => $cnt,
                 'width_pct' => ($cnt / $maxPart) * 100.0,
             ];
