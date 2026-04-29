@@ -1,6 +1,7 @@
 <div class="col-span-12">
     <div class="overflow-auto " style="width: 100%">
         <div>
+            @if(!$isCompanyDashboard)
             <x-input title="Title file export" model="title"/>
 
             <div class="mt-3" wire:ignore>
@@ -220,6 +221,26 @@ document.addEventListener('livewire:init', function () {
                     });
                 </script>
             </div>
+            @else
+            <div class="mb-4">
+                <label for="dashboard-course-group" class="form-label mb-2 block text-sm font-bold dark:text-light">
+                    Course group
+                </label>
+                <select
+                    id="dashboard-course-group"
+                    class="form-control w-full rounded border border-gray-200 bg-white px-3 py-2 text-sm dark:border-gray-600 dark:bg-dark dark:text-light"
+                    wire:model.live="dashboardCourseGroupId"
+                >
+                    <option value="">— Select course group —</option>
+                    @foreach($optionCourseGroupLists as $option)
+                        <option value="{{ $option['value'] }}">{{ $option['title'] }}</option>
+                    @endforeach
+                </select>
+                <p class="mt-2 text-xs text-gray-500 dark:text-gray-400">
+                    Course list and field type follow this group automatically (radio fields only). Employees for this company are included automatically.
+                </p>
+            </div>
+            @endif
 
             {{-- Pivot readable --}}
             <div class="text-center mt-4">

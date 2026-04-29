@@ -64,6 +64,33 @@ class CompanyController extends Controller
 
     }
 
+    /**
+     * Company-scoped export / participation dashboard (Livewire).
+     */
+    public function dashboard(string $id)
+    {
+        $user = Auth::user();
+        $ru = $user->meta->where('meta_key', '=', config('app.wp_prefix', 'wp_') . 'capabilities');
+        $role = '';
+        foreach ($ru as $r) {
+            $role = array_key_first(unserialize($r['meta_value']));
+        }
+        if ($role == 'administrator' || $role == 'editor') {
+            if ($role == 'editor') {
+                $companies = $user->meta->where('meta_key', '=', 'company');
+                foreach ($companies as $r) {
+                    if ($r['meta_value'] != $id) {
+                        return redirect(route('company.show', $r['meta_value']));
+                    }
+                }
+            }
+
+            return view('admin.company.dashboard', compact('id'));
+        }
+
+        return redirect()->route('dashboard');
+    }
+
     public function showDetail(string $id)
     {
         $company = Company::find($id);

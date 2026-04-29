@@ -18,6 +18,13 @@ use Livewire\Component;
 
 class ExportResult extends Component
 {
+    public bool $isCompanyDashboard = false;
+
+    public ?int $lockedCompanyId = null;
+
+    /** Single native select; syncs hidden course lists from group. */
+    public string $dashboardCourseGroupId = '';
+
     public $results=[];
     public $title;
     public $form_ids=[];
@@ -79,8 +86,11 @@ class ExportResult extends Component
         '#fda4af', '#94a3b8',
     ];
 
-    public function mount()
+    public function mount($lockedCompanyId = null, $isCompanyDashboard = false): void
     {
+        $this->isCompanyDashboard = filter_var($isCompanyDashboard, FILTER_VALIDATE_BOOLEAN);
+        $this->lockedCompanyId = $lockedCompanyId !== null && $lockedCompanyId !== '' ? (int) $lockedCompanyId : null;
+
         $this->optionTypeUser = [
             ['value' => 'users', 'title' => 'Users'],
             ['value' => 'companies', 'title' => 'companies'],
@@ -95,15 +105,36 @@ class ExportResult extends Component
             $this->optionCourseTitle[] = ['value'=>$cl->id, 'title'=>$cl->course_title.' - '.$cl->page_title];
         }
 
-        // dd($this->courseGroupLists);
+        if (! $this->isCompanyDashboard) {
+            foreach (User::get() as $user) {
+                $this->optionUsers[] = ['value' => $user->ID, 'title' => $user->first_name . ' ' . $user->last_name];
+            }
+            foreach (Company::get() as $user) {
+                $this->optionCompanies[] = ['value' => $user->id, 'title' => $user->title];
+            }
+        }
 
-        foreach (User::get() as $user) {
-            $this->optionUsers[] = ['value' => $user->ID, 'title' => $user->first_name . ' ' . $user->last_name];
-        }
-        foreach (Company::get() as $user) {
-            $this->optionCompanies[] = ['value' => $user->id, 'title' => $user->title];
-        }
         $this->optionFields=['text', 'checkbox', 'number', 'select', 'multiselect', 'radio', 'email', 'name','textarea'];
+
+        if ($this->isCompanyDashboard) {
+            $this->fields = ['radio'];
+        }
+    }
+
+    public function updatedDashboardCourseGroupId(): void
+    {
+        if (! $this->isCompanyDashboard) {
+            return;
+        }
+        $gid = $this->dashboardCourseGroupId !== '' ? (int) $this->dashboardCourseGroupId : 0;
+        if ($gid <= 0) {
+            $this->courseGroupLists = [];
+            $this->courseLists = [];
+
+            return;
+        }
+        $this->courseGroupLists = [$gid];
+        $this->courseLists = $this->optionCourseLists2[$gid] ?? [];
     }
 
     public function getHeaderFormat($course_title, $question)
@@ -162,19 +193,35 @@ class ExportResult extends Component
 
     public function getMainData()
     {
-
-     
         $field_types = $this->fields;
-        $course_ids = $this->courseLists;
-        $companies = $this->companies;
-        $users = User::query()->whereIn('ID', $this->users);
-        if ($companies != []) {
-            $users->orWhereHas('companyEmployee', function ($q) use ($companies) {
-                $q->whereIn('company_id', $companies);
+        $course_ids = is_array($this->courseLists) ? $this->courseLists : [];
+
+        if ($this->isCompanyDashboard && $this->lockedCompanyId) {
+            $usersQuery = User::query()->whereHas('companyEmployee', function ($q) {
+                $q->where('company_id', $this->lockedCompanyId);
             });
+            $this->userLists = $usersQuery->get();
+            $user_ids = $this->userLists->pluck('id')->toArray();
+        } else {
+            $companies = $this->companies;
+            $usersQuery = User::query()->whereIn('ID', $this->users);
+            if ($companies != []) {
+                $usersQuery->orWhereHas('companyEmployee', function ($q) use ($companies) {
+                    $q->whereIn('company_id', $companies);
+                });
+            }
+            $user_ids = $usersQuery->pluck('id')->toArray();
+            $this->userLists = $usersQuery->get();
         }
-        $user_ids = $users->pluck('id')->toArray();
-        $this->userLists = $users->get();
+
+        if ($course_ids === []) {
+            $this->results = [];
+            $this->field_target = [];
+            $this->form_ids = [];
+            $this->computeHumanReadableStats();
+
+            return;
+        }
 
         $form_ids = CourseList::whereIn('id', $course_ids)->pluck('wp_gf_form_id')->toArray();
 

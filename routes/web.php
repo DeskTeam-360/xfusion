@@ -519,6 +519,10 @@ Route::middleware(['auth',],)->group(function () {
         CompanyController::class,
         'show',
     ],)->name('company.show',);
+    Route::get('company/{id}/dashboard', [
+        CompanyController::class,
+        'dashboard',
+    ],)->name('company.dashboard',);
 
     Route::get('company/{id}/detail', [
         CompanyController::class,
