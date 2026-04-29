@@ -241,6 +241,15 @@ class ExportResult extends Component
         $this->form_ids = $form_ids;
 
         $this->computeHumanReadableStats();
+
+        if ($this->table === 1 && $this->activityFooterStats !== []) {
+            $this->dispatch(
+                'export-result-charts-updated',
+                pie: $this->chartUserParticipationPie,
+                pieByWt: array_values($this->chartUserParticipationPieByWorkType),
+                bar: $this->chartParticipationBar,
+            );
+        }
     }
 
     /**

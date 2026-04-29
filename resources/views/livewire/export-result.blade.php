@@ -442,46 +442,16 @@ document.addEventListener('livewire:init', function () {
 
                     @if($activityFooterStats !== [])
                     <div class="mt-8 grid gap-8 lg:grid-cols-2">
-                        {{-- 5.1 Participating users vs non-participating (no activity completed) --}}
                         <div class="rounded-lg border border-gray-200 p-4 dark:border-gray-600">
-                            <h3 class="mb-3 text-sm font-bold">Participation vs non-participation (all users)</h3>
-                            @php
-                                $pPie = $chartUserParticipationPie;
-                                $pPct = max(0, min(100, (float) ($pPie['pct'] ?? 0)));
-                                $npPct = max(0, min(100, 100 - $pPct));
-                            @endphp
-                            <div class="flex flex-wrap items-center gap-6">
-                                <div
-                                    class="shrink-0 rounded-full border-4 border-white shadow"
-                                    style="width:140px;height:140px;background:conic-gradient(#2563eb 0% {{ $pPct }}%, #cbd5e1 {{ $pPct }}% 100%);"
-                                    title="Participating {{ $pPie['participating'] ?? 0 }}, non-participating {{ $pPie['non_participating'] ?? 0 }}"
-                                ></div>
-                                <div class="text-sm text-left space-y-1">
-                                    <div><span class="inline-block h-3 w-3 rounded-sm bg-blue-600 align-middle mr-2"></span> Participating (completed ≥1 activity): <strong>{{ $pPie['participating'] ?? 0 }}</strong></div>
-                                    <div><span class="inline-block h-3 w-3 rounded-sm bg-slate-300 align-middle mr-2"></span> Non-participating (completed 0): <strong>{{ $pPie['non_participating'] ?? 0 }}</strong></div>
-                                    <div class="text-gray-600 dark:text-gray-400">Share of chart: {{ number_format($pPct, 1) }}% / {{ number_format($npPct, 1) }}%</div>
-                                </div>
-                            </div>
+                            <h3 class="mb-2 text-sm font-bold">Participation vs non-participation (all users)</h3>
+                            <div id="export-result-pie-overall" class="min-h-[280px] w-full"></div>
                         </div>
-
-                        {{-- 5.2 Same pie, by work type --}}
                         <div class="rounded-lg border border-gray-200 p-4 dark:border-gray-600">
-                            <h3 class="mb-3 text-sm font-bold">Participation vs non-participation by work type</h3>
-                            <div class="flex flex-wrap gap-6">
-                                @forelse($chartUserParticipationPieByWorkType as $wtPie)
-                                    @php
-                                        $wPct = max(0, min(100, (float) ($wtPie['pct'] ?? 0)));
-                                        $wRest = max(0, min(100, 100 - $wPct));
-                                    @endphp
-                                    <div class="text-center">
-                                        <div
-                                            class="mx-auto rounded-full border-2 border-white shadow"
-                                            style="width:100px;height:100px;background:conic-gradient(#0d9488 0% {{ $wPct }}%, #cbd5e1 {{ $wPct }}% 100%);"
-                                            title="{{ $wtPie['label'] }}: {{ $wtPie['participating'] }} / {{ $wtPie['non_participating'] }}"
-                                        ></div>
-                                        <div class="mt-2 max-w-[140px] text-xs font-medium truncate" title="{{ $wtPie['label'] }}">{{ $wtPie['label'] }}</div>
-                                        <div class="text-xs text-gray-600">P: {{ $wtPie['participating'] }} · NP: {{ $wtPie['non_participating'] }}</div>
-                                        <div class="text-xs text-gray-500">{{ number_format($wPct, 0) }}% / {{ number_format($wRest, 0) }}%</div>
+                            <h3 class="mb-2 text-sm font-bold">Participation vs non-participation by work type</h3>
+                            <div class="flex flex-wrap justify-start gap-4">
+                                @forelse($chartUserParticipationPieByWorkType as $idx => $wtPie)
+                                    <div class="w-[220px] shrink-0 rounded border border-gray-100 p-2 dark:border-gray-700">
+                                        <div id="export-result-wt-chart-{{ $idx }}" class="min-h-[200px] w-full"></div>
                                     </div>
                                 @empty
                                     <p class="text-sm text-gray-500">No users in selection.</p>
@@ -490,27 +460,9 @@ document.addEventListener('livewire:init', function () {
                         </div>
                     </div>
 
-                    {{-- 5.3 Horizontal participation (thin rule, not thick bars); title once; labels left only --}}
                     <div class="mt-8 rounded-lg border border-gray-200 bg-white p-5 dark:border-gray-600 dark:bg-dark">
-                        <h3 class="mb-4 border-b border-gray-200 pb-2 text-left text-sm font-bold text-gray-900 dark:border-gray-600 dark:text-light">Participation count by activity</h3>
-                        <div class="divide-y divide-gray-100 dark:divide-gray-700">
-                            @foreach($chartParticipationBar as $bar)
-                                <div class="flex items-center gap-4 py-2.5">
-                                    <div
-                                        class="min-w-0 max-w-[min(42vw,22rem)] shrink-0 text-left text-xs leading-snug text-gray-800 dark:text-gray-200 sm:text-sm"
-                                        title="{{ $bar['full_label'] ?? $bar['axis_label'] }}"
-                                    >{{ $bar['axis_label'] }}</div>
-                                    <div class="relative min-h-[6px] min-w-0 flex-1">
-                                        <div class="h-[6px] w-full rounded-full bg-gray-100 dark:bg-gray-700"></div>
-                                        <div
-                                            class="absolute left-0 top-0 h-[6px] rounded-full transition-[width] duration-300"
-                                            style="width: {{ number_format($bar['width_pct'], 1) }}%; min-width: {{ $bar['count'] > 0 ? '4px' : '0' }}; background-color: {{ $bar['color'] }};"
-                                        ></div>
-                                    </div>
-                                    <div class="w-9 shrink-0 text-right text-sm font-semibold tabular-nums text-gray-900 dark:text-light">{{ $bar['count'] }}</div>
-                                </div>
-                            @endforeach
-                        </div>
+                        <h3 class="mb-2 border-b border-gray-200 pb-2 text-left text-sm font-bold text-gray-900 dark:border-gray-600 dark:text-light">Participation count by activity</h3>
+                        <div id="export-result-bar-horizontal" class="w-full min-h-[200px]"></div>
                     </div>
                     @endif
 
@@ -522,3 +474,173 @@ document.addEventListener('livewire:init', function () {
         <br>
     </div>
 </div>
+
+<script>
+(function () {
+    function bindChartsListener() {
+        if (window.__exportResultChartsBound) {
+            return;
+        }
+        if (typeof Livewire === 'undefined' || typeof Livewire.on !== 'function') {
+            return;
+        }
+        window.__exportResultChartsBound = true;
+        Livewire.on('export-result-charts-updated', function (e) {
+            var payload = parsePayload(e);
+            requestAnimationFrame(function () {
+                requestAnimationFrame(function () {
+                    renderExportResultCharts(payload);
+                });
+            });
+        });
+    }
+
+    document.addEventListener('livewire:init', bindChartsListener);
+    bindChartsListener();
+
+    function destroyExportResultCharts() {
+        (window.__exportResultApexCharts || []).forEach(function (c) {
+            try { c.destroy(); } catch (e) {}
+        });
+        window.__exportResultApexCharts = [];
+    }
+
+    function registerChart(chart) {
+        window.__exportResultApexCharts = window.__exportResultApexCharts || [];
+        window.__exportResultApexCharts.push(chart);
+    }
+
+    function parsePayload(e) {
+        var p = e;
+        if (e && e.detail && e.detail.pie !== undefined) {
+            p = e.detail;
+        }
+        return {
+            pie: p.pie || { participating: 0, non_participating: 0, pct: 0 },
+            pieByWt: Array.isArray(p.pieByWt) ? p.pieByWt : [],
+            bar: Array.isArray(p.bar) ? p.bar : [],
+        };
+    }
+
+    function renderExportResultCharts(payload) {
+        if (typeof ApexCharts === 'undefined') {
+            return;
+        }
+
+        destroyExportResultCharts();
+
+        var pie = payload.pie;
+        var elPie = document.querySelector('#export-result-pie-overall');
+        if (elPie && (pie.participating > 0 || pie.non_participating > 0)) {
+            var chartPie = new ApexCharts(elPie, {
+                series: [pie.participating, pie.non_participating],
+                chart: {
+                    type: 'donut',
+                    height: 280,
+                    fontFamily: 'inherit',
+                    foreColor: '#94a3b8',
+                    toolbar: { show: false },
+                },
+                labels: ['Participating', 'Non-participating'],
+                colors: ['#2563eb', '#cbd5e1'],
+                legend: { position: 'bottom' },
+                plotOptions: { pie: { donut: { size: '68%' } } },
+                dataLabels: { enabled: true },
+                tooltip: { theme: 'dark' },
+            });
+            chartPie.render();
+            registerChart(chartPie);
+        }
+
+        payload.pieByWt.forEach(function (row, idx) {
+            var el = document.querySelector('#export-result-wt-chart-' + idx);
+            if (!el) {
+                return;
+            }
+            var p = row.participating || 0;
+            var np = row.non_participating || 0;
+            if (p === 0 && np === 0) {
+                return;
+            }
+            var c = new ApexCharts(el, {
+                series: [p, np],
+                chart: {
+                    type: 'donut',
+                    height: 200,
+                    fontFamily: 'inherit',
+                    foreColor: '#94a3b8',
+                    toolbar: { show: false },
+                },
+                labels: ['Participating', 'Non-participating'],
+                colors: ['#0d9488', '#cbd5e1'],
+                title: {
+                    text: row.label || '',
+                    align: 'center',
+                    style: { fontSize: '11px', fontWeight: 600 },
+                },
+                legend: { show: true, position: 'bottom', fontSize: '10px' },
+                plotOptions: { pie: { donut: { size: '62%' } } },
+                dataLabels: { enabled: true },
+                tooltip: { theme: 'dark' },
+            });
+            c.render();
+            registerChart(c);
+        });
+
+        var elBar = document.querySelector('#export-result-bar-horizontal');
+        if (elBar && payload.bar.length > 0) {
+            var counts = payload.bar.map(function (b) { return b.count; });
+            var categories = payload.bar.map(function (b) { return b.axis_label || ''; });
+            var colors = payload.bar.map(function (b) { return b.color || '#6366f1'; });
+            var h = Math.max(260, payload.bar.length * 34 + 80);
+            var chartBar = new ApexCharts(elBar, {
+                series: [{ name: 'Participants (n)', data: counts }],
+                chart: {
+                    type: 'bar',
+                    height: h,
+                    fontFamily: 'inherit',
+                    foreColor: '#94a3b8',
+                    toolbar: { show: false },
+                },
+                colors: colors,
+                plotOptions: {
+                    bar: {
+                        horizontal: true,
+                        borderRadius: 4,
+                        barHeight: '72%',
+                        distributed: true,
+                        dataLabels: { position: 'end' },
+                    },
+                },
+                dataLabels: {
+                    enabled: true,
+                    formatter: function (val) { return val; },
+                    offsetX: 4,
+                    style: { fontSize: '11px' },
+                },
+                stroke: { width: 1, colors: ['#fff'] },
+                xaxis: {
+                    categories: categories,
+                    labels: {
+                        style: { fontSize: '11px' },
+                        maxHeight: 140,
+                        trim: true,
+                    },
+                },
+                yaxis: {
+                    labels: { style: { fontSize: '11px' } },
+                },
+                grid: {
+                    xaxis: { lines: { show: true } },
+                    yaxis: { lines: { show: false } },
+                },
+                legend: { show: false },
+                tooltip: { theme: 'dark' },
+            });
+            chartBar.render();
+            registerChart(chartBar);
+        }
+    }
+
+})();
+</script>
