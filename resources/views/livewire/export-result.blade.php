@@ -621,7 +621,7 @@ document.addEventListener('livewire:init', function () {
                     formatter: function (val) { return val != null ? String(val) : ''; },
                     offsetX: 0,
                     offsetY: 0,
-                    textAnchor: 'middle',
+                    textAnchor: 'start',
                     // Warna angka: array panjang = jumlah batang (wajib untuk distributed), jangan biarkan default putih.
                     style: {
                         fontSize: '12px',
