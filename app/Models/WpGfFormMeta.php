@@ -20,7 +20,8 @@ class WpGfFormMeta extends Model
 {
     protected $connection = 'wordpress';
 
-    protected $table='wp_gf_form_meta';
+    /** Connection already uses prefix `wp_`; do not repeat `wp_` in the table name. */
+    protected $table = 'gf_form_meta';
     use HasFactory;
     protected $fillable=['form_id', 'display_meta', 'entries_grid_meta', 'confirmations', 'notifications'];
 

@@ -20,7 +20,7 @@ class WpGfForm extends Model
 {
     protected $connection = 'wordpress';
 
-    protected $table='wp_gf_form';
+    protected $table = 'gf_form';
     use HasFactory;
     protected $fillable=['title','date_created','date_updated','is_active', 'is_trash'];
 

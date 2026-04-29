@@ -34,7 +34,7 @@ class WpGfEntry extends Model
 {
     protected $connection = 'wordpress';
 
-    protected $table='wp_gf_entry';
+    protected $table = 'gf_entry';
     public $timestamps = false;
     use HasFactory;
 
