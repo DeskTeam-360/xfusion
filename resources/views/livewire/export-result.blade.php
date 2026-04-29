@@ -609,7 +609,7 @@ document.addEventListener('livewire:init', function () {
                         borderRadius: 4,
                         barHeight: '72%',
                         distributed: true,
-                        dataLabels: { position: 'end' },
+                        dataLabels: { position: 'start' },
                     },
                 },
                 dataLabels: {
