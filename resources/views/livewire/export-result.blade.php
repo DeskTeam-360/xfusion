@@ -611,7 +611,7 @@ document.addEventListener('livewire:init', function () {
                         distributed: true,
                         // 'end' = di ujung kanan batang (sering putih & “bablas” ke luar). 'center' = tetap di area warna.
                         dataLabels: {
-                            position: 'center',
+                            position: 'end',
                             hideOverflowingLabels: false,
                         },
                     },
