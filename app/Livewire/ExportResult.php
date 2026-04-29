@@ -86,10 +86,18 @@ class ExportResult extends Component
         '#fda4af', '#94a3b8',
     ];
 
-    public function mount($lockedCompanyId = null, $isCompanyDashboard = false): void
+    public function mount($lockedCompanyId = null, $isCompanyDashboard = null): void
     {
-        $this->isCompanyDashboard = filter_var($isCompanyDashboard, FILTER_VALIDATE_BOOLEAN);
-        $this->lockedCompanyId = $lockedCompanyId !== null && $lockedCompanyId !== '' ? (int) $lockedCompanyId : null;
+        // Livewire hydrates :locked-company-id / :is-company-dashboard onto public props before mount().
+        // Mount is often called with (null, null); assigning from those defaults would wipe hydrated values.
+        if ($lockedCompanyId !== null && $lockedCompanyId !== '') {
+            $this->lockedCompanyId = (int) $lockedCompanyId;
+        }
+        if ($isCompanyDashboard !== null) {
+            $this->isCompanyDashboard = is_bool($isCompanyDashboard)
+                ? $isCompanyDashboard
+                : (bool) filter_var($isCompanyDashboard, FILTER_VALIDATE_BOOLEAN);
+        }
 
         $this->optionTypeUser = [
             ['value' => 'users', 'title' => 'Users'],
