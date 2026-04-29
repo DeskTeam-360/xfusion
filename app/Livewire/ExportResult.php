@@ -127,7 +127,7 @@ class ExportResult extends Component
 
         if ($this->isCompanyDashboard) {
             // Match full report field types; "radio only" leaves most GF forms with zero columns.
-            $this->fields = ['text', 'checkbox', 'number', 'select', 'multiselect', 'radio', 'email', 'name', 'textarea'];
+            $this->fields = ['radio'];
         }
     }
 
