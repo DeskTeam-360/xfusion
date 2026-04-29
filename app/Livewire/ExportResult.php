@@ -46,9 +46,6 @@ class ExportResult extends Component
     public $headerFormatPivotOption=['Full', 'Clean'];
     public $table=0;
 
-    /** Assumed max score (e.g. 1–5 ratings) for pie “% vs remainder” */
-    private const SCORE_SCALE_MAX = 5.0;
-
     /** @var array<int, string> */
     public array $workTypeByUser = [];
 
@@ -62,14 +59,25 @@ class ExportResult extends Component
 
     public ?float $grandAvgActivityAssessment = null;
 
-    /** 0–100 for overall pie (mean score / SCORE_SCALE_MAX × 100) */
-    public float $chartOverallPiePct = 0.0;
+    /** Users with ≥1 answered activity vs users with none (overall). */
+    public array $chartUserParticipationPie = [
+        'participating' => 0,
+        'non_participating' => 0,
+        'pct' => 0.0,
+    ];
 
-    /** @var list<array{label: string, pct: float}> */
-    public array $chartWorkTypePies = [];
+    /** Same counts, grouped by work_type meta. */
+    public array $chartUserParticipationPieByWorkType = [];
 
-    /** @var list<array{label: string, full_label: string, count: int, width_pct: float}> */
+    /** @var list<array{label: string, full_label: string, axis_label: string, end_label: string, count: int, width_pct: float, color: string}> */
     public array $chartParticipationBar = [];
+
+    /** Pastel bar colors (Terra-style horizontal chart). */
+    private const CHART_BAR_PASTELS = [
+        '#93c5fd', '#86efac', '#fca5a5', '#d8b4fe', '#fcd34d', '#67e8f9',
+        '#fdba74', '#a5b4fc', '#f9a8d4', '#5eead4', '#c4b5fd', '#bef264',
+        '#fda4af', '#94a3b8',
+    ];
 
     public function mount()
     {
@@ -245,8 +253,8 @@ class ExportResult extends Component
         $this->activityFooterStats = [];
         $this->totalActivitiesCount = 0;
         $this->grandAvgActivityAssessment = null;
-        $this->chartOverallPiePct = 0.0;
-        $this->chartWorkTypePies = [];
+        $this->chartUserParticipationPie = ['participating' => 0, 'non_participating' => 0, 'pct' => 0.0];
+        $this->chartUserParticipationPieByWorkType = [];
         $this->chartParticipationBar = [];
 
         if ($this->userLists->isEmpty() || $this->field_target === []) {
@@ -321,46 +329,75 @@ class ExportResult extends Component
         );
         if ($colAvgs !== []) {
             $this->grandAvgActivityAssessment = round(array_sum($colAvgs) / count($colAvgs), 2);
-            $this->chartOverallPiePct = min(
-                100.0,
-                max(0.0, ($this->grandAvgActivityAssessment / self::SCORE_SCALE_MAX) * 100.0),
-            );
         }
 
-        $byWorkType = [];
+        $participatingUsers = 0;
+        $nonParticipatingUsers = 0;
+        foreach ($this->userLists as $user) {
+            $c = $this->userRowStats[$user->ID]['complete'] ?? 0;
+            if ($c > 0) {
+                $participatingUsers++;
+            } else {
+                $nonParticipatingUsers++;
+            }
+        }
+        $userTotal = $participatingUsers + $nonParticipatingUsers;
+        $this->chartUserParticipationPie = [
+            'participating' => $participatingUsers,
+            'non_participating' => $nonParticipatingUsers,
+            'pct' => $userTotal > 0 ? ($participatingUsers / $userTotal) * 100.0 : 0.0,
+        ];
+
+        $wtBuckets = [];
         foreach ($this->userLists as $user) {
             $wt = $this->workTypeByUser[$user->ID] ?? '';
             $wtLabel = $wt !== '' ? $wt : '(none)';
-            $avg = $this->userRowStats[$user->ID]['avg_score'] ?? null;
-            if ($avg === null) {
-                continue;
+            if (! isset($wtBuckets[$wtLabel])) {
+                $wtBuckets[$wtLabel] = ['participating' => 0, 'non_participating' => 0];
             }
-            if (! isset($byWorkType[$wtLabel])) {
-                $byWorkType[$wtLabel] = [];
+            $c = $this->userRowStats[$user->ID]['complete'] ?? 0;
+            if ($c > 0) {
+                $wtBuckets[$wtLabel]['participating']++;
+            } else {
+                $wtBuckets[$wtLabel]['non_participating']++;
             }
-            $byWorkType[$wtLabel][] = $avg;
         }
-        foreach ($byWorkType as $label => $vals) {
-            if ($vals === []) {
-                continue;
-            }
-            $m = array_sum($vals) / count($vals);
-            $this->chartWorkTypePies[] = [
+        foreach ($wtBuckets as $label => $b) {
+            $t = $b['participating'] + $b['non_participating'];
+            $this->chartUserParticipationPieByWorkType[] = [
                 'label' => $label,
-                'pct' => min(100.0, max(0.0, ($m / self::SCORE_SCALE_MAX) * 100.0)),
+                'participating' => $b['participating'],
+                'non_participating' => $b['non_participating'],
+                'pct' => $t > 0 ? ($b['participating'] / $t) * 100.0 : 0.0,
             ];
         }
+        usort(
+            $this->chartUserParticipationPieByWorkType,
+            fn ($a, $b) => ($b['participating'] + $b['non_participating']) <=> ($a['participating'] + $a['non_participating']),
+        );
 
         $counts = array_column($this->activityFooterStats, 'participation_count');
         $maxPart = $counts === [] ? 1 : max(max($counts), 1);
+        $barRows = [];
         foreach ($this->activityFooterStats as $row) {
             $headerLabel = $this->getHeaderFormat($row['form_title'], $row['label']);
-            $this->chartParticipationBar[] = [
+            $axisLabel = Str::limit($headerLabel, 55);
+            $cnt = $row['participation_count'];
+            $barRows[] = [
                 'label' => Str::limit($headerLabel, 140),
                 'full_label' => $headerLabel,
-                'count' => $row['participation_count'],
-                'width_pct' => ($row['participation_count'] / $maxPart) * 100.0,
+                'axis_label' => $axisLabel,
+                'end_label' => 'Participants (n), '.$axisLabel.' , '.$cnt,
+                'count' => $cnt,
+                'width_pct' => ($cnt / $maxPart) * 100.0,
             ];
+        }
+        usort($barRows, fn ($a, $b) => $b['count'] <=> $a['count']);
+        $pastels = self::CHART_BAR_PASTELS;
+        $nPastel = count($pastels);
+        foreach ($barRows as $idx => $r) {
+            $r['color'] = $pastels[$idx % $nPastel];
+            $this->chartParticipationBar[] = $r;
         }
     }
 

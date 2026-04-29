@@ -442,61 +442,75 @@ document.addEventListener('livewire:init', function () {
 
                     @if($activityFooterStats !== [])
                     <div class="mt-8 grid gap-8 lg:grid-cols-2">
-                        {{-- Overall assessment pie --}}
+                        {{-- 5.1 Participating users vs non-participating (no activity completed) --}}
                         <div class="rounded-lg border border-gray-200 p-4 dark:border-gray-600">
-                            <h3 class="mb-3 text-sm font-bold">Average assessment vs remainder (to 100%)</h3>
+                            <h3 class="mb-3 text-sm font-bold">Participation vs non-participation (all users)</h3>
                             @php
-                                $pie1 = $chartOverallPiePct;
-                                $rest1 = max(0, min(100, 100 - $pie1));
+                                $pPie = $chartUserParticipationPie;
+                                $pPct = max(0, min(100, (float) ($pPie['pct'] ?? 0)));
+                                $npPct = max(0, min(100, 100 - $pPct));
                             @endphp
                             <div class="flex flex-wrap items-center gap-6">
                                 <div
                                     class="shrink-0 rounded-full border-4 border-white shadow"
-                                    style="width:140px;height:140px;background:conic-gradient(#2563eb 0% {{ $pie1 }}%, #e2e8f0 {{ $pie1 }}% 100%);"
-                                    title="Average {{ number_format($pie1, 1) }}% vs remainder {{ number_format($rest1, 1) }}%"
+                                    style="width:140px;height:140px;background:conic-gradient(#2563eb 0% {{ $pPct }}%, #cbd5e1 {{ $pPct }}% 100%);"
+                                    title="Participating {{ $pPie['participating'] ?? 0 }}, non-participating {{ $pPie['non_participating'] ?? 0 }}"
                                 ></div>
                                 <div class="text-sm text-left space-y-1">
-                                    <div><span class="inline-block h-3 w-3 rounded-sm bg-blue-600 align-middle mr-2"></span> Average (score / 5 × 100): <strong>{{ number_format($pie1, 1) }}%</strong></div>
-                                    <div><span class="inline-block h-3 w-3 rounded-sm bg-slate-200 align-middle mr-2"></span> Remainder to 100%: <strong>{{ number_format($rest1, 1) }}%</strong></div>
-                                    @if($grandAvgActivityAssessment !== null)
-                                        <div class="text-gray-600 dark:text-gray-400">Mean numeric column average (1–5): {{ $grandAvgActivityAssessment }}</div>
-                                    @endif
+                                    <div><span class="inline-block h-3 w-3 rounded-sm bg-blue-600 align-middle mr-2"></span> Participating (completed ≥1 activity): <strong>{{ $pPie['participating'] ?? 0 }}</strong></div>
+                                    <div><span class="inline-block h-3 w-3 rounded-sm bg-slate-300 align-middle mr-2"></span> Non-participating (completed 0): <strong>{{ $pPie['non_participating'] ?? 0 }}</strong></div>
+                                    <div class="text-gray-600 dark:text-gray-400">Share of chart: {{ number_format($pPct, 1) }}% / {{ number_format($npPct, 1) }}%</div>
                                 </div>
                             </div>
                         </div>
 
-                        {{-- Pie by work type --}}
+                        {{-- 5.2 Same pie, by work type --}}
                         <div class="rounded-lg border border-gray-200 p-4 dark:border-gray-600">
-                            <h3 class="mb-3 text-sm font-bold">By work type (mean user score as % of max)</h3>
+                            <h3 class="mb-3 text-sm font-bold">Participation vs non-participation by work type</h3>
                             <div class="flex flex-wrap gap-6">
-                                @forelse($chartWorkTypePies as $pieWt)
-                                    @php $rp = max(0, min(100, 100 - $pieWt['pct'])); @endphp
+                                @forelse($chartUserParticipationPieByWorkType as $wtPie)
+                                    @php
+                                        $wPct = max(0, min(100, (float) ($wtPie['pct'] ?? 0)));
+                                        $wRest = max(0, min(100, 100 - $wPct));
+                                    @endphp
                                     <div class="text-center">
                                         <div
                                             class="mx-auto rounded-full border-2 border-white shadow"
-                                            style="width:100px;height:100px;background:conic-gradient(#0d9488 0% {{ $pieWt['pct'] }}%, #e2e8f0 {{ $pieWt['pct'] }}% 100%);"
+                                            style="width:100px;height:100px;background:conic-gradient(#0d9488 0% {{ $wPct }}%, #cbd5e1 {{ $wPct }}% 100%);"
+                                            title="{{ $wtPie['label'] }}: {{ $wtPie['participating'] }} / {{ $wtPie['non_participating'] }}"
                                         ></div>
-                                        <div class="mt-2 max-w-[120px] text-xs font-medium truncate" title="{{ $pieWt['label'] }}">{{ $pieWt['label'] }}</div>
-                                        <div class="text-xs text-gray-600">{{ number_format($pieWt['pct'], 0) }}% / {{ number_format($rp, 0) }}%</div>
+                                        <div class="mt-2 max-w-[140px] text-xs font-medium truncate" title="{{ $wtPie['label'] }}">{{ $wtPie['label'] }}</div>
+                                        <div class="text-xs text-gray-600">P: {{ $wtPie['participating'] }} · NP: {{ $wtPie['non_participating'] }}</div>
+                                        <div class="text-xs text-gray-500">{{ number_format($wPct, 0) }}% / {{ number_format($wRest, 0) }}%</div>
                                     </div>
                                 @empty
-                                    <p class="text-sm text-gray-500">No numeric score data by work type.</p>
+                                    <p class="text-sm text-gray-500">No users in selection.</p>
                                 @endforelse
                             </div>
                         </div>
                     </div>
 
-                    {{-- Horizontal bar: participation by activity (header format) --}}
-                    <div class="mt-8 rounded-lg border border-gray-200 p-4 dark:border-gray-600">
-                        <h3 class="mb-4 text-sm font-bold">Participation count by activity (same as header format)</h3>
-                        <div class="space-y-3">
+                    {{-- 5.3 Horizontal bar chart (Terra-style): sorted desc, grid, end labels --}}
+                    <div class="mt-8 rounded-lg border border-gray-200 bg-white p-5 dark:border-gray-600 dark:bg-dark">
+                        <div class="mb-1 text-xs font-semibold text-gray-700 dark:text-gray-300">Participants (n)</div>
+                        <h3 class="mb-4 text-sm font-bold text-gray-900 dark:text-light">Participation count by activity</h3>
+                        <div class="space-y-1">
                             @foreach($chartParticipationBar as $bar)
-                                <div class="flex items-center gap-3 text-sm">
-                                    <div class="min-w-0 max-w-xl shrink truncate text-left text-xs pr-2" title="{{ $bar['full_label'] ?? $bar['label'] }}">{{ $bar['label'] }}</div>
-                                    <div class="min-w-0 flex-1 h-6 rounded bg-slate-100 dark:bg-slate-700 overflow-hidden">
-                                        <div class="h-full rounded bg-indigo-500 transition-all" style="width: {{ number_format($bar['width_pct'], 1) }}%"></div>
+                                <div class="flex min-h-[32px] items-stretch gap-2 text-xs">
+                                    <div class="flex w-[11rem] shrink-0 items-center justify-end pr-2 text-right leading-tight text-gray-700 dark:text-gray-300" title="{{ $bar['full_label'] ?? '' }}">{{ $bar['axis_label'] }}</div>
+                                    <div class="relative min-h-[28px] min-w-0 flex-1">
+                                        <div
+                                            class="pointer-events-none absolute inset-y-1 left-0 right-0 rounded opacity-60 dark:opacity-40"
+                                            style="background: repeating-linear-gradient(90deg, transparent 0, transparent calc(10% - 1px), rgba(148,163,184,0.35) calc(10% - 1px), rgba(148,163,184,0.35) 10%);"
+                                        ></div>
+                                        <div class="relative flex h-full min-h-[28px] items-center py-1">
+                                            <div
+                                                class="h-5 shrink-0 rounded-sm shadow-sm"
+                                                style="width: {{ number_format($bar['width_pct'], 1) }}%; min-width: 2px; background-color: {{ $bar['color'] }};"
+                                            ></div>
+                                            <span class="ml-2 min-w-0 flex-1 whitespace-normal leading-snug text-gray-800 dark:text-gray-200">{{ $bar['end_label'] }}</span>
+                                        </div>
                                     </div>
-                                    <div class="w-10 shrink-0 text-right font-semibold tabular-nums">{{ $bar['count'] }}</div>
                                 </div>
                             @endforeach
                         </div>
