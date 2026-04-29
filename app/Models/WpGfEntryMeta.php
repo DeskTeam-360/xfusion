@@ -20,6 +20,8 @@ use Illuminate\Database\Eloquent\Model;
 
 class WpGfEntryMeta extends Model
 {
+    protected $connection = 'wordpress';
+
     protected $table='wp_gf_entry_meta';
     use HasFactory;
     protected $fillable=['form_id','entry_id','meta_key','meta_value','item_index'];

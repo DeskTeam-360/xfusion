@@ -6,6 +6,7 @@ use App\Models\Company;
 use App\Models\CourseList;
 use App\Models\CourseGroup;
 
+use App\Models\CompanyEmployee;
 use App\Models\CourseGroupDetail;
 use App\Models\User;
 use App\Models\WpUserMeta;
@@ -125,7 +126,8 @@ class ExportResult extends Component
         $this->optionFields=['text', 'checkbox', 'number', 'select', 'multiselect', 'radio', 'email', 'name','textarea'];
 
         if ($this->isCompanyDashboard) {
-            $this->fields = ['radio'];
+            // Match full report field types; "radio only" leaves most GF forms with zero columns.
+            $this->fields = ['text', 'checkbox', 'number', 'select', 'multiselect', 'radio', 'email', 'name', 'textarea'];
         }
     }
 
@@ -142,7 +144,9 @@ class ExportResult extends Component
             return;
         }
         $this->courseGroupLists = [$gid];
-        $this->courseLists = $this->optionCourseLists2[$gid] ?? [];
+        $raw = $this->optionCourseLists2[$gid] ?? [];
+        $ids = is_array($raw) ? $raw : $raw->toArray();
+        $this->courseLists = array_values(array_unique(array_map('intval', $ids)));
     }
 
     public function getHeaderFormat($course_title, $question)
@@ -205,11 +209,21 @@ class ExportResult extends Component
         $course_ids = is_array($this->courseLists) ? $this->courseLists : [];
 
         if ($this->isCompanyDashboard && $this->lockedCompanyId) {
-            $usersQuery = User::query()->whereHas('companyEmployee', function ($q) {
-                $q->where('company_id', $this->lockedCompanyId);
-            });
-            $this->userLists = $usersQuery->get();
-            $user_ids = $this->userLists->pluck('id')->toArray();
+            // company_employees lives on the app DB; users live on WordPress. whereHas() across connections is unreliable.
+            $employeeUserIds = CompanyEmployee::query()
+                ->where('company_id', $this->lockedCompanyId)
+                ->pluck('user_id')
+                ->filter()
+                ->map(fn ($id) => (int) $id)
+                ->unique()
+                ->values()
+                ->all();
+
+            $this->userLists = $employeeUserIds !== []
+                ? User::query()->whereIn('ID', $employeeUserIds)->get()
+                : collect();
+
+            $user_ids = $this->userLists->pluck('ID')->map(fn ($id) => (int) $id)->unique()->values()->all();
         } else {
             $companies = $this->companies;
             $usersQuery = User::query()->whereIn('ID', $this->users);
@@ -239,6 +253,7 @@ class ExportResult extends Component
             ->get(['display_meta', 'form_id']);
 
         $field_target = [];
+        $typesLower = array_map('strtolower', $field_types);
 
         foreach ($form_meta as $meta) {
             $courseList = CourseList::where('wp_gf_form_id', $meta->form_id)->first();
@@ -265,7 +280,8 @@ class ExportResult extends Component
 
             $f = json_decode($meta->display_meta)->fields ?? [];
             foreach ($f as $field) {
-                if (in_array($field->type, $field_types)) {
+                $ftype = is_string($field->type ?? null) ? strtolower((string) $field->type) : '';
+                if (in_array($ftype, $typesLower, true)) {
                     $field_target[$meta->form_id]['id'][] = $field->id;
                     $field_target[$meta->form_id]['title'][$field->id] = $field->label;
                 }
@@ -274,14 +290,16 @@ class ExportResult extends Component
 
         $this->sortFieldTargetByCourseGroupOrder($field_target);
         $entries = WpGfEntryMeta::whereIn('form_id', $form_ids)->whereHas('wpGfEntry', function ($q) use ($user_ids) {
-            $q->whereIn('created_by', $user_ids)->where('status', 'Active');
+            $q->whereIn('created_by', $user_ids)
+                ->whereIn('status', ['active', 'Active', 'ACTIVE']);
         })->get();
         $results = [];
         foreach ($entries as $entry) {
             $k = explode('.', $entry->meta_key)[0];
             if (isset($field_target[$entry->form_id])) {
                 if (isset($field_target[$entry->form_id]['id'])) {
-                    if (in_array($k, $field_target[$entry->form_id]['id'])) {
+                    $allowedFieldIds = array_map('strval', $field_target[$entry->form_id]['id']);
+                    if (in_array((string) $k, $allowedFieldIds, true)) {
                         $results [$entry->wpGfEntry->created_by][$entry->form_id]['title'] = $entry->wpGfEntry->wpGfForm->title;
                         $results [$entry->wpGfEntry->created_by][$entry->form_id]['data'][$k] = $entry->meta_value;
                     }

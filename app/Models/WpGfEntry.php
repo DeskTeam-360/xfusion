@@ -32,6 +32,8 @@ use Illuminate\Database\Eloquent\Model;
 
 class WpGfEntry extends Model
 {
+    protected $connection = 'wordpress';
+
     protected $table='wp_gf_entry';
     public $timestamps = false;
     use HasFactory;
