@@ -446,7 +446,7 @@ function get_company_info()
     global $wpdb;
 
     $url = $_POST["url"];
-    $query = "select * from course_lists where url='$url'";
+    $query = "select * from wp_course_lists where url='$url'";
 
     $limitLinks = $wpdb->get_results($query);
 
@@ -474,7 +474,7 @@ function get_company_info()
         if ($userID != null) {
             $companyID = get_usermeta($userID, "company");
 
-            $query = "SELECT * FROM companies WHERE id = %d";
+            $query = "SELECT * FROM wp_companies WHERE id = %d";
             $click_logs = $wpdb->get_results(
                 $wpdb->prepare($query, $companyID)
             );
@@ -510,7 +510,7 @@ function get_company_info()
             $companyID = get_usermeta($userID, "company");
             $keapTags = get_usermeta($userID, "access_tags");
 
-            $query = "select * from companies where id=$companyID";
+            $query = "select * from wp_companies where id=$companyID";
             $click_logs = $wpdb->get_results($query);
 
             $result = [];
@@ -827,7 +827,7 @@ function custom_um_section(){
 
             global $wpdb;
 
-            $query = "SELECT * FROM course_groups where tools=0 order by order_group ";
+            $query = "SELECT * FROM wp_course_groups where tools=0 order by order_group ";
             $cg_list = $wpdb->get_results($query);
 
             $output .= '<style>
@@ -1019,7 +1019,7 @@ function toggleAccordion(id) {
 
                 $output .= "<div id='$accordion_id' class='accordion-content' style='display: none; padding: 10px;'>";
 
-                $query = "SELECT * FROM course_group_details where course_group_id = $cg->id order by orders";
+                $query = "SELECT * FROM wp_course_group_details where course_group_id = $cg->id order by orders";
                 $q_list = $wpdb->get_results($query);
 
                 if (count($q_list) == 0) {
@@ -1029,7 +1029,7 @@ function toggleAccordion(id) {
                 $output .= "<div class='profile-notes' style='gap: 10px'>";
                 foreach ($q_list as $q) {
                     $temp_id = (int)$q->course_list_id;
-                    $query = "SELECT * FROM course_lists WHERE id = $temp_id";
+                    $query = "SELECT * FROM wp_course_lists WHERE id = $temp_id";
                     $c_list = $wpdb->get_results($query);
 
                     $form_id = $c_list[0]->wp_gf_form_id;
@@ -1101,7 +1101,7 @@ function toggleAccordion(id) {
                 $output .= "</div></div></div>";
             }
 
-            $query = "SELECT * FROM course_groups WHERE tools=1 ORDER BY order_group";
+            $query = "SELECT * FROM wp_course_groups WHERE tools=1 ORDER BY order_group";
             $cg_list = $wpdb->get_results($query);
 
             $output .= "<h2 style='text-align: center'>Tool List</h2>";
@@ -1111,7 +1111,7 @@ function toggleAccordion(id) {
                 $output .= "<div class='accordion-tools accordion-box accordion-header' style='font-size: 26px; margin: 0'>$cg->title</div>";
                 $output .= "<div class='panel-tools accordion-content' style='display: none; flex-direction: column'>";
 
-                $query = "SELECT * FROM course_group_details WHERE course_group_id = $cg->id ORDER BY orders";
+                $query = "SELECT * FROM wp_course_group_details WHERE course_group_id = $cg->id ORDER BY orders";
                 $q_list = $wpdb->get_results($query);
 
                 if (count($q_list) == 0) {
@@ -1120,7 +1120,7 @@ function toggleAccordion(id) {
 
                 foreach ($q_list as $q) {
                     $temp_id = (int)$q->course_list_id;
-                    $query = "SELECT * FROM course_lists WHERE id = $temp_id";
+                    $query = "SELECT * FROM wp_course_lists WHERE id = $temp_id";
                     $c_list = $wpdb->get_results($query);
 
                     $form_id = $c_list[0]->wp_gf_form_id;

@@ -19,6 +19,9 @@ use Illuminate\Database\Eloquent\Model;
 class Company extends Model
 {
     use HasFactory;
+
+    protected $table = 'wp_companies';
+
     protected $fillable=['user_id', 'title', 'logo_url', 'qrcode_url','company_url'];
 
     public function companyEmployees()

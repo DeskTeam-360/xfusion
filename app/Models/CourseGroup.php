@@ -14,6 +14,8 @@ class CourseGroup extends Model
 {
     use HasFactory;
 
+    protected $table = 'wp_course_groups';
+
     protected $fillable = ['title', 'sub_title', 'type'];
 
     public function courseGroupDetails()

@@ -9,9 +9,11 @@ use Hautelook\Phpass\PasswordHash;
 use KeapGeek\Keap\Facades\Keap;
 use Livewire\Attributes\Validate;
 use Livewire\Component;
+use Livewire\WithFileUploads;
 
 class User extends Component
 {
+    use WithFileUploads;
 
     public $action;
     public $companyId;
@@ -48,6 +50,15 @@ class User extends Component
     public $optionAccess;
     public $optionCompany;
 
+    /** Inline company creation on admin user/create (new user becomes company leader). */
+    public $createNewCompany = false;
+
+    public $new_company_title = '';
+
+    public $new_company_url = '';
+
+    public $new_company_logo;
+
 
     public function mount()
     {
@@ -65,12 +76,12 @@ class User extends Component
 
         if ($this->dataId != null) {
             $data = \App\Models\User::find($this->dataId,);
-            $this->username = $data->user_login;
-            $this->first_name = $data->user_nicename;
-            $this->last_name = $data->last_name;
-            $this->password = $data->password;
+            $this->username = $data->user_nicename ?: $data->user_login;
+            $this->first_name = $data->first_name ?? '';
+            $this->last_name = $data->last_name ?? '';
+            $this->password = $data->user_pass ?? '';
 
-            $this->rePassword = $data->password;
+            $this->rePassword = $this->password;
 
             $this->email = $data->user_email;
             $this->website = $data->user_url;
@@ -256,6 +267,29 @@ class User extends Component
 
         $this->validate();
 
+        if ($this->createNewCompany) {
+            if ($this->companyId != null) {
+                $this->addError('createNewCompany', 'Cannot create a new company while adding a user from a company page.');
+
+                return;
+            }
+            if ($this->company_id && (int) $this->company_id !== 0) {
+                $this->addError('company_id', 'Clear the company dropdown when creating a new company.');
+
+                return;
+            }
+            $this->validate([
+                'new_company_title' => 'required|max:255',
+                'new_company_logo'  => 'nullable|image|mimes:jpeg,png,jpg,gif|max:4096|dimensions:min_width=140,min_height=60,max_width=160,max_height=80',
+                'new_company_url'   => 'nullable|max:2048',
+            ], [
+                'new_company_logo.image'     => 'The company logo must be an image file.',
+                'new_company_logo.mimes'     => 'The company logo must be jpeg, png, jpg, or gif.',
+                'new_company_logo.max'       => 'The company logo may not be greater than 4MB.',
+                'new_company_logo.dimensions' => 'The logo must be between 140x60 and 160x80 pixels.',
+            ]);
+        }
+
         $hasher = new PasswordHash(8, true,); // Sama seperti di WordPress
         $passwordHash = $hasher->HashPassword($this->password,);
 
@@ -300,7 +334,27 @@ class User extends Component
             $this->userMeta['access_tags'] = $this->userMeta['access_tags'] . ';1960';
         }
 
-        if ($this->company_id){
+        $newCompanyIdForRedirect = null;
+
+        if ($this->createNewCompany) {
+            $logoUrl = '';
+            if ($this->new_company_logo != null) {
+                $logoUrl = $this->new_company_logo->store(path: 'public/photos');
+            }
+            $company = \App\Models\Company::create([
+                'user_id'     => $user->ID,
+                'title'       => $this->new_company_title,
+                'logo_url'    => $logoUrl,
+                'qrcode_url'  => '',
+                'company_url' => $this->new_company_url ?? '',
+            ]);
+            $this->userMeta['company'] = $company->id;
+            \App\Repository\View\CompanyEmployee::create([
+                'user_id'    => $user->ID,
+                'company_id' => $company->id,
+            ]);
+            $newCompanyIdForRedirect = $company->id;
+        } elseif ($this->company_id && (int) $this->company_id !== 0) {
             $this->userMeta['company'] = $this->company_id;
 
             \App\Repository\View\CompanyEmployee::create([
@@ -364,8 +418,17 @@ class User extends Component
         ],);
         if ($this->companyId != null) {
             $this->redirect(route('company.show', $this->companyId,),);
+        } elseif ($newCompanyIdForRedirect !== null) {
+            $this->redirect(route('company.show', $newCompanyIdForRedirect,),);
         } else {
             $this->redirect(route('user.index',),);
+        }
+    }
+
+    public function updatedCreateNewCompany($value): void
+    {
+        if ($value) {
+            $this->company_id = 0;
         }
     }
 

@@ -9,7 +9,7 @@ use Illuminate\Support\Facades\Storage;
 
 class CourseListGroup extends \App\Models\CourseGroup implements View
 {
-    protected $table ='course_groups';
+    protected $table = 'wp_course_groups';
 
     public static function tableSearch($params = null): Builder
     {

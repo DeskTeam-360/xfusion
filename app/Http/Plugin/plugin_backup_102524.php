@@ -153,7 +153,7 @@ function get_company_info()
     global $wpdb;
 
     $url = $_POST['url'];
-    $query = "select * from course_lists where url='$url'";
+    $query = "select * from wp_course_lists where url='$url'";
 
     $limitLinks = $wpdb->get_results($query);
 
@@ -166,7 +166,7 @@ function get_company_info()
             $keapTags = get_usermeta($userID, 'keap_tags');
 
 
-            $query = "select * from companies where id=$companyID";
+            $query = "select * from wp_companies where id=$companyID";
             $click_logs = $wpdb->get_results($query);
 
             $wpdb->insert('log', array('log' => "asd"));
@@ -202,7 +202,7 @@ function get_company_info()
             $keapTags = get_usermeta($userID, 'keap_tags');
 
 
-            $query = "select * from companies where id=$companyID";
+            $query = "select * from wp_companies where id=$companyID";
             $click_logs = $wpdb->get_results($query);
 
             $wpdb->insert('log', array('log' => "asd"));

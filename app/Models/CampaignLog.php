@@ -13,5 +13,8 @@ use Illuminate\Database\Eloquent\Model;
 class CampaignLog extends Model
 {
     use HasFactory;
+
+    protected $table = 'wp_campaign_logs';
+
     protected $fillable=['user_id', 'tag_id', 'status'];
 }

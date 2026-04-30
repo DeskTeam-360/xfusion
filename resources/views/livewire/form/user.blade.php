@@ -30,12 +30,37 @@
             <label for="role" class="form-label mb-2">
                 Company
             </label>
-            <select wire:model="company_id" class="form-control">
-                <option value="0"></option>
-                @foreach($optionCompany as $key=>$value)
-                    <option value="{{ $key }}">{{ $value }}</option>
-                @endforeach
-            </select>
+            @if($action=="create" && empty($companyId))
+                <div class="mb-2">
+                    <label for="create-new-company" class="flex align-items-center">
+                        <input type="checkbox" id="create-new-company" style="margin-right: 10px;" wire:model.live="createNewCompany">
+                        Create new company (this user will be the company leader)
+                    </label>
+                </div>
+                @if($createNewCompany)
+                    <div class="border rounded p-3 mb-2 bg-light">
+                        <x-input title="New company name" model="new_company_title" required="true"/>
+                        <x-input model="new_company_logo" type="file" accept="image/jpeg,image/png,image/jpg,image/gif" ignore="{{true}}" title="Company logo (optional)"/>
+                        <small class="text-muted d-block mb-2">Logo dimensions: 140×60 to 160×80 px. Resize on <a href="https://www.iloveimg.com/resize-image#resize-options,pixels" target="_blank" class="text-blue-600 hover:text-blue-800">iLoveIMG</a>.</small>
+                        @error('new_company_logo') <span class="text-danger">{{ $message }}</span> @enderror
+                        <x-input title="Company website (optional)" model="new_company_url"/>
+                    </div>
+                @else
+                    <select wire:model="company_id" class="form-control">
+                        <option value="0"></option>
+                        @foreach($optionCompany as $key=>$value)
+                            <option value="{{ $key }}">{{ $value }}</option>
+                        @endforeach
+                    </select>
+                @endif
+            @else
+                <select wire:model="company_id" class="form-control">
+                    <option value="0"></option>
+                    @foreach($optionCompany as $key=>$value)
+                        <option value="{{ $key }}">{{ $value }}</option>
+                    @endforeach
+                </select>
+            @endif
         </div>
 
     <x-input title="Work Type" model="work_type"/>

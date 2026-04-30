@@ -16,7 +16,8 @@
  * Usage:
  *   [xfusion_company id="12"]
  *   [xfusion_companies per_page="20"]
- *   [xfusion_participation company_id="12"]
+ *   [xfusion_participation]                    — company id from logged-in user meta `company` (fallback: `company_id`)
+ *   [xfusion_participation company_id="12"]     — optional override
  *
  * Participation charts: course group dropdown + Chart.js (overall participation,
  * by work type, activity counts). Data is loaded via WordPress admin-ajax so the
@@ -181,12 +182,33 @@ add_shortcode('xfusion_companies', function ($atts) {
 
 /** --- Participation charts (course group + Chart.js) --- */
 
+
+function xfusion_wp_user_linked_company_id(int $wp_user_id): int
+{
+    foreach (['company', 'company_id'] as $meta_key) {
+        $raw = get_user_meta($wp_user_id, $meta_key, true);
+        if (is_string($raw)) {
+            $raw = trim($raw);
+        }
+        if (is_numeric($raw) && (int) $raw > 0) {
+            return (int) $raw;
+        }
+    }
+    return 0;
+}
+
 add_action('wp_ajax_xfusion_participation_charts', 'xfusion_participation_charts_ajax');
-add_action('wp_ajax_nopriv_xfusion_participation_charts', 'xfusion_participation_charts_ajax');
 
 function xfusion_participation_charts_ajax(): void
 {
     check_ajax_referer('xfusion_participation', 'nonce');
+
+    if (! is_user_logged_in()) {
+        wp_send_json([
+            'success' => false,
+            'message' => __('You must be logged in.', 'xfusion-company'),
+        ], 401);
+    }
 
     $company_id = isset($_POST['company_id']) ? (int) $_POST['company_id'] : 0;
     $course_group_id = isset($_POST['course_group_id']) ? (int) $_POST['course_group_id'] : 0;
@@ -196,6 +218,17 @@ function xfusion_participation_charts_ajax(): void
             'success' => false,
             'message' => __('Invalid company or course group.', 'xfusion-company'),
         ], 400);
+    }
+
+    $user_cid = xfusion_wp_user_linked_company_id((int) get_current_user_id());
+
+    if (! current_user_can('manage_options')) {
+        if ($user_cid < 1 || $company_id !== $user_cid) {
+            wp_send_json([
+                'success' => false,
+                'message' => __('Access denied.', 'xfusion-company'),
+            ], 403);
+        }
     }
 
     $res = xfusion_company_api_request('/companies/' . $company_id . '/participation-charts', [
@@ -218,12 +251,30 @@ function xfusion_participation_charts_ajax(): void
 
 add_shortcode('xfusion_participation', function ($atts) {
     $atts = shortcode_atts([
-        'company_id' => 0,
+        'company_id' => '',
     ], $atts, 'xfusion_participation');
 
-    $company_id = (int) $atts['company_id'];
+    if (! is_user_logged_in()) {
+        return '<p class="xfusion-participation-error">' . esc_html__('You must be logged in to view participation charts.', 'xfusion-company') . '</p>';
+    }
+
+    $wp_user_id = (int) get_current_user_id();
+    $user_company_id = xfusion_wp_user_linked_company_id($wp_user_id);
+
+    $company_id = 0;
+    if (current_user_can('manage_options') && $atts['company_id'] !== '' && $atts['company_id'] !== null) {
+        $company_id = (int) $atts['company_id'];
+    }
     if ($company_id < 1) {
-        return '<p class="xfusion-participation-error">' . esc_html__('company_id is required.', 'xfusion-company') . '</p>';
+        $company_id = $user_company_id;
+    }
+
+    if ($company_id < 1) {
+        return '<p class="xfusion-participation-error">' . esc_html__('No company is linked to your account (user meta: company).', 'xfusion-company') . '</p>';
+    }
+
+    if (! current_user_can('manage_options') && $company_id !== $user_company_id) {
+        return '<p class="xfusion-participation-error">' . esc_html__('Access denied.', 'xfusion-company') . '</p>';
     }
 
     $cg_res = xfusion_company_api_request('/course-groups');
@@ -243,51 +294,97 @@ add_shortcode('xfusion_participation', function ($atts) {
      data-ajax-url="<?php echo esc_url($ajax); ?>"
      data-nonce="<?php echo esc_attr($nonce); ?>"
      data-company-id="<?php echo esc_attr((string) $company_id); ?>"
-     style="max-width:920px;margin:1rem 0;padding:16px;border:1px solid #ddd;border-radius:8px;">
-    <p style="margin:0 0 8px;font-weight:600;"><?php esc_html_e('Course group', 'xfusion-company'); ?></p>
-    <?php if ($cg_load_error) : ?>
-        <p class="xfusion-participation-error" style="margin:0 0 8px;color:#b91c1c;font-size:14px;"><?php echo esc_html($cg_res['error'] ?? __('Could not load course groups.', 'xfusion-company')); ?></p>
-    <?php endif; ?>
-    <label for="<?php echo esc_attr($select_id); ?>" class="screen-reader-text"><?php esc_html_e('Select course group', 'xfusion-company'); ?></label>
-    <select id="<?php echo esc_attr($select_id); ?>" class="xfusion-participation-cg" style="max-width:100%;padding:8px;margin-bottom:12px;">
-        <option value=""><?php esc_html_e('— Select —', 'xfusion-company'); ?></option>
-        <?php
-        foreach ($groups as $g) {
-            if (! is_array($g) || empty($g['id'])) {
-                continue;
-            }
-            $gid = (int) $g['id'];
-            $t = isset($g['title']) ? (string) $g['title'] : '';
-            $st = isset($g['sub_title']) ? (string) $g['sub_title'] : '';
-            $label = $t;
-            if ($st !== '') {
-                $label .= ' — ' . $st;
-            }
-            printf(
-                '<option value="%d">%s</option>',
-                $gid,
-                esc_html($label),
-            );
-        }
-        ?>
-    </select>
-    <p class="xfusion-participation-status" style="margin:0 0 8px;color:#555;font-size:14px;" hidden></p>
+     style="margin:1rem 0;">
+    <div class="xf-part-course-group-bar simple-search-bar">
+        <p class="xf-part-form-title form-title"><?php esc_html_e('Course group', 'xfusion-company'); ?></p>
+        <?php if ($cg_load_error) : ?>
+            <p class="xfusion-participation-error"><?php echo esc_html($cg_res['error'] ?? __('Could not load course groups.', 'xfusion-company')); ?></p>
+        <?php endif; ?>
+        <label for="<?php echo esc_attr($select_id); ?>" class="screen-reader-text"><?php esc_html_e('Select course group', 'xfusion-company'); ?></label>
+        <div class="xf-part-course-row">
+            <select id="<?php echo esc_attr($select_id); ?>" class="xfusion-participation-cg">
+                <option value=""><?php esc_html_e('— Select —', 'xfusion-company'); ?></option>
+                <?php
+                foreach ($groups as $g) {
+                    if (! is_array($g) || empty($g['id'])) {
+                        continue;
+                    }
+                    $gid = (int) $g['id'];
+                    $t = isset($g['title']) ? (string) $g['title'] : '';
+                    $st = isset($g['sub_title']) ? (string) $g['sub_title'] : '';
+                    $label = $t;
+                    if ($st !== '') {
+                        $label .= ' — ' . $st;
+                    }
+                    printf(
+                        '<option value="%d">%s</option>',
+                        $gid,
+                        esc_html($label),
+                    );
+                }
+                ?>
+            </select>
+        </div>
+    </div>
+    <p class="xfusion-participation-status" style="margin:12px 0 8px;color:#555;font-size:14px;" hidden></p>
     <div class="xfusion-participation-charts" style="display:none;">
-        <p style="margin:16px 0 8px;font-weight:600;"><?php esc_html_e('Participation', 'xfusion-company'); ?></p>
+        <p class="xf-part-chart-heading"><?php esc_html_e('Participation', 'xfusion-company'); ?></p>
         <div style="max-width:360px;margin-bottom:24px;">
             <canvas class="xf-chart-overall" role="img" aria-label="<?php echo esc_attr__('Participating vs not participating', 'xfusion-company'); ?>"></canvas>
         </div>
-        <p style="margin:16px 0 8px;font-weight:600;"><?php esc_html_e('By work type', 'xfusion-company'); ?></p>
-        <div style="margin-bottom:24px;">
-            <canvas class="xf-chart-worktype" role="img" aria-label="<?php echo esc_attr__('Participation by work type', 'xfusion-company'); ?>"></canvas>
-        </div>
-        <p style="margin:16px 0 8px;font-weight:600;"><?php esc_html_e('Activity participation', 'xfusion-company'); ?></p>
-        <div style="overflow-x:auto;">
-            <canvas class="xf-chart-bar" role="img" aria-label="<?php echo esc_attr__('Participation per activity', 'xfusion-company'); ?>" style="min-height:280px;"></canvas>
+        <p class="xf-part-chart-heading"><?php esc_html_e('By work type', 'xfusion-company'); ?></p>
+        <div class="xf-chart-worktype-wrap" style="display:flex;flex-wrap:wrap;gap:24px;align-items:flex-start;margin-bottom:24px;" aria-label="<?php echo esc_attr__('Participation by work type', 'xfusion-company'); ?>"></div>
+        <p class="xf-part-chart-heading"><?php esc_html_e('Activity participation', 'xfusion-company'); ?></p>
+        <div class="xf-chart-bar-wrap" style="position:relative;width:100%;min-height:480px;">
+            <canvas class="xf-chart-bar" role="img" aria-label="<?php echo esc_attr__('Participation per activity', 'xfusion-company'); ?>"></canvas>
         </div>
         <p class="xfusion-participation-meta" style="margin:12px 0 0;font-size:13px;color:#666;"></p>
     </div>
 </div>
+<style>
+.xfusion-participation .xf-part-course-group-bar.simple-search-bar .xf-part-form-title.form-title,
+.xfusion-participation .xf-part-course-group-bar.simple-search-bar .form-title {
+    font-family: "Bebas Neue", Sans-serif;
+    font-size: 28px;
+    font-weight: 400;
+    letter-spacing: 2px;
+    margin: 0 0 10px;
+}
+.xfusion-participation .xf-part-course-group-bar .xfusion-participation-error {
+    margin: 0 0 10px;
+    color: #b91c1c;
+    font-size: 14px;
+}
+.xfusion-participation .xf-part-course-group-bar .xf-part-course-row {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+.xfusion-participation .xf-part-course-group-bar select.xfusion-participation-cg {
+    flex: 1;
+    min-width: 0;
+    border: none;
+    border-bottom: 2px solid #000;
+    outline: none;
+    background: #0000000d;
+    padding: 10px;
+    font-size: 22px;
+    width: 100%;
+    transition: 0.3s;
+    border-radius: 10px;
+    cursor: pointer;
+    color: #000;
+    line-height: 1.3;
+}
+.xfusion-participation .xf-part-course-group-bar select.xfusion-participation-cg:focus {
+    border-bottom: 2px solid #0073ff;
+}
+.xfusion-participation .xf-part-chart-heading {
+    margin: 16px 0 8px;
+    font-weight: 600;
+    font-size: 1.05rem;
+}
+</style>
 <script>
 (function () {
     var rootId = <?php echo wp_json_encode($uid); ?>;
@@ -299,7 +396,8 @@ add_shortcode('xfusion_participation', function ($atts) {
     var statusEl = root.querySelector('.xfusion-participation-status');
     var metaEl = root.querySelector('.xfusion-participation-meta');
     var cOverall = root.querySelector('.xf-chart-overall');
-    var cWork = root.querySelector('.xf-chart-worktype');
+    var workWrap = root.querySelector('.xf-chart-worktype-wrap');
+    var barWrap = root.querySelector('.xf-chart-bar-wrap');
     var cBar = root.querySelector('.xf-chart-bar');
 
     var ajaxUrl = root.getAttribute('data-ajax-url');
@@ -307,14 +405,25 @@ add_shortcode('xfusion_participation', function ($atts) {
     var companyId = root.getAttribute('data-company-id');
 
     var instOverall = null;
-    var instWork = null;
+    var instWorkDonuts = [];
     var instBar = null;
 
     function destroyCharts() {
-        [instOverall, instWork, instBar].forEach(function (c) {
-            if (c) { try { c.destroy(); } catch (e) {} }
+        if (instOverall) {
+            try { instOverall.destroy(); } catch (e) {}
+            instOverall = null;
+        }
+        instWorkDonuts.forEach(function (c) {
+            try { c.destroy(); } catch (e) {}
         });
-        instOverall = instWork = instBar = null;
+        instWorkDonuts = [];
+        if (workWrap) {
+            workWrap.innerHTML = '';
+        }
+        if (instBar) {
+            try { instBar.destroy(); } catch (e) {}
+            instBar = null;
+        }
     }
 
     function setStatus(msg, isError) {
@@ -354,38 +463,64 @@ add_shortcode('xfusion_participation', function ($atts) {
         });
 
         var wt = Array.isArray(payload.pie_by_work_type) ? payload.pie_by_work_type : [];
-        var wtLabels = wt.map(function (r) { return String(r.label || ''); });
-        var wtP = wt.map(function (r) { return Number(r.participating || 0); });
-        var wtNp = wt.map(function (r) { return Number(r.non_participating || 0); });
-        instWork = new Chart(cWork, {
-            type: 'bar',
-            data: {
-                labels: wtLabels,
-                datasets: [
-                    {
-                        label: <?php echo wp_json_encode(__('Participating', 'xfusion-company')); ?>,
-                        data: wtP,
-                        backgroundColor: '#22c55e'
+        if (workWrap) {
+            wt.forEach(function (row) {
+                var col = document.createElement('div');
+                col.style.flex = '1 1 200px';
+                col.style.maxWidth = '260px';
+                col.style.textAlign = 'center';
+                var cap = document.createElement('p');
+                cap.style.margin = '0 0 10px';
+                cap.style.fontSize = '14px';
+                cap.style.fontWeight = '600';
+                cap.style.lineHeight = '1.3';
+                cap.textContent = String(row.label || '');
+                var cv = document.createElement('canvas');
+                cv.setAttribute('role', 'img');
+                col.appendChild(cap);
+                col.appendChild(cv);
+                workWrap.appendChild(col);
+                var wp = Number(row.participating || 0);
+                var wnp = Number(row.non_participating || 0);
+                var wd = new Chart(cv, {
+                    type: 'doughnut',
+                    data: {
+                        labels: [
+                            <?php echo wp_json_encode(__('Participating', 'xfusion-company')); ?>,
+                            <?php echo wp_json_encode(__('Not participating', 'xfusion-company')); ?>
+                        ],
+                        datasets: [{ data: [wp, wnp], backgroundColor: ['#22c55e', '#e5e7eb'], borderWidth: 1 }]
                     },
-                    {
-                        label: <?php echo wp_json_encode(__('Not participating', 'xfusion-company')); ?>,
-                        data: wtNp,
-                        backgroundColor: '#d1d5db'
+                    options: {
+                        responsive: true,
+                        maintainAspectRatio: true,
+                        aspectRatio: 1.05,
+                        plugins: {
+                            legend: { position: 'bottom', labels: { boxWidth: 12, font: { size: 11 } } },
+                            title: {
+                                display: true,
+                                text: (row.pct != null ? Math.round(Number(row.pct) * 10) / 10 : 0) + '% ' + <?php echo wp_json_encode(__('participating', 'xfusion-company')); ?>,
+                                font: { size: 12, weight: '500' },
+                                padding: { bottom: 4 }
+                            }
+                        }
                     }
-                ]
-            },
-            options: {
-                indexAxis: 'y',
-                responsive: true,
-                scales: { x: { stacked: true }, y: { stacked: true } },
-                plugins: { legend: { position: 'bottom' } }
-            }
-        });
+                });
+                instWorkDonuts.push(wd);
+            });
+        }
 
         var bars = Array.isArray(payload.bar) ? payload.bar : [];
         var barLabels = bars.map(function (r) { return String(r.axis_label || r.label || ''); });
         var barCounts = bars.map(function (r) { return Number(r.count || 0); });
         var barColors = bars.map(function (r, i) { return r.color || '#93c5fd'; });
+        var nBars = bars.length;
+        var barPixelPerRow = 40;
+        var barChartHeight = Math.max(480, nBars * barPixelPerRow + 140);
+        if (barWrap) {
+            barWrap.style.height = barChartHeight + 'px';
+            barWrap.style.minHeight = barChartHeight + 'px';
+        }
         instBar = new Chart(cBar, {
             type: 'bar',
             data: {
@@ -396,9 +531,47 @@ add_shortcode('xfusion_participation', function ($atts) {
                 indexAxis: 'y',
                 responsive: true,
                 maintainAspectRatio: false,
+                layout: { padding: { right: 40 } },
                 plugins: { legend: { display: false } },
-                scales: { x: { beginAtZero: true, ticks: { precision: 0 } } }
-            }
+                scales: {
+                    x: { beginAtZero: true, ticks: { precision: 0 } },
+                    y: { ticks: { autoSkip: false } },
+                },
+            },
+            plugins: [{
+                id: 'xfusionActivityBarEndValues',
+                afterDatasetsDraw: function (chart) {
+                    var ds0 = chart.data.datasets[0];
+                    if (!ds0 || !ds0.data) {
+                        return;
+                    }
+                    var meta = chart.getDatasetMeta(0);
+                    if (!meta || !meta.data) {
+                        return;
+                    }
+                    var ctx = chart.ctx;
+                    var right = chart.chartArea.right;
+                    ctx.save();
+                    ctx.fillStyle = '#374151';
+                    ctx.font = '600 13px system-ui,-apple-system,Segoe UI,sans-serif';
+                    ctx.textAlign = 'left';
+                    ctx.textBaseline = 'middle';
+                    for (var i = 0; i < ds0.data.length; i++) {
+                        var bar = meta.data[i];
+                        if (!bar) {
+                            continue;
+                        }
+                        var v = ds0.data[i];
+                        var txt = String(v);
+                        var x = (typeof bar.x === 'number' ? bar.x : 0) + 8;
+                        var y = typeof bar.y === 'number' ? bar.y : 0;
+                        var tw = ctx.measureText(txt).width;
+                        x = Math.min(x, right - tw - 2);
+                        ctx.fillText(txt, x, y);
+                    }
+                    ctx.restore();
+                },
+            }],
         });
 
         chartsWrap.style.display = 'block';

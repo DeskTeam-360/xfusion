@@ -73,7 +73,7 @@ function get_company_info()
 
 
     $url = $_POST['url'];
-    $query = "select * from course_lists where url='$url'";
+    $query = "select * from wp_course_lists where url='$url'";
     $wpdb->insert("logs", array('log'=>$query));
     $limitLinks = $wpdb->get_results($query);
     foreach ($limitLinks as $limit) {
@@ -85,7 +85,7 @@ function get_company_info()
 
             $companyID = get_usermeta($userID, 'company');
 
-            $query = "select * from companies where id=$companyID";
+            $query = "select * from wp_companies where id=$companyID";
 
             $click_logs = $wpdb->get_results($query);
 
@@ -137,8 +137,8 @@ function get_company_info()
                                cls.page_title as page_title,
                                cl.url as course_url_parent,
                                week FROM course_schedule_generates csg
-                                   join course_lists cls on cls.id=csg.course_list_id
-                                   join course_lists cl on cl.id=csg.course_list_parent_id
+                                   join wp_course_lists cls on cls.id=csg.course_list_id
+                                   join wp_course_lists cl on cl.id=csg.course_list_parent_id
                                     where cl.url = '$url'";
 
                     $generateTemplates = $wpdb->get_results($query);
@@ -156,7 +156,7 @@ function get_company_info()
                                     'schedule_deadline'=>date('Y-m-d H:i:s', strtotime("+$dateEnd week", $date)),
                                 ), array('id'=>$schedule->id));
                         }else{
-//                            $query2 = "SELECT * FROM course_lists where id = '$template->id'";
+//                            $query2 = "SELECT * FROM wp_course_lists where id = '$template->id'";
 //                            $courseList = $wpdb->get_results($query2);
 
                             $url = substr($template->course_url, -3);

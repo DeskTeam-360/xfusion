@@ -13,6 +13,8 @@ class CourseGroupDetail extends Model
 {
     use HasFactory;
 
+    protected $table = 'wp_course_group_details';
+
     protected $fillable = ['course_group_id', 'course_list_id','orders'];
 
     public function courseGroup()

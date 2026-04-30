@@ -9,6 +9,8 @@ class CourseList extends Model
 {
     use HasFactory;
 
+    protected $table = 'wp_course_lists';
+
     protected $fillable = ['url', 'course_title', 'page_title', 'wp_gf_form_id', 'keap_tag', 'keap_tag_next', 'delay','url_next','repeat_entry', 'legacy'];
 
     public function courseGroupDetails()

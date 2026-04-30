@@ -9,6 +9,9 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
 class Campaign extends Model
 {
     use HasFactory;
+
+    protected $table = 'wp_campaigns';
+
     protected $fillable=['users', 'created_by_group', 'tags', 'status', 'time_schedule'];
 
 

@@ -4786,16 +4786,16 @@ if (!class_exists('um\core\Fields')) {
                         // Buat bagian WHERE IN
                         $placeholders = implode(',', array_fill(0, count($user_groups), '%s'));
                         $query = $wpdb->prepare(
-                            "SELECT * FROM course_groups WHERE tools = 0 AND title IN ($placeholders) ORDER BY order_group",
+                            "SELECT * FROM wp_course_groups WHERE tools = 0 AND title IN ($placeholders) ORDER BY order_group",
                             ...$user_groups
                         );
                     } else {
                         // Jika tidak punya akses ke 3 grup utama, bisa dikosongkan atau tampilkan semua
-                        $query = "SELECT * FROM course_groups WHERE tools = 0 ORDER BY order_group";
+                        $query = "SELECT * FROM wp_course_groups WHERE tools = 0 ORDER BY order_group";
                     }
                     
 
-                    // $query = "SELECT * FROM course_groups where tools=0 order by order_group ";
+                    // $query = "SELECT * FROM wp_course_groups where tools=0 order by order_group ";
                     $cg_list = $wpdb->get_results($query);
 
 
@@ -5000,7 +5000,7 @@ function toggleAccordion(id) {
                         // Accordion content
                         $output .= "<div id='$accordion_id' class='accordion-content' style='display: none; padding: 10px;'>";
 
-                        $query = "SELECT * FROM course_group_details where course_group_id = $cg->id order by orders";
+                        $query = "SELECT * FROM wp_course_group_details where course_group_id = $cg->id order by orders";
                         $q_list = $wpdb->get_results($query);
 
                         if (count($q_list) == 0) {
@@ -5010,7 +5010,7 @@ function toggleAccordion(id) {
                         $output .= "<div class='profile-notes' style='gap: 10px'>";
                         foreach ($q_list as $q) {
                             $temp_id = (int)$q->course_list_id;
-                            $query = "SELECT * FROM course_lists WHERE id = $temp_id";
+                            $query = "SELECT * FROM wp_course_lists WHERE id = $temp_id";
                             $c_list = $wpdb->get_results($query);
 
                             $form_id = $c_list[0]->wp_gf_form_id;
@@ -5094,16 +5094,16 @@ if (!empty($user_groups)) {
     // Buat bagian WHERE IN
     $placeholders = implode(',', array_fill(0, count($user_groups), '%s'));
     $query = $wpdb->prepare(
-        "SELECT * FROM course_groups WHERE tools = 1 AND title IN ($placeholders) ORDER BY order_group",
+        "SELECT * FROM wp_course_groups WHERE tools = 1 AND title IN ($placeholders) ORDER BY order_group",
         ...$user_groups
     );
 } else {
     // Jika tidak punya akses ke 3 grup utama, bisa dikosongkan atau tampilkan semua
-    $query = "SELECT * FROM course_groups WHERE tools = 1 ORDER BY order_group";
+    $query = "SELECT * FROM wp_course_groups WHERE tools = 1 ORDER BY order_group";
 }
 
 
-                    // $query = "SELECT * FROM course_groups WHERE tools=1 ORDER BY order_group";
+                    // $query = "SELECT * FROM wp_course_groups WHERE tools=1 ORDER BY order_group";
                     $cg_list = $wpdb->get_results($query);
 
                     $output .= "<h2 style='text-align: center'>Tool List</h2>";
@@ -5114,7 +5114,7 @@ if (!empty($user_groups)) {
                         $output .= "<div class='accordion-tools accordion-box accordion-header' style='font-size: 26px; margin: 0'>$cg->title</div>";
                         $output .= "<div class='panel-tools accordion-content' style='display: none; flex-direction: column'>";
 
-                        $query = "SELECT * FROM course_group_details WHERE course_group_id = $cg->id ORDER BY orders";
+                        $query = "SELECT * FROM wp_course_group_details WHERE course_group_id = $cg->id ORDER BY orders";
                         $q_list = $wpdb->get_results($query);
 
                         if (count($q_list) == 0) {
@@ -5123,7 +5123,7 @@ if (!empty($user_groups)) {
 
                         foreach ($q_list as $q) {
                             $temp_id = (int)$q->course_list_id;
-                            $query = "SELECT * FROM course_lists WHERE id = $temp_id";
+                            $query = "SELECT * FROM wp_course_lists WHERE id = $temp_id";
                             $c_list = $wpdb->get_results($query);
 
                             $form_id = $c_list[0]->wp_gf_form_id;
