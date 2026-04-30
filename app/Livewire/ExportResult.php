@@ -140,6 +140,12 @@ class ExportResult extends Component
         if ($gid <= 0) {
             $this->courseGroupLists = [];
             $this->courseLists = [];
+            $this->results = [];
+            $this->field_target = [];
+            $this->form_ids = [];
+            $this->table = 0;
+            $this->computeHumanReadableStats();
+            $this->dispatchEmptyCharts();
 
             return;
         }
@@ -147,6 +153,22 @@ class ExportResult extends Component
         $raw = $this->optionCourseLists2[$gid] ?? [];
         $ids = is_array($raw) ? $raw : $raw->toArray();
         $this->courseLists = array_values(array_unique(array_map('intval', $ids)));
+
+        $this->table = 1;
+        $this->getMainData();
+    }
+
+    /**
+     * Reset Apex chart DOM state when there is nothing to plot.
+     */
+    private function dispatchEmptyCharts(): void
+    {
+        $this->dispatch(
+            'export-result-charts-updated',
+            pie: ['participating' => 0, 'non_participating' => 0, 'pct' => 0.0],
+            pieByWt: [],
+            bar: [],
+        );
     }
 
     public function getHeaderFormat($course_title, $question)
@@ -241,6 +263,9 @@ class ExportResult extends Component
             $this->field_target = [];
             $this->form_ids = [];
             $this->computeHumanReadableStats();
+            if ($this->table === 1) {
+                $this->dispatchEmptyCharts();
+            }
 
             return;
         }

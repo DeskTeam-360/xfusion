@@ -237,8 +237,12 @@ document.addEventListener('livewire:init', function () {
                     @endforeach
                 </select>
                 <p class="mt-2 text-xs text-gray-500 dark:text-gray-400">
-                    Course list and field type follow this group automatically (radio fields only). Employees for this company are included automatically.
+                    Charts and the human-readable table load automatically when you choose a course group (company employees only).
                 </p>
+                <div wire:loading class="mt-2 flex items-center gap-2 text-sm text-primary">
+                    <span class="spinner-border spinner-border-sm inline-block align-middle" role="status"></span>
+                    <span>Loading report and charts…</span>
+                </div>
             </div>
             @endif
 
@@ -392,6 +396,34 @@ document.addEventListener('livewire:init', function () {
 
             <div class="overflow-auto " style="width: 100%; padding: 10px">
                 @if($field_target!=[] and $table==1)
+                    @if($activityFooterStats !== [])
+                    <div wire:key="export-charts-{{ $dashboardCourseGroupId }}-{{ count($activityFooterStats) }}"
+                         class="mb-8 grid gap-8 lg:grid-cols-2">
+                        <div class="rounded-lg border border-gray-200 p-4 dark:border-gray-600">
+                            <h3 class="mb-2 text-sm font-bold">Participation vs non-participation (all users)</h3>
+                            <div id="export-result-pie-overall" class="min-h-[280px] w-full"></div>
+                        </div>
+                        <div class="rounded-lg border border-gray-200 p-4 dark:border-gray-600">
+                            <h3 class="mb-2 text-sm font-bold">Participation vs non-participation by work type</h3>
+                            <div class="flex flex-wrap justify-start gap-4">
+                                @forelse($chartUserParticipationPieByWorkType as $idx => $wtPie)
+                                    <div class="w-[220px] shrink-0 rounded border border-gray-100 p-2 dark:border-gray-700">
+                                        <div id="export-result-wt-chart-{{ $idx }}" class="min-h-[200px] w-full"></div>
+                                    </div>
+                                @empty
+                                    <p class="text-sm text-gray-500">No users in selection.</p>
+                                @endforelse
+                            </div>
+                        </div>
+                    </div>
+
+                    <div wire:key="export-bar-{{ $dashboardCourseGroupId }}"
+                         class="mb-8 rounded-lg border border-gray-200 bg-white p-5 dark:border-gray-600 dark:bg-dark">
+                        <h3 class="mb-2 border-b border-gray-200 pb-2 text-left text-sm font-bold text-gray-900 dark:border-gray-600 dark:text-light">Participation count by activity</h3>
+                        <div id="export-result-bar-horizontal" class="w-full min-h-[200px]"></div>
+                    </div>
+                    @endif
+
                     <table
                         class="border-collapse border-wishka-400 w-full text-sm text-center rounded table-auto">
                         <thead class=" text-md text-uppercase uppercase dark:bg-dark  text-bold">
@@ -460,32 +492,6 @@ document.addEventListener('livewire:init', function () {
                         </tfoot>
                         @endif
                     </table>
-
-                    @if($activityFooterStats !== [])
-                    <div class="mt-8 grid gap-8 lg:grid-cols-2">
-                        <div class="rounded-lg border border-gray-200 p-4 dark:border-gray-600">
-                            <h3 class="mb-2 text-sm font-bold">Participation vs non-participation (all users)</h3>
-                            <div id="export-result-pie-overall" class="min-h-[280px] w-full"></div>
-                        </div>
-                        <div class="rounded-lg border border-gray-200 p-4 dark:border-gray-600">
-                            <h3 class="mb-2 text-sm font-bold">Participation vs non-participation by work type</h3>
-                            <div class="flex flex-wrap justify-start gap-4">
-                                @forelse($chartUserParticipationPieByWorkType as $idx => $wtPie)
-                                    <div class="w-[220px] shrink-0 rounded border border-gray-100 p-2 dark:border-gray-700">
-                                        <div id="export-result-wt-chart-{{ $idx }}" class="min-h-[200px] w-full"></div>
-                                    </div>
-                                @empty
-                                    <p class="text-sm text-gray-500">No users in selection.</p>
-                                @endforelse
-                            </div>
-                        </div>
-                    </div>
-
-                    <div class="mt-8 rounded-lg border border-gray-200 bg-white p-5 dark:border-gray-600 dark:bg-dark">
-                        <h3 class="mb-2 border-b border-gray-200 pb-2 text-left text-sm font-bold text-gray-900 dark:border-gray-600 dark:text-light">Participation count by activity</h3>
-                        <div id="export-result-bar-horizontal" class="w-full min-h-[200px]"></div>
-                    </div>
-                    @endif
 
                     <br><br>
                 @endif

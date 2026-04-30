@@ -1,6 +1,8 @@
 <?php
 
 use App\Http\Controllers\Api\CompanyPublicController;
+use App\Http\Controllers\Api\CourseGroupPublicController;
+use App\Http\Controllers\Api\ParticipationChartsController;
 use App\Models\CourseList;
 use App\Models\Tag;
 use App\Models\User;
@@ -409,5 +411,7 @@ Route::get('/next-course/', function (Request $request) {
 Route::prefix('v1')->middleware('fusion.api')->group(function () {
     Route::get('/companies', [CompanyPublicController::class, 'index']);
     Route::get('/companies/{company}', [CompanyPublicController::class, 'show']);
+    Route::get('/companies/{company}/participation-charts', [ParticipationChartsController::class, 'show']);
+    Route::get('/course-groups', [CourseGroupPublicController::class, 'index']);
 });
 
