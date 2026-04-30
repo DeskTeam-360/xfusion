@@ -1,5 +1,6 @@
 <?php
 
+use App\Http\Controllers\Api\CompanyPublicController;
 use App\Models\CourseList;
 use App\Models\Tag;
 use App\Models\User;
@@ -399,5 +400,14 @@ Route::get('/next-course/', function (Request $request) {
         'code'=>200,
         'message'=>'Wrong method',
     ];
+});
+
+/*
+| Public company JSON for WordPress shortcodes / integrations.
+| Set FUSION_API_TOKEN in Laravel .env to require Authorization: Bearer <token>
+*/
+Route::prefix('v1')->middleware('fusion.api')->group(function () {
+    Route::get('/companies', [CompanyPublicController::class, 'index']);
+    Route::get('/companies/{company}', [CompanyPublicController::class, 'show']);
 });
 
