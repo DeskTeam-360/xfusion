@@ -8,43 +8,49 @@
     <x-select title="Gravity Form" model="gfFormId" :options="$optionWpGfForm"/>
 
     <div class="mt-3">
-        <label for="lms-topic-search" class="block text-sm font-bold dark:text-light">
-            LMS topic (LearnDash) — opsional
-        </label>
-        <p class="mt-1 text-xs text-gray-500">Ketik minimal 2 huruf di judul topik untuk mencari <code class="text-xs">wp_posts</code> (<code class="text-xs">sfwd-topic</code>).</p>
+        <span class="block text-sm font-bold dark:text-light">
+            LMS topic (LearnDash)
+            <span class="font-normal text-gray-500">— optional</span>
+        </span>
+        <p class="mt-1 text-xs text-gray-500">
+            Link this course row to a published LearnDash topic (<code class="text-xs">wp_posts.post_type = sfwd-topic</code>). Leave empty if not needed.
+        </p>
+
         @if ($lmsTopicId)
-            <div class="mt-2 flex flex-wrap items-center gap-2 rounded border border-gray-200 bg-gray-50 px-3 py-2 dark:border-gray-600 dark:bg-dark">
+            <div class="mt-2 flex flex-wrap items-center justify-between gap-2 rounded border border-gray-200 bg-gray-50 px-3 py-2 dark:border-gray-600 dark:bg-dark">
                 <span class="text-sm">{{ $lmsTopicSelectedLabel ?: 'ID: '.$lmsTopicId }}</span>
-                <button type="button" wire:click="clearLmsTopic" class="text-sm text-red-600 hover:underline">
-                    Hapus pilihan
+                <button type="button" wire:click="clearLmsTopic" class="text-sm text-primary hover:underline">
+                    Change
                 </button>
             </div>
-        @endif
-        <input
-            id="lms-topic-search"
-            type="search"
-            wire:model.live.debounce.300ms="lmsTopicSearch"
-            placeholder="Cari judul topik…"
-            autocomplete="off"
-            class="mt-2 w-full rounded border border-gray-300 bg-gray-100 px-3 py-2 text-sm focus:border-primary-light focus:outline-none dark:border-primary-light dark:bg-dark dark:text-light"
-        />
-        @if (strlen(trim($lmsTopicSearch)) > 0 && strlen(trim($lmsTopicSearch)) < 2)
-            <p class="mt-1 text-xs text-gray-500">Masukkan setidaknya 2 karakter.</p>
-        @endif
-        @if (count($lmsTopicResults) > 0)
-            <ul class="mt-1 max-h-48 overflow-auto rounded border border-gray-200 bg-white shadow-sm dark:border-gray-600 dark:bg-dark">
-                @foreach ($lmsTopicResults as $row)
-                    <li>
-                        <button
-                            type="button"
-                            wire:click="selectLmsTopic({{ $row['value'] }})"
-                            class="w-full px-3 py-2 text-left text-sm hover:bg-gray-100 dark:hover:bg-gray-700"
-                        >
-                            {{ $row['title'] }}
-                        </button>
-                    </li>
-                @endforeach
-            </ul>
+        @else
+            <label for="lms-topic-search" class="sr-only">Search LMS topic by title</label>
+            <input
+                id="lms-topic-search"
+                type="search"
+                wire:model.live.debounce.300ms="lmsTopicSearch"
+                placeholder="Type at least 2 letters of the topic title…"
+                autocomplete="off"
+                class="mt-2 w-full rounded border border-gray-300 bg-gray-100 px-3 py-2 text-sm focus:border-primary-light focus:outline-none dark:border-primary-light dark:bg-dark dark:text-light"
+            />
+            @if (strlen(trim($lmsTopicSearch)) > 0 && strlen(trim($lmsTopicSearch)) < 2)
+                <p class="mt-1 text-xs text-gray-500">Enter at least 2 characters.</p>
+            @endif
+            @if (count($lmsTopicResults) > 0)
+                <ul class="mt-1 max-h-48 overflow-auto rounded border border-gray-200 bg-white shadow-sm dark:border-gray-600 dark:bg-dark">
+                    @foreach ($lmsTopicResults as $row)
+                        <li>
+                            <button
+                                type="button"
+                                wire:click="selectLmsTopic({{ $row['value'] }})"
+                                class="w-full px-3 py-2 text-left text-sm hover:bg-gray-100 dark:hover:bg-gray-700"
+                            >
+                                {{ $row['title'] }}
+                            </button>
+                        </li>
+                    @endforeach
+                </ul>
+            @endif
         @endif
         @error('lmsTopicId')
             <p class="mt-1 text-sm text-red-600">{{ $message }}</p>

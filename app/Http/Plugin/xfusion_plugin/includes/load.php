@@ -21,6 +21,7 @@ $xfusion_include_files = [
     'learndash-redirect-topics.php',
     'learndash-topic-category-progress-bar.php',
     'gravity-forms-bridge.php',
+    'gravity-forms-course-list-mark-complete.php',
     'search-index-maintenance.php',
 ];
 

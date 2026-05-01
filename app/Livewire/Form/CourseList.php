@@ -28,7 +28,7 @@ class CourseList extends Component
 
     public $legacy = 0;
 
-    /** @var int|null WordPress post ID (wp_posts.ID), LearnDash topic = post_type sfwd-topic */
+    /** @var int|null wp_posts.ID for LearnDash topic (post_type sfwd-topic) */
     public $lmsTopicId = null;
 
     public string $lmsTopicSearch = '';
