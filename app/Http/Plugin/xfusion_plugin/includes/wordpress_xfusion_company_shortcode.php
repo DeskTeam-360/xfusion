@@ -2,9 +2,8 @@
 /**
  * XFusion — Company API shortcodes (WordPress)
  *
- * Copy this file to your WordPress site, e.g.:
- *   wp-content/plugins/xfusion-company-shortcode/xfusion-company-shortcode.php
- * Then activate the plugin, or require it from your theme's functions.php.
+ * Bundled under XFusion plugin: wp-content/plugins/xfusion_plugin/includes/
+ * (legacy path plugin satu tingkat di atas folder plugin juga masih didukung oleh includes/load.php).
  *
  * Laravel endpoints (same app as admin, typically https://admin.*.xperiencefusion.com):
  *   GET /api/v1/companies          — paginated list (?per_page=50)
@@ -392,6 +391,9 @@ add_shortcode('xfusion_participation', function ($atts) {
     if (!root) return;
 
     var sel = root.querySelector('.xfusion-participation-cg');
+    if (!sel) {
+        return;
+    }
     var chartsWrap = root.querySelector('.xfusion-participation-charts');
     var statusEl = root.querySelector('.xfusion-participation-status');
     var metaEl = root.querySelector('.xfusion-participation-meta');

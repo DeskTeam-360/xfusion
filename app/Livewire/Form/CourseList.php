@@ -2,9 +2,10 @@
 
 namespace App\Livewire\Form;
 
-
 use App\Models\Tag;
 use App\Models\WpGfForm;
+use App\Models\WpPost;
+use Illuminate\Validation\Rule;
 use Livewire\Component;
 
 class CourseList extends Component
@@ -23,8 +24,19 @@ class CourseList extends Component
     public $optionCourseTitle;
     public $optionCourseTag;
     public $optionWpGfForm;
-    public $repeatEntry=0;
-    public $legacy=0;
+    public $repeatEntry = 0;
+
+    public $legacy = 0;
+
+    /** @var int|null WordPress post ID (wp_posts.ID), LearnDash topic = post_type sfwd-topic */
+    public $lmsTopicId = null;
+
+    public string $lmsTopicSearch = '';
+
+    /** @var array<int, array{value: int, title: string}> */
+    public array $lmsTopicResults = [];
+
+    public string $lmsTopicSelectedLabel = '';
 
     public function getRules()
     {
@@ -33,6 +45,11 @@ class CourseList extends Component
             'pageTitle' => 'required|max:255',
             'courseTitle' => 'required|max:255',
             'courseTag' => 'nullable',
+            'lmsTopicId' => [
+                'nullable',
+                'integer',
+                Rule::exists('wp_posts', 'ID')->where('post_type', 'sfwd-topic'),
+            ],
         ];
     }
 
@@ -74,7 +91,77 @@ class CourseList extends Component
             $this->urlNext = $data->url_next;
             $this->repeatEntry = $data->repeat_entry;
             $this->legacy = $data->legacy;
+            $this->lmsTopicId = $data->lms_topic_id;
+            $this->refreshLmsTopicLabel();
         }
+    }
+
+    public function updatedLmsTopicSearch(string $value): void
+    {
+        $this->lmsTopicResults = [];
+        $keyword = trim($value);
+        if (strlen($keyword) < 2) {
+            return;
+        }
+
+        $escaped = addcslashes($keyword, '%_\\');
+        $like = '%'.$escaped.'%';
+
+        $this->lmsTopicResults = WpPost::query()
+            ->where('post_type', 'sfwd-topic')
+            ->where('post_status', 'publish')
+            ->where('post_title', 'like', $like)
+            ->orderBy('post_title')
+            ->limit(30)
+            ->get(['ID', 'post_title'])
+            ->map(fn (WpPost $p) => [
+                'value' => (int) $p->ID,
+                'title' => $p->post_title.' (ID: '.$p->ID.')',
+            ])
+            ->all();
+    }
+
+    public function selectLmsTopic(int $id): void
+    {
+        $post = WpPost::query()
+            ->where('ID', $id)
+            ->where('post_type', 'sfwd-topic')
+            ->first(['ID', 'post_title']);
+
+        if (! $post) {
+            return;
+        }
+
+        $this->lmsTopicId = $id;
+        $this->lmsTopicSelectedLabel = $post->post_title.' (ID: '.$post->ID.')';
+        $this->lmsTopicSearch = '';
+        $this->lmsTopicResults = [];
+    }
+
+    public function clearLmsTopic(): void
+    {
+        $this->lmsTopicId = null;
+        $this->lmsTopicSelectedLabel = '';
+        $this->lmsTopicSearch = '';
+        $this->lmsTopicResults = [];
+    }
+
+    private function refreshLmsTopicLabel(): void
+    {
+        if (! $this->lmsTopicId) {
+            $this->lmsTopicSelectedLabel = '';
+
+            return;
+        }
+
+        $post = WpPost::query()
+            ->where('ID', $this->lmsTopicId)
+            ->where('post_type', 'sfwd-topic')
+            ->first(['ID', 'post_title']);
+
+        $this->lmsTopicSelectedLabel = $post
+            ? $post->post_title.' (ID: '.$post->ID.')'
+            : '';
     }
 
     public function create()
@@ -98,13 +185,14 @@ class CourseList extends Component
             'url' => $this->url,
             'page_title' => $this->pageTitle,
             'course_title' => $this->courseTitle,
-            'wp_gf_form_id'=>$this->gfFormId,
-            'keap_tag'=>$this->courseTag,
+            'wp_gf_form_id' => $this->gfFormId,
+            'lms_topic_id' => $this->lmsTopicId,
+            'keap_tag' => $this->courseTag,
             'keap_tag_next' => $this->courseTagNext,
-            'delay'=>10,
-            'url_next'=>$this->urlNext,
-            'repeat_entry'=>$this->repeatEntry,
-            'legacy'=>$this->legacy,
+            'delay' => 10,
+            'url_next' => $this->urlNext,
+            'repeat_entry' => $this->repeatEntry,
+            'legacy' => $this->legacy,
         ]);
         $this->dispatch('swal:alert', data: [
             'icon' => 'success',
@@ -133,13 +221,14 @@ class CourseList extends Component
             'url' => $this->url,
             'page_title' => $this->pageTitle,
             'course_title' => $this->courseTitle,
-            'wp_gf_form_id'=>$this->gfFormId,
-            'keap_tag'=>$this->courseTag,
+            'wp_gf_form_id' => $this->gfFormId,
+            'lms_topic_id' => $this->lmsTopicId,
+            'keap_tag' => $this->courseTag,
             'keap_tag_next' => $this->courseTagNext,
-            'delay'=>$this->delay,
-            'url_next'=>$this->urlNext,
-            'repeat_entry'=>$this->repeatEntry,
-            'legacy'=>$this->legacy,
+            'delay' => $this->delay,
+            'url_next' => $this->urlNext,
+            'repeat_entry' => $this->repeatEntry,
+            'legacy' => $this->legacy,
         ]);
         $this->dispatch('swal:alert', data: [
             'icon' => 'success',

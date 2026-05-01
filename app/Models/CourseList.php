@@ -11,7 +11,11 @@ class CourseList extends Model
 
     protected $table = 'wp_course_lists';
 
-    protected $fillable = ['url', 'course_title', 'page_title', 'wp_gf_form_id', 'keap_tag', 'keap_tag_next', 'delay','url_next','repeat_entry', 'legacy'];
+    protected $fillable = ['url', 'course_title', 'page_title', 'wp_gf_form_id', 'lms_topic_id', 'keap_tag', 'keap_tag_next', 'delay', 'url_next', 'repeat_entry', 'legacy'];
+
+    protected $casts = [
+        'lms_topic_id' => 'integer',
+    ];
 
     public function courseGroupDetails()
     {
