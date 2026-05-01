@@ -37,6 +37,27 @@ if (! defined('XFUSION_API_BEARER_TOKEN')) {
     define('XFUSION_API_BEARER_TOKEN', '');
 }
 
+/**
+ * Shortcodes and participation AJAX are shown only for users with user_meta `user_role`
+ * of Company Admin or Super Admin. Otherwise callers should output nothing and avoid error UI.
+ */
+function xfusion_company_shortcodes_user_allowed(): bool
+{
+    if (! is_user_logged_in()) {
+        return false;
+    }
+
+    $raw = get_user_meta((int) get_current_user_id(), 'user_role', true);
+    if (is_array($raw)) {
+        $role = isset($raw[0]) ? (string) $raw[0] : '';
+    } else {
+        $role = is_string($raw) ? $raw : (string) $raw;
+    }
+    $role = trim($role);
+
+    return in_array($role, ['Company Admin', 'Super Admin'], true);
+}
+
 function xfusion_company_api_request(string $path, array $query = []): array
 {
     $base = rtrim(XFUSION_LARAVEL_API_BASE, '/');
@@ -113,6 +134,10 @@ function xfusion_company_render_card(array $row): string
 }
 
 add_shortcode('xfusion_company', function ($atts) {
+    if (! xfusion_company_shortcodes_user_allowed()) {
+        return '';
+    }
+
     $atts = shortcode_atts([
         'id' => 0,
     ], $atts, 'xfusion_company');
@@ -145,6 +170,10 @@ add_shortcode('xfusion_company', function ($atts) {
 });
 
 add_shortcode('xfusion_companies', function ($atts) {
+    if (! xfusion_company_shortcodes_user_allowed()) {
+        return '';
+    }
+
     $atts = shortcode_atts([
         'per_page' => 50,
     ], $atts, 'xfusion_companies');
@@ -202,6 +231,13 @@ function xfusion_participation_charts_ajax(): void
 {
     check_ajax_referer('xfusion_participation', 'nonce');
 
+    if (! xfusion_company_shortcodes_user_allowed()) {
+        wp_send_json([
+            'success' => false,
+            'silent' => true,
+        ]);
+    }
+
     if (! is_user_logged_in()) {
         wp_send_json([
             'success' => false,
@@ -249,6 +285,10 @@ function xfusion_participation_charts_ajax(): void
 }
 
 add_shortcode('xfusion_participation', function ($atts) {
+    if (! xfusion_company_shortcodes_user_allowed()) {
+        return '';
+    }
+
     $atts = shortcode_atts([
         'company_id' => '',
     ], $atts, 'xfusion_participation');
@@ -618,6 +658,9 @@ add_shortcode('xfusion_participation', function ($atts) {
         })
             .then(function (r) { return r.json(); })
             .then(function (data) {
+                if (data && data.silent === true) {
+                    return;
+                }
                 if (!data || data.success === false) {
                     var m = (data && data.message) ? data.message : <?php echo wp_json_encode(__('Could not load charts.', 'xfusion-company')); ?>;
                     setStatus(m, true);
