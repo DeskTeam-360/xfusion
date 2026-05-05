@@ -15,7 +15,15 @@ use Illuminate\Database\Eloquent\Model;
 
 class CompanyEmployee extends Model
 {
-    protected $table = 'wp_company_employees';
+    /**
+     * Koneksi WordPress memakai prefix `wp_` (config/database.php). Nama tabel di sini
+     * harus suffix saja (`wp_company_employees` di MySQL). Jangan set `wp_company_employees`
+     * atau jadi double: `wp_wp_company_employees`.
+     */
+    protected $connection = 'wordpress';
+
+    protected $table = 'company_employees';
+
     use HasFactory;
     protected $fillable=['user_id', 'company_id'];
 

@@ -64,5 +64,71 @@ function xfusion_gform_after_submission_mark_ld_topic_from_course_list(array $en
         return;
     }
 
-    learndash_process_mark_complete($user_id, $topic_id);
+    if (!learndash_process_mark_complete($user_id, $topic_id)) {
+        return;
+    }
+
+    $entry_id = isset($entry['id']) ? (int) $entry['id'] : 0;
+    if ($entry_id > 0) {
+        xfusion_post_next_course_api($entry_id);
+    }
+}
+
+/**
+ * Admin Laravel untuk /api/next-course: sandbox WP → admin.sandbox, produksi WP → admin (tanpa sandbox).
+ * Fallback: XFUSION_LARAVEL_API_BASE jika host tidak dikenali.
+ */
+function xfusion_next_course_admin_base_url(): string
+{
+    $host = wp_parse_url(home_url('/'), PHP_URL_HOST);
+    $host = $host ? strtolower((string) $host) : '';
+    $host = (string) preg_replace('/^www\./', '', $host);
+
+    if ($host !== '' && str_contains($host, 'sandbox.xperiencefusion.com')) {
+        return 'https://admin.sandbox.xperiencefusion.com';
+    }
+
+    if ($host !== '' && str_ends_with($host, 'xperiencefusion.com') && !str_contains($host, 'sandbox')) {
+        return 'https://admin.xperiencefusion.com';
+    }
+
+    if (defined('XFUSION_LARAVEL_API_BASE') && XFUSION_LARAVEL_API_BASE !== '') {
+        return rtrim((string) XFUSION_LARAVEL_API_BASE, '/');
+    }
+
+    return 'https://admin.sandbox.xperiencefusion.com';
+}
+
+/**
+ * Memanggil Laravel /api/next-course setelah topic LearnDash ditandai selesai (sinkronisasi keap/progress).
+ *
+ * @param int $entry_id Gravity Forms entry ID (mis. ?entry_id=2938).
+ */
+function xfusion_post_next_course_api(int $entry_id): void
+{
+    if ($entry_id < 1 || !function_exists('wp_remote_post')) {
+        return;
+    }
+
+    $base = xfusion_next_course_admin_base_url();
+
+    $url = $base . '/api/next-course?entry_id=' . $entry_id;
+
+    $args = [
+        'timeout' => 15,
+        'sslverify' => true,
+        'blocking' => false,
+        'headers' => [
+            'Accept' => 'application/json',
+        ],
+        'body' => [
+            'entry_id' => $entry_id,
+        ],
+    ];
+
+    if (defined('XFUSION_API_BEARER_TOKEN') && XFUSION_API_BEARER_TOKEN !== '') {
+        $args['headers']['Authorization'] = 'Bearer ' . XFUSION_API_BEARER_TOKEN;
+    }
+
+    wp_remote_post($url, $args);
 }

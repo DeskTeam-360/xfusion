@@ -89,8 +89,6 @@ class ExportResult extends Component
 
     public function mount($lockedCompanyId = null, $isCompanyDashboard = null): void
     {
-        // Livewire hydrates :locked-company-id / :is-company-dashboard onto public props before mount().
-        // Mount is often called with (null, null); assigning from those defaults would wipe hydrated values.
         if ($lockedCompanyId !== null && $lockedCompanyId !== '') {
             $this->lockedCompanyId = (int) $lockedCompanyId;
         }
