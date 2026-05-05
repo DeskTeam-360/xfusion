@@ -552,7 +552,37 @@ add_shortcode('xfusion_participation', function ($atts) {
             });
         }
 
-        var bars = Array.isArray(payload.bar) ? payload.bar : [];
+        /** Sort horizontal activity bars like Laravel: leading index in label ("1 - Topic …"), not by response count. */
+        function xfusionBarLeadingOrderKey(axisLabel, fullLabel) {
+            var s = String((axisLabel && String(axisLabel).trim()) ? axisLabel : (fullLabel || '')).trim();
+            var BIG = 2147483647;
+            var n = BIG;
+            if (s !== '') {
+                var m = s.match(/^\s*(\d+)\s*[\-\u2013\u2014]/);
+                if (m) {
+                    n = parseInt(m[1], 10);
+                } else {
+                    m = s.match(/^\s*(\d+)/);
+                    if (m) {
+                        n = parseInt(m[1], 10);
+                    }
+                }
+            }
+            return { n: n, tie: s };
+        }
+        function xfusionSortActivityBars(bList) {
+            bList.sort(function (a, b) {
+                var ka = xfusionBarLeadingOrderKey(String(a.axis_label || ''), String(a.label || ''));
+                var kb = xfusionBarLeadingOrderKey(String(b.axis_label || ''), String(b.label || ''));
+                if (ka.n !== kb.n) {
+                    return ka.n - kb.n;
+                }
+                return ka.tie.localeCompare(kb.tie, undefined, { numeric: true, sensitivity: 'base' });
+            });
+        }
+
+        var bars = Array.isArray(payload.bar) ? payload.bar.slice() : [];
+        xfusionSortActivityBars(bars);
         var barLabels = bars.map(function (r) { return String(r.axis_label || r.label || ''); });
         var barCounts = bars.map(function (r) { return Number(r.count || 0); });
         var barColors = bars.map(function (r, i) { return r.color || '#93c5fd'; });

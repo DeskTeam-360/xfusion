@@ -315,7 +315,7 @@ final class ParticipationChartsService
                 'width_pct' => ($cnt / $maxPart) * 100.0,
             ];
         }
-        usort($barRows, fn ($a, $b) => $b['count'] <=> $a['count']);
+        self::sortBarRowsByLeadingCourseOrder($barRows);
         $pastels = self::CHART_BAR_PASTELS;
         $nPastel = count($pastels);
         $bar = [];
@@ -330,6 +330,40 @@ final class ParticipationChartsService
             'bar' => $bar,
             'activities_count' => $totalActivities,
         ];
+    }
+
+    /**
+     * Sort activity bars by leading course order in the label (e.g. "1 - Get Real …"), not by response count.
+     *
+     * @param  list<array{label?: string, axis_label?: string}>  $barRows
+     */
+    public static function sortBarRowsByLeadingCourseOrder(array &$barRows): void
+    {
+        usort($barRows, function (array $a, array $b): int {
+            $ka = self::barRowLeadingOrderKey($a['axis_label'] ?? '', $a['label'] ?? '');
+            $kb = self::barRowLeadingOrderKey($b['axis_label'] ?? '', $b['label'] ?? '');
+            if ($ka['n'] !== $kb['n']) {
+                return $ka['n'] <=> $kb['n'];
+            }
+
+            return strnatcasecmp($ka['tie'], $kb['tie']);
+        });
+    }
+
+    /**
+     * @return array{n: int, tie: string}
+     */
+    private static function barRowLeadingOrderKey(string $axisLabel, string $fullLabel): array
+    {
+        $s = trim($axisLabel !== '' ? $axisLabel : $fullLabel);
+        $n = PHP_INT_MAX;
+        if ($s !== '' && preg_match('/^\s*(\d+)\s*[\-–—]/u', $s, $m)) {
+            $n = (int) $m[1];
+        } elseif ($s !== '' && preg_match('/^\s*(\d+)/', $s, $m)) {
+            $n = (int) $m[1];
+        }
+
+        return ['n' => $n, 'tie' => $s];
     }
 
     /**

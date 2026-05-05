@@ -14,6 +14,7 @@ use App\Models\WpGfEntryMeta;
 use App\Models\WpGfFormMeta;
 use App\Models\WpPost;
 use App\Models\WpPostMeta;
+use App\Services\ParticipationChartsService;
 use Illuminate\Support\Str;
 use Livewire\Component;
 
@@ -496,7 +497,7 @@ class ExportResult extends Component
                 'width_pct' => ($cnt / $maxPart) * 100.0,
             ];
         }
-        usort($barRows, fn ($a, $b) => $b['count'] <=> $a['count']);
+        ParticipationChartsService::sortBarRowsByLeadingCourseOrder($barRows);
         $pastels = self::CHART_BAR_PASTELS;
         $nPastel = count($pastels);
         foreach ($barRows as $idx => $r) {
