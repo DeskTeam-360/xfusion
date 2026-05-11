@@ -3,55 +3,18 @@
 namespace App\Repository\View;
 
 use App\Models\ScheduleExecution;
+use App\Models\User;
 use App\Repository\View;
 use Illuminate\Database\Eloquent\Builder;
 
+/**
+ * Bekas halaman company schedule — data kosong tanpa jadwal.
+ */
 class ScheduleEmployee extends ScheduleExecution implements View
 {
-    protected $table = 'schedule_executions';
-
-//schedule_executions
     public static function tableSearch($params = null): Builder
     {
-        $query = $params['query'];
-        $param = $params['param1'];
-        $param2 = $params['param2'];
-
-
-        if ($param != null) {
-            if ($param2 != null) {
-                return empty($query) ?
-                    static::query()->where('company_id', '=', $param)->where('user_id', '=', $param2) :
-                    static::query()->where('company_id', '=', $param)->where('user_id', '=', $param2)->where(function ($q) use ($query) {
-                        $q->whereHas('user', function ($q) use ($query) {
-                            $q->where('user_nicename', 'like', "%$query%");
-                        })
-                            ->orWhere('schedule_access', 'like', "%$query%")
-                            ->orWhere('schedule_deadline', 'like', "%$query%");
-                    });
-            } else {
-                return empty($query) ?
-                    static::query()->where('company_id', '=', $param) :
-                    static::query()->where('company_id', '=', $param)->where(function ($q) use ($query) {
-                        $q->whereHas('user', function ($q) use ($query) {
-                            $q->where('user_nicename', 'like', "%$query%");
-                        })
-                            ->orWhere('schedule_access', 'like', "%$query%")
-                            ->orWhere('schedule_deadline', 'like', "%$query%");
-                    });
-            }
-
-        } else {
-            return empty($query) ?
-                static::query()->where('user_id', '=', $param2) :
-                static::query()->where('user_id', '=', $param2)->where(function ($q) use ($query) {
-                    $q->whereHas('user', function ($q) use ($query) {
-                        $q->where('user_nicename', 'like', "%$query%");
-                    })
-                        ->orWhere('schedule_access', 'like', "%$query%")
-                        ->orWhere('schedule_deadline', 'like', "%$query%");
-                });
-        }
+        return static::query();
     }
 
     public static function tableView(): array
@@ -76,28 +39,43 @@ class ScheduleEmployee extends ScheduleExecution implements View
 
     public static function tableData($data = null): array
     {
+        if ($data === null) {
+            return [
+                ['type' => 'string', 'data' => '-'],
+                ['type' => 'string', 'data' => '-'],
+                ['type' => 'string', 'text-align' => 'center', 'data' => '-'],
+                ['type' => 'raw_html', 'text-align' => 'center', 'data' => '-'],
+                ['type' => 'raw_html', 'text-align' => 'center', 'data' => '-'],
+                ['type' => 'raw_html', 'text-align' => 'center', 'data' => '-'],
+                ['type' => 'raw_html', 'text-align' => 'center', 'data' => '-'],
+            ];
+        }
 
-        $link = $data->link;
+        $link = $data->link ?? '';
 
-        $result = "No result";
-        $gfEntry = \App\Models\WpGfEntry::where('source_url', $link)
-            ->where('created_by', $data->user_id)
-            ->where('status','active')
-            ->orderByDesc('id')
-            ->first();
+        $result = 'No result';
+        $gfEntry = null;
+        if ($link !== '' && isset($data->user_id)) {
+            $gfEntry = \App\Models\WpGfEntry::where('source_url', $link)
+                ->where('created_by', $data->user_id)
+                ->where('status', 'active')
+                ->orderByDesc('id')
+                ->first();
+        }
 
-        if ($gfEntry != null) {
+        if ($gfEntry !== null) {
             $url = $link . '?dataId=' . $gfEntry->id;
             $result = "<a href='$url' target='_blank' class='btn bg-blue-300 text-nowrap' >Look result</a>
 <a href='#' wire:click='trashItem($gfEntry->id)' class='btn bg-error text-nowrap' >Delete Record</a>
 ";
         }
 
+        $userId = $data->user_id ?? null;
 
         return [
-            ['type' => 'index', 'data' => $data->id],
-            ['type' => 'string', 'data' => \App\Models\User::find($data->user_id)->user_nicename],
-            ['type' => 'string', 'text-align' => 'center', 'data' => $data->title],
+            ['type' => 'index', 'data' => $data->id ?? 0],
+            ['type' => 'string', 'data' => $userId !== null ? (User::find($userId)?->user_nicename ?? '-') : '-'],
+            ['type' => 'string', 'text-align' => 'center', 'data' => $data->title ?? '-'],
             ['type' => 'raw_html', 'text-align' => 'center', 'data' => "
 <script >
 function myFunction(link) {

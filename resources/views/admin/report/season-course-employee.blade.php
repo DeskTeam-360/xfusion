@@ -49,10 +49,8 @@
                         @php
                             try {
                                 $user = \App\Models\User::where('id', $d)->first()['user_login'];
-                                $scheduleExec = \App\Models\ScheduleExecution::where('user_id', $d)->count() >= \App\Models\CourseGroupBackup::where('season_id', $d)->count() ? 'Done' : 'On Progress';
-
-                                $date = \App\Models\ScheduleExecution::where('user_id', $d)->first()['schedule_access'];
-                                $dateRec = \Carbon\Carbon::createFromFormat('Y-m-d H:i:s', $date)->format('M d, Y');
+                                $scheduleExec = '-';
+                                $dateRec = '-';
 
                                 $result = 'yes';
 

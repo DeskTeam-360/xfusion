@@ -7,9 +7,6 @@ use App\Models\CourseGroupBackup;
 use App\Models\CourseGroupDetail;
 use App\Models\CourseList;
 use App\Models\Level;
-use App\Models\ScheduleExecution;
-use App\Models\Season;
-use App\Models\User;
 use App\Models\WpGfEntry;
 use App\Models\WpGfForm;
 use Illuminate\Http\Request;
@@ -61,9 +58,7 @@ class ReportController extends Controller
     {
         $role = $this->auth();
 
-        $data = ScheduleExecution::where('season_id', $id)
-                            ->distinct()
-                            ->pluck('user_id');
+        $data = collect();
 
         return view(
             'admin.report.season-course-employee', compact('data', 'id', 'role')
@@ -74,10 +69,7 @@ class ReportController extends Controller
     {
         $role = $this->auth();
 
-        $data = ScheduleExecution::where('season_id', $id)
-            ->where('company_id', $companyId)
-            ->distinct()
-            ->pluck('user_id');
+        $data = collect();
 
         return view(
             'admin.report.season-course-employee', compact('data', 'id', 'companyId', 'role')
@@ -129,9 +121,7 @@ class ReportController extends Controller
     {
         $role = $this->auth();
 
-        $data = ScheduleExecution::where('level_id', $id)
-            ->distinct()
-            ->pluck('user_id');
+        $data = collect();
 
         return view(
             'admin.report.level-course-employee', compact('data', 'id', 'role')
@@ -142,10 +132,7 @@ class ReportController extends Controller
     {
         $role = $this->auth();
 
-        $data = ScheduleExecution::where('level_id', $id)
-            ->where('company_id', $companyId)
-            ->distinct()
-            ->pluck('user_id');
+        $data = collect();
 
         return view(
             'admin.report.level-course-employee', compact('data', 'id', 'companyId', 'role')
@@ -156,7 +143,7 @@ class ReportController extends Controller
     {
         $role = $this->auth();
 
-        $data_form = ScheduleExecution::where('user_id', $dl)->get();
+        $data_form = collect();
         $level_id = $id;
         $user_id = $dl;
 

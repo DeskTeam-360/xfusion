@@ -150,9 +150,9 @@
                         </td>
                         <td class=" whitespace-nowrap  dark:text-darklink p-2 text-center">
                             @php
-                                $link = \App\Models\ScheduleExecution::where('user_id',$c->ID)->get()->pluck('link')->toArray();
-                                $courseComplete = \App\Models\WpGfEntry::where('created_by',$c->ID)->whereIn('source_url',$link)->where('status','active')->count();
-                                $course = \App\Models\ScheduleExecution::where('user_id',$c->ID)->count();
+                                $link = [];
+                                $courseComplete = 0;
+                                $course = 0;
                             @endphp
                             @if($course==0)
                                 No course scheduled to employee

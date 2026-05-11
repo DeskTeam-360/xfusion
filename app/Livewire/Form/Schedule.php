@@ -2,9 +2,6 @@
 
 namespace App\Livewire\Form;
 
-use App\Models\ScheduleExecution;
-use Carbon\Carbon;
-use Livewire\Attributes\Validate;
 use Livewire\Component;
 
 class Schedule extends Component
@@ -60,22 +57,9 @@ class Schedule extends Component
 
     public function create()
     {
-
-//        dd($this->schedule_access_date != '' ? $this->schedule_access_date . ' ' . $this->schedule_access_time : null);
-        $url = substr($this->link, -3);
-        $number = intval(preg_replace('/[^\w\s]/', '', $url));
         $this->validate();
         $this->resetErrorBag();
-        $se =ScheduleExecution::create([
-            'link' => $this->link,
-            'company_id' => $this->companyId,
-            'user_id' => $this->user_id,
-            'title' => $this->title,
-            'season_id' => ($number <= 15) ? 1 : 2,
-            'status' => 0,
-            'schedule_access' => $this->schedule_access_date != '' ? $this->schedule_access_date . ' ' . $this->schedule_access_time : null,
-            'schedule_deadline' => $this->schedule_deadline_date != '' ? $this->schedule_deadline_date . ' ' . $this->schedule_deadline_time : null,
-        ]);
+        session()->flash('status', __('Fitur jadwal telah dinonaktifkan.'));
 
         $this->redirect(route('company.schedule', $this->companyId));
     }
