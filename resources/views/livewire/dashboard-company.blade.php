@@ -6,28 +6,17 @@
     <div class="lg:col-span-6 md:col-span-6 sm:col-span-6 col-span-12 w-full">
         <div class="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
             {{-- Total employees --}}
-            <div class="card group border border-border shadow-sm transition-shadow duration-200 hover:shadow-md sm:col-span-2 lg:col-span-1 dark:border-darkborder">
-                <div class="card-body flex flex-col gap-4 p-5">
-                    <div class="flex items-start justify-between gap-3">
-                        <div class="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl bg-primary/10 text-primary">
-                            <i class="ti ti-users text-2xl"></i>
-                        </div>
-                        @if($companyId !== '')
-                            <a href="{{ route('company.show', $companyId) }}"
-                               class="inline-flex items-center gap-1 rounded-full border border-border px-2.5 py-1 text-xs font-semibold text-primary transition-colors hover:bg-primary/10 dark:border-darkborder"
-                               aria-label="View employee list details">
-                                <span>Details</span>
-                                <i class="ti ti-arrow-right text-sm"></i>
-                            </a>
-                        @endif
+            <div class="card border border-border shadow-sm transition-shadow duration-200 hover:shadow-md sm:col-span-2 lg:col-span-1 dark:border-darkborder">
+                <div class="card-body flex flex-row flex-wrap items-center gap-4 p-5">
+                    <div class="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl bg-emerald-500/15 text-emerald-600 dark:text-emerald-400">
+                        <i class="ti ti-users text-2xl"></i>
                     </div>
-                    <div>
-                        <p class="text-xs font-semibold uppercase tracking-wide text-muted dark:text-darklink mb-1">Workforce</p>
+                    <div class="min-w-0 flex-1">
+                        <p class="text-xs font-semibold uppercase tracking-wide text-muted dark:text-darklink mb-1">Users</p>
                         <p class="tabular-nums text-3xl font-bold leading-none text-dark dark:text-white">
-                            {{ $userEmployee->count() }}
-                        </p>
-                        <p class="mt-1 text-sm text-muted dark:text-darklink">
-                            Total employees in your company
+                        {{ $userEmployee->count() }}                        </p>
+                        <p class="mt-1 text-sm text-muted dark:text-darklink leading-snug">
+                        Total employees in your company
                         </p>
                     </div>
                 </div>
