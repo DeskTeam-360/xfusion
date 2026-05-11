@@ -51,8 +51,8 @@
                 </div>
             </div>
         </div>
-        <div class="card">
-            <div class="card-body flex-row py-4 flex items-center gap-2">
+        <div class="card  flex-row py-4 flex items-center gap-2">
+          
                 <div class="bg-primary h-10 w-10 p-1 text-center text-white" style="border-radius: 100px">
                     <i class="ti ti-users text-2xl"></i>
                 </div>
@@ -69,7 +69,7 @@
                         <i class="ti ti-arrow-up-right"></i>
                     </div>
                 </div>
-            </div>
+            
         </div>
 
       
