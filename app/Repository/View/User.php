@@ -281,7 +281,7 @@ class User extends \App\Models\User implements View
         }
 
         return "
-                <div class='flex flex-wrap gap-1 justify-center'>
+                <div class='flex flex-wrap gap-4 justify-left'>
                     <span><a href='" . htmlspecialchars($routeAccess, ENT_QUOTES, 'UTF-8') . "' class='btn'>Access</a></span>
                     <span><a "
             . ($editAttr !== '' ? $editAttr : "href='$editHrefSafe' class='btn btn-primary'")
