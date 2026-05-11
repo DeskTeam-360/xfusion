@@ -14,6 +14,7 @@ class CourseGroupPublicController extends Controller
             ->withCount('courseGroupDetails')
             ->orderBy('title')
             ->orderBy('sub_title')
+            ->where('chart', 0)
             ->get();
 
         return response()->json([

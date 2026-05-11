@@ -9,6 +9,7 @@ use Illuminate\Database\Eloquent\Model;
  * @property $title
  * @property $sub_title
  * @property $type
+ * @property $chart
  */
 class CourseGroup extends Model
 {
@@ -16,7 +17,7 @@ class CourseGroup extends Model
 
     protected $table = 'wp_course_groups';
 
-    protected $fillable = ['title', 'sub_title', 'type'];
+    protected $fillable = ['title', 'sub_title', 'type', 'chart'];
 
     public function courseGroupDetails()
     {

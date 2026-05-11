@@ -793,7 +793,14 @@ add_filter("get_search_form", "disable_search_form_homepage");
 
 
 
-function custom_um_section(){
+/**
+ * Konten Course List + Tool List untuk profil (dulu di-hook Ultimate Member).
+ * Tempatkan di tab template UM: shortcode [xfusion_um_profile_courses]
+ *
+ * @return string
+ */
+function xfusion_um_profile_courses_render()
+{
     $output = '';
 
     //get user
@@ -815,6 +822,10 @@ function custom_um_section(){
     $user_id = ($user_result && isset($user_result[0])) ? $user_result[0]->ID : 0;
     if ($user_id == 0) {
         $user_id = get_current_user_id();
+    }
+
+    if (!function_exists('um_is_myprofile')) {
+        return $output;
     }
 
     if (UM()->options()->get('profile_empty_text')) {
@@ -1219,10 +1230,15 @@ document.addEventListener("DOMContentLoaded", function () {
         }
     }
 
-    echo $output;
+    return $output;
 }
 
-add_action('um_profile_content_main', 'custom_um_section');
+function xfusion_um_profile_courses_shortcode($atts): string
+{
+    return xfusion_um_profile_courses_render();
+}
+
+add_shortcode('xfusion_um_profile_courses', 'xfusion_um_profile_courses_shortcode');
 
 
 
