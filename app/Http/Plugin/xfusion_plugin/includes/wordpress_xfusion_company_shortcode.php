@@ -335,14 +335,14 @@ add_shortcode('xfusion_participation', function ($atts) {
      data-company-id="<?php echo esc_attr((string) $company_id); ?>"
      style="margin:1rem 0;">
     <div class="xf-part-course-group-bar simple-search-bar">
-        <p class="xf-part-form-title form-title"><?php esc_html_e('Course group', 'xfusion-company'); ?></p>
+        <p class="xf-part-form-title form-title"><?php esc_html_e('Company Statistics', 'xfusion-company'); ?></p>
         <?php if ($cg_load_error) : ?>
             <p class="xfusion-participation-error"><?php echo esc_html($cg_res['error'] ?? __('Could not load course groups.', 'xfusion-company')); ?></p>
         <?php endif; ?>
         <label for="<?php echo esc_attr($select_id); ?>" class="screen-reader-text"><?php esc_html_e('Select course group', 'xfusion-company'); ?></label>
         <div class="xf-part-course-row">
             <select id="<?php echo esc_attr($select_id); ?>" class="xfusion-participation-cg">
-                <option value=""><?php esc_html_e('— Select —', 'xfusion-company'); ?></option>
+                <option value=""><?php esc_html_e('— Select Course Group —', 'xfusion-company'); ?></option>
                 <?php
                 foreach ($groups as $g) {
                     if (! is_array($g) || empty($g['id'])) {
