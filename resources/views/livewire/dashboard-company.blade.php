@@ -23,6 +23,42 @@
                 </div>
             </div>
 
+            {{-- Total course completed (same logic as Company detail) --}}
+            <div class="card border border-border shadow-sm transition-shadow duration-200 hover:shadow-md sm:col-span-2 lg:col-span-1 dark:border-darkborder">
+                <div class="card-body flex flex-row flex-wrap items-center gap-4 p-5">
+                    <div class="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl bg-sky-500/15 text-sky-600 dark:text-sky-400">
+                        <i class="ti ti-book text-2xl"></i>
+                    </div>
+                    <div class="min-w-0 flex-1">
+                        <p class="text-xs font-semibold uppercase tracking-wide text-muted dark:text-darklink mb-1">Total course completed</p>
+                        <p class="tabular-nums text-3xl font-bold leading-none text-dark dark:text-white">
+                            {{ $totalCourseCompleted }}
+                        </p>
+                        <p class="mt-1 text-sm text-muted dark:text-darklink leading-snug">
+                            Active Gravity Forms entries by company employees
+                        </p>
+                    </div>
+                </div>
+            </div>
+
+            {{-- Company created at --}}
+            <div class="card border border-border shadow-sm transition-shadow duration-200 hover:shadow-md sm:col-span-2 lg:col-span-1 dark:border-darkborder">
+                <div class="card-body flex flex-row flex-wrap items-center gap-4 p-5">
+                    <div class="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl bg-violet-500/15 text-violet-600 dark:text-violet-400">
+                        <i class="ti ti-calendar-event text-2xl"></i>
+                    </div>
+                    <div class="min-w-0 flex-1">
+                        <p class="text-xs font-semibold uppercase tracking-wide text-muted dark:text-darklink mb-1">Company created at</p>
+                        <p class="text-2xl font-bold leading-snug text-dark dark:text-white">
+                            {{ $companyCreatedAtFormatted ?? '—' }}
+                        </p>
+                        <p class="mt-1 text-sm text-muted dark:text-darklink leading-snug">
+                            Company registration date
+                        </p>
+                    </div>
+                </div>
+            </div>
+
             <!-- {{-- Completed (on track / done) --}}
             <div class="card border border-border shadow-sm transition-shadow duration-200 hover:shadow-md sm:col-span-2 lg:col-span-1 dark:border-darkborder">
                 <div class="card-body flex flex-row flex-wrap items-center gap-4 p-5">

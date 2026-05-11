@@ -2,8 +2,10 @@
 
 namespace App\Livewire;
 
+use App\Models\Company;
 use App\Models\User;
 use App\Models\UserRole;
+use App\Models\WpGfEntry;
 use App\Support\UserAccessCoder;
 use Carbon\Carbon;
 use Illuminate\Support\Facades\Auth;
@@ -33,6 +35,10 @@ class DashboardCompany extends Component
      */
     public array $accessTagRows = [];
 
+    public int $totalCourseCompleted = 0;
+
+    /** Formatted label e.g. "January 15, 2024" — same wording as Company detail. */
+    public ?string $companyCreatedAtFormatted = null;
 
     public function mount()
     {
@@ -44,6 +50,8 @@ class DashboardCompany extends Component
             $this->userEmployee = collect();
             $this->accessTagCounts = [];
             $this->accessTagRows = [];
+            $this->totalCourseCompleted = 0;
+            $this->companyCreatedAtFormatted = null;
 
             return;
         }
@@ -58,6 +66,8 @@ class DashboardCompany extends Component
             $this->userEmployee = collect();
             $this->accessTagCounts = [];
             $this->accessTagRows = [];
+            $this->totalCourseCompleted = 0;
+            $this->companyCreatedAtFormatted = null;
 
             return;
         }
@@ -71,6 +81,8 @@ class DashboardCompany extends Component
         $this->inComplete = 0;
         $this->accessTagCounts = [];
         $this->accessTagRows = [];
+        $this->totalCourseCompleted = 0;
+        $this->companyCreatedAtFormatted = null;
 
         if ($this->companyId === '') {
             $this->userEmployee = collect();
@@ -87,6 +99,21 @@ class DashboardCompany extends Component
 
         foreach ($this->userEmployee as $c) {
             $this->inComplete += 1;
+        }
+
+        $companyModel = Company::find($this->companyId);
+        if ($companyModel !== null) {
+            $companyUserIds = $companyModel->companyEmployees()->get()->pluck('user_id')->map(fn ($uid) => (int) $uid)->all();
+            $this->totalCourseCompleted = $companyUserIds === []
+                ? 0
+                : WpGfEntry::query()
+                    ->whereIn('created_by', $companyUserIds)
+                    ->where('status', 'Active')
+                    ->count();
+
+            $this->companyCreatedAtFormatted = $companyModel->created_at !== null
+                ? Carbon::parse($companyModel->created_at)->format('F d, Y')
+                : null;
         }
 
         $this->buildAccessTagCounts();
