@@ -70,6 +70,7 @@ class AdminLayout extends Component
                     'title' => 'Company',
                     'lists' => [
                         ['title' => 'Dashboard', 'type' => 'link', 'route' => route('company.portal.dashboard'), 'icon' => '<i class="ti ti-layout-dashboard text-xl flex-shrink-0"></i> '],
+                        ['title' => 'Company detail', 'type' => 'link', 'route' => route('company.show-detail', $portalCid), 'icon' => '<i class="ti ti-building-community text-xl flex-shrink-0"></i> '],
                         ['title' => 'Users', 'type' => 'link', 'route' => route('company.portal.users'), 'icon' => '<i class="ti ti-users text-xl flex-shrink-0"></i> '],
                         ['title' => 'Export & participation', 'type' => 'link', 'route' => route('company.dashboard', $portalCid), 'icon' => '<i class="ti ti-chart-bar text-xl flex-shrink-0"></i> '],
                         ['title' => 'LMS topic search', 'type' => 'link', 'route' => route('lms-topic-search'), 'icon' => '<i class="ti ti-search text-xl flex-shrink-0"></i> '],

@@ -105,7 +105,37 @@ class CompanyController extends Controller
 
     public function showDetail(string $id)
     {
+        $user = Auth::user();
+
+        if (CompanyAdmin::isCompanyAdminPortalUser($user)) {
+            $cid = CompanyAdmin::portalCompanyMetaId($user);
+            if ($cid === null || (string) $cid !== (string) $id) {
+                abort(403);
+            }
+        } else {
+            $ru = $user->meta->where('meta_key', '=', config('app.wp_prefix', 'wp_') . 'capabilities');
+            $role = '';
+            foreach ($ru as $r) {
+                $role = array_key_first(unserialize($r['meta_value']));
+            }
+            if ($role === 'administrator' || $role === 'editor') {
+                if ($role === 'editor') {
+                    $companies = $user->meta->where('meta_key', '=', 'company');
+                    foreach ($companies as $r) {
+                        if ($r['meta_value'] != $id) {
+                            return redirect()->route('company.show-detail', $r['meta_value']);
+                        }
+                    }
+                }
+            } else {
+                return redirect()->route('dashboard');
+            }
+        }
+
         $company = Company::find($id);
+        if ($company === null) {
+            abort(404);
+        }
 
         $companyEmployees = $company->companyEmployees()->get()->pluck('user_id')->toArray();
         $companyEmployeesEntries = \App\Models\WpGfEntry::whereIn('created_by', $companyEmployees)->where('status', 'Active')->get();

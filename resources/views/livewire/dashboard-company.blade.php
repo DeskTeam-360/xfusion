@@ -60,7 +60,7 @@
             </div> -->
         </div>
     </div>
-    <div class="lg:col-span-4 md:col-span-4 sm:col-span-6 col-span-12 flex gap-1 flex-wrap">
+    <div class="lg:col-span-6 md:col-span-6 sm:col-span-6 col-span-12 flex gap-1 flex-wrap">
     <div class="card">
             <div class="card-body pb-8">
                 <h5 class="card-title">User Growth</h5>
