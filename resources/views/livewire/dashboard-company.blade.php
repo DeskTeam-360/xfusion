@@ -3,77 +3,72 @@
 @endphp
 <div class="col-span-12 grid grid-cols-12 gap-3">
 
-    <div class="lg:col-span-6 md:col-span-6 sm:col-span-6 col-span-12 flex gap-1 flex-wrap">
-        <div class="card shadow-none w-full">
-            <div class="card-body p-6">
-                <div class="flex items-center gap-6">
-                    <div>
-                        <div class="rounded-md bg-primary w-16 h-16 flex items-center justify-center text-white">
-                            <i class="ti ti-file-description text-4xl"></i>
+    <div class="lg:col-span-6 md:col-span-6 sm:col-span-6 col-span-12 w-full">
+        <div class="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
+            {{-- Total employees --}}
+            <div class="card group border border-border shadow-sm transition-shadow duration-200 hover:shadow-md dark:border-darkborder">
+                <div class="card-body flex flex-col gap-4 p-5">
+                    <div class="flex items-start justify-between gap-3">
+                        <div class="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl bg-primary/10 text-primary">
+                            <i class="ti ti-users text-2xl"></i>
                         </div>
+                        @if($companyId !== '')
+                            <a href="{{ route('company.show', $companyId) }}"
+                               class="inline-flex items-center gap-1 rounded-full border border-border px-2.5 py-1 text-xs font-semibold text-primary transition-colors hover:bg-primary/10 dark:border-darkborder"
+                               aria-label="View employee list details">
+                                <span>Details</span>
+                                <i class="ti ti-arrow-right text-sm"></i>
+                            </a>
+                        @endif
                     </div>
-
-                    <div class="items-center justify-between">
-                        <h3 class="text-xl">
-                            {{ $userEmployee->count() }} <br>
-                            Total employee
-                        </h3>
-                    </div>
-
-                    <a href="{{ route('company.show',$companyId) }}"
-                       class="ms-auto text-primary flex gap-1 items-center">
-                        <span class="text-xs font-semibold text-primary">See details</span>
-                        <i class="ti ti-trending-up text-primary text-xl"></i>
-                    </a>
-                </div>
-
-            </div>
-        </div>
-        <div class="card">
-            <div class="card-body flex-row py-4 flex items-center gap-2">
-                <div>
-                    <div class="bg-primary h-10 w-10 p-1 text-center text-white" style="border-radius: 100px">
-                        <i class="ti ti-users text-2xl"></i>
-                    </div>
-                </div>
-                <div class="">
-                    <h5 class="xl:text-xl text-base leading-normal">
-                        {{ $complete }}
-                    </h5>
-                    <span class="text-md flex items-center gap-1 ">
-                        Employee has complete the course
-                    </span>
-                </div>
-                <div>
-                    <div class="text-2xl" style="border-radius: 40px">
-                        <i class="ti ti-arrow-up-right"></i>
+                    <div>
+                        <p class="text-xs font-semibold uppercase tracking-wide text-muted dark:text-darklink mb-1">Workforce</p>
+                        <p class="tabular-nums text-3xl font-bold leading-none text-dark dark:text-white">
+                            {{ $userEmployee->count() }}
+                        </p>
+                        <p class="mt-1 text-sm text-muted dark:text-darklink">
+                            Total employees in your company
+                        </p>
                     </div>
                 </div>
             </div>
-        </div>
-        <div class="card  flex-row py-4 flex items-center gap-2">
-          
-                <div class="bg-primary h-10 w-10 p-1 text-center text-white" style="border-radius: 100px">
-                    <i class="ti ti-users text-2xl"></i>
-                </div>
-                <div class="">
-                    <h5 class="xl:text-xl text-base leading-normal">
-                        {{ $inComplete }}
-                    </h5>
-                    <span class="text-md flex items-center gap-1 ">
-                        Employee has not yet completed the Course
-                    </span>
-                </div>
-                <div>
-                    <div class="text-2xl" style="border-radius: 40px">
-                        <i class="ti ti-arrow-up-right"></i>
+
+            {{-- Completed (on track / done) --}}
+            <div class="card border border-border shadow-sm transition-shadow duration-200 hover:shadow-md dark:border-darkborder">
+                <div class="card-body flex flex-row flex-wrap items-center gap-4 p-5">
+                    <div class="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl bg-emerald-500/15 text-emerald-600 dark:text-emerald-400">
+                        <i class="ti ti-circle-check text-2xl"></i>
+                    </div>
+                    <div class="min-w-0 flex-1">
+                        <p class="text-xs font-semibold uppercase tracking-wide text-muted dark:text-darklink mb-1">Completion</p>
+                        <p class="tabular-nums text-3xl font-bold leading-none text-dark dark:text-white">
+                            {{ $complete }}
+                        </p>
+                        <p class="mt-1 text-sm text-muted dark:text-darklink leading-snug">
+                            Employees marked as having completed assigned activities
+                        </p>
                     </div>
                 </div>
-            
+            </div>
+
+            {{-- Incomplete / pending --}}
+            <div class="card border border-border shadow-sm transition-shadow duration-200 hover:shadow-md sm:col-span-2 lg:col-span-1 dark:border-darkborder">
+                <div class="card-body flex flex-row flex-wrap items-center gap-4 p-5">
+                    <div class="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl bg-amber-500/15 text-amber-600 dark:text-amber-400">
+                        <i class="ti ti-clock-hour-5 text-2xl"></i>
+                    </div>
+                    <div class="min-w-0 flex-1">
+                        <p class="text-xs font-semibold uppercase tracking-wide text-muted dark:text-darklink mb-1">Pending</p>
+                        <p class="tabular-nums text-3xl font-bold leading-none text-dark dark:text-white">
+                            {{ $inComplete }}
+                        </p>
+                        <p class="mt-1 text-sm text-muted dark:text-darklink leading-snug">
+                            Employees without completed scheduling or coursework in this dashboard
+                        </p>
+                    </div>
+                </div>
+            </div>
         </div>
-
-      
-
     </div>
     <div class="lg:col-span-4 md:col-span-4 sm:col-span-6 col-span-12 flex gap-1 flex-wrap">
     <div class="card">
