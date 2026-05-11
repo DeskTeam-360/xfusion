@@ -23,7 +23,7 @@
                 </div>
             </div>
 
-            {{-- Completed (on track / done) --}}
+            <!-- {{-- Completed (on track / done) --}}
             <div class="card border border-border shadow-sm transition-shadow duration-200 hover:shadow-md sm:col-span-2 lg:col-span-1 dark:border-darkborder">
                 <div class="card-body flex flex-row flex-wrap items-center gap-4 p-5">
                     <div class="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl bg-emerald-500/15 text-emerald-600 dark:text-emerald-400">
@@ -57,7 +57,7 @@
                         </p>
                     </div>
                 </div>
-            </div>
+            </div> -->
         </div>
     </div>
     <div class="lg:col-span-4 md:col-span-4 sm:col-span-6 col-span-12 flex gap-1 flex-wrap">
