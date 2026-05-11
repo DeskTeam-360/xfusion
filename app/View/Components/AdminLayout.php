@@ -3,6 +3,7 @@
 namespace App\View\Components;
 
 use App\Models\Company;
+use App\Support\CompanyAdmin;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\View\Component;
@@ -40,7 +41,6 @@ class AdminLayout extends Component
         }
 
 
-
         $this->navbars = [
 //            [
 //                'title' => 'Apps',
@@ -64,59 +64,69 @@ class AdminLayout extends Component
 //            ['title' => 'Chat', 'type' => 'link', 'route' => '#', 'icon' => 'ti ti-api-app'],
         ];
 
-        $this->sidebar = [
-            [
-                'title' => 'Home',
-                'lists' => [
-                    ['title' => 'Dashboard', 'type' => 'link', 'route' => route('dashboard'), 'icon' => '<i class="ti ti-brand-chrome  text-xl flex-shrink-0"></i> '],
-                ]
-            ],
-        ];
-
-        $user = Auth::user();
-        $ru = $user->meta->where('meta_key', '=', config('app.wp_prefix', 'wp_') . 'capabilities');
-        $role = '';
-        foreach ($ru as $r) {
-            $role = array_key_first(unserialize($r['meta_value']));
-        }
-        if ($role == 'administrator') {
-            $this->sidebar[0]['lists'][] = ['title' => 'Companies', 'type' => 'link', 'route' => route('company.index'), 'icon' => '<i class="ti ti-apps  text-xl flex-shrink-0"></i> '];
-            $this->sidebar[0]['lists'][] = ['title' => 'Users', 'type' => 'link', 'route' => route('user.index'), 'icon' => '<i class="ti ti-users  text-xl flex-shrink-0"></i> '];
-            $this->sidebar[0]['lists'][] = ['title' => 'User Progress Only', 'type' => 'link', 'route' => route('user-progress-only'), 'icon' => '<i class="ti ti-users  text-xl flex-shrink-0"></i> '];
-            $this->sidebar[0]['lists'][] = ['title' => 'User-role', 'type' => 'link', 'route' => route('user.roles'), 'icon' => '<i class="ti ti-users  text-xl flex-shrink-0"></i> '];
-            $this->sidebar[0]['lists'][] = ['title' => 'Course Group', 'type' => 'link', 'route' => route('course-group.index'), 'icon' => '<i class="ti ti-webhook  text-xl flex-shrink-0"></i> '];
-            $this->sidebar[0]['lists'][] = ['title' => 'Course list', 'type' => 'link', 'route' => route('course-title.index'), 'icon' => '<i class="ti ti-webhook  text-xl flex-shrink-0"></i> '];
-            $this->sidebar[0]['lists'][] = ['title' => 'LMS topic search', 'type' => 'link', 'route' => route('lms-topic-search'), 'icon' => '<i class="ti ti-search  text-xl flex-shrink-0"></i> '];
-//            $this->sidebar[0]['lists'][] = ['title' => 'All Schedule', 'type' => 'link', 'route' => route('schedule-all'), 'icon' => '<i class="ti ti-clock  text-xl flex-shrink-0"></i> '];
-            //$this->sidebar[0]['lists'][] = ['title' => 'Schedule generate', 'type' => 'link', 'route' => route('course-schedule-generate'), 'icon' => '<i class="ti ti-template  text-xl flex-shrink-0"></i> '];
-            $this->sidebar[0]['lists'][] = ['title' => 'Report', 'type' => 'link', 'route' => route('report.index'), 'icon' => '<i class="ti ti-report  text-xl flex-shrink-0"></i> '];
-            $this->sidebar[0]['lists'][] = ['title' => 'Campaign', 'type' => 'link', 'route' => route('campaign.index'), 'icon' => '<i class="ti ti-brand-campaignmonitor  text-xl flex-shrink-0"></i> '];
-            $this->sidebar[0]['lists'][] = ['title' => 'Tags', 'type' => 'link', 'route' => route('tag.index'), 'icon' => '<i class="ti ti-tags  text-xl flex-shrink-0"></i> '];
-
-        }
-        if ($role == 'editor') {
-            $companies = $user->meta->where('meta_key', '=', 'company');
-            foreach ($companies as $r) {
-                $c = Company::find($r['meta_value']);
-                if ($c != null) {
-                    $this->sidebar[0]['lists'][] = ['title' => 'Employee List', 'type' => 'link', 'route' => route('company.show', $c->id), 'icon' => '<i class="ti ti-users  text-xl flex-shrink-0"></i> '];
-//                    $this->sidebar[0]['lists'][] = ['title' => 'Employee Progress', 'type' => 'link', 'route' => route('company.progress', $c->id), 'icon' => '<i class="ti ti-progress  text-xl flex-shrink-0"></i> '];
-                    $this->sidebar[0]['lists'][] = ['title' => 'Active Schedule', 'type' => 'link', 'route' => route('company.schedule', $c->id), 'icon' => '<i class="ti ti-clock  text-xl flex-shrink-0"></i> '];
-//                    $this->sidebar[0]['lists'][] = ['title' => 'CourseGroup', 'type' => 'link', 'route' => route('report.index'), 'icon' => '<i class="ti ti-user  text-xl flex-shrink-0"></i> '];
-                    $this->sidebar[0]['lists'][] = ['title' => 'Report', 'type' => 'link', 'route' => route('report.index'), 'icon' => '<i class="ti ti-report  text-xl flex-shrink-0"></i> '];
-                }
-            }
-            $this->sidebar[0]['lists'][] = ['title' => 'LMS topic search', 'type' => 'link', 'route' => route('lms-topic-search'), 'icon' => '<i class="ti ti-search  text-xl flex-shrink-0"></i> '];
-        }
-
-        // Contributor and other WP roles that use this admin dashboard (not administrator/editor)
-        if (! in_array($role, ['administrator', 'editor'], true)) {
-            $this->sidebar[0]['lists'][] = [
-                'title' => 'LMS topic search',
-                'type' => 'link',
-                'route' => route('lms-topic-search'),
-                'icon' => '<i class="ti ti-search  text-xl flex-shrink-0"></i> ',
+        if (CompanyAdmin::isCompanyAdminPortalUser($user) && ($portalCid = CompanyAdmin::portalCompanyMetaId($user))) {
+            $this->sidebar = [
+                [
+                    'title' => 'Company',
+                    'lists' => [
+                        ['title' => 'Dashboard', 'type' => 'link', 'route' => route('company.portal.dashboard'), 'icon' => '<i class="ti ti-layout-dashboard text-xl flex-shrink-0"></i> '],
+                        ['title' => 'Users', 'type' => 'link', 'route' => route('company.portal.users'), 'icon' => '<i class="ti ti-users text-xl flex-shrink-0"></i> '],
+                        ['title' => 'Export & participation', 'type' => 'link', 'route' => route('company.dashboard', $portalCid), 'icon' => '<i class="ti ti-chart-bar text-xl flex-shrink-0"></i> '],
+                        ['title' => 'LMS topic search', 'type' => 'link', 'route' => route('lms-topic-search'), 'icon' => '<i class="ti ti-search text-xl flex-shrink-0"></i> '],
+                    ],
+                ],
             ];
+        } else {
+            $this->sidebar = [
+                [
+                    'title' => 'Home',
+                    'lists' => [
+                        ['title' => 'Dashboard', 'type' => 'link', 'route' => route('dashboard'), 'icon' => '<i class="ti ti-brand-chrome  text-xl flex-shrink-0"></i> '],
+                    ]
+                ],
+            ];
+
+            $user = Auth::user();
+            $ru = $user->meta->where('meta_key', '=', config('app.wp_prefix', 'wp_') . 'capabilities');
+            $role = '';
+            foreach ($ru as $r) {
+                $role = array_key_first(unserialize($r['meta_value']));
+            }
+            if ($role == 'administrator') {
+                $this->sidebar[0]['lists'][] = ['title' => 'Companies', 'type' => 'link', 'route' => route('company.index'), 'icon' => '<i class="ti ti-apps  text-xl flex-shrink-0"></i> '];
+                $this->sidebar[0]['lists'][] = ['title' => 'Users', 'type' => 'link', 'route' => route('user.index'), 'icon' => '<i class="ti ti-users  text-xl flex-shrink-0"></i> '];
+                $this->sidebar[0]['lists'][] = ['title' => 'User Progress Only', 'type' => 'link', 'route' => route('user-progress-only'), 'icon' => '<i class="ti ti-users  text-xl flex-shrink-0"></i> '];
+                $this->sidebar[0]['lists'][] = ['title' => 'User-role', 'type' => 'link', 'route' => route('user.roles'), 'icon' => '<i class="ti ti-users  text-xl flex-shrink-0"></i> '];
+                $this->sidebar[0]['lists'][] = ['title' => 'Course Group', 'type' => 'link', 'route' => route('course-group.index'), 'icon' => '<i class="ti ti-webhook  text-xl flex-shrink-0"></i> '];
+                $this->sidebar[0]['lists'][] = ['title' => 'Course list', 'type' => 'link', 'route' => route('course-title.index'), 'icon' => '<i class="ti ti-webhook  text-xl flex-shrink-0"></i> '];
+                $this->sidebar[0]['lists'][] = ['title' => 'LMS topic search', 'type' => 'link', 'route' => route('lms-topic-search'), 'icon' => '<i class="ti ti-search  text-xl flex-shrink-0"></i> '];
+                $this->sidebar[0]['lists'][] = ['title' => 'Report', 'type' => 'link', 'route' => route('report.index'), 'icon' => '<i class="ti ti-report  text-xl flex-shrink-0"></i> '];
+                $this->sidebar[0]['lists'][] = ['title' => 'Campaign', 'type' => 'link', 'route' => route('campaign.index'), 'icon' => '<i class="ti ti-brand-campaignmonitor  text-xl flex-shrink-0"></i> '];
+                $this->sidebar[0]['lists'][] = ['title' => 'Tags', 'type' => 'link', 'route' => route('tag.index'), 'icon' => '<i class="ti ti-tags  text-xl flex-shrink-0"></i> '];
+
+            }
+            if ($role == 'editor') {
+                $companies = $user->meta->where('meta_key', '=', 'company');
+                foreach ($companies as $r) {
+                    $c = Company::find($r['meta_value']);
+                    if ($c != null) {
+                        $this->sidebar[0]['lists'][] = ['title' => 'Employee List', 'type' => 'link', 'route' => route('company.show', $c->id), 'icon' => '<i class="ti ti-users  text-xl flex-shrink-0"></i> '];
+                        $this->sidebar[0]['lists'][] = ['title' => 'Active Schedule', 'type' => 'link', 'route' => route('company.schedule', $c->id), 'icon' => '<i class="ti ti-clock  text-xl flex-shrink-0"></i> '];
+                        $this->sidebar[0]['lists'][] = ['title' => 'Report', 'type' => 'link', 'route' => route('report.index'), 'icon' => '<i class="ti ti-report  text-xl flex-shrink-0"></i> '];
+                    }
+                }
+                $this->sidebar[0]['lists'][] = ['title' => 'LMS topic search', 'type' => 'link', 'route' => route('lms-topic-search'), 'icon' => '<i class="ti ti-search  text-xl flex-shrink-0"></i> '];
+            }
+
+            // Contributor and other WP roles that use this admin dashboard (not administrator/editor)
+            if (! in_array($role, ['administrator', 'editor'], true)) {
+                $this->sidebar[0]['lists'][] = [
+                    'title' => 'LMS topic search',
+                    'type' => 'link',
+                    'route' => route('lms-topic-search'),
+                    'icon' => '<i class="ti ti-search  text-xl flex-shrink-0"></i> ',
+                ];
+            }
         }
     }
 

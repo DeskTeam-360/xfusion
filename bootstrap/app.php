@@ -15,6 +15,7 @@ return Application::configure(basePath: dirname(__DIR__))
         $middleware->alias([
             'checkRole' => \App\Http\Middleware\CheckRole::class,
             'fusion.api' => \App\Http\Middleware\VerifyFusionApiToken::class,
+            'company.admin' => \App\Http\Middleware\EnsureCompanyAdmin::class,
         ]);
     })
     ->withExceptions(function (Exceptions $exceptions) {

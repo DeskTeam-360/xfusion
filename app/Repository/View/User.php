@@ -12,24 +12,31 @@ class User extends \App\Models\User implements View
 {
     public static function tableSearch($params = null): Builder
     {
-        $query = $params['query'];
-        $params = $params['param1'];
-        if ($params == null) {
-            return empty($query) ? static::query() : static::query()->where('user_nicename', 'like', "%$query%")->orWhereHas('meta', function ($q2) use ($query) {
-                $q2->where('meta_value', 'like', "%$query%");
-            });
-        } else {
-            return empty($query) ? static::
-            query()->whereHas('companyEmployee', function ($q) use ($params) {
-                $q->where('company_id', '=', $params);
-            })->where('user_nicename', 'like', "%$query%") :
+        $query = $params['query'] ?? '';
+        $companyId = $params['param1'] ?? null;
 
-                static::query()->whereHas('companyEmployee', function ($q) use ($params) {
-                $q->where('company_id', '=', $params);
-            })->where('user_nicename', 'like', "%$query%")
-;
+        if ($companyId === null || $companyId === '') {
+            return $query === '' || $query === null
+                ? static::query()
+                : static::query()->where('user_nicename', 'like', "%{$query}%")->orWhereHas('meta', function ($q2) use ($query) {
+                    $q2->where('meta_value', 'like', "%{$query}%");
+                });
         }
 
+        $scoped = static::query()->whereHas('companyEmployee', function ($q) use ($companyId) {
+            $q->where('company_id', '=', $companyId);
+        });
+
+        if ($query === '' || $query === null) {
+            return $scoped;
+        }
+
+        return $scoped->where(function ($qb) use ($query) {
+            $qb->where('user_nicename', 'like', "%{$query}%")
+                ->orWhereHas('meta', function ($q2) use ($query) {
+                    $q2->where('meta_value', 'like', "%{$query}%");
+                });
+        });
     }
 
     public static function tableView(): array

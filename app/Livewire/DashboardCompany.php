@@ -14,20 +14,49 @@ class DashboardCompany extends Component
     public $companyId;
 
     public $userEmployee;
-    public $complete;
-    public $inComplete;
+    public ?int $complete = 0;
+
+    public ?int $inComplete = 0;
 
 
     public function mount()
     {
         $this->user = Auth::user();
         $company = $this->user->meta->where('meta_key', '=', 'company')->first();
-        $this->companyId = $company['meta_value'];
+
+        if ($company === null) {
+            $this->companyId = '';
+            $this->userEmployee = collect();
+
+            return;
+        }
+
+        $raw = is_object($company) ? ($company->meta_value ?? '') : ($company['meta_value'] ?? '');
+        if (is_array($raw)) {
+            $raw = $raw[0] ?? '';
+        }
+        $this->companyId = $raw !== null && $raw !== '' ? (string) $raw : '';
+
+        if ($this->companyId === '') {
+            $this->userEmployee = collect();
+
+            return;
+        }
+
         $this->getData();
     }
 
     public function getData()
     {
+        $this->complete = 0;
+        $this->inComplete = 0;
+
+        if ($this->companyId === '') {
+            $this->userEmployee = collect();
+
+            return;
+        }
+
         $this->userEmployee = User::whereHas('meta', function ($q) {
             $q->where('meta_key', config('app.wp_prefix', 'wp_') . 'capabilities')
                 ->where('meta_value', 'like', '%subscriber%');

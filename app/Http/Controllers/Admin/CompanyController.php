@@ -6,6 +6,8 @@ use App\Http\Controllers\Controller;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use App\Models\Company;
+use App\Support\CompanyAdmin;
+
 class CompanyController extends Controller
 {
     /**
@@ -70,6 +72,16 @@ class CompanyController extends Controller
     public function dashboard(string $id)
     {
         $user = Auth::user();
+
+        if (CompanyAdmin::isCompanyAdminPortalUser($user)) {
+            $cid = CompanyAdmin::portalCompanyMetaId($user);
+            if ($cid === null || (string) $cid !== (string) $id) {
+                abort(403);
+            }
+
+            return view('admin.company.dashboard', compact('id'));
+        }
+
         $ru = $user->meta->where('meta_key', '=', config('app.wp_prefix', 'wp_') . 'capabilities');
         $role = '';
         foreach ($ru as $r) {

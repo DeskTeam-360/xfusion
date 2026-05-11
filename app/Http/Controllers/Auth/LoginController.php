@@ -21,6 +21,17 @@ class LoginController extends Controller
     use AuthenticatesUsers;
 
     /**
+     * Redirect setelah login: Company Admin menuju portal /company/dashboard.
+     */
+    protected function authenticated(\Illuminate\Http\Request $request, $user)
+    {
+        if (\App\Support\CompanyAdmin::isCompanyAdminPortalUser($user)
+            && \App\Support\CompanyAdmin::portalCompanyMetaId($user)) {
+            return redirect()->route('company.portal.dashboard');
+        }
+    }
+
+    /**
      * Where to redirect users after login.
      *
      * @var string
