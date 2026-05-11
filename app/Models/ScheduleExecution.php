@@ -6,8 +6,8 @@ use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Model;
 
 /**
- * Bekas fitur jadwal (tabel schedule_executions dihapus).
- * Model tetap ada agar referensi lama tidak error; query selalu kosong.
+ * Legacy scheduling feature (`schedule_executions` table removed).
+ * Model kept so old references do not fatal; queries always return empty.
  *
  * @deprecated
  */

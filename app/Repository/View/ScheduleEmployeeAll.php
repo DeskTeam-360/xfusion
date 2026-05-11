@@ -8,7 +8,7 @@ use App\Repository\View;
 use Illuminate\Database\Eloquent\Builder;
 
 /**
- * Bekas daftar schedule company — kosong tanpa tabel schedule.
+ * Legacy company schedule list (empty; no schedule storage).
  */
 class ScheduleEmployeeAll extends ScheduleExecution implements View
 {

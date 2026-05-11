@@ -34,7 +34,7 @@ class CompanyPortalController extends Controller
         ]);
     }
 
-    /** Form tambah user WordPress baru yang otomatis terhubung ke company portal. */
+    /** Create-user form: new WordPress user scoped to this company portal. */
     public function createUser()
     {
         $companyId = $this->portalCompanyKey();

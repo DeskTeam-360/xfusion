@@ -5,17 +5,17 @@ namespace App\Support;
 use App\Models\User;
 
 /**
- * Akses berdasarkan meta WordPress/Corcel: user_role = "Company Admin" + meta company id.
+ * Access based on WordPress/Corcel meta: user_role = "Company Admin" + company id meta.
  */
 final class CompanyAdmin
 {
-    /** User meta keys (mirror WP umumnya tanpa wp_ prefix di Corcel meta table). */
+    /** User meta keys (typically no wp_ prefix in Corcel meta table). */
     private const META_USER_ROLE = 'user_role';
 
     private const META_COMPANY = 'company';
 
     /**
-     * Normalisasi string meta (skalar atau array pertama).
+     * Normalize meta string (scalar or first element of array).
      */
     private static function metaString(?object $metaRow): string
     {
@@ -45,7 +45,7 @@ final class CompanyAdmin
         return $user !== null && self::portalUserRole($user) === 'Company Admin';
     }
 
-    /** ID company dari user meta (numeric string / int). Null jika kosong */
+    /** Company id from user meta (numeric string or int); null when empty */
     public static function portalCompanyMetaId(?User $user): ?string
     {
         if ($user === null) {

@@ -10,7 +10,7 @@ use Symfony\Component\HttpFoundation\Response;
 final class EnsureCompanyAdmin
 {
     /**
-     * Hanya pengguna bertipe meta user_role “Company Admin” dengan meta company.
+     * Only users with meta user_role "Company Admin" and company meta present.
      */
     public function handle(Request $request, Closure $next): Response
     {

@@ -8,7 +8,7 @@ use App\Repository\View;
 use Illuminate\Database\Eloquent\Builder;
 
 /**
- * Bekas halaman company schedule — data kosong tanpa jadwal.
+ * Legacy company schedule table (empty dataset; scheduling removed).
  */
 class ScheduleEmployee extends ScheduleExecution implements View
 {

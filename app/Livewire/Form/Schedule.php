@@ -2,6 +2,8 @@
 
 namespace App\Livewire\Form;
 
+use Carbon\Carbon;
+use Livewire\Attributes\Validate;
 use Livewire\Component;
 
 class Schedule extends Component
@@ -18,17 +20,21 @@ class Schedule extends Component
 
     #[Validate('required')]
     public $link;
+
     #[Validate('nullable')]
     public $schedule_access_time;
+
     #[Validate('nullable')]
     public $schedule_access_date;
 
     #[Validate('nullable')]
     public $schedule_deadline_time;
+
     #[Validate('nullable')]
     public $schedule_deadline_date;
 
     public $usersOption;
+
     public $optionCourse;
 
     public function mount()
@@ -49,7 +55,7 @@ class Schedule extends Component
         }
 
         $this->optionCourse = [];
-//        'url','course_title','page_title'
+        //        'url','course_title','page_title'
         foreach (\App\Models\CourseList::get() as $cl) {
             $this->optionCourse [] = ['value' => $cl->url, 'title' => $cl->course_title.' - '.$cl->page_title];
         }
@@ -59,11 +65,10 @@ class Schedule extends Component
     {
         $this->validate();
         $this->resetErrorBag();
-        session()->flash('status', __('Fitur jadwal telah dinonaktifkan.'));
+        session()->flash('status', __('Scheduling has been disabled.'));
 
         $this->redirect(route('company.schedule', $this->companyId));
     }
-
 
     public function render()
     {

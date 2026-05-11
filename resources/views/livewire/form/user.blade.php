@@ -57,7 +57,7 @@
                 <p class="form-control bg-gray-50 dark:bg-darkborder rounded px-3 py-2 mb-0">
                     {{ $optionCompany[$companyId] ?? ('Company #' . $companyId) }}
                 </p>
-                <p class="text-sm text-gray-500 dark:text-gray-400 mt-1 mb-0">Pengguna baru akan otomatis ditautkan ke perusahaan ini.</p>
+                <p class="text-sm text-gray-500 dark:text-gray-400 mt-1 mb-0">New users will automatically be linked to this company.</p>
             @else
                 <select wire:model="company_id" class="form-control">
                     <option value="0"></option>
