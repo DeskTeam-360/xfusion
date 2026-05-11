@@ -55,6 +55,9 @@ class ExportResult extends Component
     public $headerFormatPivotOption=['Full', 'Clean'];
     public $table=0;
 
+    /** When true, participation pie/bar blocks render (course group `chart` = 1). */
+    public bool $humanReadableChartsEnabled = false;
+
     /** @var array<int, string> */
     public array $workTypeByUser = [];
 
@@ -143,6 +146,7 @@ class ExportResult extends Component
             $this->field_target = [];
             $this->form_ids = [];
             $this->table = 0;
+            $this->humanReadableChartsEnabled = false;
             $this->computeHumanReadableStats();
             $this->dispatchEmptyCharts();
 
@@ -261,6 +265,7 @@ class ExportResult extends Component
             $this->results = [];
             $this->field_target = [];
             $this->form_ids = [];
+            $this->humanReadableChartsEnabled = false;
             $this->computeHumanReadableStats();
             if ($this->table === 1) {
                 $this->dispatchEmptyCharts();
@@ -339,13 +344,54 @@ class ExportResult extends Component
 
         $this->computeHumanReadableStats();
 
-        if ($this->table === 1 && $this->activityFooterStats !== []) {
-            $this->dispatch(
-                'export-result-charts-updated',
-                pie: $this->chartUserParticipationPie,
-                pieByWt: array_values($this->chartUserParticipationPieByWorkType),
-                bar: $this->chartParticipationBar,
-            );
+        $this->refreshHumanReadableChartsEnabledFlag();
+
+        if ($this->table === 1) {
+            if ($this->humanReadableChartsEnabled && $this->activityFooterStats !== []) {
+                $this->dispatch(
+                    'export-result-charts-updated',
+                    pie: $this->chartUserParticipationPie,
+                    pieByWt: array_values($this->chartUserParticipationPieByWorkType),
+                    bar: $this->chartParticipationBar,
+                );
+            } else {
+                $this->dispatchEmptyCharts();
+            }
+        }
+    }
+
+    /** True when selected course group(s) have `chart` = 1. */
+    private function refreshHumanReadableChartsEnabledFlag(): void
+    {
+        $this->humanReadableChartsEnabled = false;
+
+        if ($this->isCompanyDashboard) {
+            $gid = $this->dashboardCourseGroupId !== '' ? (int) $this->dashboardCourseGroupId : 0;
+            if ($gid > 0) {
+                $row = CourseGroup::query()->find($gid);
+                $this->humanReadableChartsEnabled = $row !== null && (int) ($row->chart ?? 0) === 1;
+            }
+
+            return;
+        }
+
+        $raw = $this->courseGroupLists;
+        $ids = [];
+        if (is_array($raw)) {
+            $ids = array_values(array_filter(array_map('intval', $raw)));
+        } elseif ($raw !== '' && $raw !== null) {
+            $ids = [(int) $raw];
+        }
+        foreach ($ids as $gid) {
+            if ($gid <= 0) {
+                continue;
+            }
+            $row = CourseGroup::query()->find($gid);
+            if ($row !== null && (int) ($row->chart ?? 0) === 1) {
+                $this->humanReadableChartsEnabled = true;
+
+                return;
+            }
         }
     }
 

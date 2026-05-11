@@ -396,7 +396,7 @@ document.addEventListener('livewire:init', function () {
 
             <div class="overflow-auto " style="width: 100%; padding: 10px">
                 @if($field_target!=[] and $table==1)
-                    @if($activityFooterStats !== [])
+                    @if($humanReadableChartsEnabled && $activityFooterStats !== [])
                     <div wire:key="export-charts-{{ $dashboardCourseGroupId }}-{{ count($activityFooterStats) }}"
                          class="mb-8 grid gap-8 lg:grid-cols-2">
                         <div class="rounded-lg border border-gray-200 p-4 dark:border-gray-600">
