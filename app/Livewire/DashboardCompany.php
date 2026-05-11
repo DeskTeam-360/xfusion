@@ -4,6 +4,7 @@ namespace App\Livewire;
 
 use App\Models\User;
 use App\Models\UserRole;
+use App\Support\UserAccessCoder;
 use Carbon\Carbon;
 use Illuminate\Support\Facades\Auth;
 use Livewire\Component;
@@ -79,9 +80,6 @@ class DashboardCompany extends Component
 
         $this->userEmployee = User::with('meta')
             ->whereHas('meta', function ($q) {
-                $q->where('meta_key', config('app.wp_prefix', 'wp_') . 'capabilities')
-                    ->where('meta_value', 'like', '%subscriber%');
-            })->whereHas('meta', function ($q) {
                 $q->where('meta_key', 'company')
                     ->where('meta_value', $this->companyId);
             })
@@ -101,10 +99,7 @@ class DashboardCompany extends Component
         $orderIndex = [];
         $seq = 0;
         foreach (UserRole::query()->orderBy('id')->get(['accesses']) as $role) {
-            $items = self::decodeAccessesValue((string) ($role->accesses ?? ''));
-
-            foreach ($items as $item) {
-                $slug = self::normalizeAccessSlug($item);
+            foreach (UserAccessCoder::slugsFromStored($role->accesses ?? '') as $slug) {
                 if ($slug === '') {
                     continue;
                 }
@@ -117,14 +112,7 @@ class DashboardCompany extends Component
         }
 
         foreach ($this->userEmployee as $employee) {
-            $metaRow = $employee->meta->where('meta_key', 'user_access')->first();
-            $raw = is_object($metaRow) ? ($metaRow->meta_value ?? '') : ($metaRow['meta_value'] ?? '');
-            if (is_array($raw)) {
-                $raw = json_encode($raw);
-            }
-
-            foreach (self::decodeAccessesValue((string) $raw) as $item) {
-                $slug = self::normalizeAccessSlug($item);
+            foreach (UserAccessCoder::slugsFromUser($employee) as $slug) {
                 if ($slug === '') {
                     continue;
                 }
@@ -152,36 +140,6 @@ class DashboardCompany extends Component
         $this->accessTagRows = array_values(array_map(static function (array $p): array {
             return ['slug' => $p['slug'], 'count' => $p['count']];
         }, $pairs));
-    }
-
-    /**
-     * @return list<string>
-     */
-    private static function decodeAccessesValue(string $stored): array
-    {
-        $stored = trim($stored);
-        if ($stored === '') {
-            return [];
-        }
-
-        $decoded = json_decode($stored, true);
-        if (json_last_error() === JSON_ERROR_NONE && is_array($decoded)) {
-            $out = [];
-            foreach ($decoded as $x) {
-                if (is_string($x) || is_numeric($x)) {
-                    $out[] = (string) $x;
-                }
-            }
-
-            return $out;
-        }
-
-        return array_values(array_filter(array_map('trim', explode(',', $stored))));
-    }
-
-    private static function normalizeAccessSlug(string $item): string
-    {
-        return strtolower(trim($item));
     }
 
     public function getDataUserGrowh($i)

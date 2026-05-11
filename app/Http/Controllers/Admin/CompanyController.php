@@ -191,6 +191,15 @@ class CompanyController extends Controller
     public function editEmployee(string $id, string $employee)
     {
         $user = Auth::user();
+
+        if (CompanyAdmin::isCompanyAdminPortalUser($user)) {
+            $cid = CompanyAdmin::portalCompanyMetaId($user);
+            if ($cid !== null && (string) $cid === (string) $id) {
+                return view('admin.company.edit-employee', compact('id', 'employee'));
+            }
+            abort(403);
+        }
+
         $ru = $user->meta->where('meta_key', '=', config('app.wp_prefix', 'wp_') . 'capabilities');
         $role = '';
         foreach ($ru as $r) {
