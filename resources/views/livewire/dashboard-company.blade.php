@@ -35,7 +35,7 @@
                             {{ $totalCourseCompleted }}
                         </p>
                         <p class="mt-1 text-sm text-muted dark:text-darklink leading-snug">
-                            Active Gravity Forms entries by company employees
+                            Activity recorded by company employees
                         </p>
                     </div>
                 </div>
