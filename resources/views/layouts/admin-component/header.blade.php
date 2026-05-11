@@ -188,7 +188,7 @@
                                                         </h5>
                                                         <p class="text-xs font-normal text-link dark:text-darklink ">
 {{--                                                            HALO GUYS!--}}
-                                                            {{ array_keys(unserialize(auth()->user()->getMeta('wp_capabilities')))[0] }}
+                                                            {{ auth()->user()->displayRoleLabel() }}
                                                         </p>
                                                         <span
                                                             class="text-sm font-normal flex items-center text-link dark:text-darklink">
@@ -556,7 +556,7 @@
                                                                 </h5>
                                                                 <p class="text-xs font-normal text-link dark:text-darklink ">
 {{--                                                                    HALO GUYS!--}}
-                                                                    {{ array_keys(unserialize(auth()->user()->getMeta('wp_capabilities')))[0] }}
+                                                                    {{ auth()->user()->displayRoleLabel() }}
                                                                 </p>
                                                                 <span
                                                                     class="text-sm font-normal flex items-center text-link dark:text-darklink">

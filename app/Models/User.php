@@ -120,4 +120,38 @@ class User extends Corcel implements CanResetPassword
     {
         $this->notify(new \App\Notifications\CustomResetPasswordNotification($token));
     }
+
+    /**
+     * Role label for UI: app meta `user_role` (e.g. Company Admin) when set, otherwise first WP capability slug.
+     */
+    public function displayRoleLabel(): string
+    {
+        $row = $this->meta->where('meta_key', 'user_role')->first();
+        $v = $row?->meta_value ?? '';
+        if (is_array($v)) {
+            $v = $v[0] ?? '';
+        }
+        $appRole = trim((string) $v);
+        if ($appRole !== '') {
+            return $appRole;
+        }
+
+        $capKey = config('app.wp_prefix', 'wp_') . 'capabilities';
+        $cap = $this->getMeta($capKey);
+        if ($cap === null || $cap === '') {
+            $r2 = $this->meta->where('meta_key', $capKey)->first();
+            $cap = $r2?->meta_value ?? '';
+        }
+        if (! is_string($cap) || $cap === '') {
+            return '';
+        }
+
+        $un = @unserialize($cap, ['allowed_classes' => false]);
+        if (! is_array($un) || $un === []) {
+            return '';
+        }
+        $keys = array_keys($un);
+
+        return (string) ($keys[0] ?? '');
+    }
 }

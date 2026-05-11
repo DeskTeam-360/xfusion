@@ -1,5 +1,6 @@
 @php
     use Carbon\Carbon;
+    use Illuminate\Support\Str;
 @endphp
 <div class="col-span-12 grid grid-cols-12 gap-3">
 
@@ -67,6 +68,32 @@
                 <div class="-me-12">
                     <div id="chart" class=""></div>
                 </div>
+            </div>
+        </div>
+    </div>
+
+    {{-- Employees per access slug (from user_access meta, aligned with wp_user_roles.accesses) --}}
+    <div class="col-span-12 w-full">
+        <div class="card border border-border shadow-sm dark:border-darkborder">
+            <div class="card-body p-5">
+                <h5 class="card-title mb-1">Employees by access</h5>
+                <p class="mb-4 text-sm text-muted dark:text-darklink">
+                    Counts come from each user’s <strong>user_access</strong> payload (typically the same tokens as <code class="rounded bg-gray-100 px-1 py-0.5 text-xs dark:bg-darkgray">wp_user_roles.accesses</code>).
+                    If a user has multiple tags, they are counted once per tag—so totals can overlap.
+                </p>
+                @if(count($accessTagRows) === 0)
+                    <p class="text-sm text-muted dark:text-darklink">No access tags parsed for employees in this company (empty <code class="text-xs">user_access</code>).</p>
+                @else
+                    <div class="grid grid-cols-2 gap-3 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6">
+                        @foreach($accessTagRows as $row)
+                            <div class="rounded-lg border border-border bg-gray-50/80 px-3 py-3 text-center dark:border-darkborder dark:bg-darkgray/40">
+                                <div class="mb-1 truncate text-xs font-medium uppercase tracking-wide text-muted dark:text-darklink"
+                                     title="{{ $row['slug'] }}">{{ Str::limit($row['slug'], 24) }}</div>
+                                <div class="tabular-nums text-2xl font-bold text-dark dark:text-white">{{ $row['count'] }}</div>
+                            </div>
+                        @endforeach
+                    </div>
+                @endif
             </div>
         </div>
     </div>
