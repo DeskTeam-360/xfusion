@@ -56,7 +56,7 @@ class User extends \App\Models\User implements View
                 ['label' => 'Email', 'sort' => 'user_email'],
                 ['label' => 'Role'],
                 ['label' => 'Access'],
-                ['label' => 'Actions', 'text-align' => 'right', 'width' => '13rem'],
+                ['label' => 'Actions', 'text-align' => 'center'],
             ];
         }
 
@@ -75,7 +75,7 @@ class User extends \App\Models\User implements View
             ['label' => 'Company'],
             ['label' => 'Access'],
             ['label' => 'Role'],
-            ['label' => 'Actions', 'text-align' => 'right'],
+            ['label' => 'Actions', 'text-align' => 'center'],
         ];
     }
 
@@ -135,8 +135,6 @@ class User extends \App\Models\User implements View
         $fullName = trim("$fn $ln");
         $role = self::metaScalar($data->meta, 'user_role');
 
-        $routeAccess = route('user.tag-list', $data->ID);
-
         $keaps = self::metaScalar($data->meta, 'keap_contact_id');
         $keapStatusRaw = self::metaScalar($data->meta, 'keap_status');
         $keapStatus = filter_var($keapStatusRaw, FILTER_VALIDATE_BOOLEAN) || $keapStatusRaw === '1';
@@ -149,7 +147,69 @@ class User extends \App\Models\User implements View
 
         $companies = $data->meta->where('meta_key', '=', 'company');
         $company = 'Non Company';
+        foreach ($companies as $r) {
+            $c = Company::find($r['meta_value']);
+            if ($c != null) {
+                $company = $c->title;
+            } else {
+                $company = 'Company has been delete';
+            }
+        }
+
+        $toolbar = self::actionToolbarHtml($data, route('user.edit', $data->ID));
+
+        return [
+            ['type' => 'raw_html', 'data' => "<div>
+                <span class='text-xl'>" . e($fullName) . '</span> <br>
+                <font color=\'#ffd700\'>' . e($data->user_login) . '</font> <br>
+                ' . e($data->user_email) . "
+                </div>"],
+            ['type' => 'raw_html', 'data' => "<div>
+                <span class='text-xl'>" . e($company) . '</span> <br>
+                <span class="text-xs">' . e($role ?: '—') . '</span> <br>
+                ' . $keap . '
+                </div>'],
+            ['type' => 'raw_html', 'text-align' => 'center', 'data' => $toolbar],
+        ];
+    }
+
+    private static function buildCompanyPortalRow($data): array
+    {
+        $fn = self::metaScalar($data->meta, 'first_name');
+        $ln = self::metaScalar($data->meta, 'last_name');
+        $fullName = trim("$fn $ln") ?: ($data->user_nicename ?? $data->user_login ?? '');
+
+        $role = self::metaScalar($data->meta, 'user_role');
+
+        $portalCid = CompanyAdmin::portalCompanyMetaId(Auth::user()) ?? '';
+        $linkEdit = $portalCid !== '' ? route('company.edit-employee', [$portalCid, $data->ID]) : '#';
+
+        $accessHtml = UserAccessCoder::badgesHtmlFromUser($data, 10);
+
+        $toolbar = self::actionToolbarHtml($data, $linkEdit);
+
+        return [
+            ['type' => 'index'],
+            ['type' => 'raw_html', 'data' => '<div><span class="font-semibold">' . e($fullName) . '</span><br>'
+                . '<span class="text-xs text-muted">' . e($data->user_login ?? '') . '</span></div>'],
+            ['type' => 'string', 'data' => $data->user_email ?? ''],
+            ['type' => 'string', 'data' => $role !== '' ? $role : '—'],
+            ['type' => 'raw_html', 'data' => $accessHtml],
+            ['type' => 'raw_html', 'text-align' => 'center', 'data' => $toolbar],
+        ];
+    }
+
+    private static function buildEditorRow($data): array
+    {
+        $fn = self::metaScalar($data->meta, 'first_name');
+        $ln = self::metaScalar($data->meta, 'last_name');
+        $fullName = trim("$fn $ln") ?: ($data->user_nicename ?? '');
+        $role = self::metaScalar($data->meta, 'user_role');
+
+        $companies = $data->meta->where('meta_key', '=', 'company');
+        $company = 'Non Company';
         $companyId = null;
+
         foreach ($companies as $r) {
             $c = Company::find($r['meta_value']);
             if ($c != null) {
@@ -159,6 +219,33 @@ class User extends \App\Models\User implements View
                 $company = 'Company has been delete';
             }
         }
+
+        $linkEdit = route('company.edit-employee', [$companyId ?? 0, $data->ID]);
+
+        $accessHtml = UserAccessCoder::badgesHtmlFromUser($data, 8);
+
+        $toolbar = self::actionToolbarHtml($data, $linkEdit);
+
+        return [
+            ['type' => 'index'],
+            ['type' => 'string', 'data' => $fullName ?: '—'],
+            ['type' => 'string', 'data' => $company],
+            ['type' => 'raw_html', 'data' => $accessHtml],
+            ['type' => 'string', 'data' => $role !== '' ? $role : '—'],
+            ['type' => 'raw_html', 'text-align' => 'center', 'data' => $toolbar],
+        ];
+    }
+
+    /**
+     * Full action toolbar (same as legacy admin Users table): Access, Edit (custom URL), Activity, Keap mail, Reset password, Delete, passwords.
+     */
+    private static function actionToolbarHtml($data, string $editHref): string
+    {
+        $routeAccess = route('user.tag-list', $data->ID);
+
+        $keaps = self::metaScalar($data->meta, 'keap_contact_id');
+        $keapStatusRaw = self::metaScalar($data->meta, 'keap_status');
+        $keapStatus = filter_var($keapStatusRaw, FILTER_VALIDATE_BOOLEAN) || $keapStatusRaw === '1';
 
         $activity = $data->meta->where('meta_key', '=', '_sfwd-course_progress')->first();
 
@@ -185,126 +272,26 @@ class User extends \App\Models\User implements View
             $keapMailButton = "<span><a href='$keapMailLink' class='btn btn-warning text-nowrap'>Send Keap Mail</a></span>";
         }
 
-        $link2 = route('user.show', $data->ID);
-        $link = route('user.edit', $data->ID);
+        $linkReset = route('user.show', $data->ID);
 
-        return [
-            ['type' => 'raw_html', 'data' => "<div>
-                <span class='text-xl'>" . e($fullName) . '</span> <br>
-                <font color=\'#ffd700\'>' . e($data->user_login) . '</font> <br>
-                ' . e($data->user_email) . "
-                </div>"],
-            ['type' => 'raw_html', 'data' => "<div>
-                <span class='text-xl'>" . e($company) . '</span> <br>
-                <span class="text-xs">' . e($role ?: '—') . '</span> <br>
-                ' . $keap . '
-                </div>'],
-            ['type' => 'raw_html', 'text-align' => 'center', 'data' => "
+        $editAttr = '';
+        $editHrefSafe = htmlspecialchars($editHref, ENT_QUOTES, 'UTF-8');
+        if ($editHref === '#' || $editHref === '') {
+            $editAttr = " href='#' class='btn btn-primary pointer-events-none opacity-50'";
+        }
+
+        return "
                 <div class='flex flex-wrap gap-1 justify-center'>
-                    <span><a href='$routeAccess' class='btn'>Access</a></span>
-                    <span><a href='$link' class='btn btn-primary'>Edit</a></span>
+                    <span><a href='" . htmlspecialchars($routeAccess, ENT_QUOTES, 'UTF-8') . "' class='btn'>Access</a></span>
+                    <span><a "
+            . ($editAttr !== '' ? $editAttr : "href='$editHrefSafe' class='btn btn-primary'")
+            . ">Edit</a></span>
                     $button4
                     $keapMailButton
-                    <span><a href='$link2' class='btn btn-secondary text-nowrap'>Reset Password</a></span>
+                    <span><a href='$linkReset' class='btn btn-secondary text-nowrap'>Reset Password</a></span>
                     <span><a href='#' wire:click='deleteItem($data->ID)' class='btn btn-error text-nowrap'>Delete</a></span>
                     $passwordButton
                     $exportPasswordButton
-                </div>",
-            ],
-        ];
-    }
-
-    private static function buildCompanyPortalRow($data): array
-    {
-        $fn = self::metaScalar($data->meta, 'first_name');
-        $ln = self::metaScalar($data->meta, 'last_name');
-        $fullName = trim("$fn $ln") ?: ($data->user_nicename ?? $data->user_login ?? '');
-
-        $role = self::metaScalar($data->meta, 'user_role');
-
-        $portalCid = CompanyAdmin::portalCompanyMetaId(Auth::user()) ?? '';
-        $routeAccess = route('user.tag-list', $data->ID);
-        $linkEdit = $portalCid !== '' ? route('company.edit-employee', [$portalCid, $data->ID]) : '#';
-
-        $accessHtml = UserAccessCoder::badgesHtmlFromUser($data, 10);
-
-        $actions = '<div class="flex flex-wrap justify-end gap-1">';
-        $actions .= "<a href=\"" . e($routeAccess) . "\" class=\"btn btn-sm\">Tags</a>";
-        $actions .= "<a href=\"" . e($linkEdit) . "\" class=\"btn btn-sm btn-primary\">Edit</a>";
-        $actions .= '</div>';
-
-        return [
-            ['type' => 'index'],
-            ['type' => 'raw_html', 'data' => '<div><span class="font-semibold">' . e($fullName) . '</span><br>'
-                . '<span class="text-xs text-muted">' . e($data->user_login ?? '') . '</span></div>'],
-            ['type' => 'string', 'data' => $data->user_email ?? ''],
-            ['type' => 'string', 'data' => $role !== '' ? $role : '—'],
-            ['type' => 'raw_html', 'data' => $accessHtml],
-            ['type' => 'raw_html', 'text-align' => 'right', 'data' => $actions],
-        ];
-    }
-
-    private static function buildEditorRow($data): array
-    {
-        $fn = self::metaScalar($data->meta, 'first_name');
-        $ln = self::metaScalar($data->meta, 'last_name');
-        $fullName = trim("$fn $ln") ?: ($data->user_nicename ?? '');
-        $role = self::metaScalar($data->meta, 'user_role');
-
-        $companies = $data->meta->where('meta_key', '=', 'company');
-        $company = 'Non Company';
-        $companyId = null;
-
-        foreach ($companies as $r) {
-            $c = Company::find($r['meta_value']);
-            if ($c != null) {
-                $companyId = $c->id;
-                $company = $c->title;
-            } else {
-                $company = 'Company has been delete';
-            }
-        }
-
-        $activity = $data->meta->where('meta_key', '=', '_sfwd-course_progress')->first();
-
-        $keaps = self::metaScalar($data->meta, 'keap_contact_id');
-        $keapStatusRaw = self::metaScalar($data->meta, 'keap_status');
-        $keapConnect = filter_var($keapStatusRaw, FILTER_VALIDATE_BOOLEAN) || $keapStatusRaw === '1';
-
-        $keapMailButton = '';
-        if ($keaps !== '' && $keapConnect === true) {
-            $keapMailLink = route('user.keap-mail-send', $keaps);
-            $keapMailButton = "<span><a href='$keapMailLink' class='btn btn-sm btn-warning text-nowrap'>Send Keap Mail</a></span>";
-        }
-
-        $button4 = '';
-        if ($activity != null) {
-            $link4 = route('user.course', [$data->ID]);
-            $button4 = "<span><a href='$link4' class='btn btn-sm btn-success text-nowrap'>Activity Check</a></span>";
-        }
-
-        $routeAccess = route('user.tag-list', $data->ID);
-        $link2 = route('user.show', $data->ID);
-
-        $linkEdit = route('company.edit-employee', [$companyId ?? 0, $data->ID]);
-
-        $accessHtml = UserAccessCoder::badgesHtmlFromUser($data, 8);
-
-        $actions = "<div class='flex flex-wrap gap-1 justify-center'>";
-        $actions .= "<span><a href='$routeAccess' class='btn btn-sm'>Tags</a></span>";
-        $actions .= "<span><a href='$linkEdit' class='btn btn-sm btn-primary'>Edit</a></span>";
-        $actions .= $button4;
-        $actions .= $keapMailButton;
-        $actions .= "<span><a href='$link2' class='btn btn-sm btn-secondary text-nowrap'>Reset PW</a></span>";
-        $actions .= '</div>';
-
-        return [
-            ['type' => 'index'],
-            ['type' => 'string', 'data' => $fullName ?: '—'],
-            ['type' => 'string', 'data' => $company],
-            ['type' => 'raw_html', 'data' => $accessHtml],
-            ['type' => 'string', 'data' => $role !== '' ? $role : '—'],
-            ['type' => 'raw_html', 'text-align' => 'center', 'data' => $actions],
-        ];
+                </div>";
     }
 }
