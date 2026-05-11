@@ -6,7 +6,7 @@
     <div class="lg:col-span-6 md:col-span-6 sm:col-span-6 col-span-12 w-full">
         <div class="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
             {{-- Total employees --}}
-            <div class="card group border border-border shadow-sm transition-shadow duration-200 hover:shadow-md dark:border-darkborder">
+            <div class="card group border border-border shadow-sm transition-shadow duration-200 hover:shadow-md sm:col-span-2 lg:col-span-1 dark:border-darkborder">
                 <div class="card-body flex flex-col gap-4 p-5">
                     <div class="flex items-start justify-between gap-3">
                         <div class="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl bg-primary/10 text-primary">
@@ -34,7 +34,7 @@
             </div>
 
             {{-- Completed (on track / done) --}}
-            <div class="card border border-border shadow-sm transition-shadow duration-200 hover:shadow-md dark:border-darkborder">
+            <div class="card border border-border shadow-sm transition-shadow duration-200 hover:shadow-md sm:col-span-2 lg:col-span-1 dark:border-darkborder">
                 <div class="card-body flex flex-row flex-wrap items-center gap-4 p-5">
                     <div class="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl bg-emerald-500/15 text-emerald-600 dark:text-emerald-400">
                         <i class="ti ti-circle-check text-2xl"></i>
