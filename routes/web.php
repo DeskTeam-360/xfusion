@@ -261,6 +261,7 @@ Route::middleware(['auth',],)->group(function () {
     Route::middleware(['company.admin',])->group(function () {
         Route::get('/company/dashboard', [CompanyPortalController::class, 'dashboard',],)->name('company.portal.dashboard',);
         Route::get('/company/users', [CompanyPortalController::class, 'users',],)->name('company.portal.users',);
+        Route::get('/company/users/create', [CompanyPortalController::class, 'createUser',],)->name('company.portal.users.create',);
     });
 
     Route::get('/dashboard', function () {

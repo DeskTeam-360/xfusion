@@ -4,12 +4,14 @@ namespace App\Livewire\Form;
 
 use App\Models\CompanyEmployee;
 use App\Models\WpUserMeta;
+use App\Support\CompanyAdmin;
 use Carbon\Carbon;
 use Hautelook\Phpass\PasswordHash;
 use KeapGeek\Keap\Facades\Keap;
 use Livewire\Attributes\Validate;
 use Livewire\Component;
 use Livewire\WithFileUploads;
+use Illuminate\Support\Facades\Auth;
 
 class User extends Component
 {
@@ -192,10 +194,11 @@ class User extends Component
             'title' => 'successfully changed the user',
         ],);
         if ($this->companyId != null) {
-            $this->redirect(route('company.show', $this->companyId,),);
-        } else {
-            $this->redirect(route('user.index',),);
+            $this->redirectAfterCompanyScopedUserSave();
+
+            return;
         }
+        $this->redirect(route('user.index',),);
     }
 
     public function updateContact()
@@ -417,12 +420,16 @@ class User extends Component
             'title' => 'Successfully added user',
         ],);
         if ($this->companyId != null) {
-            $this->redirect(route('company.show', $this->companyId,),);
-        } elseif ($newCompanyIdForRedirect !== null) {
-            $this->redirect(route('company.show', $newCompanyIdForRedirect,),);
-        } else {
-            $this->redirect(route('user.index',),);
+            $this->redirectAfterCompanyScopedUserSave();
+
+            return;
         }
+        if ($newCompanyIdForRedirect !== null) {
+            $this->redirect(route('company.show', $newCompanyIdForRedirect,),);
+
+            return;
+        }
+        $this->redirect(route('user.index',),);
     }
 
     public function updatedCreateNewCompany($value): void
@@ -430,6 +437,16 @@ class User extends Component
         if ($value) {
             $this->company_id = 0;
         }
+    }
+
+    protected function redirectAfterCompanyScopedUserSave(): void
+    {
+        if ($this->companyId !== null && CompanyAdmin::isCompanyAdminPortalUser(Auth::user())) {
+            $this->redirect(route('company.portal.users'));
+
+            return;
+        }
+        $this->redirect(route('company.show', $this->companyId));
     }
 
     public function render()
