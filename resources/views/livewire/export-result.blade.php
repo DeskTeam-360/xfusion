@@ -250,23 +250,27 @@ document.addEventListener('livewire:init', function () {
             <div class="text-center mt-4">
                 <hr style="display: inline-block; width: 40%; margin: 0 10px;"> Pivot readable <hr style="display: inline-block; width: 40%; margin: 0 10px;">
             </div>
+            
+            <div class="flex gap-2">
+                <div class="mt-3">
+                    <label for="headerFormatPivot1">Course Title Format</label>
+                    <select wire:model.live="headerFormatPivot1" class="form-control">
+                        @foreach($headerFormatPivotOption as $option)
+                            <option value="{{$option}}">{{$option}}</option>
+                        @endforeach
+                    </select>
+                </div>
+                <div class="mt-3">
+                    <label for="headerFormatPivot2">Question Format</label>
+                    <select wire:model.live="headerFormatPivot2" class="form-control">
+                        @foreach($headerFormatPivotOption as $option)
+                            <option value="{{$option}}">{{$option}}</option>
+                        @endforeach
+                    </select>
+                </div>
+            </div>
 
-            <div class="mt-3">
-                <label for="headerFormatPivot1">Course Title Format</label>
-                <select wire:model.live="headerFormatPivot1" class="form-control">
-                    @foreach($headerFormatPivotOption as $option)
-                        <option value="{{$option}}">{{$option}}</option>
-                    @endforeach
-                </select>
-            </div>
-            <div class="mt-3">
-                <label for="headerFormatPivot2">Question Format</label>
-                <select wire:model.live="headerFormatPivot2" class="form-control">
-                    @foreach($headerFormatPivotOption as $option)
-                        <option value="{{$option}}">{{$option}}</option>
-                    @endforeach
-                </select>
-            </div>
+         
             <div class="mt-3">
                 <button class="btn btn-success" 
                         wire:click="getData2" 
