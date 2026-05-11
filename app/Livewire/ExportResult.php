@@ -55,7 +55,7 @@ class ExportResult extends Component
     public $headerFormatPivotOption=['Full', 'Clean'];
     public $table=0;
 
-    /** When true, participation pie/bar blocks render (course group `chart` = 1). */
+    /** When true, participation pie/bar render: course group `chart` = 1 and every included column is a GF radio field. */
     public bool $humanReadableChartsEnabled = false;
 
     /** @var array<int, string> */
@@ -128,9 +128,23 @@ class ExportResult extends Component
         $this->optionFields=['text', 'checkbox', 'number', 'select', 'multiselect', 'radio', 'email', 'name','textarea'];
 
         if ($this->isCompanyDashboard) {
-            // Match full report field types; "radio only" leaves most GF forms with zero columns.
+            $this->fields = $this->optionFields;
+        }
+    }
+
+    public function updatedFields(): void
+    {
+        if (! $this->isCompanyDashboard) {
+            return;
+        }
+        if ($this->dashboardCourseGroupId === '' || (int) $this->dashboardCourseGroupId <= 0) {
+            return;
+        }
+        if (! is_array($this->fields) || $this->fields === []) {
             $this->fields = ['radio'];
         }
+        $this->table = 1;
+        $this->getMainData();
     }
 
     public function updatedDashboardCourseGroupId(): void
@@ -313,6 +327,7 @@ class ExportResult extends Component
                 if (in_array($ftype, $typesLower, true)) {
                     $field_target[$meta->form_id]['id'][] = $field->id;
                     $field_target[$meta->form_id]['title'][$field->id] = $field->label;
+                    $field_target[$meta->form_id]['gf_types'][$field->id] = $ftype;
                 }
             }
         }
@@ -360,19 +375,33 @@ class ExportResult extends Component
         }
     }
 
-    /** True when selected course group(s) have `chart` = 1. */
+    /** True when course group `chart` is 1 and every human-readable column is a Gravity Forms `radio` field. */
     private function refreshHumanReadableChartsEnabledFlag(): void
     {
         $this->humanReadableChartsEnabled = false;
 
+        if (! $this->selectedCourseGroupAllowsCharts()) {
+            return;
+        }
+
+        if (! $this->includedColumnsAreAllRadioTypes()) {
+            return;
+        }
+
+        $this->humanReadableChartsEnabled = true;
+    }
+
+    /** Course group row has `chart` = 1 for current selection. */
+    private function selectedCourseGroupAllowsCharts(): bool
+    {
         if ($this->isCompanyDashboard) {
             $gid = $this->dashboardCourseGroupId !== '' ? (int) $this->dashboardCourseGroupId : 0;
-            if ($gid > 0) {
-                $row = CourseGroup::query()->find($gid);
-                $this->humanReadableChartsEnabled = $row !== null && (int) ($row->chart ?? 0) === 1;
+            if ($gid <= 0) {
+                return false;
             }
+            $row = CourseGroup::query()->find($gid);
 
-            return;
+            return $row !== null && (int) ($row->chart ?? 0) === 1;
         }
 
         $raw = $this->courseGroupLists;
@@ -388,11 +417,32 @@ class ExportResult extends Component
             }
             $row = CourseGroup::query()->find($gid);
             if ($row !== null && (int) ($row->chart ?? 0) === 1) {
-                $this->humanReadableChartsEnabled = true;
-
-                return;
+                return true;
             }
         }
+
+        return false;
+    }
+
+    /**
+     * Charts need numeric / comparable radio fields only—mixed text etc. disables charts.
+     *
+     * @return bool
+     */
+    private function includedColumnsAreAllRadioTypes(): bool
+    {
+        $activities = $this->flattenActivityColumns();
+        if ($activities === []) {
+            return false;
+        }
+        foreach ($activities as $act) {
+            $t = strtolower((string) ($act['gf_type'] ?? ''));
+            if ($t !== 'radio') {
+                return false;
+            }
+        }
+
+        return true;
     }
 
     /**
@@ -553,7 +603,7 @@ class ExportResult extends Component
     }
 
     /**
-     * @return list<array{form_id: int|string, field_id: mixed, label: string, form_title: string}>
+     * @return list<array{form_id: int|string, field_id: mixed, label: string, form_title: string, gf_type: string}>
      */
     private function flattenActivityColumns(): array
     {
@@ -563,12 +613,14 @@ class ExportResult extends Component
                 continue;
             }
             $formTitle = (string) ($field['form_title'] ?? '');
+            $gfTypes = is_array($field['gf_types'] ?? null) ? $field['gf_types'] : [];
             foreach ($field['title'] as $fieldId => $label) {
                 $list[] = [
                     'form_id' => $formId,
                     'field_id' => $fieldId,
                     'label' => (string) $label,
                     'form_title' => $formTitle,
+                    'gf_type' => strtolower((string) ($gfTypes[$fieldId] ?? '')),
                 ];
             }
         }

@@ -237,8 +237,27 @@ document.addEventListener('livewire:init', function () {
                     @endforeach
                 </select>
                 <p class="mt-2 text-xs text-gray-500 dark:text-gray-400">
-                    Charts and the human-readable table load automatically when you choose a course group (company employees only).
+                    Fields load automatically for company employees. Select which Gravity Forms field types to include below. Charts (pie / bar) show only when this course group has charts enabled <em>and</em> every included column is a radio field—e.g. uncheck text/textarea to show charts; mixed types hide charts but keep the table.
                 </p>
+                <div class="mt-3">
+                    <label for="company-dashboard-fields" class="form-label mb-1 block text-sm font-bold dark:text-light">
+                        Field types to include
+                    </label>
+                    <select
+                        id="company-dashboard-fields"
+                        class="form-control w-full min-h-[120px] rounded border border-gray-200 bg-white px-3 py-2 text-sm dark:border-gray-600 dark:bg-dark dark:text-light"
+                        wire:model.live="fields"
+                        multiple
+                        size="6"
+                    >
+                        @foreach($optionFields as $opt)
+                            <option value="{{ $opt }}">{{ $opt }}</option>
+                        @endforeach
+                    </select>
+                    <p class="mt-1 text-xs text-gray-500 dark:text-gray-400">
+                        Hold Ctrl/Cmd to select several. Tip: select <strong>only radio</strong> to enable charts (when the course group allows charts).
+                    </p>
+                </div>
                 <div wire:loading class="mt-2 flex items-center gap-2 text-sm text-primary">
                     <span class="spinner-border spinner-border-sm inline-block align-middle" role="status"></span>
                     <span>Loading report and charts…</span>
