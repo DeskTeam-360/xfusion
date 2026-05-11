@@ -239,23 +239,52 @@ document.addEventListener('livewire:init', function () {
                 <p class="mt-2 text-xs text-gray-500 dark:text-gray-400">
                     Fields load automatically for company employees. Select which Gravity Forms field types to include below. Charts (pie / bar) show only when this course group has charts enabled <em>and</em> every included column is a radio field—e.g. uncheck text/textarea to show charts; mixed types hide charts but keep the table.
                 </p>
-                <div class="mt-3">
-                    <label for="company-dashboard-fields" class="form-label mb-1 block text-sm font-bold dark:text-light">
+                <div class="mt-3" wire:ignore>
+                    <label for="company-dashboard-fields" class="mb-1 block text-sm font-bold dark:text-light">
                         Field types to include
+                        <span class="text-sm text-gray-500 cursor-pointer float-right" onclick="clearCompanyDashboardFields()">Clear</span>
+                        <span class="text-sm text-gray-500 mx-2 float-right"> | </span>
+                        <span class="text-sm text-gray-500 cursor-pointer float-right" onclick="addAllCompanyDashboardFields()">Add All</span>
                     </label>
+                    <script>
+                        function clearCompanyDashboardFields() {
+                            @this.set('fields', []);
+                            $('#company-dashboard-fields').val([]).trigger('change');
+                        }
+                        function addAllCompanyDashboardFields() {
+                            @this.set('fields', @json($optionFields));
+                            $('#company-dashboard-fields').val(@json($optionFields)).trigger('change');
+                        }
+                    </script>
                     <select
                         id="company-dashboard-fields"
-                        class="form-control w-full min-h-[120px] rounded border border-gray-200 bg-white px-3 py-2 text-sm dark:border-gray-600 dark:bg-dark dark:text-light"
-                        wire:model.live="fields"
+                        class="appearance-none border-1 border border-gray-100 rounded w-full
+                        text-gray-700 leading-tight focus:outline-none dark:border-primary-light focus:bg-gray-100
+                        dark:bg-dark dark:text-light bg-white focus:dark:border-white select2"
                         multiple
-                        size="6"
+                        name="company_dashboard_fields"
+                        style="padding:0 100px"
+                        wire:model="fields"
                     >
-                        @foreach($optionFields as $opt)
-                            <option value="{{ $opt }}">{{ $opt }}</option>
+                        @foreach($optionFields as $option)
+                            <option
+                                value="{{ $option }}"
+                                style="padding: 0 25px"
+                                {{ is_array($fields) && in_array($option, $fields, true) ? 'selected' : '' }}
+                            >{{ $option }}</option>
                         @endforeach
                     </select>
-                    <p class="mt-1 text-xs text-gray-500 dark:text-gray-400">
-                        Hold Ctrl/Cmd to select several. Tip: select <strong>only radio</strong> to enable charts (when the course group allows charts).
+                    <script>
+                        document.addEventListener('livewire:init', function () {
+                            $('#company-dashboard-fields').select2();
+                            $('#company-dashboard-fields').on('change', function () {
+                                var data = $('#company-dashboard-fields').select2("val");
+                                @this.set('fields', data || []);
+                            });
+                        });
+                    </script>
+                    <p class="mt-2 text-xs text-gray-500 dark:text-gray-400">
+                        Tip: choose <strong>only radio</strong> to enable charts (when the course group allows charts).
                     </p>
                 </div>
                 <div wire:loading class="mt-2 flex items-center gap-2 text-sm text-primary">
