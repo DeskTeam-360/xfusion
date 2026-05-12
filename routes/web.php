@@ -4,6 +4,7 @@ use App\Http\Controllers\Admin\CampaignController;
 use App\Http\Controllers\Admin\CompanyController;
 use App\Http\Controllers\Admin\ContactController;
 use App\Http\Controllers\Admin\CourseGroupController;
+use App\Http\Controllers\Admin\CourseScoringGroupController;
 use App\Http\Controllers\Admin\ExportController;
 use App\Http\Controllers\Admin\ImportController;
 use App\Http\Controllers\Admin\LimitLinkController;
@@ -327,6 +328,7 @@ Route::middleware(['auth',],)->group(function () {
 
     Route::resource('course-title', LimitLinkController::class,)->only('index', 'create', 'edit',);
     Route::resource('course-group', CourseGroupController::class,)->only('index', 'create', 'edit', 'show',);
+    Route::resource('course-scoring-group', CourseScoringGroupController::class)->only('index', 'create', 'edit',);
 
     Route::get('schedule', function () {
         return view('admin.schedule.index',);
