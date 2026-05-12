@@ -90,14 +90,14 @@
                                 @if(count($gfFields) === 0)
                                     <p class="text-sm text-dark/75 dark:text-darklink">Meta form tidak ada field (cek <code class="rounded bg-gray-100 px-1 py-0.5 text-xs text-dark dark:bg-darkborder dark:text-light">gf_form_meta.display_meta</code>).</p>
                                 @else
-                                    <div class="max-h-60 space-y-2 overflow-y-auto rounded border border-border bg-white p-3 dark:bg-darkgray/30 dark:border-darkborder">
+                                    <div class="max-h-60 space-y-2 overflow-y-auto rounded border border-border bg-white p-3 [color-scheme:light] dark:[color-scheme:dark] dark:bg-darkgray/30 dark:border-darkborder">
                                         @foreach($gfFields as $f)
                                             @php($_id = (int)$f['id'])
                                             <label wire:key="fld-{{ $index }}-{{ $_id }}" class="flex cursor-pointer gap-3 rounded px-2 py-1 hover:bg-gray-100 dark:hover:bg-darkborder/40">
                                                 <input type="checkbox"
                                                        wire:click.prevent="toggleField({{ $index }}, {{ $_id }})"
                                                        @checked($this->fieldIsChecked($index, $_id))
-                                                       class="mt-1"/>
+                                                       class="mt-1 size-[1.125rem] shrink-0 cursor-pointer appearance-auto rounded border-2 border-gray-600 bg-white accent-blue-600 shadow-sm outline-none ring-offset-2 focus-visible:ring-2 focus-visible:ring-blue-600 dark:border-gray-300 dark:bg-darkgray dark:accent-teal-400 dark:shadow-inner dark:focus-visible:ring-teal-400"/>
                                                 <span class="text-sm text-dark dark:text-white">
                                                     <strong class="font-medium">{{ $f['label'] }}</strong>
                                                     @if(($f['type'] ?? '') !== '')
