@@ -56,6 +56,8 @@ class UserDetail extends Component
      *     gauge_needle_deg: float,
      *     gauge_needle_color: string,
      *     gauge_zone_label: string,
+     *     total_fields: int,
+     *     responses_answered: int,
      *     rows: list<array{form_title: string, field_label: string, value: string, numeric: float|null}>
      * }>
      */
@@ -357,7 +359,7 @@ class UserDetail extends Component
     }
 
     /**
-     * @return list<array{id: int, title: string, description: string|null, average: float|null, gauge_value: float|null, gauge_needle_deg: float, gauge_needle_color: string, gauge_zone_label: string, rows: list<array{form_title: string, field_label: string, value: string, numeric: float|null}>}>
+     * @return list<array{id: int, title: string, description: string|null, average: float|null, gauge_value: float|null, gauge_needle_deg: float, gauge_needle_color: string, gauge_zone_label: string, total_fields: int, responses_answered: int, rows: list<array{form_title: string, field_label: string, value: string, numeric: float|null}>}>
      */
     private static function buildScoringGroups(int $userId): array
     {
@@ -403,6 +405,15 @@ class UserDetail extends Component
 
             $avg = $numericValues === [] ? null : round(array_sum($numericValues) / count($numericValues), 2);
 
+            $totalFields = count($rows);
+            $responsesAnswered = 0;
+            foreach ($rows as $row) {
+                $v = (string) ($row['value'] ?? '');
+                if ($v !== '—' && trim($v) !== '') {
+                    $responsesAnswered++;
+                }
+            }
+
             $gaugeMax = self::SCORING_GROUP_GAUGE_MAX;
             $gaugeValue = $avg === null ? null : min(max($avg, 0.0), $gaugeMax);
             $needleDeg = $gaugeValue === null
@@ -420,6 +431,8 @@ class UserDetail extends Component
                 'gauge_needle_deg' => $needleDeg,
                 'gauge_needle_color' => $zone['needle'],
                 'gauge_zone_label' => $zone['label'],
+                'total_fields' => $totalFields,
+                'responses_answered' => $responsesAnswered,
                 'rows' => $rows,
             ];
         }

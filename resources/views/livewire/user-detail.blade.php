@@ -96,9 +96,7 @@
                 <div class="mx-auto flex w-full max-w-[29rem] flex-wrap justify-center gap-2 sm:gap-3">
                     @foreach ($scoringGroups as $group)
                         <div class="w-28 shrink-0 rounded-lg border border-base-200 bg-base-100 p-2 flex flex-col items-center text-center shadow-sm sm:w-36">
-                            <h3 class="text-[11px] font-semibold leading-tight line-clamp-2 min-h-[2.25rem] w-full mb-1 px-0.5" title="{{ $group['title'] }}">
-                                {{ $group['title'] }}
-                            </h3>
+                            
                             <svg
                                 class="w-full max-w-[5.5rem] h-auto max-h-[4.75rem] mx-auto"
                                 viewBox="0 0 220 130"
@@ -149,13 +147,19 @@
                                 <circle cx="110" cy="110" r="7" fill="#1f2937"/>
                                 <circle cx="110" cy="110" r="4" fill="#ffffff"/>
                             </svg>
-                            <div class="mt-0.5 space-y-0 w-full">
+                            <div class="mt-0.5 w-full space-y-0.5">
+                            <h3 class="text-[11px] font-semibold leading-tight line-clamp-2 min-h-[2.25rem] w-full mb-1 px-0.5" title="{{ $group['title'] }}">
+                                {{ $group['title'] }}
+                            </h3>
                                 @if ($group['average'] !== null)
                                     <p class="text-sm font-bold tabular-nums leading-tight">{{ $group['average'] }}</p>
                                     <p class="text-[10px] font-medium leading-tight line-clamp-1" style="color: {{ $group['gauge_needle_color'] }}">{{ $group['gauge_zone_label'] }}</p>
                                 @else
                                     <p class="text-[10px] text-base-content/60">—</p>
                                 @endif
+                                <p class="text-[10px] text-base-content/60 tabular-nums">
+                                    {{ $group['responses_answered'] }} / {{ $group['total_fields'] }} responses
+                                </p>
                             </div>
                         </div>
                     @endforeach
@@ -166,6 +170,7 @@
                     @foreach ($scoringGroups as $group)
                         <div class="mt-5 mb-5 pt-6 first:pt-0">
                             <h3 class="font-semibold text-base mb-1">{{ $group['title'] }}</h3>
+                            <p class="text-xs text-base-content/60 mb-2 tabular-nums">{{ $group['responses_answered'] }} / {{ $group['total_fields'] }} responses</p>
                             @if (! empty($group['description']))
                                 <p class="text-sm text-base-content/70 mb-3">{{ $group['description'] }}</p>
                             @endif
