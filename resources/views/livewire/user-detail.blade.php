@@ -88,15 +88,14 @@
                 <li class="flex gap-2"><span aria-hidden="true">🟡</span> <span><strong class="text-yellow-600">Yellow</strong> ({{ $zoneRedBelow == floor($zoneRedBelow) ? (int) $zoneRedBelow : $zoneRedBelow }}–{{ rtrim(rtrim(number_format($zoneAmberBelow, 2, '.', ''), '0'), '.') }}): Progressing</span></li>
                 <li class="flex gap-2"><span aria-hidden="true">🟢</span> <span><strong class="text-green-600">Green</strong> ({{ rtrim(rtrim(number_format($zoneAmberBelow, 2, '.', ''), '0'), '.') }}–{{ (int) $gaugeMax }}): Excellent</span></li>
             </ul>
-            <p class="text-xs text-base-content/50 mb-4">Band thresholds are defined in <code class="text-xs">UserDetail::SCORING_GAUGE_ZONE_RED_BELOW</code> ({{ $zoneRedBelow }}) and <code class="text-xs">SCORING_GAUGE_ZONE_AMBER_BELOW</code> ({{ $zoneAmberBelow }}). The coloured arc uses 0–{{ $zoneRedBelow }} / {{ $zoneRedBelow }}–{{ $zoneAmberBelow }} / {{ $zoneAmberBelow }}–{{ $gaugeMax }}.</p>
 
             @if (count($scoringGroups) === 0)
                 <p class="text-sm text-base-content/60">No scoring groups configured, or all groups have no fields.</p>
             @else
-                {{-- Compact RPM gauges: up to 5 per row on large screens --}}
-                <div class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3">
+                {{-- Compact RPM gauges: 3 per row, centered (including last partial row) --}}
+                <div class="mx-auto flex w-full max-w-[29rem] flex-wrap justify-center gap-2 sm:gap-3">
                     @foreach ($scoringGroups as $group)
-                        <div class="rounded-lg border border-base-200 bg-base-100 p-2 flex flex-col items-center text-center shadow-sm">
+                        <div class="w-28 shrink-0 rounded-lg border border-base-200 bg-base-100 p-2 flex flex-col items-center text-center shadow-sm sm:w-36">
                             <h3 class="text-[11px] font-semibold leading-tight line-clamp-2 min-h-[2.25rem] w-full mb-1 px-0.5" title="{{ $group['title'] }}">
                                 {{ $group['title'] }}
                             </h3>
@@ -165,13 +164,13 @@
                 {{-- Full field breakdown tables --}}
                 <div class="mt-10 space-y-8">
                     @foreach ($scoringGroups as $group)
-                        <div class="border-t border-base-200 pt-6 first:border-t-0 first:pt-0">
+                        <div class="mt-5 mb-5 pt-6 first:pt-0">
                             <h3 class="font-semibold text-base mb-1">{{ $group['title'] }}</h3>
                             @if (! empty($group['description']))
                                 <p class="text-sm text-base-content/70 mb-3">{{ $group['description'] }}</p>
                             @endif
                             <div class="overflow-x-auto">
-                                <table class="table table-zebra table-sm">
+                                <table class="table table-zebra table-sm" style="width: 100%;">
                                     <thead>
                                         <tr>
                                             <th>Form</th>
