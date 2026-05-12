@@ -163,24 +163,29 @@ class CourseScoringGroup extends Component
         $this->blockFormPickResults[$index] = [];
     }
 
-    public function toggleField(int $index, int $fieldId): void
+    public function setFieldChecked(int $index, int $fieldId, $checked): void
     {
         if (! isset($this->blocks[$index])) {
             return;
         }
 
-        $fieldId = abs($fieldId);
-        $selected = &$this->blocks[$index]['field_ids'];
-
-        $pos = array_search($fieldId, $selected, true);
-        if ($pos !== false) {
-            unset($selected[$pos]);
-            $selected = array_values(array_map('intval', $selected));
-
+        $fieldId = abs((int) $fieldId);
+        if ($fieldId < 1) {
             return;
         }
 
-        $selected[] = $fieldId;
+        $on = filter_var($checked, FILTER_VALIDATE_BOOLEAN);
+
+        $selected = &$this->blocks[$index]['field_ids'];
+
+        if ($on) {
+            if (! in_array($fieldId, $selected, true)) {
+                $selected[] = $fieldId;
+            }
+        } else {
+            $selected = array_values(array_filter($selected, static fn ($id) => (int) $id !== $fieldId));
+        }
+
         $selected = array_values(array_unique(array_map('intval', $selected)));
     }
 

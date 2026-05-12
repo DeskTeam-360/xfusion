@@ -95,7 +95,8 @@
                                             @php($_id = (int)$f['id'])
                                             <label wire:key="fld-{{ $index }}-{{ $_id }}" class="flex cursor-pointer gap-3 rounded px-2 py-1 hover:bg-gray-100 dark:hover:bg-darkborder/40">
                                                 <input type="checkbox"
-                                                       wire:click.prevent="toggleField({{ $index }}, {{ $_id }})"
+                                                       wire:key="fld-cb-{{ $index }}-{{ $_id }}"
+                                                       wire:change="setFieldChecked({{ $index }}, {{ $_id }}, $event.target.checked)"
                                                        @checked($this->fieldIsChecked($index, $_id))
                                                        class="mt-1 size-[1.125rem] shrink-0 cursor-pointer appearance-auto rounded border-2 border-gray-600 bg-white accent-blue-600 shadow-sm outline-none ring-offset-2 focus-visible:ring-2 focus-visible:ring-blue-600 dark:border-gray-300 dark:bg-darkgray dark:accent-teal-400 dark:shadow-inner dark:focus-visible:ring-teal-400"/>
                                                 <span class="text-sm text-dark dark:text-white">
