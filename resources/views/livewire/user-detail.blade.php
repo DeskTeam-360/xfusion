@@ -3,6 +3,7 @@
     $zoneRedBelow = \App\Livewire\UserDetail::SCORING_GAUGE_ZONE_RED_BELOW;
     $zoneAmberBelow = \App\Livewire\UserDetail::SCORING_GAUGE_ZONE_AMBER_BELOW;
     $gaugeArcSegments = \App\Livewire\UserDetail::scoringGaugeArcSegmentPaths();
+    $needleColor = '#000000';
 @endphp
 
 <div class="w-full space-y-10">
@@ -162,7 +163,7 @@
                                             <line
                                                 x1="110" y1="112" x2="110" y2="36"
                                                 fill="none"
-                                                stroke="{{ $group['gauge_needle_color'] }}"
+                                                stroke="{{ $needleColor }}"
                                                 stroke-width="4"
                                                 stroke-linecap="round"
                                             />
