@@ -126,6 +126,7 @@ class UserProgressOnly extends \App\Models\User implements View
         }
 
         $link2 = route('user.show', $data->ID);
+        $linkDetail = route('user.detail', $data->ID);
 
         $companyId = null;
         foreach ($companies as $r) {
@@ -161,6 +162,7 @@ class UserProgressOnly extends \App\Models\User implements View
             ['type' => 'raw_html', 'text-align' => 'center', 'data' => "
                 <div class='flex gap-1'>
                     <span><a href='$routeAccess' class='btn'>Access</a></span>
+                    <span><a href='$linkDetail' class='btn btn-outline'>Detail</a></span>
                     <span><a href='$link' class='btn btn-primary'>Edit</a></span>
                     $button4
                     $keapMailButton

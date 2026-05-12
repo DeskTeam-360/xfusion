@@ -273,6 +273,7 @@ class User extends \App\Models\User implements View
         }
 
         $linkReset = route('user.show', $data->ID);
+        $linkDetail = route('user.detail', $data->ID);
 
         $editAttr = '';
         $editHrefSafe = htmlspecialchars($editHref, ENT_QUOTES, 'UTF-8');
@@ -283,6 +284,7 @@ class User extends \App\Models\User implements View
         return "
                 <div class='flex flex-wrap gap-4 justify-left'>
                     <span><a href='" . htmlspecialchars($routeAccess, ENT_QUOTES, 'UTF-8') . "' class='btn'>Access</a></span>
+                    <span><a href='" . htmlspecialchars($linkDetail, ENT_QUOTES, 'UTF-8') . "' class='btn btn-outline'>Detail</a></span>
                     <span><a "
             . ($editAttr !== '' ? $editAttr : "href='$editHrefSafe' class='btn btn-primary'")
             . ">Edit</a></span>

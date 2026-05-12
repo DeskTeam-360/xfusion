@@ -300,6 +300,10 @@ Route::middleware(['auth',],)->group(function () {
         return view('admin.user.course', compact('user',),);
     },)->name('user.course',);
 
+    Route::get('user/{user}/detail', function ($user,) {
+        return view('admin.user.detail', compact('user',),);
+    },)->name('user.detail',);
+
     Route::get('user/course/{user}/details', function ($user,) {
         return view('admin.user.course', compact('user',),);
     },)->name('user.course',);

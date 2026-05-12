@@ -1,5 +1,5 @@
--- Course scoring groups (Laravel admin). Jalankan pada database aplikasi utama (MySQL/MariaDB).
--- Tabel nama dengan prefix wp_* mengikuti konvensi proyek.
+-- Course scoring groups (Laravel admin). Run on the application database (MySQL/MariaDB).
+-- Table names use the wp_* prefix per project convention.
 
 CREATE TABLE IF NOT EXISTS `wp_course_scoring_groups` (
     `id` BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,

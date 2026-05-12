@@ -80,7 +80,7 @@ class CourseScoringGroup extends Component
 
         $this->dispatch('swal:alert', data: [
             'icon' => 'success',
-            'title' => 'Group created. Add Gravity Forms fields below.',
+            'title' => 'Group created. You can add Gravity Forms and fields on this page.',
         ]);
 
         $this->redirect(route('course-scoring-group.edit', ['course_scoring_group' => $g->id]));

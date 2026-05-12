@@ -1,6 +1,6 @@
 <div class="text-dark dark:text-darklink">
     @if($dataId === null)
-        {{-- Step 1: buat grup dulu --}}
+        {{-- Step 1: create the group first --}}
         <form wire:submit.prevent="saveNew" class="max-w-xl space-y-4">
             <div>
                 <label class="mb-1 block text-sm font-bold text-dark dark:text-light">Title <span class="text-error">*</span></label>
@@ -17,7 +17,7 @@
             <button type="submit" class="btn btn-primary" wire:loading.attr="disabled">Create group</button>
         </form>
     @else
-        {{-- Edit: judul + daftar Form GF berulang --}}
+        {{-- Edit: title plus repeatable Gravity Form blocks --}}
         <form wire:submit.prevent="saveExisting" class="space-y-8">
             <div class="grid gap-6 md:grid-cols-2">
                 <div>
@@ -53,7 +53,7 @@
                         <label class="mb-2 block text-sm font-bold text-dark dark:text-light">Find form</label>
                         <div class="flex flex-wrap gap-2">
                             <input type="text" wire:model.live.debounce.400ms="blocks.{{ $index }}.search"
-                                   placeholder="Judul Gravity Form…"
+                                   placeholder="Gravity Form title…"
                                    class="form-control min-w-[200px] flex-1 rounded border border-border bg-white px-3 py-2 text-dark placeholder:text-muted dark:bg-darkgray dark:border-darkborder dark:text-white dark:placeholder:text-darklink"/>
                             <button type="button" wire:click.prevent="searchForms({{ $index }})"
                                     class="btn btn-secondary shrink-0">Search
@@ -86,9 +86,9 @@
                                     Selected: <strong class="text-dark dark:text-white">{{ $block['search'] }}</strong>
                                     &nbsp;(form ID {{ $block['form_id'] }})
                                 </p>
-                                <p class="mb-2 text-sm font-semibold text-dark dark:text-white">Questions / fields untuk scoring</p>
+                                <p class="mb-2 text-sm font-semibold text-dark dark:text-white">Questions / fields for scoring</p>
                                 @if(count($gfFields) === 0)
-                                    <p class="text-sm text-dark/75 dark:text-darklink">Meta form tidak ada field (cek <code class="rounded bg-gray-100 px-1 py-0.5 text-xs text-dark dark:bg-darkborder dark:text-light">gf_form_meta.display_meta</code>).</p>
+                                    <p class="text-sm text-dark/75 dark:text-darklink">No fields found in form metadata (check <code class="rounded bg-gray-100 px-1 py-0.5 text-xs text-dark dark:bg-darkborder dark:text-light">gf_form_meta.display_meta</code>).</p>
                                 @else
                                     <div class="max-h-60 space-y-2 overflow-y-auto rounded border border-border bg-white p-3 [color-scheme:light] dark:[color-scheme:dark] dark:bg-darkgray/30 dark:border-darkborder">
                                         @foreach($gfFields as $f)
