@@ -60,7 +60,7 @@
                             </button>
                             @if($picked)
                                 <button type="button" wire:click.prevent="clearForm({{ $index }})"
-                                        class="btn btn-outline shrink-0">Change form
+                                        class="btn shrink-0">Change form
                                 </button>
                             @endif
                         </div>
