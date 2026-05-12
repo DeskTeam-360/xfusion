@@ -15,6 +15,9 @@ use Livewire\Component;
 
 class UserDetail extends Component
 {
+    /** Gauge maximum (scoring groups use a 0–5 scale). */
+    public const SCORING_GROUP_GAUGE_MAX = 5.0;
+
     /** WordPress user ID */
     public int $userId;
 
@@ -32,6 +35,8 @@ class UserDetail extends Component
      *     title: string,
      *     description: string|null,
      *     average: float|null,
+     *     gauge_value: float|null,
+     *     gauge_needle_deg: float,
      *     rows: list<array{form_title: string, field_label: string, value: string, numeric: float|null}>
      * }>
      */
@@ -53,7 +58,7 @@ class UserDetail extends Component
             $cid = is_object($r) ? ($r->meta_value ?? null) : ($r['meta_value'] ?? null);
             if ($cid !== null && $cid !== '') {
                 $c = Company::find($cid);
-                $company = $c !== null ? (string) $c->title : 'Perusahaan tidak ditemukan';
+                $company = $c !== null ? (string) $c->title : 'Company not found';
             }
         }
 
@@ -263,7 +268,7 @@ class UserDetail extends Component
     }
 
     /**
-     * @return list<array{id: int, title: string, description: string|null, average: float|null, rows: list<array{form_title: string, field_label: string, value: string, numeric: float|null}>}>
+     * @return list<array{id: int, title: string, description: string|null, average: float|null, gauge_value: float|null, gauge_needle_deg: float, rows: list<array{form_title: string, field_label: string, value: string, numeric: float|null}>}>
      */
     private static function buildScoringGroups(int $userId): array
     {
@@ -309,11 +314,19 @@ class UserDetail extends Component
 
             $avg = $numericValues === [] ? null : round(array_sum($numericValues) / count($numericValues), 2);
 
+            $gaugeMax = self::SCORING_GROUP_GAUGE_MAX;
+            $gaugeValue = $avg === null ? null : min(max($avg, 0.0), $gaugeMax);
+            $needleDeg = $gaugeValue === null
+                ? -90.0
+                : -90.0 + ($gaugeValue / $gaugeMax) * 180.0;
+
             $out[] = [
                 'id' => (int) $group->id,
                 'title' => (string) $group->title,
                 'description' => $group->description,
                 'average' => $avg,
+                'gauge_value' => $gaugeValue,
+                'gauge_needle_deg' => $needleDeg,
                 'rows' => $rows,
             ];
         }
