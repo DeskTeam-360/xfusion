@@ -4,7 +4,7 @@
             <a href="{{ route('course-scoring-group.index') }}" class="btn-sm">Back to list</a>
         </div>
         <div class="px-5">
-            <h1 class="mb-6 text-2xl font-semibold dark:text-white">Edit course scoring group</h1>
+            <h1 class="mb-6 text-2xl font-semibold text-dark dark:text-white">Edit course scoring group</h1>
             <livewire:form.course-scoring-group :data-id="$id"/>
         </div>
     </div>
