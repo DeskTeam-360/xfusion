@@ -117,7 +117,7 @@
             </div>
 
             <div class="flex flex-wrap gap-3">
-                <button type="button" wire:click="addFormBlock" class="btn btn-outline btn-primary">
+                <button type="button" wire:click="addFormBlock" class="btn btn-primary">
                     + Form
                 </button>
                 <button type="submit" class="btn btn-primary" wire:loading.attr="disabled">Save</button>
