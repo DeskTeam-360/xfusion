@@ -173,9 +173,9 @@
                                 <table class="table table-zebra table-sm" style="width: 100%;">
                                     <thead>
                                         <tr>
-                                            <th>Form</th>
-                                            <th>Field</th>
-                                            <th>Value</th>
+                                            <th style="text-align: left;">Form</th>
+                                            <th style="text-align: left;">Field</th>
+                                            <th style="text-align: left;">Value</th>
                                         </tr>
                                     </thead>
                                     <tbody>
