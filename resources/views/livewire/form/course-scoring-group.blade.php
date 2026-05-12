@@ -34,7 +34,7 @@
             </div>
 
             <div class="space-y-6">
-                <h3 class="text-lg font-semibold text-dark dark:text-white">Gravity Forms &amp; fields</h3>
+                <h3 class="text-lg font-semibold text-dark dark:text-white mb-4">Gravity Forms &amp; fields</h3>
 
                 @foreach($blocks as $index => $block)
                     @php
@@ -42,7 +42,7 @@
                         $gfFields = \App\Livewire\Form\CourseScoringGroup::gfFieldsForFormId(isset($block['form_id']) ? (int)$block['form_id'] : null);
                         $picked = isset($block['form_id']) && $block['form_id'] !== null;
                     @endphp
-                    <div wire:key="csg-block-{{ $index }}-{{ $picked ? 'yes' : 'no' }}-{{ md5(($block['search'] ?? '')) }}" class="rounded-lg border border-border bg-gray-50/40 p-5 dark:bg-transparent dark:border-darkborder">
+                    <div wire:key="csg-block-{{ $index }}-{{ $picked ? 'yes' : 'no' }}-{{ md5(($block['search'] ?? '')) }}" class="rounded-lg border border-border bg-gray-50/40 p-5 dark:bg-transparent dark:border-darkborder mb-4">
                         <div class="mb-4 flex flex-wrap items-center gap-3">
                             <span class="text-sm font-medium text-dark/70 dark:text-darklink uppercase tracking-wide">Form block {{ $index + 1 }}</span>
                             <button wire:click="removeFormBlock({{ $index }})" type="button"
