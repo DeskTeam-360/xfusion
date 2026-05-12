@@ -15,8 +15,25 @@ use Livewire\Component;
 
 class UserDetail extends Component
 {
-    /** Gauge maximum (scoring groups use a 0–5 scale). */
+    /** Maximum value on the group-average gauge (scale 0 → max). */
     public const SCORING_GROUP_GAUGE_MAX = 5.0;
+
+    /**
+     * Zone thresholds on the same scale as {@see SCORING_GROUP_GAUGE_MAX}.
+     * Red: [0, redBelow), Yellow: [redBelow, amberBelow), Green: [amberBelow, max].
+     * Matches: red ~ (1–3), yellow ~ (3–4.5), green ~ (4.5–5) with boundaries at 3 and 4.5.
+     */
+    public const SCORING_GAUGE_ZONE_RED_BELOW = 3.0;
+
+    public const SCORING_GAUGE_ZONE_AMBER_BELOW = 4.5;
+
+    public const SCORING_GAUGE_COLOR_RED = '#dc2626';
+
+    public const SCORING_GAUGE_COLOR_AMBER = '#ca8a04';
+
+    public const SCORING_GAUGE_COLOR_GREEN = '#16a34a';
+
+    public const SCORING_GAUGE_COLOR_NEUTRAL = '#6b7280';
 
     /** WordPress user ID */
     public int $userId;
@@ -37,6 +54,8 @@ class UserDetail extends Component
      *     average: float|null,
      *     gauge_value: float|null,
      *     gauge_needle_deg: float,
+     *     gauge_needle_color: string,
+     *     gauge_zone_label: string,
      *     rows: list<array{form_title: string, field_label: string, value: string, numeric: float|null}>
      * }>
      */
@@ -268,7 +287,77 @@ class UserDetail extends Component
     }
 
     /**
-     * @return list<array{id: int, title: string, description: string|null, average: float|null, gauge_value: float|null, gauge_needle_deg: float, rows: list<array{form_title: string, field_label: string, value: string, numeric: float|null}>}>
+     * Arc segments (semicircle) for zone colours; geometry matches tick marks (0 → max).
+     *
+     * @return list<array{d: string, stroke: string}>
+     */
+    public static function scoringGaugeArcSegmentPaths(): array
+    {
+        $max = self::SCORING_GROUP_GAUGE_MAX;
+        $b1 = self::SCORING_GAUGE_ZONE_RED_BELOW;
+        $b2 = self::SCORING_GAUGE_ZONE_AMBER_BELOW;
+
+        return [
+            ['d' => self::gaugeArcSegmentDPath(0.0, min($b1, $max), $max), 'stroke' => self::SCORING_GAUGE_COLOR_RED],
+            ['d' => self::gaugeArcSegmentDPath(min($b1, $max), min($b2, $max), $max), 'stroke' => self::SCORING_GAUGE_COLOR_AMBER],
+            ['d' => self::gaugeArcSegmentDPath(min($b2, $max), $max, $max), 'stroke' => self::SCORING_GAUGE_COLOR_GREEN],
+        ];
+    }
+
+    private static function gaugeArcSegmentDPath(float $valueFrom, float $valueTo, float $max): string
+    {
+        $r = 75.0;
+        $cx = 110.0;
+        $cy = 110.0;
+
+        if ($max <= 0.00001 || $valueTo <= $valueFrom) {
+            return 'M 35 110 A 75 75 0 0 1 35 110';
+        }
+
+        $t1 = pi() * (1 - $valueFrom / $max);
+        $t2 = pi() * (1 - $valueTo / $max);
+        $x1 = $cx + $r * cos($t1);
+        $y1 = $cy - $r * sin($t1);
+        $x2 = $cx + $r * cos($t2);
+        $y2 = $cy - $r * sin($t2);
+
+        return sprintf('M %.3f %.3f A 75 75 0 0 1 %.3f %.3f', $x1, $y1, $x2, $y2);
+    }
+
+    /**
+     * @return array{needle: string, label: string}
+     */
+    private static function gaugeZoneMeta(?float $gaugeValue): array
+    {
+        if ($gaugeValue === null) {
+            return [
+                'needle' => self::SCORING_GAUGE_COLOR_NEUTRAL,
+                'label' => 'No data',
+            ];
+        }
+
+        if ($gaugeValue < self::SCORING_GAUGE_ZONE_RED_BELOW) {
+            return [
+                'needle' => self::SCORING_GAUGE_COLOR_RED,
+                'label' => 'Needs improvement',
+            ];
+        }
+
+        if ($gaugeValue < self::SCORING_GAUGE_ZONE_AMBER_BELOW) {
+            return [
+                'needle' => self::SCORING_GAUGE_COLOR_AMBER,
+                'label' => 'Progressing',
+            ];
+        }
+
+        return [
+            'needle' => self::SCORING_GAUGE_COLOR_GREEN,
+            'label' => 'Excellent',
+        ];
+    }
+
+    /**
+     * @return list<array{id: int, title: string, description: string|null, average: float|null, gauge_value: float|null, gauge_needle_deg: float, gauge_needle_color: string, gauge_zone_label: string, rows: list<array{form_title: string, field_label: string, value: string, numeric: float|null}>}>
      */
     private static function buildScoringGroups(int $userId): array
     {
@@ -320,6 +409,8 @@ class UserDetail extends Component
                 ? -90.0
                 : -90.0 + ($gaugeValue / $gaugeMax) * 180.0;
 
+            $zone = self::gaugeZoneMeta($gaugeValue);
+
             $out[] = [
                 'id' => (int) $group->id,
                 'title' => (string) $group->title,
@@ -327,6 +418,8 @@ class UserDetail extends Component
                 'average' => $avg,
                 'gauge_value' => $gaugeValue,
                 'gauge_needle_deg' => $needleDeg,
+                'gauge_needle_color' => $zone['needle'],
+                'gauge_zone_label' => $zone['label'],
                 'rows' => $rows,
             ];
         }

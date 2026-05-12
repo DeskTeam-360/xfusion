@@ -1,5 +1,8 @@
 @php
     $gaugeMax = \App\Livewire\UserDetail::SCORING_GROUP_GAUGE_MAX;
+    $zoneRedBelow = \App\Livewire\UserDetail::SCORING_GAUGE_ZONE_RED_BELOW;
+    $zoneAmberBelow = \App\Livewire\UserDetail::SCORING_GAUGE_ZONE_AMBER_BELOW;
+    $gaugeArcSegments = \App\Livewire\UserDetail::scoringGaugeArcSegmentPaths();
 @endphp
 
 <div class="w-full space-y-10">
@@ -75,9 +78,16 @@
     <section class="card bg-base-100 shadow-sm border border-base-200">
         <div class="card-body">
             <h2 class="card-title text-lg">Course scoring groups</h2>
-            <p class="text-sm text-base-content/70 mb-4">
-                Values come from each user’s latest active Gravity Forms submission per configured form and field. The gauge uses the <strong>group average</strong> on a <strong>0–{{ (int) $gaugeMax }}</strong> scale (needle capped at max).
+            <p class="text-sm text-base-content/70 mb-3">
+                Values come from each user’s latest active Gravity Forms submission per configured form and field.
+                The needle shows the <strong>group average</strong> on a <strong>0–{{ (int) $gaugeMax }}</strong> scale (capped at max).
             </p>
+            <ul class="text-sm text-base-content/80 mb-4 space-y-1.5 border border-base-200 rounded-lg px-4 py-3 bg-base-200/30">
+                <li class="flex gap-2"><span aria-hidden="true">🔴</span> <span><strong class="text-red-600">Red</strong> (1–{{ (int) $zoneRedBelow }}): Needs improvement</span></li>
+                <li class="flex gap-2"><span aria-hidden="true">🟡</span> <span><strong class="text-yellow-600">Yellow</strong> ({{ $zoneRedBelow == floor($zoneRedBelow) ? (int) $zoneRedBelow : $zoneRedBelow }}–{{ rtrim(rtrim(number_format($zoneAmberBelow, 2, '.', ''), '0'), '.') }}): Progressing</span></li>
+                <li class="flex gap-2"><span aria-hidden="true">🟢</span> <span><strong class="text-green-600">Green</strong> ({{ rtrim(rtrim(number_format($zoneAmberBelow, 2, '.', ''), '0'), '.') }}–{{ (int) $gaugeMax }}): Excellent</span></li>
+            </ul>
+            <p class="text-xs text-base-content/50 mb-4">Band thresholds are defined in <code class="text-xs">UserDetail::SCORING_GAUGE_ZONE_RED_BELOW</code> ({{ $zoneRedBelow }}) and <code class="text-xs">SCORING_GAUGE_ZONE_AMBER_BELOW</code> ({{ $zoneAmberBelow }}). The coloured arc uses 0–{{ $zoneRedBelow }} / {{ $zoneRedBelow }}–{{ $zoneAmberBelow }} / {{ $zoneAmberBelow }}–{{ $gaugeMax }}.</p>
 
             @if (count($scoringGroups) === 0)
                 <p class="text-sm text-base-content/60">No scoring groups configured, or all groups have no fields.</p>
@@ -118,15 +128,16 @@
                                 <div class="shrink-0 flex flex-col items-center w-full max-w-[14rem] sm:w-[14rem]">
                                     <span class="text-xs font-medium uppercase tracking-wide text-base-content/50 mb-1">Group average</span>
                                     <svg class="w-full h-auto max-h-[9.5rem]" viewBox="0 0 220 130" role="img" aria-label="Scoring group average gauge, 0 to {{ (int) $gaugeMax }}">
-                                        {{-- Background arc --}}
-                                        <path
-                                            d="M 35 110 A 75 75 0 0 1 185 110"
-                                            fill="none"
-                                            stroke="currentColor"
-                                            class="text-base-300"
-                                            stroke-width="10"
-                                            stroke-linecap="round"
-                                        />
+                                        {{-- Zone-coloured arc (parameters: SCORING_GAUGE_ZONE_*) --}}
+                                        @foreach ($gaugeArcSegments as $seg)
+                                            <path
+                                                d="{{ $seg['d'] }}"
+                                                fill="none"
+                                                stroke="{{ $seg['stroke'] }}"
+                                                stroke-width="10"
+                                                stroke-linecap="round"
+                                            />
+                                        @endforeach
                                         {{-- Tick marks 0–5 --}}
                                         @for ($i = 0; $i <= 5; $i++)
                                             @php
@@ -146,12 +157,18 @@
                                                 class="fill-base-content/70 text-[11px] font-medium"
                                             >{{ $i }}</text>
                                         @endfor
-                                        {{-- Pivot + needle --}}
+                                        {{-- Needle (explicit stroke — Tailwind stroke-* often omitted for SVG in Blade) --}}
                                         <g transform="rotate({{ number_format($group['gauge_needle_deg'], 2, '.', '') }} 110 110)">
-                                            <line x1="110" y1="110" x2="110" y2="42" class="stroke-error" stroke-width="3" stroke-linecap="round"/>
+                                            <line
+                                                x1="110" y1="112" x2="110" y2="36"
+                                                fill="none"
+                                                stroke="{{ $group['gauge_needle_color'] }}"
+                                                stroke-width="4"
+                                                stroke-linecap="round"
+                                            />
                                         </g>
-                                        <circle cx="110" cy="110" r="6" class="fill-base-content"/>
-                                        <circle cx="110" cy="110" r="3" class="fill-base-100"/>
+                                        <circle cx="110" cy="110" r="7" fill="#1f2937"/>
+                                        <circle cx="110" cy="110" r="4" fill="#ffffff"/>
                                     </svg>
                                     <div class="text-center -mt-1 space-y-0.5">
                                         @if ($group['average'] !== null)
@@ -161,6 +178,7 @@
                                                     <span class="text-xs font-normal text-base-content/60">(capped on gauge)</span>
                                                 @endif
                                             </p>
+                                            <p class="text-sm font-semibold" style="color: {{ $group['gauge_needle_color'] }}">{{ $group['gauge_zone_label'] }}</p>
                                             <p class="text-xs text-base-content/60">Mean of numeric fields · scale 0–{{ (int) $gaugeMax }}</p>
                                         @else
                                             <p class="text-sm text-base-content/60">No numeric values in this group</p>
