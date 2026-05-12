@@ -4,6 +4,12 @@
     $zoneAmberBelow = \App\Livewire\UserDetail::SCORING_GAUGE_ZONE_AMBER_BELOW;
     $gaugeArcSegments = \App\Livewire\UserDetail::scoringGaugeArcSegmentPaths();
     $needleColor = '#000000';
+    // Compact gauge size — raised defaults (tweak rem values as needed).
+    $scoringGaugeCardMax = '12rem';
+    $scoringGaugeSvgMaxW = '7.5rem';
+    $scoringGaugeSvgMaxH = '6.25rem';
+    // ~3 cards + gaps (gap-3 = 0.75rem each).
+    $scoringGaugeRowMax = '40rem';
 @endphp
 
 <div class="w-full space-y-10">
@@ -93,12 +99,13 @@
                 <p class="text-sm text-base-content/60">No scoring groups configured, or all groups have no fields.</p>
             @else
                 {{-- Compact RPM gauges: 3 per row, centered (including last partial row) --}}
-                <div class="mx-auto flex w-full max-w-[29rem] flex-wrap justify-center gap-2 sm:gap-3">
+                <div class="mx-auto flex w-full flex-wrap justify-center gap-2 sm:gap-3" style="max-width: {{ $scoringGaugeRowMax }}">
                     @foreach ($scoringGroups as $group)
-                        <div class="w-28 shrink-0 rounded-lg border border-base-200 bg-base-100 p-2 flex flex-col items-center text-center shadow-sm sm:w-36">
+                        <div class="shrink-0 rounded-lg border border-base-200 bg-base-100 p-3 flex flex-col items-center text-center shadow-sm w-full" style="max-width: {{ $scoringGaugeCardMax }}">
                             
                             <svg
-                                class="w-full max-w-[5.5rem] h-auto max-h-[4.75rem] mx-auto"
+                                class="w-full h-auto mx-auto"
+                                style="max-width: {{ $scoringGaugeSvgMaxW }}; max-height: {{ $scoringGaugeSvgMaxH }}"
                                 viewBox="0 0 220 130"
                                 role="img"
                                 aria-label="{{ $group['title'] }} gauge, 0 to {{ (int) $gaugeMax }}"
@@ -147,17 +154,17 @@
                                 <circle cx="110" cy="110" r="7" fill="#1f2937"/>
                                 <circle cx="110" cy="110" r="4" fill="#ffffff"/>
                             </svg>
-                            <div class="mt-0.5 w-full space-y-0.5">
-                            <h3 class="text-[11px] font-semibold leading-tight line-clamp-2 min-h-[2.25rem] w-full mb-1 px-0.5" title="{{ $group['title'] }}">
+                            <div class="mt-1 w-full space-y-1">
+                            <h3 class="text-xs font-semibold leading-tight line-clamp-2 min-h-[2.5rem] w-full mb-0.5 px-0.5" title="{{ $group['title'] }}">
                                 {{ $group['title'] }}
                             </h3>
                                 @if ($group['average'] !== null)
-                                    <p class="text-sm font-bold tabular-nums leading-tight">{{ $group['average'] }}</p>
-                                    <p class="text-[10px] font-medium leading-tight line-clamp-1" style="color: {{ $group['gauge_needle_color'] }}">{{ $group['gauge_zone_label'] }}</p>
+                                    <p class="text-base font-bold tabular-nums leading-tight">{{ $group['average'] }}</p>
+                                    <p class="text-xs font-medium leading-tight line-clamp-1" style="color: {{ $group['gauge_needle_color'] }}">{{ $group['gauge_zone_label'] }}</p>
                                 @else
-                                    <p class="text-[10px] text-base-content/60">—</p>
+                                    <p class="text-xs text-base-content/60">—</p>
                                 @endif
-                                <p class="text-[10px] text-base-content/60 tabular-nums">
+                                <p class="text-xs text-base-content/60 tabular-nums">
                                     {{ $group['responses_answered'] }} / {{ $group['total_fields'] }} responses
                                 </p>
                             </div>

@@ -5,7 +5,8 @@
  * Usage:
  *   [xfusion_scoring_gauge group_id="1"]
  *   [xfusion_scoring_gauge group_id="1" user_id="89"]
- *   [xfusion_scoring_gauge group_id="1" show_title="1"]
+ *   Size: size="xs|sm|md|lg|xl" (default xl), scale="1.2", max_width="12rem", svg_width="7rem", svg_max_height="6rem"
+ *   Optional: class="my-class" (appended to wrapper)
  *
  * @package XFusion
  */
@@ -20,6 +21,104 @@ const XFUSION_CSG_ZONE_RED_BELOW = 3.0;
 
 /** @var float Yellow / green boundary */
 const XFUSION_CSG_ZONE_AMBER_BELOW = 4.5;
+
+/** Hex for zone label colour (matches UserDetail gauge_zone / needle meta colour). */
+const XFUSION_CSG_COLOR_NEUTRAL = '#6b7280';
+
+/**
+ * Zone label + accent colour for footer (same rules as App\Livewire\UserDetail::gaugeZoneMeta).
+ *
+ * @return array{color: string, label: string}
+ */
+function xfusion_csg_gauge_zone_meta(?float $gaugeValue): array
+{
+    if ($gaugeValue === null) {
+        return [
+            'color' => XFUSION_CSG_COLOR_NEUTRAL,
+            'label' => 'No data',
+        ];
+    }
+
+    if ($gaugeValue < XFUSION_CSG_ZONE_RED_BELOW) {
+        return [
+            'color' => '#dc2626',
+            'label' => 'Needs improvement',
+        ];
+    }
+
+    if ($gaugeValue < XFUSION_CSG_ZONE_AMBER_BELOW) {
+        return [
+            'color' => '#ca8a04',
+            'label' => 'Progressing',
+        ];
+    }
+
+    return [
+        'color' => '#16a34a',
+        'label' => 'Excellent',
+    ];
+}
+
+/**
+ * Allow common CSS lengths for shortcode size attributes.
+ */
+function xfusion_csg_sanitize_css_length(string $s): ?string
+{
+    $s = trim($s);
+    if ($s === '') {
+        return null;
+    }
+    if (preg_match('/^\d+(\.\d+)?(rem|em|px|ch|%)$/i', $s)) {
+        return $s;
+    }
+
+    return null;
+}
+
+/**
+ * @param  array<string, string>  $atts
+ * @return array{wrap_max: string, svg_max_w: string, svg_max_h: string, fs_title: int, fs_avg: int, fs_zone: int, fs_resp: int, h3_min_h: string}
+ */
+function xfusion_csg_shortcode_dimensions(array $atts): array
+{
+    $presets = [
+        'xs' => ['w' => 7.5, 'svg' => 4.75, 'svgh' => 4.0, 't' => 11, 'a' => 14, 'z' => 10, 'r' => 10, 'h3mh' => 2.1],
+        'sm' => ['w' => 9.5, 'svg' => 6.0, 'svgh' => 5.0, 't' => 12, 'a' => 15, 'z' => 11, 'r' => 11, 'h3mh' => 2.35],
+        'md' => ['w' => 11.5, 'svg' => 7.25, 'svgh' => 6.0, 't' => 13, 'a' => 16, 'z' => 12, 'r' => 12, 'h3mh' => 2.55],
+        'lg' => ['w' => 13.5, 'svg' => 8.5, 'svgh' => 7.0, 't' => 14, 'a' => 17, 'z' => 13, 'r' => 13, 'h3mh' => 2.75],
+        'xl' => ['w' => 16.5, 'svg' => 10.5, 'svgh' => 8.65, 't' => 15, 'a' => 18, 'z' => 14, 'r' => 14, 'h3mh' => 3.0],
+    ];
+    $sizeKey = strtolower((string) ($atts['size'] ?? 'xl'));
+    if (! isset($presets[$sizeKey])) {
+        $sizeKey = 'xl';
+    }
+    $p = $presets[$sizeKey];
+    $scale = (float) ($atts['scale'] ?? 1);
+    if ($scale <= 0 || $scale > 3) {
+        $scale = 1.0;
+    }
+    foreach (['w', 'svg', 'svgh', 'h3mh'] as $k) {
+        $p[$k] = round($p[$k] * $scale, 4);
+    }
+    foreach (['t', 'a', 'z', 'r'] as $k) {
+        $p[$k] = max(8, (int) round($p[$k] * $scale));
+    }
+
+    $wrapMw = xfusion_csg_sanitize_css_length((string) ($atts['max_width'] ?? ''));
+    $svgMw = xfusion_csg_sanitize_css_length((string) ($atts['svg_width'] ?? ''));
+    $svgMh = xfusion_csg_sanitize_css_length((string) ($atts['svg_max_height'] ?? ''));
+
+    return [
+        'wrap_max' => $wrapMw ?? ($p['w'] . 'rem'),
+        'svg_max_w' => $svgMw ?? ($p['svg'] . 'rem'),
+        'svg_max_h' => $svgMh ?? ($p['svgh'] . 'rem'),
+        'fs_title' => $p['t'],
+        'fs_avg' => $p['a'],
+        'fs_zone' => $p['z'],
+        'fs_resp' => $p['r'],
+        'h3_min_h' => $p['h3mh'] . 'rem',
+    ];
+}
 
 /**
  * @return list<array{d: string, stroke: string}>
@@ -149,7 +248,15 @@ function xfusion_csg_entry_field_value(int $entry_id, int $form_id, int $field_i
 }
 
 /**
- * @return array{title: string, needle_deg: float, average: ?float}|null Null if group missing or not readable
+ * @return array{
+ *   title: string,
+ *   needle_deg: float,
+ *   average: ?float,
+ *   gauge_zone_label: string,
+ *   gauge_zone_color: string,
+ *   total_fields: int,
+ *   responses_answered: int
+ * }|null
  */
 function xfusion_csg_gauge_payload(int $group_id, int $user_id): ?array
 {
@@ -183,16 +290,21 @@ function xfusion_csg_gauge_payload(int $group_id, int $user_id): ?array
         return null;
     }
 
+    $totalFields = count($details);
+    $responsesAnswered = 0;
     $numericValues = [];
 
     foreach ($details as $d) {
         $formId = (int) ($d['form_id'] ?? 0);
         $fieldId = (int) ($d['field_id'] ?? 0);
         $entryId = xfusion_csg_latest_entry_id($formId, $user_id);
-        if ($entryId < 1) {
-            continue;
+        $raw = null;
+        if ($entryId > 0) {
+            $raw = xfusion_csg_entry_field_value($entryId, $formId, $fieldId);
         }
-        $raw = xfusion_csg_entry_field_value($entryId, $formId, $fieldId);
+        if ($raw !== null && trim((string) $raw) !== '') {
+            ++$responsesAnswered;
+        }
         $num = xfusion_csg_parse_numeric($raw);
         if ($num !== null) {
             $numericValues[] = $num;
@@ -206,10 +318,16 @@ function xfusion_csg_gauge_payload(int $group_id, int $user_id): ?array
         ? -90.0
         : -90.0 + ($gaugeValue / $gaugeMax) * 180.0;
 
+    $zone = xfusion_csg_gauge_zone_meta($gaugeValue);
+
     return [
         'title' => (string) ($group['title'] ?? ''),
         'needle_deg' => $needleDeg,
         'average' => $avg,
+        'gauge_zone_label' => $zone['label'],
+        'gauge_zone_color' => $zone['color'],
+        'total_fields' => $totalFields,
+        'responses_answered' => $responsesAnswered,
     ];
 }
 
@@ -223,8 +341,12 @@ function xfusion_csg_scoring_gauge_shortcode($atts): string
             'group_id' => '0',
             'id' => '0',
             'user_id' => '0',
-            'show_title' => '0',
             'class' => '',
+            'size' => 'xl',
+            'scale' => '1',
+            'max_width' => '',
+            'svg_width' => '',
+            'svg_max_height' => '',
         ],
         $atts,
         'xfusion_scoring_gauge'
@@ -250,15 +372,18 @@ function xfusion_csg_scoring_gauge_shortcode($atts): string
     $titleEsc = esc_html($data['title']);
     $titleAttr = esc_attr($data['title']);
     $wrapClass = trim('xfusion-scoring-gauge ' . (string) $atts['class']);
-    $showTitle = $atts['show_title'] === '1' || strtolower((string) $atts['show_title']) === 'true';
+    $zoneColor = $data['gauge_zone_color'];
+    $zoneLabelEsc = esc_html($data['gauge_zone_label']);
+    if (!preg_match('/^#[0-9a-fA-F]{6}$/', $zoneColor)) {
+        $zoneColor = XFUSION_CSG_COLOR_NEUTRAL;
+    }
+
+    $dim = xfusion_csg_shortcode_dimensions($atts);
 
     ob_start();
     ?>
-<div class="<?php echo esc_attr($wrapClass); ?>" style="max-width:9rem;margin-left:auto;margin-right:auto;text-align:center;">
-<?php if ($showTitle) : ?>
-    <div class="xfusion-scoring-gauge__title" style="font-size:11px;font-weight:600;line-height:1.2;margin-bottom:4px;"><?php echo $titleEsc; ?></div>
-<?php endif; ?>
-<svg style="width:100%;height:auto;max-height:4.75rem;" viewBox="0 0 220 130" role="img" aria-label="<?php echo $titleAttr; ?> — 0 to <?php echo (int) XFUSION_CSG_GAUGE_MAX; ?>">
+<div class="<?php echo esc_attr($wrapClass); ?>" style="box-sizing:border-box;width:100%;max-width:<?php echo esc_attr($dim['wrap_max']); ?>;margin-left:auto;margin-right:auto;padding:0.75rem;border:1px solid #e5e7eb;border-radius:0.5rem;background:#fff;box-shadow:0 1px 2px rgba(0,0,0,.05);display:flex;flex-direction:column;align-items:center;text-align:center;">
+<svg style="width:100%;max-width:<?php echo esc_attr($dim['svg_max_w']); ?>;height:auto;max-height:<?php echo esc_attr($dim['svg_max_h']); ?>;display:block;margin:0 auto;" viewBox="0 0 220 130" role="img" aria-label="<?php echo $titleAttr; ?> gauge, 0 to <?php echo (int) XFUSION_CSG_GAUGE_MAX; ?>">
 <?php foreach ($segments as $seg) : ?>
     <path fill="none" stroke="<?php echo esc_attr($seg['stroke']); ?>" stroke-width="10" stroke-linecap="round" d="<?php echo esc_attr($seg['d']); ?>" />
 <?php endforeach; ?>
@@ -281,6 +406,12 @@ function xfusion_csg_scoring_gauge_shortcode($atts): string
     <circle cx="110" cy="110" r="7" fill="#1f2937"/>
     <circle cx="110" cy="110" r="4" fill="#ffffff"/>
 </svg>
+    <div style="margin-top:2px;width:100%;">
+        <h3 style="margin:0 0 4px;font-size:<?php echo (int) $dim['fs_title']; ?>px;font-weight:600;line-height:1.25;min-height:<?php echo esc_attr($dim['h3_min_h']); ?>;width:100%;padding:0 2px;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;" title="<?php echo $titleAttr; ?>"><?php echo $titleEsc; ?></h3>
+        <p style="margin:0;font-size:<?php echo (int) $dim['fs_avg']; ?>px;font-weight:700;line-height:1.25;font-variant-numeric:tabular-nums;"><?php echo $data['average'] !== null ? esc_html((string) $data['average']) : esc_html('—'); ?></p>
+        <p style="margin:0;font-size:<?php echo (int) $dim['fs_zone']; ?>px;font-weight:500;line-height:1.25;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;color:<?php echo esc_attr($zoneColor); ?>;"><?php echo $zoneLabelEsc; ?></p>
+        <p style="margin:2px 0 0;font-size:<?php echo (int) $dim['fs_resp']; ?>px;line-height:1.25;color:rgba(0,0,0,.45);font-variant-numeric:tabular-nums;"><?php echo (int) $data['responses_answered']; ?> / <?php echo (int) $data['total_fields']; ?> responses</p>
+    </div>
 </div>
     <?php
 
