@@ -93,100 +93,102 @@
             @if (count($scoringGroups) === 0)
                 <p class="text-sm text-base-content/60">No scoring groups configured, or all groups have no fields.</p>
             @else
-                <div class="space-y-10">
+                {{-- Compact RPM gauges: up to 5 per row on large screens --}}
+                <div class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3">
                     @foreach ($scoringGroups as $group)
-                        <div class="border-t border-base-200 pt-8 first:border-t-0 first:pt-0">
-                            <div class="flex flex-col lg:flex-row flex-wrap items-start gap-8">
-                                <div class="flex-1 min-w-[16rem]">
-                                    <h3 class="font-semibold text-base mb-1">{{ $group['title'] }}</h3>
-                                    @if (! empty($group['description']))
-                                        <p class="text-sm text-base-content/70 mb-4">{{ $group['description'] }}</p>
-                                    @endif
+                        <div class="rounded-lg border border-base-200 bg-base-100 p-2 flex flex-col items-center text-center shadow-sm">
+                            <h3 class="text-[11px] font-semibold leading-tight line-clamp-2 min-h-[2.25rem] w-full mb-1 px-0.5" title="{{ $group['title'] }}">
+                                {{ $group['title'] }}
+                            </h3>
+                            <svg
+                                class="w-full max-w-[5.5rem] h-auto max-h-[4.75rem] mx-auto"
+                                viewBox="0 0 220 130"
+                                role="img"
+                                aria-label="{{ $group['title'] }} gauge, 0 to {{ (int) $gaugeMax }}"
+                            >
+                                @foreach ($gaugeArcSegments as $seg)
+                                    <path
+                                        d="{{ $seg['d'] }}"
+                                        fill="none"
+                                        stroke="{{ $seg['stroke'] }}"
+                                        stroke-width="10"
+                                        stroke-linecap="round"
+                                    />
+                                @endforeach
+                                @for ($i = 0; $i <= 5; $i++)
+                                    @php
+                                        $theta = pi() * (1 - $i / 5);
+                                        $x1 = 110 + 72 * cos($theta);
+                                        $y1 = 110 - 72 * sin($theta);
+                                        $x2 = 110 + 62 * cos($theta);
+                                        $y2 = 110 - 62 * sin($theta);
+                                        $lx = 110 + 52 * cos($theta);
+                                        $ly = 110 - 52 * sin($theta);
+                                    @endphp
+                                    <line x1="{{ $x1 }}" y1="{{ $y1 }}" x2="{{ $x2 }}" y2="{{ $y2 }}" stroke="#9ca3af" stroke-opacity="0.45" stroke-width="2" stroke-linecap="round"/>
+                                    <text
+                                        x="{{ $lx }}"
+                                        y="{{ $ly + 4 }}"
+                                        text-anchor="middle"
+                                        fill="#6b7280"
+                                        font-size="11"
+                                        font-weight="600"
+                                    >{{ $i }}</text>
+                                @endfor
+                                <g transform="rotate({{ number_format($group['gauge_needle_deg'], 2, '.', '') }} 110 110)">
+                                    <line
+                                        x1="110"
+                                        y1="112"
+                                        x2="110"
+                                        y2="36"
+                                        fill="none"
+                                        stroke="{{ $needleColor }}"
+                                        stroke-width="4"
+                                        stroke-linecap="round"
+                                    />
+                                </g>
+                                <circle cx="110" cy="110" r="7" fill="#1f2937"/>
+                                <circle cx="110" cy="110" r="4" fill="#ffffff"/>
+                            </svg>
+                            <div class="mt-0.5 space-y-0 w-full">
+                                @if ($group['average'] !== null)
+                                    <p class="text-sm font-bold tabular-nums leading-tight">{{ $group['average'] }}</p>
+                                    <p class="text-[10px] font-medium leading-tight line-clamp-1" style="color: {{ $group['gauge_needle_color'] }}">{{ $group['gauge_zone_label'] }}</p>
+                                @else
+                                    <p class="text-[10px] text-base-content/60">—</p>
+                                @endif
+                            </div>
+                        </div>
+                    @endforeach
+                </div>
 
-                                    <div class="overflow-x-auto">
-                                        <table class="table table-zebra table-sm">
-                                            <thead>
-                                                <tr>
-                                                    <th>Form</th>
-                                                    <th>Field</th>
-                                                    <th>Value</th>
-                                                </tr>
-                                            </thead>
-                                            <tbody>
-                                                @foreach ($group['rows'] as $r)
-                                                    <tr>
-                                                        <td class="text-sm">{{ $r['form_title'] }}</td>
-                                                        <td class="text-sm">{{ $r['field_label'] }}</td>
-                                                        <td class="text-sm">{{ $r['value'] }}</td>
-                                                    </tr>
-                                                @endforeach
-                                            </tbody>
-                                        </table>
-                                    </div>
-                                </div>
-
-                                {{-- RPM-style semicircular gauge (0 → max) --}}
-                                <div class="shrink-0 flex flex-col items-center w-full max-w-[14rem] sm:w-[14rem]">
-                                    <span class="text-xs font-medium uppercase tracking-wide text-base-content/50 mb-1">Group average</span>
-                                    <svg class="w-full h-auto max-h-[9.5rem]" viewBox="0 0 220 130" role="img" aria-label="Scoring group average gauge, 0 to {{ (int) $gaugeMax }}">
-                                        {{-- Zone-coloured arc (parameters: SCORING_GAUGE_ZONE_*) --}}
-                                        @foreach ($gaugeArcSegments as $seg)
-                                            <path
-                                                d="{{ $seg['d'] }}"
-                                                fill="none"
-                                                stroke="{{ $seg['stroke'] }}"
-                                                stroke-width="10"
-                                                stroke-linecap="round"
-                                            />
+                {{-- Full field breakdown tables --}}
+                <div class="mt-10 space-y-8">
+                    @foreach ($scoringGroups as $group)
+                        <div class="border-t border-base-200 pt-6 first:border-t-0 first:pt-0">
+                            <h3 class="font-semibold text-base mb-1">{{ $group['title'] }}</h3>
+                            @if (! empty($group['description']))
+                                <p class="text-sm text-base-content/70 mb-3">{{ $group['description'] }}</p>
+                            @endif
+                            <div class="overflow-x-auto">
+                                <table class="table table-zebra table-sm">
+                                    <thead>
+                                        <tr>
+                                            <th>Form</th>
+                                            <th>Field</th>
+                                            <th>Value</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        @foreach ($group['rows'] as $r)
+                                            <tr>
+                                                <td class="text-sm">{{ $r['form_title'] }}</td>
+                                                <td class="text-sm">{{ $r['field_label'] }}</td>
+                                                <td class="text-sm">{{ $r['value'] }}</td>
+                                            </tr>
                                         @endforeach
-                                        {{-- Tick marks 0–5 --}}
-                                        @for ($i = 0; $i <= 5; $i++)
-                                            @php
-                                                $theta = pi() * (1 - $i / 5);
-                                                $x1 = 110 + 72 * cos($theta);
-                                                $y1 = 110 - 72 * sin($theta);
-                                                $x2 = 110 + 62 * cos($theta);
-                                                $y2 = 110 - 62 * sin($theta);
-                                                $lx = 110 + 52 * cos($theta);
-                                                $ly = 110 - 52 * sin($theta);
-                                            @endphp
-                                            <line x1="{{ $x1 }}" y1="{{ $y1 }}" x2="{{ $x2 }}" y2="{{ $y2 }}" class="stroke-base-content/35" stroke-width="2" stroke-linecap="round"/>
-                                            <text
-                                                x="{{ $lx }}"
-                                                y="{{ $ly + 4 }}"
-                                                text-anchor="middle"
-                                                class="fill-base-content/70 text-[11px] font-medium"
-                                            >{{ $i }}</text>
-                                        @endfor
-                                        {{-- Needle (explicit stroke — Tailwind stroke-* often omitted for SVG in Blade) --}}
-                                        <g transform="rotate({{ number_format($group['gauge_needle_deg'], 2, '.', '') }} 110 110)">
-                                            <line
-                                                x1="110" y1="112" x2="110" y2="36"
-                                                fill="none"
-                                                stroke="{{ $needleColor }}"
-                                                stroke-width="4"
-                                                stroke-linecap="round"
-                                            />
-                                        </g>
-                                        <circle cx="110" cy="110" r="7" fill="#1f2937"/>
-                                        <circle cx="110" cy="110" r="4" fill="#ffffff"/>
-                                    </svg>
-                                    <div class="text-center -mt-1 space-y-0.5">
-                                        @if ($group['average'] !== null)
-                                            <p class="text-lg font-bold tabular-nums">
-                                                {{ $group['average'] }}
-                                                @if ($group['average'] > $gaugeMax + 0.0001)
-                                                    <span class="text-xs font-normal text-base-content/60">(capped on gauge)</span>
-                                                @endif
-                                            </p>
-                                            <p class="text-sm font-semibold" style="color: {{ $group['gauge_needle_color'] }}">{{ $group['gauge_zone_label'] }}</p>
-                                            <p class="text-xs text-base-content/60">Mean of numeric fields · scale 0–{{ (int) $gaugeMax }}</p>
-                                        @else
-                                            <p class="text-sm text-base-content/60">No numeric values in this group</p>
-                                            <p class="text-xs text-base-content/50">Needle at minimum</p>
-                                        @endif
-                                    </div>
-                                </div>
+                                    </tbody>
+                                </table>
                             </div>
                         </div>
                     @endforeach
