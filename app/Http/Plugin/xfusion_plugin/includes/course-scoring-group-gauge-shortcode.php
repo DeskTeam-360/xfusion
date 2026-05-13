@@ -410,7 +410,7 @@ function xfusion_csg_scoring_gauge_shortcode($atts): string
         <h3 style="margin:0 0 4px;font-size:<?php echo (int) $dim['fs_title']; ?>px;font-weight:600;line-height:1.25;min-height:<?php echo esc_attr($dim['h3_min_h']); ?>;width:100%;padding:0 2px;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;" title="<?php echo $titleAttr; ?>"><?php echo $titleEsc; ?></h3>
         <p style="margin:0;font-size:<?php echo (int) $dim['fs_avg']; ?>px;font-weight:700;line-height:1.25;font-variant-numeric:tabular-nums;"><?php echo $data['average'] !== null ? esc_html((string) $data['average']) : esc_html('—'); ?></p>
         <p style="margin:0;font-size:<?php echo (int) $dim['fs_zone']; ?>px;font-weight:500;line-height:1.25;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;color:<?php echo esc_attr($zoneColor); ?>;"><?php echo $zoneLabelEsc; ?></p>
-        <p style="margin:2px 0 0;font-size:<?php echo (int) $dim['fs_resp']; ?>px;line-height:1.25;color:rgba(0,0,0,.45);font-variant-numeric:tabular-nums;"><?php echo (int) $data['responses_answered']; ?> / <?php echo (int) $data['total_fields']; ?> responses</p>
+        <p style="margin:2px 0 0;font-size:<?php echo (int) $dim['fs_resp']; ?>px;line-height:1.25;color:rgba(0,0,0,.45);font-variant-numeric:tabular-nums;"><?php echo (int) $data['responses_answered']; ?> responses</p>
     </div>
 </div>
     <?php

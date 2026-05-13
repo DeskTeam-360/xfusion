@@ -165,7 +165,7 @@
                                     <p class="text-xs text-base-content/60">—</p>
                                 @endif
                                 <p class="text-xs text-base-content/60 tabular-nums">
-                                    {{ $group['responses_answered'] }} / {{ $group['total_fields'] }} responses
+                                    {{ $group['responses_answered'] }} responses
                                 </p>
                             </div>
                         </div>
@@ -177,7 +177,7 @@
                     @foreach ($scoringGroups as $group)
                         <div class="mt-5 mb-5 pt-6 first:pt-0">
                             <h3 class="font-semibold text-base mb-1">{{ $group['title'] }}</h3>
-                            <p class="text-xs text-base-content/60 mb-2 tabular-nums">{{ $group['responses_answered'] }} / {{ $group['total_fields'] }} responses</p>
+                            <p class="text-xs text-base-content/60 mb-2 tabular-nums">{{ $group['responses_answered'] }} responses</p>
                             @if (! empty($group['description']))
                                 <p class="text-sm text-base-content/70 mb-3">{{ $group['description'] }}</p>
                             @endif
