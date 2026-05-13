@@ -23,8 +23,8 @@ class CourseScoringGroup extends Component
      */
     public array $blocks = [];
 
-    /** @var array<int, array<int, object{scalar}>> keyed by block index → list rows {id, title, label, type} */
-    public array $blockFormPickResults = [];
+    /** @var list<array{id: int, title: string}>|null Memo: satu query DB per-request render (pakai Alpine filter, bukan LIKE tiap ketikan). */
+    private ?array $formCatalogMemo = null;
 
     public function mount(?string $dataId = null): void
     {
@@ -95,47 +95,9 @@ class CourseScoringGroup extends Component
     {
         unset($this->blocks[$index]);
         $this->blocks = array_values($this->blocks);
-        $this->blockFormPickResults = [];
 
         if (count($this->blocks) === 0) {
             $this->blocks[] = $this->emptyBlock();
-        }
-    }
-
-    public function searchForms(int $index): void
-    {
-        if (! isset($this->blocks[$index])) {
-            return;
-        }
-
-        $term = trim($this->blocks[$index]['search'] ?? '');
-        if ($term === '') {
-            $this->blockFormPickResults[$index] = [];
-
-            return;
-        }
-
-        $this->blockFormPickResults[$index] = WpGfForm::query()
-            ->where('is_active', 1)
-            ->where('is_trash', 0)
-            ->where('title', 'like', '%' . $term . '%')
-            ->orderBy('title')
-            ->limit(25)
-            ->get(['id', 'title'])
-            ->map(static function ($f) {
-                return ['id' => (int) $f->id, 'title' => (string) $f->title];
-            })
-            ->values()
-            ->all();
-    }
-
-    public function updated($name, $value): void
-    {
-        if (preg_match('/^blocks\.(\d+)\.search$/', (string) $name, $m)) {
-            $this->blockFormPickResults[(int) $m[1]] ??= [];
-            if (trim((string) $value) === '') {
-                $this->blockFormPickResults[(int) $m[1]] = [];
-            }
         }
     }
 
@@ -147,9 +109,8 @@ class CourseScoringGroup extends Component
 
         $form = WpGfForm::find($formId);
         $this->blocks[$index]['form_id'] = $formId;
-        $this->blocks[$index]['search'] = $form !== null ? (string) $form->title : ('Form #' . $formId);
+        $this->blocks[$index]['search'] = $form !== null ? (string) $form->title : ('Form #'.$formId);
         $this->blocks[$index]['field_ids'] = [];
-        $this->blockFormPickResults[$index] = [];
     }
 
     public function clearForm(int $index): void
@@ -159,8 +120,8 @@ class CourseScoringGroup extends Component
         }
 
         $this->blocks[$index]['form_id'] = null;
+        $this->blocks[$index]['search'] = '';
         $this->blocks[$index]['field_ids'] = [];
-        $this->blockFormPickResults[$index] = [];
     }
 
     public function setFieldChecked(int $index, int $fieldId, $checked): void
@@ -232,8 +193,12 @@ class CourseScoringGroup extends Component
                 continue;
             }
 
-            $label = isset($field->label) ? (string) $field->label : ('Field #' . $id);
+            $label = isset($field->label) ? (string) $field->label : ('Field #'.$id);
             $type = isset($field->type) ? (string) $field->type : '';
+
+            if ($type !== 'radio') {
+                continue;
+            }
 
             $out[] = ['id' => $id, 'label' => $label, 'type' => $type];
         }
@@ -296,8 +261,31 @@ class CourseScoringGroup extends Component
         ]);
     }
 
+    /** @return list<array{id: int, title: string}> */
+    private function loadFormCatalog(): array
+    {
+        return WpGfForm::query()
+            ->where('is_active', 1)
+            ->where('is_trash', 0)
+            ->orderBy('title')
+            ->get(['id', 'title'])
+            ->map(static function ($f) {
+                return ['id' => (int) $f->id, 'title' => (string) $f->title];
+            })
+            ->values()
+            ->all();
+    }
+
     public function render()
     {
-        return view('livewire.form.course-scoring-group');
+        if ($this->dataId !== null) {
+            if ($this->formCatalogMemo === null) {
+                $this->formCatalogMemo = $this->loadFormCatalog();
+            }
+        }
+
+        return view('livewire.form.course-scoring-group', [
+            'formCatalog' => $this->formCatalogMemo ?? [],
+        ]);
     }
 }

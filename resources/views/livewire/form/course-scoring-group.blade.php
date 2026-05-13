@@ -18,7 +18,8 @@
         </form>
     @else
         {{-- Edit: title plus repeatable Gravity Form blocks --}}
-        <form wire:submit.prevent="saveExisting" class="space-y-8">
+        <form wire:submit.prevent="saveExisting" class="space-y-8"
+              x-init="if (! Alpine.store('csGfForms')) { Alpine.store('csGfForms', { forms: {{ \Illuminate\Support\Js::from($formCatalog ?? []) }} }); }">
             <div class="grid gap-6 md:grid-cols-2">
                 <div>
                     <label class="mb-1 block text-sm font-bold text-dark dark:text-light">Title <span class="text-error">*</span></label>
@@ -50,34 +51,58 @@
                             </button>
                         </div>
 
-                        <label class="mb-2 block text-sm font-bold text-dark dark:text-light">Find form</label>
-                        <div class="flex flex-wrap gap-2">
-                            <input type="text" wire:model.live.debounce.400ms="blocks.{{ $index }}.search"
-                                   placeholder="Gravity Form title…"
-                                   class="form-control min-w-[200px] flex-1 rounded border border-border bg-white px-3 py-2 text-dark placeholder:text-muted dark:bg-darkgray dark:border-darkborder dark:text-white dark:placeholder:text-darklink"/>
-                            <button type="button" wire:click.prevent="searchForms({{ $index }})"
-                                    class="btn btn-secondary shrink-0">Search
-                            </button>
-                            @if($picked)
+                        @if($picked)
+                            <div class="mb-4 flex flex-wrap gap-2">
                                 <button type="button" wire:click.prevent="clearForm({{ $index }})"
                                         class="btn shrink-0">Change form
                                 </button>
-                            @endif
-                        </div>
-
-                        @if(!empty($blockFormPickResults[$index] ?? []) && !$picked)
-                            <ul class="mt-3 divide-y divide-border rounded border border-border bg-white dark:border-darkborder dark:bg-darkgray/30">
-                                @foreach(($blockFormPickResults[$index] ?? []) as $row)
-                                    <li>
-                                        <button type="button" wire:key="gf-p-{{ $index }}-{{ $row['id'] }}"
-                                                wire:click="pickForm({{ $index }}, {{ $row['id'] }})"
-                                                class="w-full px-3 py-2 text-start text-sm text-dark hover:bg-primary/10 dark:text-white dark:hover:bg-darkborder/40">
-                                            <strong class="font-semibold">{{ $row['title'] }}</strong>
-                                            <span class="ms-2 text-xs text-dark/60 dark:text-darklink">ID {{ $row['id'] }}</span>
-                                        </button>
-                                    </li>
-                                @endforeach
-                            </ul>
+                            </div>
+                        @else
+                            <label class="mb-2 block text-sm font-bold text-dark dark:text-light">Find form</label>
+                            <div class="flex flex-wrap gap-2"
+                                 wire:key="gf-find-{{ $index }}"
+                                 x-data="{
+                                     query: '',
+                                     maxShown: 200,
+                                     get filtered() {
+                                         var list = (Alpine.store('csGfForms') || {}).forms || [];
+                                         var t = (this.query || '').trim().toLowerCase();
+                                         if (!t.length) return [];
+                                         return list.filter(function (f) {
+                                             var title = (f.title || '').toLowerCase();
+                                             return title.indexOf(t) !== -1;
+                                         }).slice(0, this.maxShown);
+                                     }
+                                 }">
+                                <input type="search"
+                                       x-model="query"
+                                       placeholder="Cari nama form (filter di browser, tidak panggil server)…"
+                                       autocomplete="off"
+                                       class="form-control min-w-[200px] flex-1 rounded border border-border bg-white px-3 py-2 text-dark placeholder:text-muted dark:bg-darkgray dark:border-darkborder dark:text-white dark:placeholder:text-darklink"/>
+                                <p class="w-full text-xs text-dark/60 dark:text-darklink">
+                                    Form aktif tersimpan di browser untuk pencarian cepat (<span x-text="(Alpine.store('csGfForms').forms ?? []).length"></span> form). Ketik nama form untuk menyaring tanpa hit server.
+                                </p>
+                                <template x-if="!query.trim().length">
+                                    <p class="mt-1 w-full text-sm text-dark/75 dark:text-darklink">Mulai ketik judul form untuk menampilkan hasil.</p>
+                                </template>
+                                <template x-if="filtered.length">
+                                    <ul class="mt-1 w-full divide-y divide-border rounded border border-border bg-white dark:border-darkborder dark:bg-darkgray/30">
+                                        <template x-for="row in filtered" :key="'gf-p-{{ $index }}-' + row.id">
+                                            <li>
+                                                <button type="button"
+                                                        class="w-full px-3 py-2 text-start text-sm text-dark hover:bg-primary/10 dark:text-white dark:hover:bg-darkborder/40"
+                                                        x-on:click="$wire.pickForm({{ $index }}, row.id); query = ''">
+                                                    <strong class="font-semibold" x-text="row.title"></strong>
+                                                    <span class="ms-2 text-xs text-dark/60 dark:text-darklink">ID <span x-text="row.id"></span></span>
+                                                </button>
+                                            </li>
+                                        </template>
+                                    </ul>
+                                </template>
+                                <template x-if="filtered.length === 0 && query.trim().length">
+                                    <p class="mt-2 w-full text-sm text-dark/75 dark:text-darklink">Tidak ada form yang cocok.</p>
+                                </template>
+                            </div>
                         @endif
 
                         @if($picked)
@@ -86,9 +111,9 @@
                                     Selected: <strong class="text-dark dark:text-white">{{ $block['search'] }}</strong>
                                     &nbsp;(form ID {{ $block['form_id'] }})
                                 </p>
-                                <p class="mb-2 text-sm font-semibold text-dark dark:text-white">Questions / fields for scoring</p>
+                                <p class="mb-2 text-sm font-semibold text-dark dark:text-white">Bidang bertipe Radio saja</p>
                                 @if(count($gfFields) === 0)
-                                    <p class="text-sm text-dark/75 dark:text-darklink">No fields found in form metadata (check <code class="rounded bg-gray-100 px-1 py-0.5 text-xs text-dark dark:bg-darkborder dark:text-light">gf_form_meta.display_meta</code>).</p>
+                                    <p class="text-sm text-dark/75 dark:text-darklink">Tidak ada bidang <code class="rounded bg-gray-100 px-1 py-0.5 text-xs text-dark dark:bg-darkborder dark:text-light">radio</code> di metadata form (lihat <code class="rounded bg-gray-100 px-1 py-0.5 text-xs text-dark dark:bg-darkborder dark:text-light">gf_form_meta.display_meta</code>).</p>
                                 @else
                                     <div class="max-h-60 space-y-2 overflow-y-auto rounded border border-border bg-white p-3 [color-scheme:light] dark:[color-scheme:dark] dark:bg-darkgray/30 dark:border-darkborder">
                                         @foreach($gfFields as $f)
