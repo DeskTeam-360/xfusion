@@ -166,9 +166,9 @@
                                         Selected: <strong class="text-dark dark:text-white">{{ $block['search'] }}</strong>
                                         &nbsp;(form ID {{ $block['form_id'] }})
                                     </p>
-                                    <p class="mb-2 text-sm font-semibold text-dark dark:text-white">Radio fields only</p>
+                                    <p class="mb-2 text-sm font-semibold text-dark dark:text-white">Radio and number fields</p>
                                     @if(count($gfFields) === 0)
-                                        <p class="text-sm text-dark/75 dark:text-darklink">No <code class="rounded bg-gray-100 px-1 py-0.5 text-xs text-dark dark:bg-darkborder dark:text-light">radio</code> fields in this form meta (check <code class="rounded bg-gray-100 px-1 py-0.5 text-xs text-dark dark:bg-darkborder dark:text-light">gf_form_meta.display_meta</code>).</p>
+                                        <p class="text-sm text-dark/75 dark:text-darklink">No <code class="rounded bg-gray-100 px-1 py-0.5 text-xs text-dark dark:bg-darkborder dark:text-light">radio</code> or <code class="rounded bg-gray-100 px-1 py-0.5 text-xs text-dark dark:bg-darkborder dark:text-light">number</code> fields in this form meta (check <code class="rounded bg-gray-100 px-1 py-0.5 text-xs text-dark dark:bg-darkborder dark:text-light">gf_form_meta.display_meta</code>).</p>
                                     @else
                                         <div class="max-h-60 space-y-2 overflow-y-auto rounded border border-border bg-white p-3 [color-scheme:light] dark:[color-scheme:dark] dark:bg-darkgray/30 dark:border-darkborder">
                                             @foreach($gfFields as $f)

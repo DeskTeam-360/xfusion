@@ -11,6 +11,9 @@ use Livewire\Component;
 
 class CourseScoringGroup extends Component
 {
+    /** Gravity Forms field types selectable for scoring (matches {@see gfFieldsForFormId}). */
+    private const GF_SCORING_FIELD_TYPES = ['radio', 'number'];
+
     /** Set from edit route only; empty on create screen. */
     public ?string $dataId = null;
 
@@ -171,7 +174,7 @@ class CourseScoringGroup extends Component
         return in_array($fieldId, $this->blocks[$index]['field_ids'], true);
     }
 
-    /** @return list<array{id: int, label: string, type: string}> */
+    /** @return list<array{id: int, label: string, type: string}> Gravity Forms fields with type radio or number */
     public static function gfFieldsForFormId(?int $formId): array
     {
         if ($formId === null || $formId < 1) {
@@ -206,9 +209,9 @@ class CourseScoringGroup extends Component
             }
 
             $label = isset($field->label) ? (string) $field->label : ('Field #'.$id);
-            $type = isset($field->type) ? (string) $field->type : '';
+            $type = isset($field->type) ? strtolower((string) $field->type) : '';
 
-            if ($type !== 'radio') {
+            if (! in_array($type, self::GF_SCORING_FIELD_TYPES, true)) {
                 continue;
             }
 
