@@ -23,6 +23,13 @@ class CourseScoringGroup extends Component
      */
     public array $blocks = [];
 
+    /**
+     * Tidak lagi dipakai (pencarian form pakai Alpine). Tetap ada agar hydrate snapshot Livewire lama tidak error.
+     *
+     * @var array<int, list<array{id: int, title: string}>>
+     */
+    public array $blockFormPickResults = [];
+
     /** @var list<array{id: int, title: string}>|null Memo: satu query DB per-request render (pakai Alpine filter, bukan LIKE tiap ketikan). */
     private ?array $formCatalogMemo = null;
 
