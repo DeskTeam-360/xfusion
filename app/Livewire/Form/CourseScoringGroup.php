@@ -117,7 +117,12 @@ class CourseScoringGroup extends Component
         $form = WpGfForm::find($formId);
         $this->blocks[$index]['form_id'] = $formId;
         $this->blocks[$index]['search'] = $form !== null ? (string) $form->title : ('Form #'.$formId);
-        $this->blocks[$index]['field_ids'] = [];
+        /** @var list<int> $ids */
+        $ids = array_values(array_unique(array_map(
+            static fn (array $f): int => (int) $f['id'],
+            self::gfFieldsForFormId($formId)
+        )));
+        $this->blocks[$index]['field_ids'] = $ids;
     }
 
     public function clearForm(int $index): void
