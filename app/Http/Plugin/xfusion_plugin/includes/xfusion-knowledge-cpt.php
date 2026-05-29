@@ -137,13 +137,17 @@ function xfusion_knowledge_render_meta_box(\WP_Post $post): void
     $syncError = get_post_meta($post->ID, XFUSION_KNOWLEDGE_META_SYNC_ERROR, true);
     $chunks = get_post_meta($post->ID, XFUSION_KNOWLEDGE_META_CHUNKS, true);
 
-    $categories = apply_filters('xfusion_knowledge_categories', [
+    $categories = apply_filters('xfusion_knowledge_categories',[
         'Customer Service',
         'Standard Operating Procedure',
-        'HR Policy',
-        'Safety',
-        'Sales',
-        'Operations',
+        'Exam Evaluation',
+        'Employee Training',
+        'Get Real',
+        'Fill Buckets',
+        'Be Intentional',
+        'Foster Grit',
+        'Drive Growth',
+        'Company Information'
     ]);
     ?>
     <p>

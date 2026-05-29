@@ -23,10 +23,14 @@ return [
     'categories' => [
         'Customer Service',
         'Standard Operating Procedure',
-        'HR Policy',
-        'Safety',
-        'Sales',
-        'Operations',
+        'Exam Evaluation',
+        'Employee Training',
+        'Get Real',
+        'Fill Buckets',
+        'Be Intentional',
+        'Foster Grit',
+        'Drive Growth',
+        'Company Information'
     ],
 
 ];
