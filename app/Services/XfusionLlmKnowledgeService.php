@@ -21,9 +21,12 @@ class XfusionLlmKnowledgeService
     public function upsertPost(XfusionKnowledge $post, string $category): array
     {
         if (! $this->isConfigured()) {
-            $this->markSync($post, 'skipped', 'Sync disabled or API URL empty');
+            $reason = config('xfusion-llm.api_url') === ''
+                ? 'API URL empty — set XFUSION_LLM_API_URL in Laravel .env (e.g. http://127.0.0.1:8000).'
+                : 'Sync disabled — set XFUSION_LLM_SYNC_ENABLED=true in Laravel .env.';
+            $this->markSync($post, 'skipped', $reason);
 
-            return ['ok' => true, 'message' => 'Saved locally; LLM sync disabled.'];
+            return ['ok' => true, 'message' => 'Saved locally; LLM sync skipped. '.$reason];
         }
 
         $content = $this->plainContent((string) $post->post_content);

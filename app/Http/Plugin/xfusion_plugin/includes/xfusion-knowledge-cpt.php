@@ -14,6 +14,80 @@ const XFUSION_KNOWLEDGE_META_SYNCED_AT = '_xfusion_llm_synced_at';
 const XFUSION_KNOWLEDGE_META_SYNC_ERROR = '_xfusion_llm_sync_error';
 const XFUSION_KNOWLEDGE_META_CHUNKS = '_xfusion_llm_chunks_added';
 
+/**
+ * API URL: option Settings → XFusion LLM, or constant XFUSION_LLM_API_URL in wp-config.php.
+ */
+function xfusion_llm_api_url(): string
+{
+    if (defined('XFUSION_LLM_API_URL') && (string) XFUSION_LLM_API_URL !== '') {
+        return rtrim((string) XFUSION_LLM_API_URL, '/');
+    }
+
+    return rtrim((string) get_option('xfusion_llm_api_url', ''), '/');
+}
+
+function xfusion_llm_api_key(): string
+{
+    if (defined('XFUSION_LLM_API_KEY') && (string) XFUSION_LLM_API_KEY !== '') {
+        return (string) XFUSION_LLM_API_KEY;
+    }
+
+    return (string) get_option('xfusion_llm_api_key', '');
+}
+
+function xfusion_llm_sync_enabled(): bool
+{
+    if (defined('XFUSION_LLM_SYNC_ENABLED')) {
+        return (bool) XFUSION_LLM_SYNC_ENABLED;
+    }
+
+    return (bool) get_option('xfusion_llm_sync_enabled', true);
+}
+
+function xfusion_llm_config_skip_reason(): string
+{
+    if (! xfusion_llm_sync_enabled()) {
+        return 'Sync disabled — enable in Settings → XFusion LLM (or set XFUSION_LLM_SYNC_ENABLED true in wp-config.php).';
+    }
+
+    if (xfusion_llm_api_url() === '') {
+        return 'API URL empty — set in Settings → XFusion LLM (e.g. http://127.0.0.1:8000) or define XFUSION_LLM_API_URL in wp-config.php.';
+    }
+
+    return '';
+}
+
+add_action('admin_notices', 'xfusion_knowledge_admin_config_notice');
+
+function xfusion_knowledge_admin_config_notice(): void
+{
+    if (! current_user_can('manage_options')) {
+        return;
+    }
+
+    $screen = function_exists('get_current_screen') ? get_current_screen() : null;
+    if ($screen === null) {
+        return;
+    }
+
+    $onKnowledge = $screen->post_type === XFUSION_KNOWLEDGE_POST_TYPE
+        || $screen->id === 'settings_page_xfusion-llm-settings';
+
+    if (! $onKnowledge) {
+        return;
+    }
+
+    $reason = xfusion_llm_config_skip_reason();
+    if ($reason === '') {
+        return;
+    }
+
+    $settingsUrl = admin_url('options-general.php?page=xfusion-llm-settings');
+    echo '<div class="notice notice-warning"><p><strong>XFusion LLM:</strong> '
+        . esc_html($reason)
+        . ' <a href="' . esc_url($settingsUrl) . '">' . esc_html__('Open settings', 'xfusion') . '</a></p></div>';
+}
+
 add_action('init', 'xfusion_register_knowledge_post_type');
 
 function xfusion_register_knowledge_post_type(): void
@@ -143,17 +217,18 @@ function xfusion_knowledge_before_delete_post(int $post_id): void
  */
 function xfusion_knowledge_sync_to_llm(int $post_id, string $category, string $content): array
 {
-    $api_url = rtrim((string) get_option('xfusion_llm_api_url', ''), '/');
-    $api_key = (string) get_option('xfusion_llm_api_key', '');
-    $sync_enabled = (bool) get_option('xfusion_llm_sync_enabled', true);
+    $skipReason = xfusion_llm_config_skip_reason();
 
-    if (! $sync_enabled || $api_url === '') {
+    if ($skipReason !== '') {
         update_post_meta($post_id, XFUSION_KNOWLEDGE_META_SYNC_STATUS, 'skipped');
         update_post_meta($post_id, XFUSION_KNOWLEDGE_META_SYNCED_AT, gmdate('c'));
-        update_post_meta($post_id, XFUSION_KNOWLEDGE_META_SYNC_ERROR, 'Sync disabled or API URL empty');
+        update_post_meta($post_id, XFUSION_KNOWLEDGE_META_SYNC_ERROR, $skipReason);
 
         return ['ok' => true, 'message' => 'Skipped'];
     }
+
+    $api_url = xfusion_llm_api_url();
+    $api_key = xfusion_llm_api_key();
 
     $plain = trim(preg_replace('/\s+/u', ' ', wp_strip_all_tags($content)) ?? '');
 
@@ -211,8 +286,8 @@ function xfusion_knowledge_sync_to_llm(int $post_id, string $category, string $c
 
 function xfusion_knowledge_delete_from_llm(int $post_id): void
 {
-    $api_url = rtrim((string) get_option('xfusion_llm_api_url', ''), '/');
-    $api_key = (string) get_option('xfusion_llm_api_key', '');
+    $api_url = xfusion_llm_api_url();
+    $api_key = xfusion_llm_api_key();
 
     if ($api_url === '') {
         return;
@@ -272,9 +347,17 @@ function xfusion_knowledge_render_settings_page(): void
             <table class="form-table">
                 <tr>
                     <th><label for="xfusion_llm_api_url"><?php esc_html_e('API URL', 'xfusion'); ?></label></th>
-                    <td><input type="url" class="regular-text" id="xfusion_llm_api_url" name="xfusion_llm_api_url"
+                    <td>
+                        <input type="url" class="regular-text" id="xfusion_llm_api_url" name="xfusion_llm_api_url"
                                value="<?php echo esc_attr((string) get_option('xfusion_llm_api_url', '')); ?>"
-                               placeholder="http://127.0.0.1:8000"/></td>
+                               placeholder="http://127.0.0.1:8000"/>
+                        <p class="description">
+                            <?php esc_html_e('Base URL of the XFusion-llm FastAPI server (no trailing path).', 'xfusion'); ?>
+                            <?php if (defined('XFUSION_LLM_API_URL')) : ?>
+                                <br/><em><?php esc_html_e('Overridden by XFUSION_LLM_API_URL in wp-config.php.', 'xfusion'); ?></em>
+                            <?php endif; ?>
+                        </p>
+                    </td>
                 </tr>
                 <tr>
                     <th><label for="xfusion_llm_api_key"><?php esc_html_e('API Key (Bearer)', 'xfusion'); ?></label></th>
