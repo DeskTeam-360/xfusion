@@ -472,6 +472,9 @@ function get_company_info()
         "/topics/dependability/",
         "/account/",
         "/resources/resource-menu/",
+		"/start-here/",
+		"/individual-contributor/",
+		"/leader/",
     ];
 
     if (!$limitLinks) {

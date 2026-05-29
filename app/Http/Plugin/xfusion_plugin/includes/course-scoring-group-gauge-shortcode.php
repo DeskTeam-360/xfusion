@@ -82,12 +82,12 @@ function xfusion_csg_sanitize_css_length(string $s): ?string
 function xfusion_csg_shortcode_dimensions(array $atts): array
 {
     $presets = [
-        'xs' => ['w' => 7.5, 'svg' => 4.75, 'svgh' => 4.0, 't' => 11, 'a' => 14, 'z' => 10, 'r' => 10, 'h3mh' => 2.1],
-        'sm' => ['w' => 9.5, 'svg' => 6.0, 'svgh' => 5.0, 't' => 12, 'a' => 15, 'z' => 11, 'r' => 11, 'h3mh' => 2.35],
-        'md' => ['w' => 11.5, 'svg' => 7.25, 'svgh' => 6.0, 't' => 13, 'a' => 16, 'z' => 12, 'r' => 12, 'h3mh' => 2.55],
-        'lg' => ['w' => 13.5, 'svg' => 8.5, 'svgh' => 7.0, 't' => 14, 'a' => 17, 'z' => 13, 'r' => 13, 'h3mh' => 2.75],
-        'xl' => ['w' => 16.5, 'svg' => 10.5, 'svgh' => 8.65, 't' => 15, 'a' => 18, 'z' => 14, 'r' => 14, 'h3mh' => 3.0],
-    ];
+		'xs' => ['w' => 8.5, 'svg' => 5.5, 'svgh' => 4.6, 't' => 12, 'a' => 15, 'z' => 18, 'r' => 11, 'h3mh' => 2.3],
+		'sm' => ['w' => 10.5, 'svg' => 6.8, 'svgh' => 5.6, 't' => 13, 'a' => 16, 'z' => 19, 'r' => 12, 'h3mh' => 2.5],
+		'md' => ['w' => 12.5, 'svg' => 8.0, 'svgh' => 6.6, 't' => 14, 'a' => 17, 'z' => 20, 'r' => 13, 'h3mh' => 2.8],
+		'lg' => ['w' => 14.8, 'svg' => 9.5, 'svgh' => 7.8, 't' => 15, 'a' => 18, 'z' => 21, 'r' => 14, 'h3mh' => 3.0],
+		'xl' => ['w' => 18.0, 'svg' => 12.0, 'svgh' => 9.8, 't' => 17, 'a' => 21, 'z' => 22, 'r' => 15, 'h3mh' => 3.3],
+	];
     $sizeKey = strtolower((string) ($atts['size'] ?? 'xl'));
     if (! isset($presets[$sizeKey])) {
         $sizeKey = 'xl';
@@ -409,7 +409,7 @@ function xfusion_csg_scoring_gauge_shortcode($atts): string
     <div style="margin-top:2px;width:100%;">
         <h3 style="margin:0 0 4px;font-size:<?php echo (int) $dim['fs_title']; ?>px;font-weight:600;line-height:1.25;min-height:<?php echo esc_attr($dim['h3_min_h']); ?>;width:100%;padding:0 2px;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;" title="<?php echo $titleAttr; ?>"><?php echo $titleEsc; ?></h3>
         <p style="margin:0;font-size:<?php echo (int) $dim['fs_avg']; ?>px;font-weight:700;line-height:1.25;font-variant-numeric:tabular-nums;"><?php echo $data['average'] !== null ? esc_html((string) $data['average']) : esc_html('—'); ?></p>
-        <p style="margin:0;font-size:<?php echo (int) $dim['fs_zone']; ?>px;font-weight:500;line-height:1.25;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;color:<?php echo esc_attr($zoneColor); ?>;"><?php echo $zoneLabelEsc; ?></p>
+        <p style="margin:0;font-size:<?php echo (int) $dim['fs_zone']; ?>px;font-weight:600;line-height:1.25;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;color:<?php echo esc_attr($zoneColor); ?>;"><?php echo $zoneLabelEsc; ?></p>
         <p style="margin:2px 0 0;font-size:<?php echo (int) $dim['fs_resp']; ?>px;line-height:1.25;color:rgba(0,0,0,.45);font-variant-numeric:tabular-nums;"><?php echo (int) $data['responses_answered']; ?> responses</p>
     </div>
 </div>

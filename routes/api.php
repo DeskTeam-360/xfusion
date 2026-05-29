@@ -393,10 +393,8 @@ Route::post('/next-course/', function (Request $request) {
             'message' => 'User not found'
         ], 404);
     }
-
-    
-    
 });
+
 Route::get('/next-course/', function (Request $request) {
     return [
         'code'=>200,
