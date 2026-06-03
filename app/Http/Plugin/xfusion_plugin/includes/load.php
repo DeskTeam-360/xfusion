@@ -25,7 +25,7 @@ $xfusion_include_files = [
     'gravity-forms-course-list-mark-complete.php',
     'search-index-maintenance.php',
     'xfusion-knowledge-cpt.php',
-    'result-evaluation-cpt.php',
+    'result-evaluation.php',
     'send-evaluation-shortcode.php',
     'um-profile-courses-shared.php',
     'um-profile-courses-course-list.php',
