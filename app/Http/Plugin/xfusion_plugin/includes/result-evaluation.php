@@ -379,14 +379,24 @@ function xfusion_result_evaluation_latest_for_group(int $userId, int $groupId): 
     ];
 }
 
-function xfusion_result_evaluation_admin_url(int $id = 0): string
+function xfusion_result_evaluation_admin_url(int $id = 0, string $view = ''): string
 {
     $args = ['page' => 'xfusion-result-evaluations'];
     if ($id > 0) {
         $args['id'] = $id;
     }
+    if ($view !== '') {
+        $args['view'] = $view;
+    }
 
     return add_query_arg($args, admin_url('admin.php'));
+}
+
+function xfusion_result_evaluation_ai_notify_count(): int
+{
+    return function_exists('xfusion_once_popup_dismissed_user_count')
+        ? xfusion_once_popup_dismissed_user_count()
+        : 0;
 }
 
 /**
@@ -774,15 +784,19 @@ function xfusion_result_evaluation_admin_card_css(): string
 .xfusion-result-eval-list{margin-top:12px;}
 .xfusion-result-eval-list .column-score{width:72px;}
 .xfusion-result-eval-list .column-tokens{width:88px;}
-.xfusion-result-eval-stats{display:flex;flex-wrap:wrap;gap:12px;margin:16px 0 20px;}
-.xfusion-result-eval-stats__card{flex:1 1 180px;max-width:280px;margin:0;padding:14px 16px;border:1px solid #c3c4c7;border-radius:8px;background:#fff;box-shadow:0 1px 2px rgba(0,0,0,.04);}
-.xfusion-result-eval-stats__label{margin:0 0 4px;font-size:12px;font-weight:600;color:#646970;text-transform:uppercase;letter-spacing:.03em;}
-.xfusion-result-eval-stats__value{margin:0;font-size:22px;font-weight:700;color:#1d2327;line-height:1.2;}
-.xfusion-result-eval-stats__sub{margin:6px 0 0;font-size:12px;color:#646970;}
-.xfusion-result-eval-stats__cost{margin:8px 0 0;font-size:13px;font-weight:600;color:#1d2327;}
+.xfusion-result-eval-stats{display:flex;flex-wrap:wrap;gap:8px;margin:10px 0 14px;}
+.xfusion-result-eval-stats__card{flex:1 1 120px;max-width:168px;margin:0;padding:8px 10px;border:1px solid #c3c4c7;border-radius:6px;background:#fff;box-shadow:0 1px 2px rgba(0,0,0,.04);}
+.xfusion-result-eval-stats__label{margin:0 0 2px;font-size:10px;font-weight:600;color:#646970;text-transform:uppercase;letter-spacing:.03em;line-height:1.25;}
+.xfusion-result-eval-stats__value{margin:0;font-size:16px;font-weight:700;color:#1d2327;line-height:1.2;}
+.xfusion-result-eval-stats__sub{margin:4px 0 0;font-size:10px;color:#646970;line-height:1.35;}
+.xfusion-result-eval-stats__cost{margin:4px 0 0;font-size:10px;font-weight:600;color:#1d2327;}
+.xfusion-result-eval-stats__link{display:inline-block;margin-top:5px;font-size:10px;font-weight:600;text-decoration:none;}
 .xfusion-result-eval-stats__card--month{border-color:#2271b1;background:#f0f6fc;}
 .xfusion-result-eval-stats__card--last-month{border-color:#646970;background:#f6f7f7;}
-.xfusion-result-eval-pricing-note{margin:0 0 16px;font-size:12px;color:#646970;}
+.xfusion-result-eval-stats__card--ai-notify{flex:1 1 140px;max-width:200px;border-color:#00a32a;background:#edfaef;}
+.xfusion-result-eval-pricing-note{margin:0 0 10px;font-size:11px;color:#646970;}
+.xfusion-result-eval-ai-notify-detail{margin-top:12px;}
+.xfusion-result-eval-ai-notify-detail .column-user{min-width:160px;}
 CSS;
 }
 
@@ -794,7 +808,7 @@ function xfusion_result_evaluation_admin_enqueue_styles(string $hook): void
         return;
     }
 
-    wp_register_style('xfusion-result-eval-admin', false, [], '1.1');
+    wp_register_style('xfusion-result-eval-admin', false, [], '1.2');
     wp_enqueue_style('xfusion-result-eval-admin');
     wp_add_inline_style('xfusion-result-eval-admin', xfusion_result_evaluation_admin_card_css());
 }
@@ -821,12 +835,20 @@ function xfusion_result_evaluation_admin_page(): void
     }
 
     $recordId = isset($_GET['id']) ? absint((string) $_GET['id']) : 0;
+    $view = isset($_GET['view']) ? sanitize_key((string) $_GET['view']) : '';
 
     echo '<div class="wrap">';
     echo '<h1>' . esc_html(get_admin_page_title()) . '</h1>';
 
     if ($recordId > 0) {
         xfusion_result_evaluation_admin_detail_page($recordId);
+        echo '</div>';
+
+        return;
+    }
+
+    if ($view === 'ai-notify') {
+        xfusion_result_evaluation_admin_ai_notify_page();
         echo '</div>';
 
         return;
@@ -853,7 +875,19 @@ function xfusion_result_evaluation_admin_render_stats(): void
     ));
     echo '</p>';
 
+    $aiNotifyCount = xfusion_result_evaluation_ai_notify_count();
+    $aiNotifyUrl = xfusion_result_evaluation_admin_url(0, 'ai-notify');
+
     echo '<div class="xfusion-result-eval-stats" role="region" aria-label="' . esc_attr__('Evaluation statistics', 'xfusion') . '">';
+
+    echo '<div class="xfusion-result-eval-stats__card xfusion-result-eval-stats__card--ai-notify">';
+    echo '<p class="xfusion-result-eval-stats__label">' . esc_html__('AI Notify', 'xfusion') . '</p>';
+    echo '<p class="xfusion-result-eval-stats__value">' . esc_html(number_format_i18n($aiNotifyCount)) . '</p>';
+    echo '<p class="xfusion-result-eval-stats__sub">' . esc_html__('Users who read and confirmed', 'xfusion') . '</p>';
+    echo '<a class="xfusion-result-eval-stats__link" href="' . esc_url($aiNotifyUrl) . '">';
+    esc_html_e('View details', 'xfusion');
+    echo '</a>';
+    echo '</div>';
 
     echo '<div class="xfusion-result-eval-stats__card">';
     echo '<p class="xfusion-result-eval-stats__label">' . esc_html__('Users evaluated', 'xfusion') . '</p>';
@@ -923,6 +957,96 @@ function xfusion_result_evaluation_admin_render_stats(): void
         xfusion_result_evaluation_format_cost_estimate($lastMonthStats['estimated_cost'])
     )) . '</p>';
     echo '</div>';
+
+    echo '</div>';
+}
+
+function xfusion_result_evaluation_admin_ai_notify_page(): void
+{
+    $perPage = 50;
+    $page = isset($_GET['paged']) ? max(1, absint((string) $_GET['paged'])) : 1;
+    $offset = ($page - 1) * $perPage;
+    $total = xfusion_result_evaluation_ai_notify_count();
+
+    $users = function_exists('xfusion_once_popup_dismissed_users')
+        ? xfusion_once_popup_dismissed_users($perPage, $offset)
+        : [];
+
+    $popupTitle = '';
+    if (function_exists('xfusion_once_popup_get_settings')) {
+        $popupSettings = xfusion_once_popup_get_settings();
+        $popupTitle = trim((string) ($popupSettings['title'] ?? ''));
+    }
+
+    echo '<p><a href="' . esc_url(xfusion_result_evaluation_admin_url()) . '">&larr; ';
+    esc_html_e('Back to Result Evaluations', 'xfusion');
+    echo '</a></p>';
+
+    echo '<div class="xfusion-result-eval-ai-notify-detail">';
+    echo '<h2>' . esc_html__('AI Notify — confirmed readers', 'xfusion') . '</h2>';
+    echo '<p class="description">';
+    esc_html_e('Users who closed the AI Notify popup (agreed / acknowledged). Stored in user meta.', 'xfusion');
+    if ($popupTitle !== '') {
+        echo ' ';
+        echo esc_html(sprintf(
+            /* translators: %s: popup title from settings */
+            __('Current popup title: "%s".', 'xfusion'),
+            $popupTitle
+        ));
+    }
+    echo '</p>';
+
+    if ($users === []) {
+        echo '<p>' . esc_html__('No users have confirmed the AI Notify popup yet.', 'xfusion') . '</p>';
+        echo '</div>';
+
+        return;
+    }
+
+    echo '<table class="widefat striped">';
+    echo '<thead><tr>';
+    echo '<th class="column-user">' . esc_html__('User', 'xfusion') . '</th>';
+    echo '<th>' . esc_html__('Email', 'xfusion') . '</th>';
+    echo '<th>' . esc_html__('User ID', 'xfusion') . '</th>';
+    echo '<th>' . esc_html__('Confirmed at (UTC)', 'xfusion') . '</th>';
+    echo '</tr></thead><tbody>';
+
+    foreach ($users as $user) {
+        $userId = (int) ($user['user_id'] ?? 0);
+        $firstName = trim((string) ($user['first_name'] ?? ''));
+        $displayName = trim((string) ($user['display_name'] ?? ''));
+        $userLabel = $firstName !== '' ? $firstName : ($displayName !== '' ? $displayName : sprintf(__('User %d', 'xfusion'), $userId));
+        $editUrl = get_edit_user_link($userId);
+
+        echo '<tr>';
+        echo '<td>';
+        if (is_string($editUrl) && $editUrl !== '') {
+            echo '<a href="' . esc_url($editUrl) . '">' . esc_html($userLabel) . '</a>';
+        } else {
+            echo esc_html($userLabel);
+        }
+        echo '</td>';
+        echo '<td>' . esc_html((string) ($user['user_email'] ?? '—')) . '</td>';
+        echo '<td>' . (int) $userId . '</td>';
+        echo '<td>' . esc_html((string) ($user['dismissed_at'] ?? '—')) . '</td>';
+        echo '</tr>';
+    }
+
+    echo '</tbody></table>';
+
+    $totalPages = (int) ceil($total / $perPage);
+    if ($totalPages > 1) {
+        echo '<div class="tablenav"><div class="tablenav-pages">';
+        echo paginate_links([
+            'base' => add_query_arg(['view' => 'ai-notify', 'paged' => '%#%']),
+            'format' => '',
+            'prev_text' => '&laquo;',
+            'next_text' => '&raquo;',
+            'total' => $totalPages,
+            'current' => $page,
+        ]);
+        echo '</div></div>';
+    }
 
     echo '</div>';
 }

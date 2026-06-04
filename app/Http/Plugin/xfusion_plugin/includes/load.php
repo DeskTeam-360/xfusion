@@ -27,6 +27,7 @@ $xfusion_include_files = [
     'xfusion-knowledge-cpt.php',
     'result-evaluation.php',
     'send-evaluation-shortcode.php',
+    'once-popup.php',
     'um-profile-courses-shared.php',
     'um-profile-courses-course-list.php',
     'um-profile-courses-tool-list.php',

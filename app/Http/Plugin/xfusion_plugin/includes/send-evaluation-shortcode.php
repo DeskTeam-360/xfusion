@@ -615,6 +615,7 @@ function xfusion_send_eval_feedback_css(): string
 .xfusion-send-eval .xfusion-send-eval-fb--strengths{border-left-color:#00a32a;background:#edfaef;}
 .xfusion-send-eval .xfusion-send-eval-fb--improvements{border-left-color:#dba617;background:#fcf9e8;}
 .xfusion-send-eval .xfusion-send-eval-fb--notes{border-left-color:#2271b1;background:#f0f6fc;}
+.xfusion-send-eval .xfusion-send-eval-ai-disclaimer{display:block!important;margin:2px 0 0;padding:0;font-size:10px;line-height:1.4;color:#9ca3af;font-style:italic;}
 CSS;
 }
 
@@ -630,6 +631,16 @@ function xfusion_send_eval_print_card_styles(): void
     $printed = true;
 
     echo '<style id="xfusion-send-eval-card-css">' . xfusion_send_eval_feedback_css() . '</style>';
+}
+
+function xfusion_send_eval_ai_disclaimer_html(): string
+{
+    return '<p class="xfusion-send-eval-ai-disclaimer">'
+        . esc_html__(
+            'AI-generated insight. Review and apply professional judgment before acting on recommendations.',
+            'xfusion'
+        )
+        . '</p>';
 }
 
 /**
@@ -666,7 +677,7 @@ function xfusion_send_eval_render_feedback_html(array $evaluation): string
         );
     }
 
-    return $html;
+    return $html . xfusion_send_eval_ai_disclaimer_html();
 }
 
 /**
@@ -773,7 +784,7 @@ function xfusion_send_evaluation_shortcode($atts): string
         [
             'category' => '',
             'user_id' => '0',
-            'button_label' => __('Send Evaluation', 'xfusion'),
+            'button_label' => __('Generate Insights', 'xfusion'),
             'class' => '',
         ],
         $atts,
@@ -814,7 +825,7 @@ function xfusion_send_evaluation_shortcode($atts): string
     $ajaxUrl = admin_url('admin-ajax.php');
     $nonce = wp_create_nonce(XFUSION_SEND_EVAL_NONCE_ACTION);
     $btnLabel = (string) $atts['button_label'];
-    $sendingLabel = esc_attr__('Sending…', 'xfusion');
+    $sendingLabel = esc_attr__('Generating…', 'xfusion');
     $cooldown = xfusion_send_eval_cooldown_status($uid, $groupId);
     $onCooldown = $cooldown['on_cooldown'];
     $cooldownHtml = xfusion_send_eval_cooldown_notice_html($cooldown);
