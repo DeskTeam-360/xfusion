@@ -409,3 +409,4 @@ function xfusion_knowledge_admin_column_content(string $column, int $post_id): v
         echo esc_html((string) (get_post_meta($post_id, XFUSION_KNOWLEDGE_META_SYNC_STATUS, true) ?: 'pending'));
     }
 }
+

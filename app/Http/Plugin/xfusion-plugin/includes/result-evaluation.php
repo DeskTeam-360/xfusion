@@ -214,6 +214,89 @@ function xfusion_result_evaluation_extract_feedback(?array $evaluation): array
 }
 
 /**
+ * Feedback section labels and icons (shared by admin + frontend shortcode).
+ *
+ * @return list<array{key: string, class: string, label: string, icon: string}>
+ */
+function xfusion_result_evaluation_feedback_sections(): array
+{
+    $iconBase = content_url('uploads/2026/06');
+
+    return [
+        [
+            'key' => 'strengths',
+            'class' => 'strengths',
+            'label' => __("WHAT YOU'RE DOING WELL", 'xfusion'),
+            'icon' => $iconBase . '/icon-checkmark.png',
+        ],
+        [
+            'key' => 'improvements',
+            'class' => 'improvements',
+            'label' => __("WHAT'S HOLDING YOU BACK", 'xfusion'),
+            'icon' => $iconBase . '/icon-alert.png',
+        ],
+        [
+            'key' => 'evaluator_notes',
+            'class' => 'notes',
+            'label' => __('NEXT GROWTH OPPORTUNITY', 'xfusion'),
+            'icon' => $iconBase . '/icon-up.png',
+        ],
+    ];
+}
+
+function xfusion_result_evaluation_feedback_sections_css(): string
+{
+    return <<<'CSS'
+.xfusion-eval-feedback-rows{display:flex;flex-direction:column;gap:20px;}
+.xfusion-eval-feedback-row{display:flex!important;align-items:flex-start;gap:14px;margin:0;padding:0;background:transparent;border:none;box-sizing:border-box;}
+.xfusion-eval-feedback-row__icon{flex-shrink:0;width:48px;height:48px;object-fit:contain;display:block;}
+.xfusion-eval-feedback-row__content{flex:1;min-width:0;}
+.xfusion-eval-feedback-row__label{display:block!important;margin:0 0 6px;font-size:15px;font-weight:700;text-transform:uppercase;letter-spacing:.02em;color:#1e3a5f;line-height:1.3;}
+.xfusion-eval-feedback-row__text{display:block!important;margin:0;font-size:14px;font-weight:400;color:#374151;line-height:1.5;white-space:pre-wrap;word-break:break-word;}
+CSS;
+}
+
+/**
+ * @param array{strengths?: string, improvements?: string, evaluator_notes?: string} $feedback
+ */
+function xfusion_result_evaluation_render_feedback_sections(array $feedback, bool $shortcodeSafe = false): string
+{
+    $html = $shortcodeSafe ? '' : '<div class="xfusion-eval-feedback-rows">';
+
+    foreach (xfusion_result_evaluation_feedback_sections() as $section) {
+        $text = trim((string) ($feedback[$section['key']] ?? ''));
+        $displayText = esc_html($text !== '' ? $text : '—');
+        $class = 'xfusion-eval-feedback-row xfusion-eval-feedback-row--' . $section['class'];
+        $icon = esc_url($section['icon']);
+        $label = esc_html($section['label']);
+
+        if ($shortcodeSafe) {
+            $html .= sprintf(
+                '<p class="%s"><img class="xfusion-eval-feedback-row__icon" src="%s" alt="" width="48" height="48" decoding="async" /><span class="xfusion-eval-feedback-row__content"><strong class="xfusion-eval-feedback-row__label">%s</strong><span class="xfusion-eval-feedback-row__text">%s</span></span></p>',
+                esc_attr($class),
+                $icon,
+                $label,
+                $displayText
+            );
+        } else {
+            $html .= sprintf(
+                '<section class="%s"><img class="xfusion-eval-feedback-row__icon" src="%s" alt="" width="48" height="48" decoding="async" /><div class="xfusion-eval-feedback-row__content"><h3 class="xfusion-eval-feedback-row__label">%s</h3><p class="xfusion-eval-feedback-row__text">%s</p></div></section>',
+                esc_attr($class),
+                $icon,
+                $label,
+                $displayText
+            );
+        }
+    }
+
+    if (! $shortcodeSafe) {
+        $html .= '</div>';
+    }
+
+    return $html;
+}
+
+/**
  * @param object $row
  * @return array<string, mixed>
  */
@@ -481,27 +564,22 @@ function xfusion_result_evaluation_render_card(array $data): string
         </div>
     </div>
     <div class="xfusion-eval-card__body">
-        <section class="xfusion-eval-card__section xfusion-eval-card__section--strengths">
-            <h3 class="xfusion-eval-card__section-title"><?php esc_html_e('Strengths', 'xfusion'); ?></h3>
-            <p class="xfusion-eval-card__section-text"><?php echo esc_html($strengths !== '' ? $strengths : '—'); ?></p>
-        </section>
-        <section class="xfusion-eval-card__section xfusion-eval-card__section--improvements">
-            <h3 class="xfusion-eval-card__section-title"><?php esc_html_e('Improvements', 'xfusion'); ?></h3>
-            <p class="xfusion-eval-card__section-text"><?php echo esc_html($improvements !== '' ? $improvements : '—'); ?></p>
-        </section>
-        <section class="xfusion-eval-card__section xfusion-eval-card__section--notes">
-            <h3 class="xfusion-eval-card__section-title"><?php esc_html_e('Evaluator notes', 'xfusion'); ?></h3>
-            <p class="xfusion-eval-card__section-text"><?php echo esc_html($notes !== '' ? $notes : '—'); ?></p>
-        </section>
+        <?php
+        echo xfusion_result_evaluation_render_feedback_sections([
+            'strengths' => $strengths,
+            'improvements' => $improvements,
+            'evaluator_notes' => $notes,
+        ]);
+        ?>
     </div>
 </div>
     <?php
-
+    
     return (string) ob_get_clean();
 }
 
 /**
- * Feedback-only card for the frontend shortcode (Strengths, Improvements, Evaluator notes — no score).
+ * Feedback-only card (no score header).
  *
  * @param array{
  *   strengths?: string,
@@ -517,18 +595,7 @@ function xfusion_result_evaluation_render_feedback(array $data): string
     ?>
 <div class="xfusion-eval-card xfusion-eval-card--feedback-only">
     <div class="xfusion-eval-card__body">
-        <div class="xfusion-eval-card__section xfusion-eval-card__section--strengths">
-            <div class="xfusion-eval-card__section-title"><?php esc_html_e('Strengths', 'xfusion'); ?></div>
-            <div class="xfusion-eval-card__section-text"><?php echo esc_html($feedback['strengths'] !== '' ? $feedback['strengths'] : '—'); ?></div>
-        </div>
-        <div class="xfusion-eval-card__section xfusion-eval-card__section--improvements">
-            <div class="xfusion-eval-card__section-title"><?php esc_html_e('Improvements', 'xfusion'); ?></div>
-            <div class="xfusion-eval-card__section-text"><?php echo esc_html($feedback['improvements'] !== '' ? $feedback['improvements'] : '—'); ?></div>
-        </div>
-        <div class="xfusion-eval-card__section xfusion-eval-card__section--notes">
-            <div class="xfusion-eval-card__section-title"><?php esc_html_e('Evaluator notes', 'xfusion'); ?></div>
-            <div class="xfusion-eval-card__section-text"><?php echo esc_html($feedback['evaluator_notes'] !== '' ? $feedback['evaluator_notes'] : '—'); ?></div>
-        </div>
+        <?php echo xfusion_result_evaluation_render_feedback_sections($feedback); ?>
     </div>
 </div>
     <?php
@@ -751,7 +818,7 @@ function xfusion_result_evaluation_render_admin_details(array $record): string
 
 function xfusion_result_evaluation_admin_card_css(): string
 {
-    return <<<'CSS'
+    return xfusion_result_evaluation_feedback_sections_css() . <<<'CSS'
 .xfusion-result-eval-admin-wrap{margin:12px 0 20px;max-width:960px;}
 .xfusion-result-eval-admin-wrap .xfusion-eval-card{box-sizing:border-box;border:1px solid #c3c4c7;border-radius:8px;background:#fff;box-shadow:0 1px 3px rgba(0,0,0,.08);overflow:hidden;line-height:1.5;}
 .xfusion-result-eval-admin-wrap .xfusion-eval-card__header{display:flex;gap:16px;align-items:center;padding:20px 20px 16px;background:var(--xf-eval-bg,#f6f7f7);border-bottom:1px solid #dcdcde;}
@@ -765,13 +832,10 @@ function xfusion_result_evaluation_admin_card_css(): string
 .xfusion-result-eval-admin-wrap .xfusion-eval-card__tokens{margin:4px 0 0;font-size:12px;color:#646970;}
 .xfusion-result-eval-admin-wrap .xfusion-eval-card__tokens-detail{color:#a7aaad;}
 .xfusion-result-eval-admin-wrap .xfusion-eval-card__ref{margin-left:6px;color:#a7aaad;}
-.xfusion-result-eval-admin-wrap .xfusion-eval-card__body{padding:4px 20px 20px;display:flex;flex-direction:column;gap:12px;}
-.xfusion-result-eval-admin-wrap .xfusion-eval-card__section{margin:0;padding:12px 14px;border-radius:6px;background:#f6f7f7;border-left:4px solid #c3c4c7;}
-.xfusion-result-eval-admin-wrap .xfusion-eval-card__section--strengths{border-left-color:#00a32a;background:#edfaef;}
-.xfusion-result-eval-admin-wrap .xfusion-eval-card__section--improvements{border-left-color:#dba617;background:#fcf9e8;}
-.xfusion-result-eval-admin-wrap .xfusion-eval-card__section--notes{border-left-color:#2271b1;background:#f0f6fc;}
-.xfusion-result-eval-admin-wrap .xfusion-eval-card__section-title{margin:0 0 6px;font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.04em;color:#1d2327;}
-.xfusion-result-eval-admin-wrap .xfusion-eval-card__section-text{margin:0;font-size:13px;color:#1d2327;white-space:pre-wrap;}
+.xfusion-result-eval-admin-wrap .xfusion-eval-card__body{padding:16px 20px 20px;}
+.xfusion-result-eval-admin-wrap .xfusion-eval-feedback-rows{gap:20px;}
+.xfusion-result-eval-admin-wrap .xfusion-eval-feedback-row__label{font-size:13px;}
+.xfusion-result-eval-admin-wrap .xfusion-eval-feedback-row__text{font-size:14px;}
 .xfusion-result-eval-admin-wrap .xfusion-eval-details{margin-top:16px;padding:16px 20px;border:1px solid #c3c4c7;border-radius:8px;background:#fff;}
 .xfusion-result-eval-admin-wrap .xfusion-eval-details__title{margin:0 0 12px;font-size:14px;font-weight:600;color:#1d2327;}
 .xfusion-result-eval-admin-wrap .xfusion-eval-details__list{margin:0;display:grid;grid-template-columns:minmax(160px,220px) 1fr;gap:8px 16px;}
@@ -808,7 +872,7 @@ function xfusion_result_evaluation_admin_enqueue_styles(string $hook): void
         return;
     }
 
-    wp_register_style('xfusion-result-eval-admin', false, [], '1.2');
+    wp_register_style('xfusion-result-eval-admin', false, [], '1.3');
     wp_enqueue_style('xfusion-result-eval-admin');
     wp_add_inline_style('xfusion-result-eval-admin', xfusion_result_evaluation_admin_card_css());
 }

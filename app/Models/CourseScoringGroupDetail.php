@@ -11,7 +11,11 @@ class CourseScoringGroupDetail extends Model
 
     protected $table = 'wp_course_scoring_group_details';
 
-    protected $fillable = ['course_scoring_group_id', 'form_id', 'field_id'];
+    protected $fillable = ['course_scoring_group_id', 'form_id', 'field_id', 'weight'];
+
+    protected $casts = [
+        'weight' => 'decimal:2',
+    ];
 
     public function courseScoringGroup()
     {

@@ -7,6 +7,7 @@
  *   [xfusion_scoring_gauge group_id="1" user_id="89"]
  *   Size: size="xs|sm|md|lg|xl" (default xl), scale="1.2", max_width="12rem", svg_width="7rem", svg_max_height="6rem"
  *   Optional: class="my-class" (appended to wrapper)
+ *   compare="month" (default) — delta vs previous calendar month; compare="off" to hide
  *
  * @package XFusion
  */
@@ -194,7 +195,7 @@ function xfusion_csg_parse_numeric(?string $raw): ?float
     return xfusion_csg_parse_single_number($s);
 }
 
-function xfusion_csg_latest_entry_id(int $form_id, int $user_id): int
+function xfusion_csg_latest_entry_id(int $form_id, int $user_id, ?array $period = null): int
 {
     global $wpdb;
 
@@ -203,6 +204,21 @@ function xfusion_csg_latest_entry_id(int $form_id, int $user_id): int
     }
 
     $t = $wpdb->prefix . 'gf_entry';
+    if ($period !== null && isset($period['start'], $period['end'])) {
+        $id = $wpdb->get_var(
+            $wpdb->prepare(
+                "SELECT id FROM {$t} WHERE form_id = %d AND created_by = %d AND status IN ('active','Active','ACTIVE')
+                 AND date_created >= %s AND date_created < %s ORDER BY id DESC LIMIT 1",
+                $form_id,
+                $user_id,
+                $period['start'],
+                $period['end']
+            )
+        );
+
+        return $id ? (int) $id : 0;
+    }
+
     $id = $wpdb->get_var(
         $wpdb->prepare(
             "SELECT id FROM {$t} WHERE form_id = %d AND created_by = %d AND status IN ('active','Active','ACTIVE') ORDER BY id DESC LIMIT 1",
@@ -212,6 +228,24 @@ function xfusion_csg_latest_entry_id(int $form_id, int $user_id): int
     );
 
     return $id ? (int) $id : 0;
+}
+
+/**
+ * Previous calendar month in site timezone (half-open interval [start, end)).
+ *
+ * @return array{start: string, end: string}
+ */
+function xfusion_csg_previous_calendar_month_period(): array
+{
+    $tz = function_exists('wp_timezone') ? wp_timezone() : new DateTimeZone('UTC');
+    $now = new DateTimeImmutable('now', $tz);
+    $thisMonthStart = $now->modify('first day of this month midnight');
+    $prevMonthStart = $thisMonthStart->modify('-1 month');
+
+    return [
+        'start' => $prevMonthStart->format('Y-m-d H:i:s'),
+        'end' => $thisMonthStart->format('Y-m-d H:i:s'),
+    ];
 }
 
 function xfusion_csg_entry_field_value(int $entry_id, int $form_id, int $field_id): ?string
@@ -248,36 +282,14 @@ function xfusion_csg_entry_field_value(int $entry_id, int $form_id, int $field_i
 }
 
 /**
- * @return array{
- *   title: string,
- *   needle_deg: float,
- *   average: ?float,
- *   gauge_zone_label: string,
- *   gauge_zone_color: string,
- *   total_fields: int,
- *   responses_answered: int
- * }|null
+ * @param  array{start: string, end: string}|null  $period  When set, use latest GF entry per form within [start, end).
+ * @return array{average: ?float, responses_answered: int, numeric_count: int}
  */
-function xfusion_csg_gauge_payload(int $group_id, int $user_id): ?array
+function xfusion_csg_group_score_stats(int $group_id, int $user_id, ?array $period = null): array
 {
     global $wpdb;
 
-    if ($group_id < 1) {
-        return null;
-    }
-
-    $gtable = $wpdb->prefix . 'course_scoring_groups';
     $dtable = $wpdb->prefix . 'course_scoring_group_details';
-
-    $group = $wpdb->get_row(
-        $wpdb->prepare("SELECT id, title FROM {$gtable} WHERE id = %d", $group_id),
-        ARRAY_A
-    );
-
-    if ($group === null) {
-        return null;
-    }
-
     $details = $wpdb->get_results(
         $wpdb->prepare(
             "SELECT form_id, field_id FROM {$dtable} WHERE course_scoring_group_id = %d ORDER BY id ASC",
@@ -286,18 +298,13 @@ function xfusion_csg_gauge_payload(int $group_id, int $user_id): ?array
         ARRAY_A
     );
 
-    if ($details === []) {
-        return null;
-    }
-
-    $totalFields = count($details);
     $responsesAnswered = 0;
     $numericValues = [];
 
     foreach ($details as $d) {
         $formId = (int) ($d['form_id'] ?? 0);
         $fieldId = (int) ($d['field_id'] ?? 0);
-        $entryId = xfusion_csg_latest_entry_id($formId, $user_id);
+        $entryId = xfusion_csg_latest_entry_id($formId, $user_id, $period);
         $raw = null;
         if ($entryId > 0) {
             $raw = xfusion_csg_entry_field_value($entryId, $formId, $fieldId);
@@ -312,6 +319,63 @@ function xfusion_csg_gauge_payload(int $group_id, int $user_id): ?array
     }
 
     $avg = $numericValues === [] ? null : round(array_sum($numericValues) / count($numericValues), 2);
+
+    return [
+        'average' => $avg,
+        'responses_answered' => $responsesAnswered,
+        'numeric_count' => count($numericValues),
+    ];
+}
+
+/**
+ * @return array{
+ *   title: string,
+ *   needle_deg: float,
+ *   average: ?float,
+ *   gauge_zone_label: string,
+ *   gauge_zone_color: string,
+ *   total_fields: int,
+ *   responses_answered: int,
+ *   compare_show: bool,
+ *   month_delta: ?float,
+ *   month_delta_available: bool,
+ *   previous_month_average: ?float
+ * }|null
+ */
+function xfusion_csg_gauge_payload(int $group_id, int $user_id, bool $comparePreviousMonth = true): ?array
+{
+    global $wpdb;
+
+    if ($group_id < 1) {
+        return null;
+    }
+
+    $gtable = $wpdb->prefix . 'course_scoring_groups';
+
+    $group = $wpdb->get_row(
+        $wpdb->prepare("SELECT id, title FROM {$gtable} WHERE id = %d", $group_id),
+        ARRAY_A
+    );
+
+    if ($group === null) {
+        return null;
+    }
+
+    $dtable = $wpdb->prefix . 'course_scoring_group_details';
+    $details = $wpdb->get_results(
+        $wpdb->prepare(
+            "SELECT form_id, field_id FROM {$dtable} WHERE course_scoring_group_id = %d ORDER BY id ASC",
+            $group_id
+        ),
+        ARRAY_A
+    );
+
+    if ($details === []) {
+        return null;
+    }
+
+    $current = xfusion_csg_group_score_stats($group_id, $user_id, null);
+    $avg = $current['average'];
     $gaugeMax = XFUSION_CSG_GAUGE_MAX;
     $gaugeValue = $avg === null ? null : min(max($avg, 0.0), $gaugeMax);
     $needleDeg = $gaugeValue === null
@@ -320,15 +384,78 @@ function xfusion_csg_gauge_payload(int $group_id, int $user_id): ?array
 
     $zone = xfusion_csg_gauge_zone_meta($gaugeValue);
 
+    $monthDelta = null;
+    $previousMonthAverage = null;
+    $monthDeltaAvailable = false;
+
+    if ($comparePreviousMonth && $avg !== null) {
+        $prevPeriod = xfusion_csg_previous_calendar_month_period();
+        $previous = xfusion_csg_group_score_stats($group_id, $user_id, $prevPeriod);
+        $previousMonthAverage = $previous['average'];
+        if ($previousMonthAverage !== null && $previous['numeric_count'] > 0) {
+            $monthDelta = round($avg - $previousMonthAverage, 2);
+            $monthDeltaAvailable = true;
+        }
+    }
+
     return [
         'title' => (string) ($group['title'] ?? ''),
         'needle_deg' => $needleDeg,
         'average' => $avg,
         'gauge_zone_label' => $zone['label'],
         'gauge_zone_color' => $zone['color'],
-        'total_fields' => $totalFields,
-        'responses_answered' => $responsesAnswered,
+        'total_fields' => count($details),
+        'responses_answered' => $current['responses_answered'],
+        'compare_show' => $comparePreviousMonth,
+        'month_delta' => $monthDelta,
+        'month_delta_available' => $monthDeltaAvailable,
+        'previous_month_average' => $previousMonthAverage,
     ];
+}
+
+/**
+ * @param  array{compare_show?: bool, month_delta: ?float, month_delta_available: bool}  $data
+ */
+function xfusion_csg_month_delta_markup(array $data, int $fontSize): string
+{
+    if (empty($data['compare_show'])) {
+        return '';
+    }
+
+    $hasDelta = ! empty($data['month_delta_available']) && $data['month_delta'] !== null;
+
+    if ($hasDelta) {
+        $delta = (float) $data['month_delta'];
+        if ($delta > 0) {
+            $formatted = '+' . number_format($delta, 2, '.', '');
+            $color = '#16a34a';
+            $arrow = '▲';
+        } elseif ($delta < 0) {
+            $formatted = '-' . number_format(abs($delta), 2, '.', '');
+            $color = '#dc2626';
+            $arrow = '▼';
+        } else {
+            $formatted = '0.00';
+            $color = '#6b7280';
+            $arrow = '▲';
+        }
+    } else {
+        $formatted = '-';
+        $color = '#6b7280';
+        $arrow = '▲';
+    }
+
+    ob_start();
+    ?>
+    <div class="xfusion-scoring-gauge__delta" style="margin:6px 0 0;display:flex;flex-direction:column;align-items:center;gap:2px;">
+        <p style="margin:0;font-size:<?php echo (int) $fontSize; ?>px;font-weight:600;line-height:1.2;color:<?php echo esc_attr($color); ?>;font-variant-numeric:tabular-nums;">
+            <span aria-hidden="true" style="font-size:0.75em;vertical-align:baseline;margin-right:2px;"><?php echo esc_html($arrow); ?></span><?php echo esc_html($formatted); ?>
+        </p>
+        <p style="margin:0;font-size:<?php echo max(9, (int) round($fontSize * 0.85)); ?>px;line-height:1.25;color:rgba(0,0,0,.45);"><?php echo esc_html__('Since Last Evaluation', 'xfusion'); ?></p>
+    </div>
+    <?php
+
+    return (string) ob_get_clean();
 }
 
 /**
@@ -347,6 +474,7 @@ function xfusion_csg_scoring_gauge_shortcode($atts): string
             'max_width' => '',
             'svg_width' => '',
             'svg_max_height' => '',
+            'compare' => 'month',
         ],
         $atts,
         'xfusion_scoring_gauge'
@@ -361,7 +489,10 @@ function xfusion_csg_scoring_gauge_shortcode($atts): string
         return '';
     }
 
-    $data = xfusion_csg_gauge_payload($gid, $uid);
+    $compareMode = strtolower(trim((string) $atts['compare']));
+    $comparePreviousMonth = ! in_array($compareMode, ['off', '0', 'false', 'no', 'none'], true);
+
+    $data = xfusion_csg_gauge_payload($gid, $uid, $comparePreviousMonth);
     if ($data === null) {
         return '';
     }
@@ -382,7 +513,7 @@ function xfusion_csg_scoring_gauge_shortcode($atts): string
 
     ob_start();
     ?>
-<div class="<?php echo esc_attr($wrapClass); ?>" style="box-sizing:border-box;width:100%;max-width:<?php echo esc_attr($dim['wrap_max']); ?>;margin-left:auto;margin-right:auto;padding:0.75rem;border:1px solid #e5e7eb;border-radius:0.5rem;background:#fff;box-shadow:0 1px 2px rgba(0,0,0,.05);display:flex;flex-direction:column;align-items:center;text-align:center;">
+<div class="<?php echo esc_attr($wrapClass); ?>" style="box-sizing:border-box;width:100%;max-width:<?php echo esc_attr($dim['wrap_max']); ?>;margin-left:auto;margin-right:auto;padding:0.75rem;display:flex;flex-direction:column;align-items:center;text-align:center;">
 <svg style="width:100%;max-width:<?php echo esc_attr($dim['svg_max_w']); ?>;height:auto;max-height:<?php echo esc_attr($dim['svg_max_h']); ?>;display:block;margin:0 auto;" viewBox="0 0 220 130" role="img" aria-label="<?php echo $titleAttr; ?> gauge, 0 to <?php echo (int) XFUSION_CSG_GAUGE_MAX; ?>">
 <?php foreach ($segments as $seg) : ?>
     <path fill="none" stroke="<?php echo esc_attr($seg['stroke']); ?>" stroke-width="10" stroke-linecap="round" d="<?php echo esc_attr($seg['d']); ?>" />
@@ -410,6 +541,7 @@ function xfusion_csg_scoring_gauge_shortcode($atts): string
         <h3 style="margin:0 0 4px;font-size:<?php echo (int) $dim['fs_title']; ?>px;font-weight:600;line-height:1.25;min-height:<?php echo esc_attr($dim['h3_min_h']); ?>;width:100%;padding:0 2px;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;" title="<?php echo $titleAttr; ?>"><?php echo $titleEsc; ?></h3>
         <p style="margin:0;font-size:<?php echo (int) $dim['fs_avg']; ?>px;font-weight:700;line-height:1.25;font-variant-numeric:tabular-nums;"><?php echo $data['average'] !== null ? esc_html((string) $data['average']) : esc_html('—'); ?></p>
         <p style="margin:0;font-size:<?php echo (int) $dim['fs_zone']; ?>px;font-weight:600;line-height:1.25;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;color:<?php echo esc_attr($zoneColor); ?>;"><?php echo $zoneLabelEsc; ?></p>
+        <?php echo xfusion_csg_month_delta_markup($data, (int) round($dim['fs_avg'] * 0.85)); ?>
         <p style="margin:2px 0 0;font-size:<?php echo (int) $dim['fs_resp']; ?>px;line-height:1.25;color:rgba(0,0,0,.45);font-variant-numeric:tabular-nums;"><?php echo (int) $data['responses_answered']; ?> responses</p>
     </div>
 </div>

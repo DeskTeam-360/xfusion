@@ -15,6 +15,7 @@ CREATE TABLE IF NOT EXISTS `wp_course_scoring_group_details` (
     `course_scoring_group_id` BIGINT UNSIGNED NOT NULL,
     `form_id` INT UNSIGNED NOT NULL,
     `field_id` INT UNSIGNED NOT NULL,
+    `weight` DECIMAL(10, 2) NOT NULL DEFAULT 1.00 COMMENT 'Beban/bobot field dalam grup scoring',
     `created_at` TIMESTAMP NULL DEFAULT NULL,
     `updated_at` TIMESTAMP NULL DEFAULT NULL,
     PRIMARY KEY (`id`),
