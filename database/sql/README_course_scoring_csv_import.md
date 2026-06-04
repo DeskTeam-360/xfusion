@@ -3,7 +3,8 @@
 ## 1. SQL sekali di MySQL
 
 1. `database/sql/wp_course_scoring_group_details_add_weight.sql`
-2. `database/sql/wp_course_scoring_group_details_nullable_field_id.sql` — `field_id` boleh NULL jika pertanyaan kosong / tidak ketemu di GF
+2. `database/sql/wp_course_scoring_group_details_nullable_field_id.sql` — `field_id` boleh NULL
+3. `database/sql/wp_course_scoring_group_details_nullable_form_id.sql` — `form_id` boleh NULL (mis. "No Orders - LMS Page …")
 
 ## 2. Upload CSV ke server
 

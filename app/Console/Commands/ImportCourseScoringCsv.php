@@ -90,6 +90,7 @@ class ImportCourseScoringCsv extends Command
             'rows' => 0,
             'details' => 0,
             'skipped_form' => 0,
+            'null_form_id' => 0,
             'skipped_field' => 0,
             'null_field_id' => 0,
             'skipped_weight' => 0,
@@ -119,25 +120,24 @@ class ImportCourseScoringCsv extends Command
             $formId = $this->resolveFormId($formTitle, $formByTitle);
 
             if ($formId === null) {
-                ++$stats['skipped_form'];
-                $errors[] = "Row {$stats['rows']}: GF form not found for title [{$formTitle}] (from [{$courseRaw}]).";
-
-                continue;
+                ++$stats['null_form_id'];
+                $errors[] = "Row {$stats['rows']}: GF form not found; importing weights with form_id NULL. Title: [{$formTitle}]";
             }
 
             $fieldId = null;
-            if ($question !== '') {
+            if ($question !== '' && $formId !== null) {
                 $fieldId = CourseScoringGroup::gfResolveFieldIdByQuestion($formId, $question);
             }
 
-            if ($fieldId === null) {
+            if ($fieldId === null && $question !== '') {
                 ++$stats['null_field_id'];
-                if ($question !== '') {
+                if ($formId !== null) {
                     $snippet = mb_substr($question, 0, 100);
                     $errors[] = "Row {$stats['rows']}: field not found on form #{$formId}; importing weights with field_id NULL. Question: {$snippet}".(mb_strlen($question) > 100 ? '…' : '');
                 }
             }
 
+            $formKey = $formId !== null ? (string) $formId : 'form:'.md5($formTitle);
             $detailKeySuffix = $fieldId !== null
                 ? (string) $fieldId
                 : 'null:'.md5($formTitle.'|'.$question);
@@ -159,7 +159,7 @@ class ImportCourseScoringCsv extends Command
                     continue;
                 }
 
-                $key = "{$groupTitle}|{$formId}|{$detailKeySuffix}";
+                $key = "{$groupTitle}|{$formKey}|{$detailKeySuffix}";
                 if (isset($pendingDetails[$key])) {
                     ++$stats['duplicate_key'];
                 }
@@ -195,7 +195,7 @@ class ImportCourseScoringCsv extends Command
         if ($dryRun) {
             $this->info('Dry run — no database changes.');
 
-            return $stats['skipped_form'] > 0 ? self::FAILURE : self::SUCCESS;
+            return self::SUCCESS;
         }
 
         if (! $this->option('force') && ! $this->confirm('Replace ALL existing course scoring groups and import '.$stats['details'].' details?')) {
@@ -231,7 +231,7 @@ class ImportCourseScoringCsv extends Command
 
         $this->info('Import complete.');
 
-        return $stats['skipped_form'] > 0 ? self::FAILURE : self::SUCCESS;
+        return self::SUCCESS;
     }
 
     /**
@@ -280,22 +280,52 @@ class ImportCourseScoringCsv extends Command
 
     private function resolveFormId(string $normalizedTitle, array $formByTitle): ?int
     {
-        if (isset($formByTitle[$normalizedTitle])) {
-            return $formByTitle[$normalizedTitle];
-        }
+        $candidates = array_values(array_unique(array_filter([
+            $normalizedTitle,
+            CourseScoringGroup::trimFormTitleEdges($normalizedTitle),
+            CourseScoringGroup::normalizeFormTitleAlias($normalizedTitle),
+        ])));
 
-        $alias = CourseScoringGroup::normalizeFormTitleAlias($normalizedTitle);
-        if ($alias !== '' && isset($formByTitle[$alias])) {
-            return $formByTitle[$alias];
-        }
-
-        foreach ($formByTitle as $key => $formId) {
-            if (strcasecmp($key, $normalizedTitle) === 0) {
-                return $formId;
+        if (str_starts_with($normalizedTitle, 'No Orders - ')) {
+            $without = trim(substr($normalizedTitle, strlen('No Orders - ')));
+            if ($without !== '') {
+                $candidates[] = $without;
+                $candidates[] = 'No Orders - '.$without;
             }
         }
 
-        return null;
+        foreach ($candidates as $title) {
+            if ($title === '') {
+                continue;
+            }
+
+            if (isset($formByTitle[$title])) {
+                return $formByTitle[$title];
+            }
+
+            foreach ($formByTitle as $key => $formId) {
+                if (strcasecmp($key, $title) === 0) {
+                    return $formId;
+                }
+            }
+        }
+
+        $bestId = null;
+        $bestLen = 0;
+        foreach ($formByTitle as $key => $formId) {
+            if (strlen($key) < 12) {
+                continue;
+            }
+            if (str_contains($normalizedTitle, $key) || str_contains($key, $normalizedTitle)) {
+                $len = min(strlen($key), strlen($normalizedTitle));
+                if ($len > $bestLen) {
+                    $bestLen = $len;
+                    $bestId = $formId;
+                }
+            }
+        }
+
+        return $bestLen >= 15 ? $bestId : null;
     }
 
     private function listFormFields(int $formId): int

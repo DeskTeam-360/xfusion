@@ -378,8 +378,8 @@ class CourseScoringGroup extends Component
      */
     public static function normalizeDashCharacters(string $text): string
     {
-        // Any â€X mojibake triplet (en dash, em dash, etc.)
-        $text = preg_replace('/â€./u', '-', $text) ?? $text;
+        $text = self::stripInvisibleCharacters($text);
+        $text = preg_replace('/â€[\x{0093}\x{0094}\x{0096}\x{0097}\x{009C}\x{009D}]/u', '-', $text) ?? $text;
         $text = preg_replace('/[\x{2013}\x{2014}\x{2015}\x{2212}]/u', '-', $text) ?? $text;
         $text = preg_replace('/\s*-\s*/', '-', $text) ?? $text;
 
@@ -392,14 +392,43 @@ class CourseScoringGroup extends Component
     public static function normalizeFormTitleText(string $text): string
     {
         $text = self::repairUtf8Mojibake($text);
+        $text = self::stripInvisibleCharacters($text);
         $text = html_entity_decode(strip_tags($text), ENT_QUOTES | ENT_HTML5, 'UTF-8');
         $text = self::normalizeQuoteCharacters($text);
         $text = str_replace(["\xc2\xa0", "\u{00A0}"], ' ', $text);
-        $text = preg_replace('/â€./u', ' - ', $text) ?? $text;
+        $text = self::replaceMojibakeDashesInTitle($text);
         $text = preg_replace('/[\x{2013}\x{2014}\x{2015}\x{2212}]/u', ' - ', $text) ?? $text;
         $text = preg_replace('/\s+/u', ' ', trim($text)) ?? trim($text);
 
-        return $text;
+        return self::trimFormTitleEdges($text);
+    }
+
+    /**
+     * Zero-width space (â€‹) and similar — must not become trailing " - ".
+     */
+    public static function stripInvisibleCharacters(string $text): string
+    {
+        $text = str_replace(['â€‹', 'â€Œ', 'â€Ž', 'â€', 'ï»¿'], '', $text);
+
+        return preg_replace('/[\x{200B}-\x{200D}\x{FEFF}\x{00AD}]/u', '', $text) ?? $text;
+    }
+
+    /**
+     * Only dash-like â€X triplets → " - ", not zero-width bytes.
+     */
+    public static function replaceMojibakeDashesInTitle(string $text): string
+    {
+        return preg_replace('/â€[\x{0093}\x{0094}\x{0096}\x{0097}\x{009C}\x{009D}]/u', ' - ', $text) ?? $text;
+    }
+
+    /**
+     * Remove trailing " -" artifacts after stripping invisible chars.
+     */
+    public static function trimFormTitleEdges(string $text): string
+    {
+        $text = trim($text);
+
+        return preg_replace('/(?:\s*-\s*)+$/u', '', $text) ?? $text;
     }
 
     /**
