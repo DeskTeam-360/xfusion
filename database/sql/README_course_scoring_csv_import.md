@@ -1,10 +1,9 @@
 # Import Course Scoring dari CSV COR
 
-## 1. Kolom `weight` (sekali)
+## 1. SQL sekali di MySQL
 
-Jalankan di MySQL:
-
-`database/sql/wp_course_scoring_group_details_add_weight.sql`
+1. `database/sql/wp_course_scoring_group_details_add_weight.sql`
+2. `database/sql/wp_course_scoring_group_details_nullable_field_id.sql` — `field_id` boleh NULL jika pertanyaan kosong / tidak ketemu di GF
 
 ## 2. Upload CSV ke server
 

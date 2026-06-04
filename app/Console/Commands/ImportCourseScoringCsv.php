@@ -64,7 +64,7 @@ class ImportCourseScoringCsv extends Command
             rewind($handle);
         }
 
-        $header = fgetcsv($handle);
+        $header = fgetcsv($handle, 0, ',', '"', '\\');
         if ($header === false || count($header) < 14) {
             fclose($handle);
             $this->error('Invalid or empty CSV header.');
@@ -91,13 +91,14 @@ class ImportCourseScoringCsv extends Command
             'details' => 0,
             'skipped_form' => 0,
             'skipped_field' => 0,
+            'null_field_id' => 0,
             'skipped_weight' => 0,
             'duplicate_key' => 0,
         ];
         $errors = [];
         $pendingDetails = [];
 
-        while (($row = fgetcsv($handle)) !== false) {
+        while (($row = fgetcsv($handle, 0, ',', '"', '\\')) !== false) {
             if ($row === [null] || trim(implode('', $row)) === '') {
                 continue;
             }
@@ -107,9 +108,9 @@ class ImportCourseScoringCsv extends Command
             $courseRaw = trim((string) ($row[self::COL_COURSE_TITLE] ?? ''));
             $question = trim((string) ($row[self::COL_QUESTION] ?? ''));
 
-            if ($courseRaw === '' || $question === '') {
+            if ($courseRaw === '') {
                 ++$stats['skipped_field'];
-                $errors[] = "Row {$stats['rows']}: empty course title or question.";
+                $errors[] = "Row {$stats['rows']}: empty course title.";
 
                 continue;
             }
@@ -124,13 +125,22 @@ class ImportCourseScoringCsv extends Command
                 continue;
             }
 
-            $fieldId = CourseScoringGroup::gfResolveFieldIdByQuestion($formId, $question);
-            if ($fieldId === null) {
-                ++$stats['skipped_field'];
-                $errors[] = "Row {$stats['rows']}: field not found on form #{$formId} for question: ".mb_substr($question, 0, 120);
-
-                continue;
+            $fieldId = null;
+            if ($question !== '') {
+                $fieldId = CourseScoringGroup::gfResolveFieldIdByQuestion($formId, $question);
             }
+
+            if ($fieldId === null) {
+                ++$stats['null_field_id'];
+                if ($question !== '') {
+                    $snippet = mb_substr($question, 0, 100);
+                    $errors[] = "Row {$stats['rows']}: field not found on form #{$formId}; importing weights with field_id NULL. Question: {$snippet}".(mb_strlen($question) > 100 ? '…' : '');
+                }
+            }
+
+            $detailKeySuffix = $fieldId !== null
+                ? (string) $fieldId
+                : 'null:'.md5($formTitle.'|'.$question);
 
             foreach ($groupTitles as $offset => $groupTitle) {
                 $colIndex = self::COL_WEIGHT_START + $offset;
@@ -149,7 +159,7 @@ class ImportCourseScoringCsv extends Command
                     continue;
                 }
 
-                $key = "{$groupTitle}|{$formId}|{$fieldId}";
+                $key = "{$groupTitle}|{$formId}|{$detailKeySuffix}";
                 if (isset($pendingDetails[$key])) {
                     ++$stats['duplicate_key'];
                 }
@@ -185,7 +195,7 @@ class ImportCourseScoringCsv extends Command
         if ($dryRun) {
             $this->info('Dry run — no database changes.');
 
-            return $stats['skipped_form'] > 0 || $stats['skipped_field'] > 0 ? self::FAILURE : self::SUCCESS;
+            return $stats['skipped_form'] > 0 ? self::FAILURE : self::SUCCESS;
         }
 
         if (! $this->option('force') && ! $this->confirm('Replace ALL existing course scoring groups and import '.$stats['details'].' details?')) {
@@ -221,7 +231,7 @@ class ImportCourseScoringCsv extends Command
 
         $this->info('Import complete.');
 
-        return $stats['skipped_form'] > 0 || $stats['skipped_field'] > 0 ? self::FAILURE : self::SUCCESS;
+        return $stats['skipped_form'] > 0 ? self::FAILURE : self::SUCCESS;
     }
 
     /**

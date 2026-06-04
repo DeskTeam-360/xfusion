@@ -275,7 +275,39 @@ class CourseScoringGroup extends Component
             }
         }
 
-        return null;
+        return self::gfResolveFieldIdByPrefixMatch($formId, $needle);
+    }
+
+    /**
+     * Long labels: CSV/GF may differ slightly (dash type, truncation). Match if one starts with the other.
+     */
+    public static function gfResolveFieldIdByPrefixMatch(int $formId, string $needle, int $minOverlap = 48): ?int
+    {
+        $bestId = null;
+        $bestOverlap = 0;
+
+        foreach (self::gfInputFieldsForFormId($formId) as $field) {
+            foreach (self::fieldLabelCandidates($field) as $candidate) {
+                $hay = self::normalizeFieldLabelText($candidate);
+                if ($hay === '') {
+                    continue;
+                }
+
+                $overlap = 0;
+                if (str_starts_with($hay, $needle)) {
+                    $overlap = strlen($needle);
+                } elseif (str_starts_with($needle, $hay)) {
+                    $overlap = strlen($hay);
+                }
+
+                if ($overlap >= $minOverlap && $overlap > $bestOverlap) {
+                    $bestOverlap = $overlap;
+                    $bestId = (int) $field['id'];
+                }
+            }
+        }
+
+        return $bestId;
     }
 
     /**
@@ -302,8 +334,21 @@ class CourseScoringGroup extends Component
         $text = self::normalizeQuoteCharacters($text);
         $text = str_replace(["\xc2\xa0", "\u{00A0}"], ' ', $text);
         $text = preg_replace('/\s+/u', ' ', trim($text)) ?? trim($text);
+        $text = self::normalizeDashCharacters($text);
         // CSV export sometimes ends with ".." while GF has a single period.
         $text = preg_replace('/\.+$/u', '.', $text) ?? $text;
+
+        return $text;
+    }
+
+    /**
+     * Unify em/en dash and CSV mojibake (â€") so "script—challenge" matches across sources.
+     */
+    public static function normalizeDashCharacters(string $text): string
+    {
+        $text = preg_replace('/â€[\x{0094}\x{009D}\x{201C}\x{201D}\x{2013}\x{2014}]/u', '-', $text) ?? $text;
+        $text = preg_replace('/[\x{2013}\x{2014}\x{2015}\x{2212}]/u', '-', $text) ?? $text;
+        $text = preg_replace('/\s*-\s*/', '-', $text) ?? $text;
 
         return $text;
     }
@@ -326,8 +371,6 @@ class CourseScoringGroup extends Component
                 'â€' => "\u{201D}",
                 'â€˜' => "\u{2018}",
                 'â€™' => "\u{2019}",
-                'â€"' => "\u{2014}",
-                'â€"' => "\u{2013}",
                 'â€¦' => "\u{2026}",
                 'Ã©' => 'é',
                 'Ã¨' => 'è',
