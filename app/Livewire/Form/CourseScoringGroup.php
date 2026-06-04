@@ -284,17 +284,13 @@ class CourseScoringGroup extends Component
     }
 
     /**
-     * CSV labels like "SWOT – Strengths" when GF field label is only "Strengths".
+     * CSV labels like "SWOT – Strengths" / "SWOT â€" Strengths" when GF label is only "Strengths".
      */
     public static function gfResolveFieldIdByLabelSuffix(int $formId, string $question): ?int
     {
         $needle = self::normalizeFieldLabelText($question);
-        if ($needle === '' || ! preg_match('/[-]([^-]+)$/u', $needle, $matches)) {
-            return null;
-        }
-
-        $suffix = trim((string) $matches[1]);
-        if ($suffix === '' || strlen($suffix) < 2) {
+        $suffix = self::extractCategoryFieldSuffix($needle);
+        if ($suffix === null) {
             return null;
         }
 
@@ -304,7 +300,34 @@ class CourseScoringGroup extends Component
                 if ($label === $suffix || strcasecmp($label, $suffix) === 0) {
                     return (int) $field['id'];
                 }
+                if (str_ends_with($label, '-'.$suffix) || str_ends_with($label, ' '.$suffix)) {
+                    return (int) $field['id'];
+                }
             }
+        }
+
+        return null;
+    }
+
+    /**
+     * @return string|null Sub-label after SWOT/PESTLE prefix (e.g. "Strengths", "Political").
+     */
+    public static function extractCategoryFieldSuffix(string $normalized): ?string
+    {
+        if ($normalized === '') {
+            return null;
+        }
+
+        if (preg_match('/[-]([^-]+)$/u', $normalized, $matches)) {
+            $suffix = trim((string) $matches[1]);
+
+            return $suffix !== '' && strlen($suffix) >= 2 ? $suffix : null;
+        }
+
+        if (preg_match('/^(?:SWOT|PESTLE)\s*["\x{2013}\x{2014}\-]\s*(.+)$/iu', $normalized, $matches)) {
+            $suffix = trim((string) $matches[1]);
+
+            return $suffix !== '' ? $suffix : null;
         }
 
         return null;
@@ -365,6 +388,8 @@ class CourseScoringGroup extends Component
         $text = html_entity_decode(strip_tags($text), ENT_QUOTES | ENT_HTML5, 'UTF-8');
         $text = self::normalizeQuoteCharacters($text);
         $text = str_replace(["\xc2\xa0", "\u{00A0}"], ' ', $text);
+        // CSV "SWOT â€" Strengths" is often mojibake quote, not en-dash → treat as subsection separator.
+        $text = preg_replace('/\b(SWOT|PESTLE)\s*["\']\s*/iu', '$1 - ', $text) ?? $text;
         $text = preg_replace('/\s+/u', ' ', trim($text)) ?? trim($text);
         $text = self::normalizeDashCharacters($text);
         // CSV export sometimes ends with ".." while GF has a single period.
