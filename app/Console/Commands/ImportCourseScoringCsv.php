@@ -16,7 +16,8 @@ class ImportCourseScoringCsv extends Command
                             {--path= : Path to CSV (default: public/FUSION_COR_Primary_Scale_Mapping.xlsx - Scaled Mapping.csv)}
                             {--dry-run : Parse and report without writing to the database}
                             {--force : Replace existing data without confirmation (use on server)}
-                            {--skip-replace : Do not delete existing groups/details before import}';
+                            {--skip-replace : Do not delete existing groups/details before import}
+                            {--list-fields= : List GF input fields for a form_id (debug), then exit}';
 
     protected $description = 'Replace course scoring groups from COR Primary Scale Mapping CSV (weights per group column).';
 
@@ -31,6 +32,11 @@ class ImportCourseScoringCsv extends Command
 
     public function handle(): int
     {
+        $listFormId = $this->option('list-fields');
+        if ($listFormId !== null && $listFormId !== '') {
+            return $this->listFormFields((int) $listFormId);
+        }
+
         $path = $this->option('path')
             ?: base_path('public/FUSION_COR_Primary_Scale_Mapping.xlsx - Scaled Mapping.csv');
 
@@ -118,7 +124,7 @@ class ImportCourseScoringCsv extends Command
                 continue;
             }
 
-            $fieldId = $this->resolveFieldId($formId, $question);
+            $fieldId = CourseScoringGroup::gfResolveFieldIdByQuestion($formId, $question);
             if ($fieldId === null) {
                 ++$stats['skipped_field'];
                 $errors[] = "Row {$stats['rows']}: field not found on form #{$formId} for question: ".mb_substr($question, 0, 120);
@@ -247,24 +253,37 @@ class ImportCourseScoringCsv extends Command
         return $index;
     }
 
-    private function resolveFieldId(int $formId, string $question): ?int
+    private function listFormFields(int $formId): int
     {
-        $q = trim($question);
-        $fields = CourseScoringGroup::gfFieldsForFormId($formId);
+        if ($formId < 1) {
+            $this->error('Invalid form_id.');
 
-        foreach ($fields as $field) {
-            if (trim((string) $field['label']) === $q) {
-                return (int) $field['id'];
-            }
+            return self::FAILURE;
         }
 
-        foreach ($fields as $field) {
-            if (strcasecmp(trim((string) $field['label']), $q) === 0) {
-                return (int) $field['id'];
-            }
+        $form = WpGfForm::find($formId);
+        $this->info('Form #'.$formId.($form ? ': '.(string) $form->title : ''));
+
+        $rows = [];
+        foreach (CourseScoringGroup::gfInputFieldsForFormId($formId) as $field) {
+            $rows[] = [
+                $field['id'],
+                $field['type'],
+                $field['label'],
+                $field['admin_label'] ?? '',
+            ];
         }
 
-        return null;
+        if ($rows === []) {
+            $this->warn('No input fields found in display_meta.');
+
+            return self::FAILURE;
+        }
+
+        $this->table(['id', 'type', 'label', 'adminLabel'], $rows);
+        $this->line('Scoring UI (admin) only lists: radio, number — count: '.count(CourseScoringGroup::gfFieldsForFormId($formId)));
+
+        return self::SUCCESS;
     }
 
     private function parseWeight(string $raw): ?string

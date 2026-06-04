@@ -14,6 +14,16 @@ Letakkan file di:
 
 atau path lain lalu pakai `--path=...`
 
+## Debug: field tidak ketemu
+
+Import mencocokkan kolom **Question** ke label field Gravity Forms (semua tipe input: text, textarea, radio, dll.). Admin “Course Scoring Group” hanya menampilkan **radio** dan **number** — field bisa ada di GF tapi tidak muncul di UI admin.
+
+```bash
+php artisan course-scoring:import-csv --list-fields=35
+```
+
+Bandingkan kolom `label` dengan teks di CSV (harus sama setelah normalisasi spasi).
+
 ## 3. Cek tanpa menulis DB
 
 ```bash

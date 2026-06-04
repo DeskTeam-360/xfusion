@@ -14,6 +14,11 @@ class CourseScoringGroup extends Component
     /** Gravity Forms field types selectable for scoring (matches {@see gfFieldsForFormId}). */
     private const GF_SCORING_FIELD_TYPES = ['radio', 'number'];
 
+    /** Non-input GF types skipped when resolving CSV question → field_id. */
+    private const GF_INPUT_SKIP_TYPES = [
+        'html', 'section', 'page', 'submit', 'captcha', 'honeypot', 'password',
+    ];
+
     /** Set from edit route only; empty on create screen. */
     public ?string $dataId = null;
 
@@ -177,6 +182,19 @@ class CourseScoringGroup extends Component
     /** @return list<array{id: int, label: string, type: string}> Gravity Forms fields with type radio or number */
     public static function gfFieldsForFormId(?int $formId): array
     {
+        return array_values(array_filter(
+            self::gfInputFieldsForFormId($formId),
+            static fn (array $f): bool => in_array($f['type'], self::GF_SCORING_FIELD_TYPES, true)
+        ));
+    }
+
+    /**
+     * All Gravity Forms input fields (any type except structural) — used for CSV import label matching.
+     *
+     * @return list<array{id: int, label: string, admin_label: string, type: string}>
+     */
+    public static function gfInputFieldsForFormId(?int $formId): array
+    {
         if ($formId === null || $formId < 1) {
             return [];
         }
@@ -208,17 +226,82 @@ class CourseScoringGroup extends Component
                 continue;
             }
 
-            $label = isset($field->label) ? (string) $field->label : ('Field #'.$id);
             $type = isset($field->type) ? strtolower((string) $field->type) : '';
-
-            if (! in_array($type, self::GF_SCORING_FIELD_TYPES, true)) {
+            if ($type === '' || in_array($type, self::GF_INPUT_SKIP_TYPES, true)) {
                 continue;
             }
 
-            $out[] = ['id' => $id, 'label' => $label, 'type' => $type];
+            $label = isset($field->label) ? trim((string) $field->label) : '';
+            $adminLabel = isset($field->adminLabel) ? trim((string) $field->adminLabel) : '';
+
+            $out[] = [
+                'id' => $id,
+                'label' => $label !== '' ? $label : ('Field #'.$id),
+                'admin_label' => $adminLabel,
+                'type' => $type,
+            ];
         }
 
         return $out;
+    }
+
+    /**
+     * Match CSV "Question" text to a GF field id (all input types, not only radio/number).
+     */
+    public static function gfResolveFieldIdByQuestion(?int $formId, string $question): ?int
+    {
+        if ($formId === null || $formId < 1) {
+            return null;
+        }
+
+        $needle = self::normalizeFieldLabelText($question);
+        if ($needle === '') {
+            return null;
+        }
+
+        foreach (self::gfInputFieldsForFormId($formId) as $field) {
+            foreach (self::fieldLabelCandidates($field) as $candidate) {
+                if (self::normalizeFieldLabelText($candidate) === $needle) {
+                    return (int) $field['id'];
+                }
+            }
+        }
+
+        foreach (self::gfInputFieldsForFormId($formId) as $field) {
+            foreach (self::fieldLabelCandidates($field) as $candidate) {
+                if (strcasecmp(self::normalizeFieldLabelText($candidate), $needle) === 0) {
+                    return (int) $field['id'];
+                }
+            }
+        }
+
+        return null;
+    }
+
+    /**
+     * @param  array{label: string, admin_label?: string}  $field
+     * @return list<string>
+     */
+    private static function fieldLabelCandidates(array $field): array
+    {
+        $candidates = [];
+        foreach (['label', 'admin_label'] as $key) {
+            $text = trim((string) ($field[$key] ?? ''));
+            if ($text !== '' && ! in_array($text, $candidates, true)) {
+                $candidates[] = $text;
+            }
+        }
+
+        return $candidates;
+    }
+
+    public static function normalizeFieldLabelText(string $text): string
+    {
+        $text = html_entity_decode(strip_tags($text), ENT_QUOTES | ENT_HTML5, 'UTF-8');
+        $text = str_replace(["\xc2\xa0", "\u{00A0}"], ' ', $text);
+        $text = preg_replace('/\s+/u', ' ', trim($text)) ?? trim($text);
+
+        return $text;
     }
 
     public function saveExisting(): void
