@@ -22,7 +22,7 @@ Import mencocokkan kolom **Question** ke label field Gravity Forms (semua tipe i
 php artisan course-scoring:import-csv --list-fields=35
 ```
 
-Bandingkan kolom `label` dengan teks di CSV (harus sama setelah normalisasi spasi).
+Bandingkan kolom `label` dengan teks di CSV. Import memperbaiki mojibake kutip (`â€œ` → `"`), smart quotes, dan titik ganda di akhir (`..` → `.`).
 
 ## 3. Cek tanpa menulis DB
 

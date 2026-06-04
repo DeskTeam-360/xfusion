@@ -297,11 +297,70 @@ class CourseScoringGroup extends Component
 
     public static function normalizeFieldLabelText(string $text): string
     {
+        $text = self::repairUtf8Mojibake($text);
         $text = html_entity_decode(strip_tags($text), ENT_QUOTES | ENT_HTML5, 'UTF-8');
+        $text = self::normalizeQuoteCharacters($text);
         $text = str_replace(["\xc2\xa0", "\u{00A0}"], ' ', $text);
         $text = preg_replace('/\s+/u', ' ', trim($text)) ?? trim($text);
+        // CSV export sometimes ends with ".." while GF has a single period.
+        $text = preg_replace('/\.+$/u', '.', $text) ?? $text;
 
         return $text;
+    }
+
+    /**
+     * Fix UTF-8 mojibake from Excel/CSV export (UTF-8 smart quotes read as Latin-1 bytes).
+     * e.g. â€œ → “, â€ → ”, â€™ → ’
+     */
+    public static function repairUtf8Mojibake(string $text): string
+    {
+        if ($text === '' || ! str_contains($text, 'â€') && ! str_contains($text, 'Ã')) {
+            return $text;
+        }
+
+        static $map = null;
+        if ($map === null) {
+            $map = [
+                'â€œ' => "\u{201C}",
+                'â€\u{009D}' => "\u{201D}",
+                'â€' => "\u{201D}",
+                'â€˜' => "\u{2018}",
+                'â€™' => "\u{2019}",
+                'â€"' => "\u{2014}",
+                'â€"' => "\u{2013}",
+                'â€¦' => "\u{2026}",
+                'Ã©' => 'é',
+                'Ã¨' => 'è',
+                'Ã«' => 'ë',
+                'Ã´' => 'ô',
+                'Ã¢' => 'â',
+                'Ã¼' => 'ü',
+                'Ã±' => 'ñ',
+            ];
+        }
+
+        return str_replace(array_keys($map), array_values($map), $text);
+    }
+
+    /**
+     * Map curly/smart quotes to straight ASCII so CSV and GF labels match.
+     */
+    public static function normalizeQuoteCharacters(string $text): string
+    {
+        return strtr($text, [
+            "\u{201C}" => '"',
+            "\u{201D}" => '"',
+            "\u{201E}" => '"',
+            "\u{00AB}" => '"',
+            "\u{00BB}" => '"',
+            "\u{2018}" => "'",
+            "\u{2019}" => "'",
+            "\u{201A}" => "'",
+            '«' => '"',
+            '»' => '"',
+            '„' => '"',
+            '‚' => "'",
+        ]);
     }
 
     public function saveExisting(): void
