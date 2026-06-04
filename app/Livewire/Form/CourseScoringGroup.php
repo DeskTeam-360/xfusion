@@ -275,7 +275,39 @@ class CourseScoringGroup extends Component
             }
         }
 
+        $suffixId = self::gfResolveFieldIdByLabelSuffix($formId, $needle);
+        if ($suffixId !== null) {
+            return $suffixId;
+        }
+
         return self::gfResolveFieldIdByPrefixMatch($formId, $needle);
+    }
+
+    /**
+     * CSV labels like "SWOT – Strengths" when GF field label is only "Strengths".
+     */
+    public static function gfResolveFieldIdByLabelSuffix(int $formId, string $question): ?int
+    {
+        $needle = self::normalizeFieldLabelText($question);
+        if ($needle === '' || ! preg_match('/[-]([^-]+)$/u', $needle, $matches)) {
+            return null;
+        }
+
+        $suffix = trim((string) $matches[1]);
+        if ($suffix === '' || strlen($suffix) < 2) {
+            return null;
+        }
+
+        foreach (self::gfInputFieldsForFormId($formId) as $field) {
+            foreach (self::fieldLabelCandidates($field) as $candidate) {
+                $label = self::normalizeFieldLabelText($candidate);
+                if ($label === $suffix || strcasecmp($label, $suffix) === 0) {
+                    return (int) $field['id'];
+                }
+            }
+        }
+
+        return null;
     }
 
     /**
@@ -346,11 +378,38 @@ class CourseScoringGroup extends Component
      */
     public static function normalizeDashCharacters(string $text): string
     {
-        $text = preg_replace('/â€[\x{0094}\x{009D}\x{201C}\x{201D}\x{2013}\x{2014}]/u', '-', $text) ?? $text;
+        // Any â€X mojibake triplet (en dash, em dash, etc.)
+        $text = preg_replace('/â€./u', '-', $text) ?? $text;
         $text = preg_replace('/[\x{2013}\x{2014}\x{2015}\x{2212}]/u', '-', $text) ?? $text;
         $text = preg_replace('/\s*-\s*/', '-', $text) ?? $text;
 
         return $text;
+    }
+
+    /**
+     * Normalize GF / CSV form titles for lookup (mojibake, quotes). Keeps spaced " - " separators.
+     */
+    public static function normalizeFormTitleText(string $text): string
+    {
+        $text = self::repairUtf8Mojibake($text);
+        $text = html_entity_decode(strip_tags($text), ENT_QUOTES | ENT_HTML5, 'UTF-8');
+        $text = self::normalizeQuoteCharacters($text);
+        $text = str_replace(["\xc2\xa0", "\u{00A0}"], ' ', $text);
+        $text = preg_replace('/â€./u', ' - ', $text) ?? $text;
+        $text = preg_replace('/[\x{2013}\x{2014}\x{2015}\x{2212}]/u', ' - ', $text) ?? $text;
+        $text = preg_replace('/\s+/u', ' ', trim($text)) ?? trim($text);
+
+        return $text;
+    }
+
+    /**
+     * Secondary lookup key: same title with straight quotes removed.
+     */
+    public static function normalizeFormTitleAlias(string $text): string
+    {
+        $text = self::normalizeFormTitleText($text);
+
+        return (string) preg_replace('/["\']+/u', '', $text);
     }
 
     /**

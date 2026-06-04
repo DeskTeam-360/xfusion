@@ -116,7 +116,7 @@ class ImportCourseScoringCsv extends Command
             }
 
             $formTitle = $this->normalizeCourseTitle($courseRaw);
-            $formId = $formByTitle[$formTitle] ?? null;
+            $formId = $this->resolveFormId($formTitle, $formByTitle);
 
             if ($formId === null) {
                 ++$stats['skipped_form'];
@@ -235,15 +235,17 @@ class ImportCourseScoringCsv extends Command
     }
 
     /**
-     * Strip leading "[digits] - " from course title (CSV column 2).
+     * Strip leading "[digits] - " and normalize mojibake/quotes (CSV column 2).
      */
     public static function normalizeCourseTitle(string $raw): string
     {
-        return trim((string) preg_replace('/^\d+\s*-\s*/', '', $raw));
+        $stripped = trim((string) preg_replace('/^\d+\s*-\s*/', '', $raw));
+
+        return CourseScoringGroup::normalizeFormTitleText($stripped);
     }
 
     /**
-     * @return array<string, int> normalized title => form id
+     * @return array<string, int> lookup key (normalized / alias) => form id
      */
     private function buildFormTitleIndex(): array
     {
@@ -255,12 +257,45 @@ class ImportCourseScoringCsv extends Command
             ->get(['id', 'title'])
             ->each(function (WpGfForm $form) use (&$index): void {
                 $title = trim((string) $form->title);
-                if ($title !== '' && ! isset($index[$title])) {
-                    $index[$title] = (int) $form->id;
+                if ($title === '') {
+                    return;
+                }
+
+                $id = (int) $form->id;
+                $keys = [
+                    $title,
+                    CourseScoringGroup::normalizeFormTitleText($title),
+                    CourseScoringGroup::normalizeFormTitleAlias($title),
+                ];
+
+                foreach ($keys as $key) {
+                    if ($key !== '' && ! isset($index[$key])) {
+                        $index[$key] = $id;
+                    }
                 }
             });
 
         return $index;
+    }
+
+    private function resolveFormId(string $normalizedTitle, array $formByTitle): ?int
+    {
+        if (isset($formByTitle[$normalizedTitle])) {
+            return $formByTitle[$normalizedTitle];
+        }
+
+        $alias = CourseScoringGroup::normalizeFormTitleAlias($normalizedTitle);
+        if ($alias !== '' && isset($formByTitle[$alias])) {
+            return $formByTitle[$alias];
+        }
+
+        foreach ($formByTitle as $key => $formId) {
+            if (strcasecmp($key, $normalizedTitle) === 0) {
+                return $formId;
+            }
+        }
+
+        return null;
     }
 
     private function listFormFields(int $formId): int
