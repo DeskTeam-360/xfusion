@@ -38,8 +38,7 @@
         </form>
     @else
         {{-- Edit: title plus repeatable Gravity Form blocks --}}
-        <form wire:submit.prevent="saveExisting" class="space-y-8"
-              x-init="if (! Alpine.store('csGfForms')) { Alpine.store('csGfForms', { forms: {{ \Illuminate\Support\Js::from($formCatalog ?? []) }} }); }">
+        <form wire:submit.prevent="saveExisting" class="space-y-8">
             <p wire:loading wire:target="saveExisting" class="flex items-center gap-2 text-sm font-medium text-dark dark:text-white" role="status">
                 {!! $spinnerSvg !!}
                 <span>Saving…</span>
@@ -69,49 +68,39 @@
                     @foreach($blocks as $index => $block)
                         @php
                             /** @var int $index */
-                            $gfFields = \App\Livewire\Form\CourseScoringGroup::gfFieldsForFormId(isset($block['form_id']) ? (int)$block['form_id'] : null);
                             $picked = isset($block['form_id']) && $block['form_id'] !== null;
+                            $fieldsExpanded = $picked && $this->blockFieldsExpanded($index);
+                            $gfFields = $picked ? $this->gfFieldsForBlock($index) : [];
+                            $connectedCount = count($block['field_ids'] ?? []);
                         @endphp
                         <div wire:key="csg-block-{{ $index }}-{{ $picked ? 'yes' : 'no' }}-{{ md5(($block['search'] ?? '')) }}" class="mb-4 rounded-lg border border-border bg-gray-50/40 p-5 dark:bg-transparent dark:border-darkborder">
-                            <div class="mb-4 flex flex-wrap items-center gap-3">
+                            <div class="mb-4 flex flex-wrap items-center justify-between gap-3">
                                 <span class="text-sm font-medium uppercase tracking-wide text-dark/70 dark:text-darklink">Form block {{ $index + 1 }}</span>
-                                <button wire:click="removeFormBlock({{ $index }})"
-                                        wire:loading.attr="disabled"
-                                        wire:target="pickForm"
-                                        type="button"
-                                        class="btn btn-error btn-outline btn-xs">Remove block
-                                </button>
-                            </div>
-
-                            @if($picked)
-                                <div class="mb-4 flex flex-wrap gap-2">
-                                    <button type="button"
-                                            wire:click.prevent="clearForm({{ $index }})"
+                                <div class="flex flex-wrap items-center justify-end gap-2">
+                                    @if($picked)
+                                        <button type="button"
+                                                wire:click.prevent="clearForm({{ $index }})"
+                                                wire:loading.attr="disabled"
+                                                wire:target="pickForm,clearForm"
+                                                class="btn btn-outline btn-xs shrink-0">Change form
+                                        </button>
+                                    @endif
+                                    <button wire:click="removeFormBlock({{ $index }})"
                                             wire:loading.attr="disabled"
-                                            wire:target="pickForm"
-                                            class="btn shrink-0">Change form
+                                            wire:target="pickForm,removeFormBlock"
+                                            type="button"
+                                            class="btn btn-error btn-outline btn-xs shrink-0">Remove block
                                     </button>
                                 </div>
-                            @else
+                            </div>
+
+                            @if(!$picked)
                                 <label class="mb-2 block text-sm font-bold text-dark dark:text-light">Find form</label>
                                 <div class="relative flex min-h-[8rem] flex-wrap gap-2"
                                      wire:key="gf-find-{{ $index }}"
-                                     x-data="{
-                                         query: '',
-                                         picking: false,
-                                         maxShown: 200,
-                                         get filtered() {
-                                             var list = (Alpine.store('csGfForms') || {}).forms || [];
-                                             var t = (this.query || '').trim().toLowerCase();
-                                             if (!t.length) return [];
-                                             return list.filter(function (f) {
-                                                 var title = (f.title || '').toLowerCase();
-                                                 return title.indexOf(t) !== -1;
-                                             }).slice(0, this.maxShown);
-                                         }
-                                     }"
+                                     x-data="{ query: '', picking: false }"
                                      wire:loading.class="opacity-70 pointer-events-none"
-                                     wire:target="pickForm">
+                                     wire:target="pickForm,searchPickerForms">
                                     <template x-if="picking">
                                         <div class="absolute inset-0 z-10 flex flex-col items-center justify-center gap-3 rounded-lg border border-border bg-white/90 p-4 dark:bg-darkgray/92 dark:border-darkborder"
                                              x-transition.opacity>
@@ -123,40 +112,44 @@
                                     </template>
                                     <input type="search"
                                            x-model="query"
-                                           placeholder="Search by form title (filters in-browser)…"
+                                           x-on:input.debounce.400ms="$wire.searchPickerForms({{ $index }}, query)"
+                                           placeholder="Type at least 2 characters to search forms…"
                                            autocomplete="off"
                                            :disabled="picking"
                                            class="form-control min-w-[200px] flex-1 rounded border border-border bg-white px-3 py-2 text-dark placeholder:text-muted disabled:opacity-60 dark:bg-darkgray dark:border-darkborder dark:text-white dark:placeholder:text-darklink"/>
                                     <p class="w-full text-xs text-dark/60 dark:text-darklink">
-                                        <span class="tabular-nums"><span x-text="(Alpine.store('csGfForms').forms ?? []).length"></span></span> active form(s) loaded once; type to narrow the list — no extra server requests.
+                                        Server search only — up to 25 matching forms per query (no full catalog loaded in the browser).
                                     </p>
                                     <template x-if="!query.trim().length">
-                                        <p class="mt-1 w-full text-sm text-dark/75 dark:text-darklink">Type part of the form title to show matches.</p>
+                                        <p class="mt-1 w-full text-sm text-dark/75 dark:text-darklink">Type part of the form title to search.</p>
                                     </template>
-                                    <template x-if="filtered.length">
-                                        <ul class="mt-1 w-full divide-y divide-border rounded border border-border bg-white dark:border-darkborder dark:bg-darkgray/30">
-                                            <template x-for="row in filtered" :key="'gf-p-{{ $index }}-' + row.id">
-                                                <li>
+                                    @if(isset($pickerResults[$index]) && count($pickerResults[$index]) > 0)
+                                        <ul class="mt-1 w-full divide-y divide-border rounded border border-border bg-white dark:border-darkborder dark:bg-darkgray/30"
+                                            wire:key="picker-results-{{ $index }}-{{ md5(json_encode($pickerResults[$index])) }}">
+                                            @foreach($pickerResults[$index] as $row)
+                                                <li wire:key="gf-pick-{{ $index }}-{{ $row['id'] }}">
                                                     <button type="button"
                                                             class="flex w-full items-center gap-2 px-3 py-2 text-start text-sm text-dark hover:bg-primary/10 disabled:pointer-events-none disabled:opacity-50 dark:text-white dark:hover:bg-darkborder/40"
-                                                            :disabled="picking"
+                                                            x-bind:disabled="picking"
                                                             x-on:click.prevent="
                                                                 picking = true;
                                                                 query = '';
-                                                                Promise.resolve($wire.pickForm({{ $index }}, row.id)).finally(function () {
+                                                                Promise.resolve($wire.pickForm({{ $index }}, {{ $row['id'] }})).finally(function () {
                                                                     picking = false;
                                                                 });
                                                             ">
-                                                        <strong class="font-semibold" x-text="row.title"></strong>
-                                                        <span class="ms-auto text-xs text-dark/60 dark:text-darklink">ID <span x-text="row.id"></span></span>
+                                                        <strong class="font-semibold">{{ $row['title'] }}</strong>
+                                                        <span class="ms-auto text-xs text-dark/60 dark:text-darklink">ID {{ $row['id'] }}</span>
                                                     </button>
                                                 </li>
-                                            </template>
+                                            @endforeach
                                         </ul>
-                                    </template>
-                                    <template x-if="filtered.length === 0 && query.trim().length">
+                                    @elseif(isset($pickerResults[$index]))
                                         <p class="mt-2 w-full text-sm text-dark/75 dark:text-darklink">No forms match that search.</p>
-                                    </template>
+                                    @endif
+                                    <div wire:loading wire:target="searchPickerForms" class="w-full text-xs text-dark/60 dark:text-darklink">
+                                        Searching…
+                                    </div>
                                 </div>
                             @endif
 
@@ -166,10 +159,32 @@
                                         Selected: <strong class="text-dark dark:text-white">{{ $block['search'] }}</strong>
                                         &nbsp;(form ID {{ $block['form_id'] }})
                                     </p>
-                                    <p class="mb-2 text-sm font-semibold text-dark dark:text-white">Input fields</p>
-                                    <p class="mb-3 text-xs text-dark/60 dark:text-darklink">Check a field to connect it for scoring, then set its weight (&gt; 0). Weight 0 or unchecked disconnects the field.</p>
+                                    <p class="mb-2 text-sm font-semibold text-dark dark:text-white">Connected fields</p>
+                                    <p class="mb-3 text-xs text-dark/60 dark:text-darklink">Only connected fields load by default. Check a field to connect it, then set weight (&gt; 0).</p>
+                                    <div class="mb-3 flex flex-wrap gap-2">
+                                        <button type="button"
+                                                wire:click="toggleBlockFields({{ $index }})"
+                                                wire:loading.attr="disabled"
+                                                wire:target="toggleBlockFields"
+                                                class="btn btn-outline btn-xs">
+                                            @if($fieldsExpanded)
+                                                Show connected only
+                                            @else
+                                                Browse all fields
+                                            @endif
+                                        </button>
+                                        @if(!$fieldsExpanded)
+                                            <span class="self-center text-xs text-dark/60 dark:text-darklink">{{ $connectedCount }} connected</span>
+                                        @endif
+                                    </div>
                                     @if(count($gfFields) === 0)
-                                        <p class="text-sm text-dark/75 dark:text-darklink">No input fields found in this form meta (check <code class="rounded bg-gray-100 px-1 py-0.5 text-xs text-dark dark:bg-darkborder dark:text-light">gf_form_meta.display_meta</code>).</p>
+                                        <p class="text-sm text-dark/75 dark:text-darklink">
+                                            @if($fieldsExpanded)
+                                                No input fields found in this form meta.
+                                            @else
+                                                No fields connected yet. Use “Browse all fields” to pick questions.
+                                            @endif
+                                        </p>
                                     @else
                                         <div class="max-h-60 space-y-2 overflow-y-auto rounded border border-border bg-white p-3 [color-scheme:light] dark:[color-scheme:dark] dark:bg-darkgray/30 dark:border-darkborder">
                                             @foreach($gfFields as $f)

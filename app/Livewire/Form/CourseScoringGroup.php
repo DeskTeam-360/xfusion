@@ -28,15 +28,14 @@ class CourseScoringGroup extends Component
      */
     public array $blocks = [];
 
-    /**
-     * Legacy property kept for hydrating old Livewire snapshots; search UI no longer writes here.
-     *
-     * @var array<int, list<array{id: int, title: string}>>
-     */
-    public array $blockFormPickResults = [];
+    /** @var list<int> Form IDs whose full field list is expanded in the UI. */
+    public array $expandedFormIds = [];
 
-    /** @var list<array{id: int, title: string}>|null Loaded once per request for client-side picker filter. */
-    private ?array $formCatalogMemo = null;
+    /** @var array<int, list<array{id: int, title: string}>> Server-side GF search results per block index. */
+    public array $pickerResults = [];
+
+    /** Parsed GF fields per form_id for the current request. */
+    private static array $gfFieldsCache = [];
 
     public function mount(?string $dataId = null): void
     {
@@ -57,28 +56,29 @@ class CourseScoringGroup extends Component
         /** @var Collection<string, Collection<int, CourseScoringGroupDetail>> $byForm */
         $byForm = $group->details->groupBy('form_id');
 
+        $formIds = $byForm->keys()
+            ->map(static fn ($k) => (int) $k)
+            ->filter(static fn (int $id) => $id > 0)
+            ->values();
+
+        $formTitles = $formIds->isEmpty()
+            ? collect()
+            : WpGfForm::query()->whereIn('id', $formIds)->pluck('title', 'id');
+
         foreach ($byForm as $formIdString => $rows) {
             $fid = (int) $formIdString;
             if ($fid < 1) {
                 continue;
             }
 
-            $form = WpGfForm::find($fid);
             $connected = $rows->filter(static fn (CourseScoringGroupDetail $d): bool => $d->isConnected());
-
-            $fieldWeights = [];
-            foreach ($rows as $detail) {
-                $fieldId = (int) $detail->field_id;
-                if ($fieldId < 1) {
-                    continue;
-                }
-                $fieldWeights[$fieldId] = (float) ($detail->weight ?? 1);
-            }
+            $fieldIds = $connected->pluck('field_id')->map(fn ($v) => (int) $v)->values()->all();
+            $fieldWeights = $this->weightsForFieldIds($rows, $fieldIds);
 
             $this->blocks[] = [
                 'form_id' => $fid,
-                'search' => $form !== null ? (string) $form->title : "Form #{$fid}",
-                'field_ids' => $connected->pluck('field_id')->map(fn ($v) => (int) $v)->values()->all(),
+                'search' => (string) ($formTitles->get($fid) ?? "Form #{$fid}"),
+                'field_ids' => $fieldIds,
                 'field_weights' => $fieldWeights,
             ];
         }
@@ -86,6 +86,103 @@ class CourseScoringGroup extends Component
         if (count($this->blocks) === 0) {
             $this->blocks[] = $this->emptyBlock();
         }
+    }
+
+    /** @return array<int, float> */
+    private function weightsForFieldIds(Collection $rows, array $fieldIds): array
+    {
+        if ($fieldIds === []) {
+            return [];
+        }
+
+        $lookup = array_fill_keys($fieldIds, true);
+        $weights = [];
+
+        foreach ($rows as $detail) {
+            $fieldId = (int) $detail->field_id;
+            if ($fieldId < 1 || ! isset($lookup[$fieldId])) {
+                continue;
+            }
+            $weights[$fieldId] = (float) ($detail->weight ?? 1);
+        }
+
+        return $weights;
+    }
+
+    public function searchPickerForms(int $index, string $query): void
+    {
+        $query = trim($query);
+        if (mb_strlen($query) < 2) {
+            unset($this->pickerResults[$index]);
+
+            return;
+        }
+
+        $needle = addcslashes($query, '%_\\');
+
+        $this->pickerResults[$index] = WpGfForm::query()
+            ->where('is_active', 1)
+            ->where('is_trash', 0)
+            ->where('title', 'like', '%'.$needle.'%')
+            ->orderBy('title')
+            ->limit(25)
+            ->get(['id', 'title'])
+            ->map(static fn ($f) => ['id' => (int) $f->id, 'title' => (string) $f->title])
+            ->all();
+    }
+
+    public function toggleBlockFields(int $index): void
+    {
+        $formId = isset($this->blocks[$index]['form_id']) ? (int) $this->blocks[$index]['form_id'] : 0;
+        if ($formId < 1) {
+            return;
+        }
+
+        if (in_array($formId, $this->expandedFormIds, true)) {
+            $this->expandedFormIds = array_values(array_filter(
+                $this->expandedFormIds,
+                static fn (int $id) => $id !== $formId
+            ));
+
+            return;
+        }
+
+        $this->expandedFormIds[] = $formId;
+    }
+
+    public function blockFieldsExpanded(int $index): bool
+    {
+        $formId = isset($this->blocks[$index]['form_id']) ? (int) $this->blocks[$index]['form_id'] : 0;
+
+        return $formId > 0 && in_array($formId, $this->expandedFormIds, true);
+    }
+
+    /** @return list<array{id: int, label: string, type: string}> */
+    public function gfFieldsForBlock(int $index): array
+    {
+        if (! isset($this->blocks[$index])) {
+            return [];
+        }
+
+        $formId = isset($this->blocks[$index]['form_id']) ? (int) $this->blocks[$index]['form_id'] : 0;
+        if ($formId < 1) {
+            return [];
+        }
+
+        $all = self::gfFieldsForFormId($formId);
+        if ($this->blockFieldsExpanded($index)) {
+            return $all;
+        }
+
+        $connected = array_fill_keys($this->blocks[$index]['field_ids'] ?? [], true);
+        if ($connected === []) {
+            return [];
+        }
+
+        return array_values(array_filter(
+            $all,
+            static fn (array $f) => isset($connected[(int) $f['id']])
+        ));
     }
 
     /** @return array{form_id: int|null, search: string, field_ids: list<int>, field_weights: array<int, float>} */
@@ -140,6 +237,11 @@ class CourseScoringGroup extends Component
         $this->blocks[$index]['search'] = $form !== null ? (string) $form->title : ('Form #'.$formId);
         $this->blocks[$index]['field_ids'] = [];
         $this->blocks[$index]['field_weights'] = [];
+        unset($this->pickerResults[$index]);
+        $this->expandedFormIds = array_values(array_filter(
+            $this->expandedFormIds,
+            static fn (int $id) => $id !== $formId
+        ));
     }
 
     public function clearForm(int $index): void
@@ -148,10 +250,20 @@ class CourseScoringGroup extends Component
             return;
         }
 
+        $formId = (int) ($this->blocks[$index]['form_id'] ?? 0);
+
         $this->blocks[$index]['form_id'] = null;
         $this->blocks[$index]['search'] = '';
         $this->blocks[$index]['field_ids'] = [];
         $this->blocks[$index]['field_weights'] = [];
+        unset($this->pickerResults[$index]);
+
+        if ($formId > 0) {
+            $this->expandedFormIds = array_values(array_filter(
+                $this->expandedFormIds,
+                static fn (int $id) => $id !== $formId
+            ));
+        }
     }
 
     public function setFieldChecked(int $index, int $fieldId, $checked): void
@@ -179,9 +291,12 @@ class CourseScoringGroup extends Component
             }
         } else {
             $selected = array_values(array_filter($selected, static fn ($id) => (int) $id !== $fieldId));
+            unset($weights[$fieldId]);
         }
 
         $selected = array_values(array_unique(array_map('intval', $selected)));
+
+        $this->skipRender();
     }
 
     public function setFieldWeight(int $index, int $fieldId, $weight): void
@@ -201,7 +316,6 @@ class CourseScoringGroup extends Component
 
         if ($weight === '' || $weight === null || ! is_numeric($weight)) {
             $this->setFieldChecked($index, $fieldId, false);
-            unset($this->blocks[$index]['field_weights'][$fieldId]);
 
             return;
         }
@@ -209,7 +323,6 @@ class CourseScoringGroup extends Component
         $value = round((float) $weight, 2);
         if ($value <= 0) {
             $this->setFieldChecked($index, $fieldId, false);
-            unset($this->blocks[$index]['field_weights'][$fieldId]);
 
             return;
         }
@@ -223,6 +336,8 @@ class CourseScoringGroup extends Component
         }
 
         $this->blocks[$index]['field_weights'][$fieldId] = $value;
+
+        $this->skipRender();
     }
 
     public function fieldWeight(int $index, int $fieldId): ?float
@@ -260,6 +375,10 @@ class CourseScoringGroup extends Component
     {
         if ($formId === null || $formId < 1) {
             return [];
+        }
+
+        if (isset(self::$gfFieldsCache[$formId])) {
+            return self::$gfFieldsCache[$formId];
         }
 
         /** @var WpGfFormMeta|null $meta */
@@ -304,6 +423,8 @@ class CourseScoringGroup extends Component
                 'type' => $type,
             ];
         }
+
+        self::$gfFieldsCache[$formId] = $out;
 
         return $out;
     }
@@ -716,46 +837,15 @@ class CourseScoringGroup extends Component
 
             $rows = $byForm->get($formId, collect());
             $connected = $rows->filter(static fn (CourseScoringGroupDetail $d): bool => $d->isConnected());
+            $fieldIds = $connected->pluck('field_id')->map(fn ($v) => (int) $v)->values()->all();
 
-            $fieldWeights = [];
-            foreach ($rows as $detail) {
-                $fieldId = (int) $detail->field_id;
-                if ($fieldId < 1) {
-                    continue;
-                }
-                $fieldWeights[$fieldId] = (float) ($detail->weight ?? 1);
-            }
-
-            $this->blocks[$index]['field_ids'] = $connected->pluck('field_id')->map(fn ($v) => (int) $v)->values()->all();
-            $this->blocks[$index]['field_weights'] = $fieldWeights;
+            $this->blocks[$index]['field_ids'] = $fieldIds;
+            $this->blocks[$index]['field_weights'] = $this->weightsForFieldIds($rows, $fieldIds);
         }
-    }
-
-    /** @return list<array{id: int, title: string}> */
-    private function loadFormCatalog(): array
-    {
-        return WpGfForm::query()
-            ->where('is_active', 1)
-            ->where('is_trash', 0)
-            ->orderBy('title')
-            ->get(['id', 'title'])
-            ->map(static function ($f) {
-                return ['id' => (int) $f->id, 'title' => (string) $f->title];
-            })
-            ->values()
-            ->all();
     }
 
     public function render()
     {
-        if ($this->dataId !== null) {
-            if ($this->formCatalogMemo === null) {
-                $this->formCatalogMemo = $this->loadFormCatalog();
-            }
-        }
-
-        return view('livewire.form.course-scoring-group', [
-            'formCatalog' => $this->formCatalogMemo ?? [],
-        ]);
+        return view('livewire.form.course-scoring-group');
     }
 }
