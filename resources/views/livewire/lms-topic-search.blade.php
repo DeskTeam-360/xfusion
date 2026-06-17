@@ -1,5 +1,5 @@
 <div class="w-full">
-    <form wire:submit.prevent="search" class="flex w-full max-w-3xl flex-col gap-4 sm:flex-row sm:items-end mt-10 ml-10">
+    <form wire:submit.prevent="search" class="flex w-full max-w-3xl flex-col gap-4 sm:flex-row sm:items-end mt-10 ml-10" style="margin: 20px;">
         
         <div class="flex-1">
             <input
