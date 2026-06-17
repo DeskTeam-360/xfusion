@@ -1,6 +1,6 @@
 <div class="w-full">
-    <form wire:submit.prevent="search" class="flex w-full max-w-3xl flex-col gap-4 sm:flex-row sm:items-end">
-        <br> <br>
+    <form wire:submit.prevent="search" class="flex w-full max-w-3xl flex-col gap-4 sm:flex-row sm:items-end mt-10">
+        
         <div class="flex-1">
             <input
                 id="lms-topic-q"
