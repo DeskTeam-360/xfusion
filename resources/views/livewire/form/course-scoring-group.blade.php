@@ -167,17 +167,22 @@
                                         &nbsp;(form ID {{ $block['form_id'] }})
                                     </p>
                                     <p class="mb-2 text-sm font-semibold text-dark dark:text-white">Input fields</p>
+                                    <p class="mb-3 text-xs text-dark/60 dark:text-darklink">Checked fields are connected for scoring (weight &gt; 0). Unchecked fields are stored with weight 0.</p>
                                     @if(count($gfFields) === 0)
                                         <p class="text-sm text-dark/75 dark:text-darklink">No input fields found in this form meta (check <code class="rounded bg-gray-100 px-1 py-0.5 text-xs text-dark dark:bg-darkborder dark:text-light">gf_form_meta.display_meta</code>).</p>
                                     @else
                                         <div class="max-h-60 space-y-2 overflow-y-auto rounded border border-border bg-white p-3 [color-scheme:light] dark:[color-scheme:dark] dark:bg-darkgray/30 dark:border-darkborder">
                                             @foreach($gfFields as $f)
-                                                @php($_id = (int)$f['id'])
+                                                @php
+                                                    $_id = (int) $f['id'];
+                                                    $isChecked = $this->fieldIsChecked($index, $_id);
+                                                    $fieldWeight = $block['field_weights'][$_id] ?? null;
+                                                @endphp
                                                 <label wire:key="fld-{{ $index }}-{{ $_id }}" class="flex cursor-pointer gap-3 rounded px-2 py-1 hover:bg-gray-100 dark:hover:bg-darkborder/40">
                                                     <input type="checkbox"
                                                            wire:key="fld-cb-{{ $index }}-{{ $_id }}"
                                                            wire:change="setFieldChecked({{ $index }}, {{ $_id }}, $event.target.checked)"
-                                                           @checked($this->fieldIsChecked($index, $_id))
+                                                           @checked($isChecked)
                                                            class="mt-1 size-[1.125rem] shrink-0 cursor-pointer appearance-auto rounded border-2 border-gray-600 bg-white accent-blue-600 shadow-sm outline-none ring-offset-2 focus-visible:ring-2 focus-visible:ring-blue-600 dark:border-gray-300 dark:bg-darkgray dark:accent-teal-400 dark:shadow-inner dark:focus-visible:ring-teal-400"/>
                                                     <span class="text-sm text-dark dark:text-white">
                                                         <strong class="font-medium">{{ $f['label'] }}</strong>
@@ -185,6 +190,9 @@
                                                             <span class="text-xs text-dark/60 dark:text-darklink">({{ $f['type'] }})</span>
                                                         @endif
                                                         <span class="text-xs text-dark/60 dark:text-darklink"> · field #{{ $_id }}</span>
+                                                        @if($isChecked && $fieldWeight !== null && (float) $fieldWeight > 0)
+                                                            <span class="text-xs font-medium text-primary dark:text-teal-400"> · weight {{ rtrim(rtrim(number_format((float) $fieldWeight, 2, '.', ''), '0'), '.') }}</span>
+                                                        @endif
                                                     </span>
                                                 </label>
                                             @endforeach

@@ -2,6 +2,7 @@
 
 namespace App\Repository\View;
 
+use App\Models\CourseScoringGroupDetail;
 use App\Repository\View;
 use Illuminate\Database\Eloquent\Builder;
 
@@ -12,8 +13,19 @@ class CourseScoringGroupTable extends \App\Models\CourseScoringGroup implements 
     public static function tableSearch($params = null): Builder
     {
         $query = $params['query'] ?? '';
+        $groupsTable = (new static)->getTable();
+        $detailsTable = (new CourseScoringGroupDetail)->getTable();
 
-        $q = static::query()->with('details');
+        $q = static::query()
+            ->select("{$groupsTable}.*")
+            ->selectSub(
+                static::detailsCountSubquery($detailsTable, $groupsTable, 'forms'),
+                'forms_count'
+            )
+            ->selectSub(
+                static::detailsCountSubquery($detailsTable, $groupsTable, 'questions'),
+                'questions_count'
+            );
 
         return $query === '' || $query === null
             ? $q
@@ -21,6 +33,38 @@ class CourseScoringGroupTable extends \App\Models\CourseScoringGroup implements 
                 $w->where('title', 'like', "%{$query}%")
                     ->orWhere('description', 'like', "%{$query}%");
             });
+    }
+
+    /**
+     * Per-group counts from wp_course_scoring_group_details (scoped by group id).
+     */
+    private static function detailsCountSubquery(
+        string $detailsTable,
+        string $groupsTable,
+        string $type
+    ): Builder {
+        $sub = CourseScoringGroupDetail::query()
+            ->from("{$detailsTable} as csgd")
+            ->whereColumn('csgd.course_scoring_group_id', "{$groupsTable}.id");
+
+        if ($type === 'forms') {
+            return $sub
+                ->whereNotNull('csgd.form_id')
+                ->where('csgd.form_id', '>', 0)
+                ->where(function ($q) {
+                    $q->whereNull('csgd.weight')->orWhere('csgd.weight', '>', 0);
+                })
+                ->where('csgd.field_id', '>', 0)
+                ->selectRaw('COUNT(DISTINCT csgd.form_id)');
+        }
+
+        return $sub
+            ->whereNotNull('csgd.field_id')
+            ->where('csgd.field_id', '>', 0)
+            ->where(function ($q) {
+                $q->whereNull('csgd.weight')->orWhere('csgd.weight', '>', 0);
+            })
+            ->selectRaw('COUNT(*)');
     }
 
     public static function tableView(): array
@@ -47,9 +91,8 @@ class CourseScoringGroupTable extends \App\Models\CourseScoringGroup implements 
         $desc = $data->description ?? '';
         $descShort = mb_strlen((string) $desc) > 80 ? mb_substr((string) $desc, 0, 80) . '…' : $desc;
 
-        $details = $data->relationLoaded('details') ? $data->details : $data->details()->get();
-        $formsCount = $details->pluck('form_id')->filter(fn ($id) => $id !== null && (int) $id > 0)->unique()->count();
-        $questionsCount = $details->filter(fn ($row) => $row->field_id !== null && (int) $row->field_id > 0)->count();
+        $formsCount = static::resolveFormsCount($data);
+        $questionsCount = static::resolveQuestionsCount($data);
 
         $formsLabel = $formsCount === 1 ? 'form' : 'forms';
         $questionsLabel = $questionsCount === 1 ? 'question' : 'questions';
@@ -76,5 +119,30 @@ class CourseScoringGroupTable extends \App\Models\CourseScoringGroup implements 
 <button type='button' wire:click='deleteItem({$data->id})' class='btn btn-error'>Delete</button>
 </div>"],
         ];
+    }
+
+    private static function resolveFormsCount(object $data): int
+    {
+        if (isset($data->forms_count)) {
+            return (int) $data->forms_count;
+        }
+
+        return (int) CourseScoringGroupDetail::query()
+            ->where('course_scoring_group_id', (int) $data->getKey())
+            ->connected()
+            ->distinct()
+            ->count('form_id');
+    }
+
+    private static function resolveQuestionsCount(object $data): int
+    {
+        if (isset($data->questions_count)) {
+            return (int) $data->questions_count;
+        }
+
+        return (int) CourseScoringGroupDetail::query()
+            ->where('course_scoring_group_id', (int) $data->getKey())
+            ->connected()
+            ->count();
     }
 }

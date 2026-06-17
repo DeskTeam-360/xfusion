@@ -15,7 +15,7 @@ class CourseScoringGroup extends Model
 
     public function details()
     {
-        return $this->hasMany(CourseScoringGroupDetail::class, 'course_scoring_group_id');
+        return $this->hasMany(CourseScoringGroupDetail::class, 'course_scoring_group_id', 'id');
     }
 
     protected static function booted(): void
