@@ -1,11 +1,12 @@
 <x-admin-layout>
-    <div class="container full-container py-5">
-        <div class="mb-6 px-5 flex flex-wrap gap-3">
-            <a href="{{ route('course-scoring-group.index') }}" class="btn-sm btn">Back to list</a>
-        </div>
-        <div class="px-5">
-            <h1 class="mb-6 text-2xl font-semibold text-dark dark:text-white">Edit course scoring group</h1>
-            <livewire:form.course-scoring-group :data-id="$id"/>
-        </div>
-    </div>
+    <x-admin.page title="Edit course scoring group" padded>
+        <x-slot:actions>
+            <a href="{{ route('course-scoring-group.index') }}" class="btn-outline-primary inline-flex items-center gap-1.5">
+                <i class="ti ti-arrow-left text-base" aria-hidden="true"></i>
+                Back to list
+            </a>
+        </x-slot:actions>
+
+        <livewire:form.course-scoring-group :data-id="$id"/>
+    </x-admin.page>
 </x-admin-layout>
