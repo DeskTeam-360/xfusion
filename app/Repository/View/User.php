@@ -239,7 +239,7 @@ class User extends \App\Models\User implements View
     /**
      * Full action toolbar (same as legacy admin Users table): Access, Edit (custom URL), Activity, Keap mail, Reset password, Delete, passwords.
      */
-    private static function actionToolbarHtml($data, string $editHref): string
+    public static function actionToolbarHtml($data, string $editHref): string
     {
         $routeAccess = route('user.tag-list', $data->ID);
 

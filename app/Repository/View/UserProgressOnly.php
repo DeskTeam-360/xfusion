@@ -2,176 +2,134 @@
 
 namespace App\Repository\View;
 
+use App\Models\Company;
 use App\Repository\View;
-use Corcel\Model\Attachment;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Support\Facades\Auth;
-use KeapGeek\Keap\Facades\Keap;
 
 class UserProgressOnly extends \App\Models\User implements View
 {
     public static function tableSearch($params = null): Builder
     {
-        $query = $params['query'];
-        $params = $params['param1'];
-        // if ($params == null) {
-            return empty($query) ? static::query()->whereHas('meta', function ($q2) use ($query) {
-                $q2->where('meta_key', '=', '_sfwd-course_progress')
-                ->where('meta_value', '!=', null);
-            }) : static::query()
-            ->where('user_nicename', 'like', "%$query%")
-            ->whereHas('meta', function ($q2) use ($query) {
-                $q2->where('meta_key', '=', '_sfwd-course_progress')
-                ->where('meta_value', '!=', null);
-            });
-//         } else {
-//             return empty($query) ? static::
-//             query()->whereHas('companyEmployee', function ($q) use ($params) {
-//                 $q->where('company_id', '=', $params);
-//             })->where('user_nicename', 'like', "%$query%") :
+        $query = $params['query'] ?? '';
 
-//                 static::query()->whereHas('companyEmployee', function ($q) use ($params) {
-//                 $q->where('company_id', '=', $params);
-//             })->where('user_nicename', 'like', "%$query%")
-// ;
-//         }
+        $scoped = static::query()->whereHas('meta', function ($q2) {
+            $q2->where('meta_key', '=', '_sfwd-course_progress')
+                ->whereNotNull('meta_value')
+                ->where('meta_value', '!=', '');
+        });
 
+        if ($query === '' || $query === null) {
+            return $scoped;
+        }
+
+        return $scoped->where(function ($qb) use ($query) {
+            $qb->where('user_nicename', 'like', "%{$query}%")
+                ->orWhere('user_email', 'like', "%{$query}%")
+                ->orWhereHas('meta', function ($q2) use ($query) {
+                    $q2->where('meta_value', 'like', "%{$query}%");
+                });
+        });
     }
 
     public static function tableView(): array
     {
-        return ['searchable' => true,];
+        return ['searchable' => true];
     }
 
     public static function tableField(): array
     {
-        $roles = Auth::user()->meta->where('meta_key', '=', config('app.wp_prefix', 'wp_') . 'capabilities');
-        $roleUser = '';
-
-        foreach ($roles as $r) {
-            $roleUser = array_key_first(unserialize($r['meta_value']));
-        }
-        if ($roleUser == "administrator") {
+        if (self::authWpCapabilityFirst() === 'administrator') {
             return [
-//                ['label' => '#', 'sort' => 'id', 'width' => '7%'],
-                ['label' => 'Profilea', 'sort' => 'user_nicename'],
-//                ['label' => 'Keap'],
+                ['label' => 'Profile', 'sort' => 'user_nicename'],
                 ['label' => 'Status'],
-//                ['label' => 'Access',],
-                ['label' => 'Action'],
-                ];
-        } else {
-            return [['label' => '#', 'sort' => 'id', 'width' => '7%'], ['label' => 'Name', 'sort' => 'user_nicename'], ['label' => 'Company'], ['label' => 'Access'], ['label' => 'Role'], ['label' => 'Action'],];
+                ['label' => 'Actions'],
+            ];
         }
 
-    }
-
-    public function keapMailSend($contactId)
-    {
-        Keap::contact()->tag($contactId, [1942]);
+        return [
+            ['label' => '#', 'sort' => 'ID', 'width' => '7%'],
+            ['label' => 'Name', 'sort' => 'user_nicename'],
+            ['label' => 'Company'],
+            ['label' => 'Access'],
+            ['label' => 'Role'],
+            ['label' => 'Actions'],
+        ];
     }
 
     public static function tableData($data = null): array
     {
-        $roles = Auth::user()->meta->where('meta_key', '=', config('app.wp_prefix', 'wp_') . 'capabilities');
-        $roleUser = '';
-
-        foreach ($roles as $r) {
-            $roleUser = array_key_first(unserialize($r['meta_value']));
+        if (self::authWpCapabilityFirst() === 'administrator') {
+            return self::buildAdministratorRow($data);
         }
 
-        $fn = $data->meta->where('meta_key', '=', 'first_name')->first()->meta_value??'';
-        $ln = $data->meta->where('meta_key', '=', 'last_name')->first()->meta_value??'';
+        return User::tableData($data);
+    }
 
-        $fullName = "$fn $ln";
-        $role = $data->meta->where('meta_key', '=', 'user_role')->first()->meta_value??'';
-
-        $routeAccess = route('user.tag-list', $data->ID);
-
-        $keaps = $data->meta->where('meta_key', '=', 'keap_contact_id')->first()->meta_value??'';
-        $keapStatus = $data->meta->where('meta_key', '=', 'keap_status')->first()->meta_value??'';
-
-        $keap = "<div class='text-nowrap text-xs text-danger' style='color: red'>Not connect with keap</div>";
-
-        if ($keaps and $keapStatus == true) {
-            $keap = "<div class='text-nowrap text-xs text-success' style='color: green;'>Connect with keap</div>";
-        }
-
-
-        $companies = $data->meta->where('meta_key', '=', 'company');
-        $company = 'Non Company';
-
-        $activity = $data->meta->where('meta_key', '=', '_sfwd-course_progress')->first();
-
-        $password = $data->meta->where('meta_key', '=', 'plain_password')->first();
-        $passwordButton = '';
-        $exportPasswordButton = '';
-        if ($password != null) {
-            $password = $password->meta_value;
-            $passwordButton = "<span><a href='#' onclick='showPassword(\"$password\")' class='btn btn-info text-nowrap'>Show Password</a></span>";
-            $exportPasswordLink = route('export-password-to-keap');
-            $exportPasswordButton = "<span><a href='$exportPasswordLink' class='btn btn-warning text-nowrap'>Export Password to Keap</a></span>";
-        }
-
-        $button4 = '';
-        if ($activity != null) {
-            $link4 = route('user.course', [$data->ID]);
-            $button4 = "<span><a href='$link4' class='btn btn-success text-nowrap'>Activity Check</a></span>";
-        }
-
-        $keapMailButton = '';
-        if ($keaps && $keapStatus == true) {
-            $keapMailLink = route('user.keap-mail-send', $keaps);
-            $keapMailButton = "<span><a href='$keapMailLink' class='btn btn-warning text-nowrap'>Send Keap Mail</a></span>";
-        }
-
-        $link2 = route('user.show', $data->ID);
-        $linkDetail = route('user.detail', $data->ID);
-
-        $companyId = null;
-        foreach ($companies as $r) {
-            $c = \App\Models\Company::find($r['meta_value']);
-            if ($c != null) {
-                $companyId = $c->id;
-                $company = $c->title;
-            } else {
-                $company = 'Company has been delete';
+    private static function authWpCapabilityFirst(): string
+    {
+        $rows = Auth::user()->meta->where('meta_key', '=', config('app.wp_prefix', 'wp_') . 'capabilities');
+        foreach ($rows as $r) {
+            $mv = $r['meta_value'] ?? '';
+            $un = @unserialize(is_string($mv) ? $mv : '');
+            if (is_array($un) && $un !== []) {
+                return (string) array_key_first($un);
             }
         }
 
-        if ($roleUser == "administrator") {
-            $link = route('user.edit', $data->ID);
+        return '';
+    }
 
-        } else {
-            $link = route('company.edit-employee', [$companyId, $data->ID]);
+    private static function metaScalar(object $metaCollection, string $key): string
+    {
+        $row = $metaCollection->where('meta_key', '=', $key)->first();
+        if ($row === null) {
+            return '';
         }
-        
+        $v = $row->meta_value ?? '';
+        if (is_array($v)) {
+            $v = $v[0] ?? '';
+        }
+
+        return trim((string) $v);
+    }
+
+    private static function buildAdministratorRow($data): array
+    {
+        $fn = self::metaScalar($data->meta, 'first_name');
+        $ln = self::metaScalar($data->meta, 'last_name');
+        $fullName = trim("$fn $ln");
+        $role = self::metaScalar($data->meta, 'user_role');
+
+        $keaps = self::metaScalar($data->meta, 'keap_contact_id');
+        $keapStatusRaw = self::metaScalar($data->meta, 'keap_status');
+        $keapStatus = filter_var($keapStatusRaw, FILTER_VALIDATE_BOOLEAN) || $keapStatusRaw === '1';
+
+        $keap = "<div class='text-nowrap text-xs text-danger' style='color: red'>Not connect with keap</div>";
+        if ($keaps !== '' && $keapStatus) {
+            $keap = "<div class='text-nowrap text-xs text-success' style='color: green;'>Connect with keap</div>";
+        }
+
+        $company = 'Non Company';
+        foreach ($data->meta->where('meta_key', '=', 'company') as $r) {
+            $c = Company::find($r['meta_value']);
+            $company = $c !== null ? $c->title : 'Company has been delete';
+        }
+
+        $toolbar = User::actionToolbarHtml($data, route('user.edit', $data->ID));
 
         return [
-            ['type' => 'raw_html', 'data' => "<div>
-                <span class='text-xl'>$fullName</span> <br>
-                <font color='#ffd700'>$data->user_login</font> <br>
-                $data->user_email
-                </div>"],
-            ['type' => 'raw_html', 'data' => "<div>
-                <span class='text-xl'>$company</span> <br>
-                <span class='text-xs'>$role</span> <br>
-                $keap
-
-                </div>"],
-            ['type' => 'raw_html', 'text-align' => 'center', 'data' => "
-                <div class='flex gap-1'>
-                    <span><a href='$routeAccess' class='btn'>Access</a></span>
-                    <span><a href='$linkDetail' class='btn btn-outline'>Detail</a></span>
-                    <span><a href='$link' class='btn btn-primary'>Edit</a></span>
-                    $button4
-                    $keapMailButton
-                    <span><a href='$link2' class='btn btn-secondary text-nowrap'>Reset Password</a></span>
-                    <span><a href='#' wire:click='deleteItem($data->ID)' class='btn btn-error text-nowrap'>Delete</a></span>
-                    $passwordButton
-                    
-                </div>"
-            ],
+            ['type' => 'raw_html', 'data' => '<div>
+                <span class="text-xl">' . e($fullName) . '</span> <br>
+                <font color=\'#ffd700\'>' . e($data->user_login) . '</font> <br>
+                ' . e($data->user_email) . '
+                </div>'],
+            ['type' => 'raw_html', 'data' => '<div>
+                <span class="text-xl">' . e($company) . '</span> <br>
+                <span class="text-xs">' . e($role ?: '—') . '</span> <br>
+                ' . $keap . '
+                </div>'],
+            ['type' => 'raw_html', 'text-align' => 'center', 'data' => $toolbar],
         ];
     }
 }

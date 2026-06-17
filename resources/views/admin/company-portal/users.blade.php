@@ -1,14 +1,14 @@
 <x-admin-layout>
-    <div class="container full-container py-5">
-        <div class="w-full">
-            <div class="mb-4 flex flex-wrap items-center justify-between gap-4">
-                <div>
-                    <h1 class="text-2xl font-bold text-gray-900 dark:text-light">Company users</h1>
-                    <p class="text-sm text-gray-600 dark:text-gray-400">Search and manage users linked to your company only.</p>
-                </div>
-                <a href="{{ route('company.portal.users.create') }}" class="btn btn-primary shrink-0">Add user</a>
-            </div>
-            <livewire:table.master wire:key="company-portal-users-{{ $companyId }}" name="User" :param1="$companyId"/>
-        </div>
-    </div>
+    <x-admin.page
+        title="Company users"
+        description="Search and manage users linked to your company only."
+    >
+        <x-slot:actions>
+            <a href="{{ route('company.portal.users.create') }}" class="btn btn-primary shrink-0">
+                <i class="ti ti-user-plus me-1"></i> Add user
+            </a>
+        </x-slot:actions>
+
+        <livewire:table.master wire:key="company-portal-users-{{ $companyId }}" name="User" :param1="$companyId"/>
+    </x-admin.page>
 </x-admin-layout>
