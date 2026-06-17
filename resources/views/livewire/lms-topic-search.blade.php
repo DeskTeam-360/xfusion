@@ -1,5 +1,5 @@
-<div class="w-full max-w-4xl">
-    <form wire:submit.prevent="search" class="flex flex-col gap-4 sm:flex-row sm:items-end">
+<div class="w-full">
+    <form wire:submit.prevent="search" class="flex w-full max-w-3xl flex-col gap-4 sm:flex-row sm:items-end">
         <div class="flex-1">
             <input
                 id="lms-topic-q"
@@ -39,16 +39,19 @@
     @endif
 
     @if(count($results) > 0)
-        <div class="mt-6 space-y-4">
+        <p class="mt-6 text-sm text-muted dark:text-darklink">
+            {{ count($results) }} topic{{ count($results) === 1 ? '' : 's' }} found
+        </p>
+        <div class="mt-4 w-full space-y-4">
             @foreach($results as $row)
-                <div class="rounded-lg border border-gray-800/20 p-4 shadow-sm">
+                <div class="w-full rounded-lg border border-border bg-white p-4 shadow-sm dark:border-darkborder dark:bg-darkgray/20">
                     <a href="{{ $row['url'] }}" target="_blank" rel="noopener noreferrer" class="text-lg font-semibold text-primary hover:underline">
                         {{ $row['title'] }}
                     </a>
-                    <p class="mt-1 text-xs text-gray-400 break-all">{{ $row['url'] }}</p>
+                    <p class="mt-1 break-all text-xs text-muted dark:text-darklink">{{ $row['url'] }}</p>
                     @if(!empty($row['snippets']))
                         @foreach($row['snippets'] as $snippet)
-                            <p class="mt-2 text-sm text-gray-600">{!! $snippet !!}</p>
+                            <p class="mt-2 text-sm text-dark/80 dark:text-darklink">{!! $snippet !!}</p>
                         @endforeach
                     @endif
                 </div>
