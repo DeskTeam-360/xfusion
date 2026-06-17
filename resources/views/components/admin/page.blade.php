@@ -1,4 +1,4 @@
-@props(['title', 'description' => null])
+@props(['title', 'description' => null, 'padded' => false])
 
 <div class="container full-container py-5 px-5">
     <div class="admin-page-card">
@@ -21,7 +21,7 @@
                 </div>
             @endisset
 
-            <div class="admin-page-content">
+            <div @class(['admin-page-content', 'p-5 pt-4' => $padded])>
                 {{ $slot }}
             </div>
         </div>
