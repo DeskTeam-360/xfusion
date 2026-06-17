@@ -37,12 +37,6 @@ class Master extends Component
         }
 
         $this->sortField = $field;
-//        $this->dispatch('swal:alert', data:[
-//            'type' => 'success',
-//            'title' => 'Data berhasil masuk',
-//            'timeout' => 3000,
-//            'icon' => 'success'
-//        ]);
     }
 
 
@@ -51,12 +45,12 @@ class Master extends Component
     {
         $this->data = $this->model::find($id);
         if (!$this->data) {
-            $this->dispatch("deleteResult", ["status" => false, "message" => "Failed remove " . $this->name]);
+            $this->dispatch("deleteResult", ["status" => false, "message" => "Failed to remove " . $this->name]);
             return;
         }
         $this->dispatch('swal:confirm', data:[
             'icon' => 'warning',
-            'title' => 'Are you sure delete this data',
+            'title' => 'Are you sure you want to delete this item?',
             'confirmText' => 'Delete',
             'method' => 'delete',
         ]);
@@ -66,12 +60,12 @@ class Master extends Component
     {
         $this->data = WpGfEntry::find($id);
         if (!$this->data) {
-            $this->dispatch("deleteResult", ["status" => false, "message" => "Failed remove data"]);
+            $this->dispatch("deleteResult", ["status" => false, "message" => "Failed to remove data"]);
             return;
         }
         $this->dispatch('swal:confirm', data:[
             'icon' => 'warning',
-            'title' => 'Are you sure delete this data',
+            'title' => 'Are you sure you want to delete this item?',
             'confirmText' => 'Delete',
             'method' => 'trash',
         ]);
@@ -105,7 +99,7 @@ class Master extends Component
         }catch (\Exception $e){
             $this->dispatch('swal:alert', data:[
                 'icon' => 'error',
-                'title' => 'Failed deleted data',
+                'title' => 'Failed to delete data',
             ]);
         }
 

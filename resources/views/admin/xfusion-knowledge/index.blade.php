@@ -1,11 +1,11 @@
 <x-admin-layout>
     <x-admin.page
         title="LLM Knowledge"
-        description="Kelola pengetahuan perusahaan (post_type: xfusion_knowledge di WordPress). Perubahan disinkronkan ke XFusion-llm untuk evaluasi ujian AI."
+        description="Manage company knowledge (post_type: xfusion_knowledge in WordPress). Changes sync to XFusion-llm for AI exam evaluation."
     >
         <x-slot:actions>
             <a href="{{ route('xfusion-knowledge.create') }}" class="btn btn-primary text-nowrap">
-                <i class="ti ti-plus me-1"></i> Tambah knowledge
+                <i class="ti ti-plus me-1"></i> Add knowledge
             </a>
         </x-slot:actions>
 

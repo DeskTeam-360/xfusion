@@ -139,10 +139,10 @@ class User extends \App\Models\User implements View
         $keapStatusRaw = self::metaScalar($data->meta, 'keap_status');
         $keapStatus = filter_var($keapStatusRaw, FILTER_VALIDATE_BOOLEAN) || $keapStatusRaw === '1';
 
-        $keap = "<div class='text-nowrap text-xs text-danger' style='color: red'>Not connect with keap</div>";
+        $keap = "<div class='text-nowrap text-xs text-danger' style='color: red'>Not connected to Keap</div>";
 
         if ($keaps !== '' && $keapStatus === true) {
-            $keap = "<div class='text-nowrap text-xs text-success' style='color: green;'>Connect with keap</div>";
+            $keap = "<div class='text-nowrap text-xs text-success' style='color: green;'>Connected to Keap</div>";
         }
 
         $companies = $data->meta->where('meta_key', '=', 'company');
@@ -281,8 +281,8 @@ class User extends \App\Models\User implements View
             $editAttr = " href='#' class='btn btn-primary pointer-events-none opacity-50'";
         }
 
-        return "
-                <div class='flex flex-wrap gap-2 justify-start'>
+                return "
+                <div class='flex flex-wrap items-center gap-2 justify-start'>
                     <span><a href='" . htmlspecialchars($routeAccess, ENT_QUOTES, 'UTF-8') . "' class='btn btn-light-secondary text-nowrap'>Access</a></span>
                     <span><a href='" . htmlspecialchars($linkDetail, ENT_QUOTES, 'UTF-8') . "' class='btn btn-light-info text-nowrap'>Detail</a></span>
                     <span><a "

@@ -2,7 +2,7 @@
 function get_filtered_course_progresss($user_id, $lesson_id)
 {
     if (!is_user_logged_in()) {
-        return 'Silakan login untuk melihat progress.';
+        return 'Please log in to view progress.';
     }
 
 // Dapatkan semua topik dalam kursus

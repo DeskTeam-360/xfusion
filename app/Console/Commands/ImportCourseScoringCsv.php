@@ -356,7 +356,7 @@ class ImportCourseScoringCsv extends Command
         }
 
         $this->table(['id', 'type', 'label', 'adminLabel'], $rows);
-        $this->line('Scoring UI (admin) only lists: radio, number — count: '.count(CourseScoringGroup::gfFieldsForFormId($formId)));
+        $this->line('Scoring UI (admin) lists all GF input fields — count: '.count(CourseScoringGroup::gfFieldsForFormId($formId)));
 
         return self::SUCCESS;
     }

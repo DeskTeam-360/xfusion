@@ -105,9 +105,9 @@ class UserProgressOnly extends \App\Models\User implements View
         $keapStatusRaw = self::metaScalar($data->meta, 'keap_status');
         $keapStatus = filter_var($keapStatusRaw, FILTER_VALIDATE_BOOLEAN) || $keapStatusRaw === '1';
 
-        $keap = "<div class='text-nowrap text-xs text-danger' style='color: red'>Not connect with keap</div>";
+        $keap = "<div class='text-nowrap text-xs text-danger' style='color: red'>Not connected to Keap</div>";
         if ($keaps !== '' && $keapStatus) {
-            $keap = "<div class='text-nowrap text-xs text-success' style='color: green;'>Connect with keap</div>";
+            $keap = "<div class='text-nowrap text-xs text-success' style='color: green;'>Connected to Keap</div>";
         }
 
         $company = 'Non Company';

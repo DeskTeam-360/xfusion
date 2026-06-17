@@ -61,7 +61,7 @@ class Company extends \App\Models\Company implements View
             ['type' => 'string','data'=>$data->id],
             ['type' => 'raw_html', 'data' => $companyInfo],
             ['type' => 'raw_html','text-align'=>'center', 'data' => "
-        <div class='flex flex-wrap gap-2 justify-center'>
+        <div class='flex flex-wrap items-center gap-2 justify-center'>
         <span><a href='$link' class='btn btn-primary text-nowrap'>Edit</a></span>
         <span><a href='#' wire:click='deleteItem($data->id)' class='btn btn-error text-nowrap'>Delete</a></span>
         <span><a href='$link2' class='btn btn-light-info text-nowrap'>Show Employee</a></span>

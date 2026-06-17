@@ -11,10 +11,7 @@ use Livewire\Component;
 
 class CourseScoringGroup extends Component
 {
-    /** Gravity Forms field types selectable for scoring (matches {@see gfFieldsForFormId}). */
-    private const GF_SCORING_FIELD_TYPES = ['radio', 'number'];
-
-    /** Non-input GF types skipped when resolving CSV question → field_id. */
+    /** Non-input GF types skipped when listing or resolving CSV question → field_id. */
     private const GF_INPUT_SKIP_TYPES = [
         'html', 'section', 'page', 'submit', 'captcha', 'honeypot', 'password',
     ];
@@ -179,13 +176,10 @@ class CourseScoringGroup extends Component
         return in_array($fieldId, $this->blocks[$index]['field_ids'], true);
     }
 
-    /** @return list<array{id: int, label: string, type: string}> Gravity Forms fields with type radio or number */
+    /** @return list<array{id: int, label: string, type: string}> All Gravity Forms input fields (any type except structural). */
     public static function gfFieldsForFormId(?int $formId): array
     {
-        return array_values(array_filter(
-            self::gfInputFieldsForFormId($formId),
-            static fn (array $f): bool => in_array($f['type'], self::GF_SCORING_FIELD_TYPES, true)
-        ));
+        return self::gfInputFieldsForFormId($formId);
     }
 
     /**

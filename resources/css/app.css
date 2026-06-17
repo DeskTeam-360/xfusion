@@ -5,3 +5,171 @@
 [x-cloak] {
     display: none;
 }
+
+@layer components {
+    .admin-page-actions .btn,
+    .admin-page-actions a.btn,
+    .admin-page-actions button.btn,
+    .admin-data-table .btn,
+    .admin-data-table a.btn,
+    .admin-data-table button.btn,
+    td .flex.flex-wrap .btn {
+        display: inline-flex !important;
+        align-items: center;
+        justify-content: center;
+        width: auto !important;
+        max-width: none;
+        white-space: nowrap;
+        vertical-align: middle;
+        flex: 0 0 auto;
+    }
+
+    .admin-page-card {
+        border-radius: 7px;
+        border: 1px solid var(--color-border);
+        background-color: #fff;
+        box-shadow: 0 1px 3px rgb(0 0 0 / 6%);
+    }
+
+    :is(.dark) .admin-page-card {
+        border-color: var(--color-darkborder);
+        background-color: var(--color-dark);
+    }
+
+    .admin-data-table__toolbar {
+        display: flex;
+        flex-direction: column;
+        gap: 0.75rem;
+        border-bottom: 1px solid var(--color-border);
+        padding: 1rem 1.25rem;
+    }
+
+    @media (min-width: 640px) {
+        .admin-data-table__toolbar {
+            flex-direction: row;
+            flex-wrap: wrap;
+            align-items: flex-end;
+            justify-content: space-between;
+        }
+    }
+
+    .admin-data-table__field {
+        width: 100%;
+    }
+
+    @media (min-width: 640px) {
+        .admin-data-table__field {
+            width: auto;
+            min-width: 10rem;
+        }
+
+        .admin-data-table__field--search {
+            flex: 1 1 16rem;
+            max-width: 28rem;
+        }
+    }
+
+    .admin-data-table__label {
+        display: block;
+        margin-bottom: 0.25rem;
+        font-size: 0.75rem;
+        font-weight: 600;
+        letter-spacing: 0.04em;
+        text-transform: uppercase;
+        color: var(--color-muted, #5a6a85);
+    }
+
+    .admin-data-table__control {
+        width: 100%;
+        min-width: 8rem;
+        border-radius: 7px;
+        border: 1px solid var(--color-border);
+        background-color: #fff;
+        padding: 0.5rem 0.75rem;
+        font-size: 0.875rem;
+        color: var(--color-dark, #2a3547);
+    }
+
+    .admin-data-table__control:focus {
+        border-color: var(--color-primary);
+        outline: none;
+    }
+
+    :is(.dark) .admin-data-table__control {
+        border-color: var(--color-darkborder);
+        background-color: var(--color-dark);
+        color: #fff;
+    }
+
+    .admin-table {
+        width: 100%;
+        min-width: 100%;
+        font-size: 0.875rem;
+        border-collapse: collapse;
+    }
+
+    .admin-table thead {
+        background-color: var(--color-lightgray, #f6f9fc);
+    }
+
+    :is(.dark) .admin-table thead {
+        background-color: var(--color-darkgray, #333f55);
+    }
+
+    .admin-table thead th {
+        padding: 0.75rem 1rem;
+        text-align: left;
+        font-size: 0.75rem;
+        font-weight: 600;
+        letter-spacing: 0.04em;
+        text-transform: uppercase;
+        color: var(--color-muted, #5a6a85);
+    }
+
+    .admin-table thead th a {
+        display: inline-flex;
+        align-items: center;
+        gap: 0.25rem;
+        color: inherit;
+    }
+
+    .admin-table thead th a:hover {
+        color: var(--color-primary);
+    }
+
+    .admin-table tbody tr {
+        border-bottom: 1px solid var(--color-border);
+        transition: background-color 0.15s ease;
+    }
+
+    .admin-table tbody tr:hover {
+        background-color: var(--color-lightprimary, #ecf2ff);
+    }
+
+    :is(.dark) .admin-table tbody tr {
+        border-color: var(--color-darkborder);
+    }
+
+    :is(.dark) .admin-table tbody tr:hover {
+        background-color: var(--color-darkprimary, #253662);
+    }
+
+    .admin-table tbody td {
+        padding: 0.75rem 1rem;
+        vertical-align: middle;
+        color: var(--color-dark, #2a3547);
+    }
+
+    :is(.dark) .admin-table tbody td {
+        color: #fff;
+    }
+
+    .admin-data-table__pagination {
+        border-top: 1px solid var(--color-border);
+        padding: 1rem 1.25rem;
+    }
+
+    :is(.dark) .admin-data-table__pagination {
+        border-color: var(--color-darkborder);
+    }
+}

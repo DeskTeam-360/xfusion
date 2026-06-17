@@ -30,7 +30,7 @@ class Tag extends \App\Models\Tag implements View
             ['label' => '#', 'sort' => 'id'],
             ['label' => 'Name'],
             ['label' => 'Description'],
-            ['label' => 'User have', 'text-align'=>'center'],
+            ['label' => 'Users with tag', 'text-align'=>'center'],
             ['label' => 'Action'],
         ];
     }

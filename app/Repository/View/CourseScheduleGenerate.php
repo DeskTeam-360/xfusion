@@ -59,7 +59,7 @@ function myFunction(link) {
             ['type' => 'raw_html','text-align'=>'center', 'data' => "
 <div class='flex gap-1'>
 <a href='$link' class='btn btn-primary'>Edit</a>
-<button href='#' wire:click='deleteItem($data->id)' class='btn btn-error'>delete</button>
+<button href='#' wire:click='deleteItem($data->id)' class='btn btn-error'>Delete</button>
 </div>"],
 
         ];

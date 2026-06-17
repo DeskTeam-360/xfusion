@@ -13,7 +13,7 @@ defined('ABSPATH') || exit;
 function xfusion_get_filtered_course_progress(int $user_id, int $lesson_id)
 {
     if (!is_user_logged_in()) {
-        return 'Silakan login untuk melihat progress.';
+        return 'Please log in to view progress.';
     }
 
     $topic_ids = [];

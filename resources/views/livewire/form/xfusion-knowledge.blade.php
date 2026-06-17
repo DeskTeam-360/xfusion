@@ -8,13 +8,13 @@
             @include('livewire.form.partials.xfusion-knowledge-fields')
             <button type="submit" class="btn btn-primary inline-flex items-center gap-2" wire:loading.attr="disabled" wire:target="saveNew">
                 <span wire:loading wire:target="saveNew">{!! $spinnerSvg !!}</span>
-                <span>Simpan &amp; sync ke LLM</span>
+                <span>Save &amp; sync to LLM</span>
             </button>
         </form>
     @else
         @if($syncStatus)
             <div class="mb-5 rounded border border-border bg-lightgray/50 p-4 text-sm dark:border-darkborder dark:bg-darkgray">
-                <p><strong>Status sync LLM:</strong> {{ $syncStatus }}</p>
+                <p><strong>LLM sync status:</strong> {{ $syncStatus }}</p>
                 @if($syncMessage)
                     <p class="mt-1 text-error">{{ $syncMessage }}</p>
                 @endif
@@ -26,11 +26,11 @@
             <div class="flex flex-wrap gap-2">
                 <button type="submit" class="btn btn-primary inline-flex items-center gap-2" wire:loading.attr="disabled" wire:target="saveExisting">
                     <span wire:loading wire:target="saveExisting">{!! $spinnerSvg !!}</span>
-                    <span>Simpan perubahan</span>
+                    <span>Save changes</span>
                 </button>
                 <button type="button" wire:click="resyncToLlm" class="btn btn-outline-primary inline-flex items-center gap-2" wire:loading.attr="disabled" wire:target="resyncToLlm">
                     <span wire:loading wire:target="resyncToLlm">{!! $spinnerSvg !!}</span>
-                    <span>Sync ulang ke LLM</span>
+                    <span>Re-sync to LLM</span>
                 </button>
             </div>
         </form>

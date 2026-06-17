@@ -4,10 +4,10 @@
         description="Manage user accounts, access, and integrations."
     >
         <x-slot:actions>
-            <a href="{{ route('user.create') }}" class="btn btn-primary text-nowrap">
+            <a href="{{ route('user.create') }}" class="btn btn-primary inline-flex items-center text-nowrap">
                 <i class="ti ti-user-plus me-1"></i> Create new user
             </a>
-            <a href="{{ route('to-import-user') }}" class="btn btn-light-success text-nowrap">
+            <a href="{{ route('to-import-user') }}" class="btn btn-light-success inline-flex items-center text-nowrap">
                 <i class="ti ti-file-import me-1"></i> Import CSV
             </a>
         </x-slot:actions>

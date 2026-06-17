@@ -76,8 +76,8 @@
             ->unique()
             ->values();
     @endphp
-    <div class="mb-4">
-        <button type="button" onclick="confirmExport()" class="btn btn-light-warning text-nowrap">
+                <div class="mb-4 flex flex-wrap items-center gap-2">
+                    <button type="button" onclick="confirmExport()" class="btn btn-light-warning text-nowrap inline-flex items-center">
             <i class="ti ti-cloud-upload me-1"></i> Export password to Keap ({{ $usersWithPasswords->count() }})
         </button>
     </div>

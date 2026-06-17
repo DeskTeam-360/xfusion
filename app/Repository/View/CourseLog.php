@@ -32,7 +32,7 @@ class CourseLog extends \App\Models\WpGfEntry implements View
             ['label' => 'Users'],
             ['label' => 'Link'],
             ['label' => 'Course title'],
-            ['label' => 'Sumit'],
+            ['label' => 'Submit'],
         ];
     }
 
