@@ -325,6 +325,10 @@ Route::middleware(['auth',],)->group(function () {
         return view('admin.lms-topic-search');
     },)->name('lms-topic-search',);
 
+    Route::get('activity-log', function () {
+        return view('admin.activity-log.index');
+    },)->name('activity-log',);
+
     Route::resource('campaign', CampaignController::class,)->only('index', 'create', 'edit',);
     Route::resource('company', CompanyController::class,)->only('index', 'create', 'edit',);
     Route::resource('user', UserController::class,)->only('index', 'create', 'edit', 'show',);

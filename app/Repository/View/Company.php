@@ -37,7 +37,7 @@ class Company extends \App\Models\Company implements View
         $qrcode_url = $data->qrcode_url ? Storage::url($data->qrcode_url) : null;
         $link = route('company.edit',$data->id);
         $link2 = route('company.show',$data->id);
-        $company_url = $data->company_url?"<span><a href='$data->company_url' class='btn btn-success' style='overflow: hidden;white-space: nowrap;' target='_blank'>Company Website</a></span>":'';
+        $company_url = $data->company_url?"<span><a href='$data->company_url' class='btn btn-light-success text-nowrap' target='_blank'>Company Website</a></span>":'';
         
         // Handle logo display - show "No Logo" if logo_url is null
         $logo_display = $logo_url 
@@ -61,13 +61,12 @@ class Company extends \App\Models\Company implements View
             ['type' => 'string','data'=>$data->id],
             ['type' => 'raw_html', 'data' => $companyInfo],
             ['type' => 'raw_html','text-align'=>'center', 'data' => "
-        <div class='flex gap-1'>
-        <span><a href='$link' class='btn btn-primary'>Edit</a></span>
-        <span><a href='#' wire:click='deleteItem($data->id)' class='btn btn-error'>Delete</a></span>
-        <span><a href='$link2' class='btn btn-secondary' style='overflow: hidden;white-space: nowrap;'>Show Employee</a></span>
-        <span><a href='$link4' class='btn btn-secondary' style='overflow: hidden;white-space: nowrap;'>Dashboard</a></span>
-        
-        <span><a href='$link3' class='btn btn-secondary' style='overflow: hidden;white-space: nowrap;'>Show Detail</a></span>
+        <div class='flex flex-wrap gap-2 justify-center'>
+        <span><a href='$link' class='btn btn-primary text-nowrap'>Edit</a></span>
+        <span><a href='#' wire:click='deleteItem($data->id)' class='btn btn-error text-nowrap'>Delete</a></span>
+        <span><a href='$link2' class='btn btn-light-info text-nowrap'>Show Employee</a></span>
+        <span><a href='$link4' class='btn btn-light-warning text-nowrap'>Dashboard</a></span>
+        <span><a href='$link3' class='btn btn-outline-primary text-nowrap'>Show Detail</a></span>
         $company_url
         </div>"],
 

@@ -1,4 +1,4 @@
-@php use App\Models\Company;use App\Models\CompanyEmployee;use App\Models\CourseList;use App\Models\User;use Carbon\Carbon; use App\Models\WpViewAllLog; @endphp
+@php use App\Models\Company;use App\Models\CompanyEmployee;use App\Models\CourseList;use App\Models\User;use Carbon\Carbon; @endphp
 <x-admin-layout xmlns:livewire="http://www.w3.org/1999/html">
 
     <div class="px-5 text-3xl">
@@ -8,10 +8,10 @@
 
     
 
-        <div class="col-span-12 grid grid-cols-12 gap-3">
+        <div class="col-span-12 grid grid-cols-12 gap-3 items-stretch">
 
             <div class="lg:col-span-3 md:col-span-6 sm:col-span-6 col-span-12">
-                <div class="card shadow-none w-full" style="height: 280px">
+                <div class="card shadow-none w-full h-full" style="min-height: 280px">
                     <div class="card-body p-6">
                         <div class="flex items-center">
                             <div class="rounded-md bg-primary w-16 h-16 flex items-center justify-center text-white">
@@ -36,79 +36,74 @@
                 </div>
             </div>
 
-            <div class="lg:col-span-3 col-span-12 grid grid-cols-12 gap-3 h-fit">
+            <div class="lg:col-span-3 col-span-12 flex flex-col gap-3" style="min-height: 280px">
 
-
-
-                <div class="lg:col-span-12 col-span-12 h-fit">
-                    <div class="card">
-                        <div class="card-body flex-row py-4 flex items-center gap-2">
-                            <div class="bg-primary h-10 w-10 p-1 text-center text-white" style="border-radius: 100px">
-                                <i class="ti ti-users text-2xl"></i>
-                            </div>
-                            <div class="">
-                                <h5 class="xl:text-xl text-base leading-normal">
-                                    {{ User::whereHas('meta',function ($q){$q->where('meta_key',config('app.wp_prefix', 'wp_') . 'capabilities')->where('meta_value','like','%contributor%');})->count() }}
-                                </h5>
-                                <span class="text-md flex items-center gap-1 ">
-                                    Contributor
-                                </span>
-                            </div>
-                            <a class="ms-auto text-2xl" style="border-radius: 40px">
-                                <i class="ti ti-arrow-up-right"></i>
-                            </a>
+                <div class="card flex-1">
+                    <div class="card-body flex-row py-4 flex items-center gap-2 h-full">
+                        <div class="bg-primary h-10 w-10 shrink-0 flex items-center justify-center text-white" style="border-radius: 100px">
+                            <i class="ti ti-users text-2xl"></i>
                         </div>
+                        <div class="min-w-0 flex-1">
+                            <h5 class="xl:text-xl text-base leading-normal">
+                                {{ User::whereHas('meta',function ($q){$q->where('meta_key',config('app.wp_prefix', 'wp_') . 'capabilities')->where('meta_value','like','%contributor%');})->count() }}
+                            </h5>
+                            <span class="text-md flex items-center gap-1">
+                                Contributor
+                            </span>
+                        </div>
+                        <a class="ms-auto text-2xl shrink-0" style="border-radius: 40px">
+                            <i class="ti ti-arrow-up-right"></i>
+                        </a>
                     </div>
                 </div>
 
-                <div class="lg:col-span-12 col-span-12 h-fit">
-                    <div class="card">
-                        <div class="card-body flex-row py-4 flex items-center gap-2">
-                            <div class="bg-primary h-10 w-10 p-1 text-center text-white" style="border-radius: 100px">
-                                <i class="ti ti-users text-2xl"></i>
-                            </div>
-                            <div class="">
-                                <h5 class="xl:text-xl text-base leading-normal">
-                                    {{ Company::count() }}
-                                </h5>
-                                <span class="text-lg flex items-center gap-1">
-                                    Company
-                                </span>
-                            </div>
-                            <a class="ms-auto text-2xl" style="border-radius: 40px">
-                                <i class="ti ti-arrow-up-right"></i>
-                            </a>
+                <div class="card flex-1">
+                    <div class="card-body flex-row py-4 flex items-center gap-2 h-full">
+                        <div class="bg-primary h-10 w-10 shrink-0 flex items-center justify-center text-white" style="border-radius: 100px">
+                            <i class="ti ti-building-community text-2xl"></i>
                         </div>
+                        <div class="min-w-0 flex-1">
+                            <h5 class="xl:text-xl text-base leading-normal">
+                                {{ Company::count() }}
+                            </h5>
+                            <span class="text-lg flex items-center gap-1">
+                                Company
+                            </span>
+                        </div>
+                        <a class="ms-auto text-2xl shrink-0" style="border-radius: 40px">
+                            <i class="ti ti-arrow-up-right"></i>
+                        </a>
                     </div>
                 </div>
 
-                <div class="lg:col-span-12 col-span-12 h-fit">
-                    <div class="card">
-                        <div class="card-body flex-row py-4 flex items-center gap-2">
-                            <div class="bg-success h-10 w-10 p-1 text-center text-white" style="border-radius: 100px">
-                                <i class="ti ti-users text-2xl"></i>
-                            </div>
-                            <div class="">
-                                <h5 class="xl:text-xl text-base leading-normal">
-                                    {{ User::whereHas('meta',function ($q){
+                <div class="card flex-1">
+                    <div class="card-body flex-row py-4 flex items-center gap-2 h-full">
+                        <div class="bg-success h-10 w-10 shrink-0 flex items-center justify-center text-white" style="border-radius: 100px">
+                            <i class="ti ti-user-check text-2xl"></i>
+                        </div>
+                        <div class="min-w-0 flex-1">
+                            <h5 class="xl:text-xl text-base leading-normal">
+                                {{ User::whereHas('meta',function ($q){
                 $q->where('meta_key',config('app.wp_prefix', 'wp_') . 'capabilities')->where('meta_value','like','%subscriber%');
                 })->count() }}
-                                </h5>
-                                <span class="text-lg flex items-center gap-1">
-                                    Employee
-                                </span>
-                            </div>
-                            <a class="ms-auto text-2xl" style="border-radius: 40px">
-                                <i class="ti ti-arrow-up-right"></i>
-                            </a>
+                            </h5>
+                            <span class="text-lg flex items-center gap-1">
+                                Employee
+                            </span>
                         </div>
+                        <a class="ms-auto text-2xl shrink-0" style="border-radius: 40px">
+                            <i class="ti ti-arrow-up-right"></i>
+                        </a>
                     </div>
                 </div>
 
             </div>
             <div class="lg:col-span-6 md:col-span-6 sm:col-span-12 col-span-12">
-                <h2 class="text-2xl">Company</h2>
-                <div class="overflow-y-auto" style="height: 240px">
+                <div class="card shadow-none w-full h-full" style="min-height: 280px">
+                    <div class="card-body p-6 flex flex-col h-full">
+                        <h5 class="card-title mb-1">Company</h5>
+                        <p class="card-subtitle mb-4">Registered companies overview</p>
+                        <div class="overflow-y-auto flex-1" style="min-height: 0">
                     <table class="min-w-full divide-y divide-border dark:divide-darkborder ">
                         <thead>
                         <tr>
@@ -184,16 +179,18 @@
                         @endforeach
                         </tbody>
                     </table>
+                        </div>
+                    </div>
                 </div>
             </div>
 
            
             <div class="lg:col-span-6 md:col-span-6 sm:col-span-12 col-span-12">
-                <div class="card">
-                    <div class="card-body pb-8">
+                <div class="card h-full dashboard-panel-card">
+                    <div class="card-body pb-8 flex flex-col h-full">
                         <h5 class="card-title">User Growth</h5>
                         <p class="card-subtitle">Every month</p>
-                        <div class="-me-12">
+                        <div class="-me-12 flex-1">
                             <div id="salary" class="" ></div>
                         </div>
                     </div>
@@ -202,8 +199,11 @@
 
 
             <div class="lg:col-span-6 md:col-span-6 sm:col-span-12 col-span-12">
-                <h2 class="text-2xl">Contributor</h2> <br>
-                <div class="overflow-y-auto" style="height: 290px">
+                <div class="card h-full dashboard-panel-card">
+                    <div class="card-body pb-8 flex flex-col h-full">
+                        <h5 class="card-title">Contributor</h5>
+                        <p class="card-subtitle mb-4">Recent contributors</p>
+                        <div class="overflow-y-auto flex-1" style="min-height: 0">
                     <table class="min-w-full divide-y divide-border dark:divide-darkborder ">
                         <thead>
                         <tr>
@@ -257,33 +257,44 @@
                         @endforeach
                         </tbody>
                     </table>
+                        </div>
+                    </div>
                 </div>
-
             </div>
-            @php($pageTitle = ['Revitalize', 'Transform','Sustain'])
-            @foreach($pageTitle as $pt)
+            @php($courseCards = [
+                ['title' => 'Revitalize', 'icon' => 'ti-bulb', 'color' => 'bg-success'],
+                ['title' => 'Transform', 'icon' => 'ti-arrows-exchange-2', 'color' => 'bg-primary'],
+                ['title' => 'Sustain', 'icon' => 'ti-seeding', 'color' => 'bg-info'],
+            ])
+            @foreach($courseCards as $courseCard)
                 <div class="lg:col-span-4 md:col-span-6 sm:col-span-12 col-span-12">
-                    <div class="card">
+                    <div class="card h-full">
                         <div class="card-body flex-row py-4 flex items-center gap-2">
-                                                        <div class="bg-primary h-10 w-10 p-1 text-center text-white" style="border-radius: 100px">
-                                                            <i class="ti ti-users text-2xl"></i>
-                                                        </div>
-                            <div class="">
+                            <div class="{{ $courseCard['color'] }} h-10 w-10 shrink-0 flex items-center justify-center text-white" style="border-radius: 100px">
+                                <i class="ti {{ $courseCard['icon'] }} text-2xl"></i>
+                            </div>
+                            <div class="min-w-0 flex-1">
                                 <h5 class="text-3xl leading-normal">
-                                    {{ CourseList::where('course_title',$pt)->count() }}
+                                    {{ CourseList::where('course_title', $courseCard['title'])->count() }}
                                 </h5>
                                 <span class="text-lg flex items-center gap-1">
-                                {{ $pt }}
-                            </span>
+                                    {{ $courseCard['title'] }}
+                                </span>
                             </div>
-                            <a class="ms-auto text-2xl" style="border-radius: 40px">
-                                <i class="ti ti-arrow-up-right"></i>
-                            </a>
+                            <span class="ms-auto shrink-0 text-muted dark:text-darklink" title="Course modules">
+                                <i class="ti ti-book-2 text-2xl"></i>
+                            </span>
                         </div>
                     </div>
                 </div>
             @endforeach
         </div>
+
+        <style>
+            .dashboard-panel-card {
+                min-height: 360px;
+            }
+        </style>
 
 
         <script>
@@ -400,16 +411,4 @@
         </script>
     </div>
     
-    <div class="px-5 py-5 mb-5">
-    <div class="col-span-12 grid grid-cols-12 gap-3">
-        <div class="lg:col-span-12 md:col-span-12 sm:col-span-12 col-span-12">
-                <h2 class="text-2xl">Activity Log</h2>
-
-                <livewire:table.master name="WpViewAllLog"/>
-                
-        </div>
-    </div>
-    </div>
-
-
 </x-admin-layout>

@@ -255,21 +255,21 @@ class User extends \App\Models\User implements View
         if ($password != null) {
             $passwordVal = is_object($password) ? ($password->meta_value ?? '') : ($password['meta_value'] ?? '');
             $passwordValJs = htmlspecialchars((string) $passwordVal, ENT_QUOTES, 'UTF-8');
-            $passwordButton = "<span><a href='#' onclick='showPassword(\"$passwordValJs\")' class='btn btn-info text-nowrap'>Show Password</a></span>";
+            $passwordButton = "<span><a href='#' onclick='showPassword(\"$passwordValJs\")' class='btn btn-light-info text-nowrap'>Show Password</a></span>";
             $exportPasswordLink = route('export-password-to-keap');
-            $exportPasswordButton = "<span><a href='$exportPasswordLink' class='btn btn-warning text-nowrap'>Export Password to Keap</a></span>";
+            $exportPasswordButton = "<span><a href='$exportPasswordLink' class='btn btn-light-warning text-nowrap'>Export Password to Keap</a></span>";
         }
 
         $button4 = '';
         if ($activity != null) {
             $link4 = route('user.course', [$data->ID]);
-            $button4 = "<span><a href='$link4' class='btn btn-success text-nowrap'>Activity Check</a></span>";
+            $button4 = "<span><a href='$link4' class='btn btn-light-success text-nowrap'>Activity Check</a></span>";
         }
 
         $keapMailButton = '';
         if ($keaps !== '' && $keapStatus === true) {
             $keapMailLink = route('user.keap-mail-send', $keaps);
-            $keapMailButton = "<span><a href='$keapMailLink' class='btn btn-warning text-nowrap'>Send Keap Mail</a></span>";
+            $keapMailButton = "<span><a href='$keapMailLink' class='btn btn-light-warning text-nowrap'>Send Keap Mail</a></span>";
         }
 
         $linkReset = route('user.show', $data->ID);
@@ -282,11 +282,11 @@ class User extends \App\Models\User implements View
         }
 
         return "
-                <div class='flex flex-wrap gap-4 justify-left'>
-                    <span><a href='" . htmlspecialchars($routeAccess, ENT_QUOTES, 'UTF-8') . "' class='btn'>Access</a></span>
-                    <span><a href='" . htmlspecialchars($linkDetail, ENT_QUOTES, 'UTF-8') . "' class='btn btn-outline'>Detail</a></span>
+                <div class='flex flex-wrap gap-2 justify-start'>
+                    <span><a href='" . htmlspecialchars($routeAccess, ENT_QUOTES, 'UTF-8') . "' class='btn btn-light-secondary text-nowrap'>Access</a></span>
+                    <span><a href='" . htmlspecialchars($linkDetail, ENT_QUOTES, 'UTF-8') . "' class='btn btn-light-info text-nowrap'>Detail</a></span>
                     <span><a "
-            . ($editAttr !== '' ? $editAttr : "href='$editHrefSafe' class='btn btn-primary'")
+            . ($editAttr !== '' ? $editAttr : "href='$editHrefSafe' class='btn btn-primary text-nowrap'")
             . ">Edit</a></span>
                     $button4
                     $keapMailButton

@@ -1,10 +1,20 @@
 <x-admin-layout>
-    <div class="container full-container py-5">
-        <div class="w-full">
-            <a href="{{ route('user.create') }}" class="btn btn-primary">Create new user</a>
-            <a style="margin-left: 5px;" href="{{ route('to-import-user') }}" class="btn btn-secondary">Import CSV</a>
-            <!-- <button style="margin-left: 5px;" onclick="refreshAllUsers()" class="btn btn-warning text-nowrap">Refresh All Users</button> -->
-           
+    <div class="container full-container py-5 px-5">
+        <div class="mb-6 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+            <div>
+                <h1 class="text-2xl font-semibold">Users</h1>
+                <p class="mt-1 text-sm text-muted dark:text-darklink">Manage user accounts, access, and integrations.</p>
+            </div>
+            <div class="flex flex-wrap gap-2 shrink-0">
+                <a href="{{ route('user.create') }}" class="btn btn-primary text-nowrap">
+                    <i class="ti ti-user-plus me-1"></i> Create new user
+                </a>
+                <a href="{{ route('to-import-user') }}" class="btn btn-light-success text-nowrap">
+                    <i class="ti ti-file-import me-1"></i> Import CSV
+                </a>
+            </div>
+        </div>
+
             @if(App\Models\WpUserMeta::where('meta_key', '=', 'plain_password')->get()->isNotEmpty())
                 @php
                     $usersWithPasswords = App\Models\WpUserMeta::where('meta_key', '=', 'plain_password')
@@ -17,7 +27,11 @@
                         ->unique()
                         ->values();
                 @endphp
-                <button style="margin-left: 5px;" onclick="confirmExport()" class="btn btn-secondary">Export password to keap ({{ $usersWithPasswords->count() }})</button>
+                <div class="mb-4">
+                    <button type="button" onclick="confirmExport()" class="btn btn-light-warning text-nowrap">
+                        <i class="ti ti-cloud-upload me-1"></i> Export password to Keap ({{ $usersWithPasswords->count() }})
+                    </button>
+                </div>
                 
                 <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
                 <script>
@@ -204,9 +218,8 @@
                 }
                 </style>
             @endif
-           
+
             <livewire:table.master name="User"/>
-        </div>
         <div class="mb-5"></div>
     </div>
 </x-admin-layout>

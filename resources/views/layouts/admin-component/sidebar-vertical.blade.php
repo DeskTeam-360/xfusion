@@ -40,15 +40,21 @@
                         <!---Dashboard Menu---->
 
                         @foreach($sidebar as $menuHeader)
-                                <div
-                                    class="caption">
+                                @if(!$loop->first)
+                                    <li class="sidebar-divider my-3 border-t border-border dark:border-darkborder" aria-hidden="true"></li>
+                                @endif
+                                <div class="caption">
                                     <i class="ti ti-dots nav-small-cap-icon "></i>
                                     <span class="hide-menu">{{ $menuHeader['title'] }}</span>
                                 </div>
                                 @foreach($menuHeader['lists'] as $menu)
                                     @if($menu['type']=="link")
+                                        @php
+                                            $menuPath = trim(parse_url($menu['route'], PHP_URL_PATH) ?? '', '/');
+                                            $isActive = $menuPath !== '' && (request()->is($menuPath) || request()->is($menuPath.'/*'));
+                                        @endphp
                                         <li class="sidebar-item">
-                                            <a class="sidebar-link dark-sidebar-link {{ false?' active activemenu dark:text-white':'' }}"
+                                            <a class="sidebar-link dark-sidebar-link {{ $isActive ? 'active activemenu dark:text-white' : '' }}"
                                                href="{{ $menu['route'] }}">
                                                 {!! $menu['icon'] !!}
                                                 <span class="hide-menu flex-shrink-0">{{ $menu['title'] }}</span>
@@ -74,9 +80,13 @@
                                                  class="hs-accordion-content ">
                                                 <ul class>
                                                     @foreach($menu['lists'] as $list)
+                                                        @php
+                                                            $subPath = trim(parse_url($list['route'], PHP_URL_PATH) ?? '', '/');
+                                                            $isSubActive = $subPath !== '' && (request()->is($subPath) || request()->is($subPath.'/*'));
+                                                        @endphp
                                                         <li class="pl-4 pr-3">
                                                             <a
-                                                                class="dropdown-submenu-link "
+                                                                class="dropdown-submenu-link {{ $isSubActive ? 'active activemenu dark:text-white' : '' }}"
                                                                 href="{{ $list['route'] }}">
                                                                 {!! $list['icon'] !!}
 
