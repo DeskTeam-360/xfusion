@@ -82,7 +82,7 @@
                                                 wire:click.prevent="clearForm({{ $index }})"
                                                 wire:loading.attr="disabled"
                                                 wire:target="pickForm,clearForm"
-                                                class="btn-outline-primary shrink-0 rounded-[7px] border px-3 py-1 text-xs font-medium">Change form
+                                                class="btn-outline-primary shrink-0">Change form
                                         </button>
                                     @endif
                                     <button wire:click="removeFormBlock({{ $index }})"
@@ -166,7 +166,7 @@
                                                 wire:click="toggleBlockFields({{ $index }})"
                                                 wire:loading.attr="disabled"
                                                 wire:target="toggleBlockFields"
-                                                class="btn-outline-primary shrink-0 rounded-[7px] border px-3 py-1 text-xs font-medium">
+                                                class="btn-outline-primary shrink-0">
                                             @if($fieldsExpanded)
                                                 Show connected only
                                             @else
