@@ -184,6 +184,58 @@ class CourseScoringGroup extends Component
         $selected = array_values(array_unique(array_map('intval', $selected)));
     }
 
+    public function setFieldWeight(int $index, int $fieldId, $weight): void
+    {
+        if (! isset($this->blocks[$index])) {
+            return;
+        }
+
+        $fieldId = abs((int) $fieldId);
+        if ($fieldId < 1) {
+            return;
+        }
+
+        if (is_string($weight)) {
+            $weight = trim($weight);
+        }
+
+        if ($weight === '' || $weight === null || ! is_numeric($weight)) {
+            $this->setFieldChecked($index, $fieldId, false);
+            unset($this->blocks[$index]['field_weights'][$fieldId]);
+
+            return;
+        }
+
+        $value = round((float) $weight, 2);
+        if ($value <= 0) {
+            $this->setFieldChecked($index, $fieldId, false);
+            unset($this->blocks[$index]['field_weights'][$fieldId]);
+
+            return;
+        }
+
+        if (! $this->fieldIsChecked($index, $fieldId)) {
+            $selected = &$this->blocks[$index]['field_ids'];
+            if (! in_array($fieldId, $selected, true)) {
+                $selected[] = $fieldId;
+                $selected = array_values(array_unique(array_map('intval', $selected)));
+            }
+        }
+
+        $this->blocks[$index]['field_weights'][$fieldId] = $value;
+    }
+
+    public function fieldWeight(int $index, int $fieldId): ?float
+    {
+        if (! isset($this->blocks[$index])) {
+            return null;
+        }
+
+        $weight = $this->blocks[$index]['field_weights'][$fieldId] ?? null;
+
+        return $weight !== null ? (float) $weight : null;
+    }
+
     public function fieldIsChecked(int $index, int $fieldId): bool
     {
         if (! isset($this->blocks[$index])) {
@@ -609,9 +661,9 @@ class CourseScoringGroup extends Component
 
                 if (isset($checkedLookup[$fieldId])) {
                     $weight = isset($blockWeights[$fieldId]) && (float) $blockWeights[$fieldId] > 0
-                        ? (float) $blockWeights[$fieldId]
+                        ? round((float) $blockWeights[$fieldId], 2)
                         : ($prior !== null && (float) ($prior->weight ?? 0) > 0
-                            ? (float) $prior->weight
+                            ? round((float) $prior->weight, 2)
                             : 1.0);
                 } else {
                     $weight = 0.0;
