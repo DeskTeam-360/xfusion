@@ -10,7 +10,12 @@
 
 defined('ABSPATH') || exit;
 
-const XFUSION_RESULT_EVAL_DB_VERSION = '1.1';
+const XFUSION_RESULT_EVAL_DB_VERSION = '1.3';
+
+/** Unified COR insights row uses scoring_group_id = 0 (one row per generate-all). */
+const XFUSION_RESULT_EVAL_UNIFIED_GROUP_ID = 0;
+
+const XFUSION_RESULT_EVAL_UNIFIED_TITLE = 'COR Unified Insights';
 
 function xfusion_result_evaluation_table_name(): string
 {
@@ -46,6 +51,11 @@ function xfusion_result_evaluation_maybe_create_table(): void
         prompt_tokens int(10) unsigned NOT NULL DEFAULT 0,
         completion_tokens int(10) unsigned NOT NULL DEFAULT 0,
         tokens_used int(10) unsigned NOT NULL DEFAULT 0,
+        status varchar(20) NOT NULL DEFAULT 'published',
+        insight_model varchar(64) NOT NULL DEFAULT '',
+        prompt_version_id varchar(64) NOT NULL DEFAULT '',
+        prompt_version_label varchar(255) NOT NULL DEFAULT '',
+        cost_usd decimal(12,6) NOT NULL DEFAULT 0,
         inserted_at datetime NOT NULL,
         PRIMARY KEY  (id),
         KEY user_group (user_id, scoring_group_id),
@@ -57,6 +67,82 @@ function xfusion_result_evaluation_maybe_create_table(): void
 }
 
 add_action('plugins_loaded', 'xfusion_result_evaluation_maybe_create_table', 5);
+
+function xfusion_result_evaluation_status_published(): string
+{
+    return defined('XFUSION_RESULT_EVAL_STATUS_PUBLISHED')
+        ? XFUSION_RESULT_EVAL_STATUS_PUBLISHED
+        : 'published';
+}
+
+function xfusion_result_evaluation_status_draft(): string
+{
+    return defined('XFUSION_RESULT_EVAL_STATUS_DRAFT')
+        ? XFUSION_RESULT_EVAL_STATUS_DRAFT
+        : 'draft';
+}
+
+function xfusion_result_evaluation_status_sandbox(): string
+{
+    return defined('XFUSION_RESULT_EVAL_STATUS_SANDBOX')
+        ? XFUSION_RESULT_EVAL_STATUS_SANDBOX
+        : 'sandbox';
+}
+
+/**
+ * Statuses shown on the user dashboard (published + sandbox).
+ *
+ * @return list<string>
+ */
+function xfusion_result_evaluation_user_visible_statuses(): array
+{
+    return [
+        xfusion_result_evaluation_status_published(),
+        xfusion_result_evaluation_status_sandbox(),
+    ];
+}
+
+function xfusion_result_evaluation_status_is_user_visible(string $status): bool
+{
+    return in_array(
+        xfusion_result_evaluation_normalize_status($status),
+        xfusion_result_evaluation_user_visible_statuses(),
+        true
+    );
+}
+
+function xfusion_result_evaluation_status_triggers_cooldown(string $status): bool
+{
+    return xfusion_result_evaluation_normalize_status($status) === xfusion_result_evaluation_status_published();
+}
+
+function xfusion_result_evaluation_status_label(string $status): string
+{
+    $status = xfusion_result_evaluation_normalize_status($status);
+
+    if ($status === xfusion_result_evaluation_status_draft()) {
+        return __('Draft', 'xfusion');
+    }
+    if ($status === xfusion_result_evaluation_status_sandbox()) {
+        return __('Sandbox', 'xfusion');
+    }
+
+    return __('Published', 'xfusion');
+}
+
+function xfusion_result_evaluation_normalize_status(string $status): string
+{
+    $status = sanitize_key($status);
+
+    if ($status === xfusion_result_evaluation_status_draft()) {
+        return xfusion_result_evaluation_status_draft();
+    }
+    if ($status === xfusion_result_evaluation_status_sandbox()) {
+        return xfusion_result_evaluation_status_sandbox();
+    }
+
+    return xfusion_result_evaluation_status_published();
+}
 
 function xfusion_result_evaluation_parse_datetime(string $iso): string
 {
@@ -185,6 +271,90 @@ function xfusion_result_evaluation_decode_json(string $json): ?array
 }
 
 /**
+ * Strip legacy heading prefixes from AI feedback body text.
+ */
+function xfusion_result_evaluation_strip_feedback_prefix(string $text): string
+{
+    $text = trim($text);
+    if ($text === '') {
+        return '';
+    }
+
+    $prefixes = [
+        "WHAT YOU'RE DOING WELL:",
+        "WHAT YOU'RE DOING WELL —",
+        "WHAT YOU'RE DOING WELL -",
+        "GREATEST STRENGTH:",
+        "GREATEST STRENGTH —",
+        "GREATEST STRENGTH -",
+        "WHAT'S HOLDING YOU BACK:",
+        "WHAT'S HOLDING YOU BACK —",
+        "WHAT'S HOLDING YOU BACK -",
+        "GREATEST OPPORTUNITY:",
+        "GREATEST OPPORTUNITY —",
+        "GREATEST OPPORTUNITY -",
+    ];
+
+    foreach ($prefixes as $prefix) {
+        if (stripos($text, $prefix) === 0) {
+            return trim(substr($text, strlen($prefix)));
+        }
+    }
+
+    return $text;
+}
+
+/**
+ * Normalize unified evaluation JSON before save (strip headings from performance blocks).
+ *
+ * @param array<string, mixed> $eval
+ * @return array<string, mixed>
+ */
+function xfusion_result_evaluation_normalize_unified_eval(array $eval): array
+{
+    if (! isset($eval['performance']) || ! is_array($eval['performance'])) {
+        return $eval;
+    }
+
+    foreach ($eval['performance'] as $key => $block) {
+        if (! is_array($block)) {
+            continue;
+        }
+        if (isset($block['weakness']) && ! isset($block['opportunity'])) {
+            $block['opportunity'] = $block['weakness'];
+            unset($block['weakness']);
+        }
+        if (isset($block['strength'])) {
+            $block['strength'] = xfusion_result_evaluation_strip_feedback_prefix((string) $block['strength']);
+        }
+        if (isset($block['opportunity'])) {
+            $block['opportunity'] = xfusion_result_evaluation_strip_feedback_prefix((string) $block['opportunity']);
+        }
+        $eval['performance'][$key] = $block;
+    }
+
+    return $eval;
+}
+
+/**
+ * Normalize per-category evaluation JSON before save.
+ *
+ * @param array<string, mixed> $eval
+ * @return array<string, mixed>
+ */
+function xfusion_result_evaluation_normalize_category_eval(array $eval): array
+{
+    if (isset($eval['strengths'])) {
+        $eval['strengths'] = xfusion_result_evaluation_strip_feedback_prefix((string) $eval['strengths']);
+    }
+    if (isset($eval['improvements'])) {
+        $eval['improvements'] = xfusion_result_evaluation_strip_feedback_prefix((string) $eval['improvements']);
+    }
+
+    return $eval;
+}
+
+/**
  * Normalize evaluation payload to strengths / improvements / evaluator_notes.
  *
  * @param array<string, mixed>|null $evaluation
@@ -207,8 +377,8 @@ function xfusion_result_evaluation_extract_feedback(?array $evaluation): array
     }
 
     return [
-        'strengths' => (string) ($evaluation['strengths'] ?? ''),
-        'improvements' => (string) ($evaluation['improvements'] ?? ''),
+        'strengths' => xfusion_result_evaluation_strip_feedback_prefix((string) ($evaluation['strengths'] ?? '')),
+        'improvements' => xfusion_result_evaluation_strip_feedback_prefix((string) ($evaluation['improvements'] ?? '')),
         'evaluator_notes' => (string) ($evaluation['evaluator_notes'] ?? ''),
     ];
 }
@@ -218,6 +388,26 @@ function xfusion_result_evaluation_extract_feedback(?array $evaluation): array
  *
  * @return list<array{key: string, class: string, label: string, icon: string}>
  */
+function xfusion_result_evaluation_unified_feedback_sections(): array
+{
+    $iconBase = content_url('uploads/2026/06');
+
+    return [
+        [
+            'key' => 'strength',
+            'class' => 'strengths',
+            'label' => __('Greatest Strength', 'xfusion'),
+            'icon' => $iconBase . '/icon-checkmark.png',
+        ],
+        [
+            'key' => 'opportunity',
+            'class' => 'improvements',
+            'label' => __('Greatest Opportunity', 'xfusion'),
+            'icon' => $iconBase . '/icon-alert.png',
+        ],
+    ];
+}
+
 function xfusion_result_evaluation_feedback_sections(): array
 {
     $iconBase = content_url('uploads/2026/06');
@@ -226,21 +416,22 @@ function xfusion_result_evaluation_feedback_sections(): array
         [
             'key' => 'strengths',
             'class' => 'strengths',
-            'label' => __("WHAT YOU'RE DOING WELL", 'xfusion'),
+            'label' => __('Strength', 'xfusion'),
             'icon' => $iconBase . '/icon-checkmark.png',
         ],
         [
             'key' => 'improvements',
             'class' => 'improvements',
-            'label' => __("WHAT'S HOLDING YOU BACK", 'xfusion'),
+            'label' => __('Opportunity', 'xfusion'),
             'icon' => $iconBase . '/icon-alert.png',
         ],
-        [
-            'key' => 'evaluator_notes',
-            'class' => 'notes',
-            'label' => __('NEXT GROWTH OPPORTUNITY', 'xfusion'),
-            'icon' => $iconBase . '/icon-up.png',
-        ],
+        // Temporarily hidden — NEXT GROWTH OPPORTUNITY
+        // [
+        //     'key' => 'evaluator_notes',
+        //     'class' => 'notes',
+        //     'label' => __('NEXT GROWTH OPPORTUNITY', 'xfusion'),
+        //     'icon' => $iconBase . '/icon-up.png',
+        // ],
     ];
 }
 
@@ -257,13 +448,15 @@ CSS;
 }
 
 /**
- * @param array{strengths?: string, improvements?: string, evaluator_notes?: string} $feedback
+ * @param array<string, string> $feedback
+ * @param list<array{key: string, class: string, label: string, icon: string}>|null $sections
  */
-function xfusion_result_evaluation_render_feedback_sections(array $feedback, bool $shortcodeSafe = false): string
+function xfusion_result_evaluation_render_feedback_sections(array $feedback, bool $shortcodeSafe = false, ?array $sections = null): string
 {
     $html = $shortcodeSafe ? '' : '<div class="xfusion-eval-feedback-rows">';
+    $sections = $sections ?? xfusion_result_evaluation_feedback_sections();
 
-    foreach (xfusion_result_evaluation_feedback_sections() as $section) {
+    foreach ($sections as $section) {
         $text = trim((string) ($feedback[$section['key']] ?? ''));
         $displayText = esc_html($text !== '' ? $text : '—');
         $class = 'xfusion-eval-feedback-row xfusion-eval-feedback-row--' . $section['class'];
@@ -316,6 +509,11 @@ function xfusion_result_evaluation_row_to_record(object $row): array
         'prompt_tokens' => (int) $row->prompt_tokens,
         'completion_tokens' => (int) $row->completion_tokens,
         'tokens_used' => (int) $row->tokens_used,
+        'status' => xfusion_result_evaluation_normalize_status((string) ($row->status ?? xfusion_result_evaluation_status_published())),
+        'insight_model' => (string) ($row->insight_model ?? ''),
+        'prompt_version_id' => (string) ($row->prompt_version_id ?? ''),
+        'prompt_version_label' => (string) ($row->prompt_version_label ?? ''),
+        'cost_usd' => (float) ($row->cost_usd ?? 0),
         'inserted_at' => (string) $row->inserted_at,
     ];
 }
@@ -363,11 +561,16 @@ function xfusion_result_evaluation_insert(
     xfusion_result_evaluation_maybe_create_table();
 
     $eval = isset($apiData['evaluation']) && is_array($apiData['evaluation']) ? $apiData['evaluation'] : [];
+    $eval = xfusion_result_evaluation_normalize_category_eval($eval);
     $score = isset($eval['score']) ? (int) $eval['score'] : 0;
     $createdAt = isset($apiData['created_at']) ? (string) $apiData['created_at'] : gmdate('c');
     $evaluatedAt = isset($apiData['evaluated_at']) ? (string) $apiData['evaluated_at'] : gmdate('c');
     $companyInfo = isset($apiData['company_information']) ? (int) $apiData['company_information'] : 0;
     $tokenUsage = xfusion_result_evaluation_parse_token_usage($apiData);
+    $legacyModel = 'gpt-4o-mini';
+    $legacyCost = function_exists('xfusion_llm_estimate_cost')
+        ? xfusion_llm_estimate_cost($legacyModel, $tokenUsage['prompt_tokens'], $tokenUsage['completion_tokens'])
+        : xfusion_result_evaluation_estimate_cost($tokenUsage['prompt_tokens'], $tokenUsage['completion_tokens'], $legacyModel)['usd'];
 
     $inputJson = wp_json_encode($requestBody, JSON_UNESCAPED_UNICODE);
     $evalJson = wp_json_encode($eval, JSON_UNESCAPED_UNICODE);
@@ -393,9 +596,14 @@ function xfusion_result_evaluation_insert(
             'prompt_tokens' => $tokenUsage['prompt_tokens'],
             'completion_tokens' => $tokenUsage['completion_tokens'],
             'tokens_used' => $tokenUsage['tokens_used'],
+            'status' => xfusion_result_evaluation_status_published(),
+            'insight_model' => $legacyModel,
+            'prompt_version_id' => '',
+            'prompt_version_label' => '',
+            'cost_usd' => round($legacyCost, 6),
             'inserted_at' => $now,
         ],
-        ['%d', '%s', '%s', '%d', '%d', '%s', '%d', '%s', '%s', '%d', '%d', '%d', '%s']
+        ['%d', '%s', '%s', '%d', '%d', '%s', '%d', '%s', '%s', '%d', '%d', '%d', '%s', '%s', '%s', '%s', '%s', '%f', '%s']
     );
 
     if ($inserted === false) {
@@ -403,6 +611,358 @@ function xfusion_result_evaluation_insert(
     }
 
     return (int) $wpdb->insert_id;
+}
+
+/**
+ * Persist unified COR insight (single long JSON row, scoring_group_id = 0).
+ *
+ * @param array<string, mixed> $apiData Response from /api/v1/evaluation/evaluate-unified
+ * @param array<string, mixed> $requestBody Unified request payload (IN)
+ * @return int Row ID, or 0 on failure
+ */
+function xfusion_result_evaluation_insert_unified(
+    int $userId,
+    array $apiData,
+    array $requestBody = [],
+    ?string $status = null
+): int {
+    if ($userId < 1) {
+        return 0;
+    }
+
+    $eval = isset($apiData['evaluation']) && is_array($apiData['evaluation'])
+        ? $apiData['evaluation']
+        : $apiData;
+    $eval = xfusion_result_evaluation_normalize_unified_eval($eval);
+
+    if (function_exists('xfusion_cor_collect_gauge_snapshots')) {
+        $gaugeSnapshots = xfusion_cor_collect_gauge_snapshots($userId);
+        if ($gaugeSnapshots !== []) {
+            $requestBody['gauge_snapshots'] = $gaugeSnapshots;
+            $averages = array_map(
+                static fn (array $row): float => (float) ($row['average'] ?? 0),
+                array_values($gaugeSnapshots)
+            );
+            $requestBody['readiness_average'] = round(array_sum($averages) / count($averages), 2);
+        }
+    }
+
+    $score = 0;
+    $caps = is_array($requestBody['cor_organization_capabilities'] ?? null)
+        ? $requestBody['cor_organization_capabilities']
+        : [];
+    $nums = array_filter($caps, static fn ($v): bool => $v !== null && $v !== '' && is_numeric($v));
+    if ($nums !== []) {
+        $avg = array_sum(array_map('floatval', $nums)) / count($nums);
+        $score = (int) round(min(100, max(0, ($avg / 5.0) * 100)));
+    }
+
+    $createdAt = isset($apiData['created_at']) ? (string) $apiData['created_at'] : gmdate('c');
+    $evaluatedAt = isset($apiData['evaluated_at']) ? (string) $apiData['evaluated_at'] : gmdate('c');
+    $companyInfo = isset($apiData['company_information']) ? (int) $apiData['company_information'] : 0;
+    $tokenUsage = xfusion_result_evaluation_parse_token_usage($apiData);
+
+    if (isset($apiData['generation_context']) && is_array($apiData['generation_context'])) {
+        $requestBody['generation_context'] = $apiData['generation_context'];
+    }
+
+    $genCtx = is_array($requestBody['generation_context'] ?? null) ? $requestBody['generation_context'] : [];
+    $insightModel = trim((string) ($genCtx['model'] ?? $requestBody['model'] ?? ''));
+    if ($insightModel === '' && function_exists('xfusion_llm_insight_model')) {
+        $insightModel = xfusion_llm_insight_model();
+    }
+    if ($insightModel === '') {
+        $insightModel = 'gpt-4o-mini';
+    }
+    $promptVersionId = trim((string) ($genCtx['prompt_version_id'] ?? $requestBody['prompt_version_id'] ?? ''));
+    $promptVersionLabel = trim((string) ($genCtx['prompt_version_label'] ?? $requestBody['prompt_version_label'] ?? ''));
+    $rates = function_exists('xfusion_llm_model_token_pricing')
+        ? xfusion_llm_model_token_pricing($insightModel)
+        : ['input_usd' => 0.15, 'output_usd' => 0.60];
+    $costUsd = function_exists('xfusion_llm_estimate_cost')
+        ? xfusion_llm_estimate_cost($insightModel, $tokenUsage['prompt_tokens'], $tokenUsage['completion_tokens'])
+        : xfusion_result_evaluation_estimate_cost($tokenUsage['prompt_tokens'], $tokenUsage['completion_tokens'], $insightModel)['usd'];
+
+    $genCtx['model'] = $insightModel;
+    $genCtx['prompt_version_id'] = $promptVersionId;
+    $genCtx['prompt_version_label'] = $promptVersionLabel;
+    $genCtx['cost_usd'] = round($costUsd, 6);
+    $genCtx['pricing_input_per_1m'] = $rates['input_usd'];
+    $genCtx['pricing_output_per_1m'] = $rates['output_usd'];
+    $requestBody['generation_context'] = $genCtx;
+
+    $rowStatus = $status !== null && $status !== ''
+        ? xfusion_result_evaluation_normalize_status($status)
+        : (function_exists('xfusion_llm_insight_default_status')
+            ? xfusion_llm_insight_default_status()
+            : xfusion_result_evaluation_status_draft());
+
+    $inputJson = wp_json_encode($requestBody, JSON_UNESCAPED_UNICODE);
+    $evalJson = wp_json_encode($eval, JSON_UNESCAPED_UNICODE);
+    if (! is_string($inputJson) || ! is_string($evalJson)) {
+        return 0;
+    }
+
+    global $wpdb;
+
+    xfusion_result_evaluation_maybe_create_table();
+
+    $table = xfusion_result_evaluation_table_name();
+    $now = gmdate('Y-m-d H:i:s');
+
+    $inserted = $wpdb->insert(
+        $table,
+        [
+            'user_id' => $userId,
+            'created_at' => xfusion_result_evaluation_parse_datetime($createdAt),
+            'evaluated_at' => xfusion_result_evaluation_parse_datetime($evaluatedAt),
+            'company_information' => $companyInfo,
+            'scoring_group_id' => XFUSION_RESULT_EVAL_UNIFIED_GROUP_ID,
+            'scoring_group_title' => XFUSION_RESULT_EVAL_UNIFIED_TITLE,
+            'score' => max(0, min(100, $score)),
+            'evaluation_input' => $inputJson,
+            'evaluation' => $evalJson,
+            'prompt_tokens' => $tokenUsage['prompt_tokens'],
+            'completion_tokens' => $tokenUsage['completion_tokens'],
+            'tokens_used' => $tokenUsage['tokens_used'],
+            'status' => $rowStatus,
+            'insight_model' => $insightModel,
+            'prompt_version_id' => $promptVersionId,
+            'prompt_version_label' => $promptVersionLabel,
+            'cost_usd' => round($costUsd, 6),
+            'inserted_at' => $now,
+        ],
+        ['%d', '%s', '%s', '%d', '%d', '%s', '%d', '%s', '%s', '%d', '%d', '%d', '%s', '%s', '%s', '%s', '%s', '%f', '%s']
+    );
+
+    if ($inserted === false) {
+        return 0;
+    }
+
+    return (int) $wpdb->insert_id;
+}
+
+/**
+ * Gauge snapshots from a unified evaluation row's evaluation_input JSON.
+ *
+ * @return array<string, array{group_id: int, title: string, average: float}>
+ */
+function xfusion_result_evaluation_parse_gauge_snapshots(?array $evaluationInput): array
+{
+    if ($evaluationInput === null || $evaluationInput === []) {
+        return [];
+    }
+
+    $raw = $evaluationInput['gauge_snapshots'] ?? null;
+    if (! is_array($raw)) {
+        return [];
+    }
+
+    $snapshots = [];
+    foreach ($raw as $key => $row) {
+        if (! is_array($row)) {
+            continue;
+        }
+        $groupId = (int) ($row['group_id'] ?? $key);
+        if ($groupId < 1 || ! isset($row['average']) || ! is_numeric($row['average'])) {
+            continue;
+        }
+        $snapshots[(string) $groupId] = [
+            'group_id' => $groupId,
+            'title' => (string) ($row['title'] ?? ''),
+            'average' => round((float) $row['average'], 2),
+        ];
+    }
+
+    return $snapshots;
+}
+
+/**
+ * Latest unified evaluation_input for a user (optionally skip the newest row).
+ *
+ * @return array<string, mixed>|null
+ */
+function xfusion_result_evaluation_latest_unified_input(int $userId, int $skipLatest = 0): ?array
+{
+    if ($userId < 1) {
+        return null;
+    }
+
+    global $wpdb;
+
+    xfusion_result_evaluation_maybe_create_table();
+
+    $table = xfusion_result_evaluation_table_name();
+    $skipLatest = max(0, $skipLatest);
+    $visibleStatuses = xfusion_result_evaluation_user_visible_statuses();
+    $placeholders = implode(', ', array_fill(0, count($visibleStatuses), '%s'));
+
+    $row = $wpdb->get_row(
+        $wpdb->prepare(
+            "SELECT evaluation_input FROM {$table}
+            WHERE user_id = %d AND scoring_group_id = %d AND status IN ({$placeholders})
+            ORDER BY evaluated_at DESC, id DESC
+            LIMIT 1 OFFSET %d",
+            ...array_merge([$userId, XFUSION_RESULT_EVAL_UNIFIED_GROUP_ID], $visibleStatuses, [$skipLatest])
+        )
+    );
+
+    if ($row === null) {
+        return null;
+    }
+
+    $decoded = xfusion_result_evaluation_decode_json((string) $row->evaluation_input);
+
+    return is_array($decoded) ? $decoded : null;
+}
+
+/**
+ * Gauge average saved at the user's last Generate Insights run (baseline for delta).
+ */
+function xfusion_result_evaluation_gauge_baseline_for_group(int $userId, int $groupId): ?float
+{
+    if ($userId < 1 || $groupId < 1) {
+        return null;
+    }
+
+    $input = xfusion_result_evaluation_latest_unified_input($userId, 0);
+    $snapshots = xfusion_result_evaluation_parse_gauge_snapshots($input);
+    $key = (string) $groupId;
+
+    if (! isset($snapshots[$key]['average'])) {
+        return null;
+    }
+
+    return (float) $snapshots[$key]['average'];
+}
+
+/**
+ * @return array{
+ *   id: int,
+ *   post_id: int,
+ *   group_title: string,
+ *   evaluated_at: string,
+ *   status: string,
+ *   evaluation: array<string, mixed>
+ * }|null
+ */
+function xfusion_result_evaluation_row_to_unified_summary(array $record): ?array
+{
+    $evaluation = is_array($record['evaluation'] ?? null) ? $record['evaluation'] : [];
+
+    return [
+        'id' => (int) ($record['id'] ?? 0),
+        'post_id' => (int) ($record['id'] ?? 0),
+        'group_title' => (string) ($record['scoring_group_title'] ?? ''),
+        'evaluated_at' => (string) ($record['evaluated_at'] ?? ''),
+        'status' => xfusion_result_evaluation_normalize_status((string) ($record['status'] ?? xfusion_result_evaluation_status_published())),
+        'evaluation' => $evaluation,
+    ];
+}
+
+/**
+ * Latest user-visible unified insight for frontend display (published or sandbox).
+ *
+ * @return array{
+ *   id: int,
+ *   post_id: int,
+ *   group_title: string,
+ *   evaluated_at: string,
+ *   status: string,
+ *   evaluation: array<string, mixed>
+ * }|null
+ */
+function xfusion_result_evaluation_latest_unified(int $userId, bool $userVisibleOnly = true): ?array
+{
+    if ($userId < 1) {
+        return null;
+    }
+
+    global $wpdb;
+
+    xfusion_result_evaluation_maybe_create_table();
+
+    $table = xfusion_result_evaluation_table_name();
+    $sql = "SELECT * FROM {$table} WHERE user_id = %d AND scoring_group_id = %d";
+    $params = [$userId, XFUSION_RESULT_EVAL_UNIFIED_GROUP_ID];
+
+    if ($userVisibleOnly) {
+        $visibleStatuses = xfusion_result_evaluation_user_visible_statuses();
+        $placeholders = implode(', ', array_fill(0, count($visibleStatuses), '%s'));
+        $sql .= " AND status IN ({$placeholders})";
+        $params = array_merge($params, $visibleStatuses);
+    }
+
+    $sql .= ' ORDER BY evaluated_at DESC, id DESC LIMIT 1';
+
+    $row = $wpdb->get_row($wpdb->prepare($sql, ...$params));
+
+    if ($row === null) {
+        return null;
+    }
+
+    $record = xfusion_result_evaluation_row_to_record($row);
+
+    return xfusion_result_evaluation_row_to_unified_summary($record);
+}
+
+/**
+ * Latest published unified row for cooldown tracking (sandbox and draft excluded).
+ *
+ * @return array<string, mixed>|null
+ */
+function xfusion_result_evaluation_latest_unified_published(int $userId): ?array
+{
+    if ($userId < 1) {
+        return null;
+    }
+
+    global $wpdb;
+
+    xfusion_result_evaluation_maybe_create_table();
+
+    $table = xfusion_result_evaluation_table_name();
+    $row = $wpdb->get_row(
+        $wpdb->prepare(
+            "SELECT * FROM {$table}
+            WHERE user_id = %d AND scoring_group_id = %d AND status = %s
+            ORDER BY evaluated_at DESC, id DESC
+            LIMIT 1",
+            $userId,
+            XFUSION_RESULT_EVAL_UNIFIED_GROUP_ID,
+            xfusion_result_evaluation_status_published()
+        )
+    );
+
+    if ($row === null) {
+        return null;
+    }
+
+    $record = xfusion_result_evaluation_row_to_record($row);
+
+    return xfusion_result_evaluation_row_to_unified_summary($record);
+}
+
+function xfusion_result_evaluation_update_status(int $recordId, string $status): bool
+{
+    if ($recordId < 1) {
+        return false;
+    }
+
+    global $wpdb;
+
+    xfusion_result_evaluation_maybe_create_table();
+
+    $table = xfusion_result_evaluation_table_name();
+    $updated = $wpdb->update(
+        $table,
+        ['status' => xfusion_result_evaluation_normalize_status($status)],
+        ['id' => $recordId],
+        ['%s'],
+        ['%d']
+    );
+
+    return $updated !== false;
 }
 
 /** @deprecated Use xfusion_result_evaluation_insert() instead. */
@@ -603,32 +1163,227 @@ function xfusion_result_evaluation_render_feedback(array $data): string
     return (string) ob_get_clean();
 }
 
+function xfusion_result_evaluation_is_unified_record(array $record): bool
+{
+    return (int) ($record['scoring_group_id'] ?? -1) === XFUSION_RESULT_EVAL_UNIFIED_GROUP_ID;
+}
+
+function xfusion_result_evaluation_unified_category_label(string $slug): string
+{
+    return ucwords(str_replace('_', ' ', trim($slug)));
+}
+
 /**
- * gpt-4o-mini list pricing (per 1M tokens) — used for admin cost estimates only.
+ * @param array<string, mixed> $evaluation Normalized unified evaluation payload
+ * @return list<string>
+ */
+function xfusion_result_evaluation_unified_performance_order(array $evaluation): array
+{
+    $performance = is_array($evaluation['performance'] ?? null) ? $evaluation['performance'] : [];
+    if ($performance === []) {
+        return [];
+    }
+
+    $preferred = [];
+    if (function_exists('xfusion_cor_readiness_categories')) {
+        foreach (xfusion_cor_readiness_categories() as $title) {
+            if (! is_string($title) || $title === '') {
+                continue;
+            }
+            $key = function_exists('xfusion_cor_unified_category_key')
+                ? xfusion_cor_unified_category_key($title)
+                : str_replace('-', '_', sanitize_title($title));
+            if (isset($performance[$key])) {
+                $preferred[] = $key;
+            }
+        }
+    }
+
+    $remaining = array_values(array_diff(array_keys($performance), $preferred));
+    sort($remaining, SORT_STRING);
+
+    return array_merge($preferred, $remaining);
+}
+
+/**
+ * Admin card for unified COR insights (scoring_group_id = 0).
  *
+ * @param array<string, mixed> $record
+ */
+function xfusion_result_evaluation_render_unified_admin_card(array $record): string
+{
+    $evaluation = is_array($record['evaluation'] ?? null) ? $record['evaluation'] : [];
+    $evaluation = xfusion_result_evaluation_normalize_unified_eval($evaluation);
+
+    $score = max(0, min(100, (int) ($record['score'] ?? 0)));
+    $theme = xfusion_result_evaluation_score_theme($score);
+    $groupTitle = (string) ($record['scoring_group_title'] ?? XFUSION_RESULT_EVAL_UNIFIED_TITLE);
+    $evaluatedAt = (string) ($record['evaluated_at'] ?? '');
+    $recordId = (int) ($record['id'] ?? 0);
+    $tokensUsed = (int) ($record['tokens_used'] ?? 0);
+    $promptTokens = (int) ($record['prompt_tokens'] ?? 0);
+    $completionTokens = (int) ($record['completion_tokens'] ?? 0);
+    $insightModel = xfusion_result_evaluation_record_insight_model($record);
+    $modelMeta = function_exists('xfusion_llm_insight_model_meta') ? xfusion_llm_insight_model_meta($insightModel) : null;
+    $modelLabel = $modelMeta !== null ? (string) ($modelMeta['label'] ?? $insightModel) : $insightModel;
+    $costLabel = xfusion_result_evaluation_format_record_cost($record);
+    $dateLabel = $evaluatedAt !== '' ? esc_html($evaluatedAt) : '—';
+
+    $corInsight = trim((string) ($evaluation['cor_organization_capabilities'] ?? ''));
+    $overallInsight = trim((string) ($evaluation['key_observation'] ?? ''));
+    $recommendedFocus = trim((string) ($evaluation['recommended_focus_area'] ?? ''));
+    $performance = is_array($evaluation['performance'] ?? null) ? $evaluation['performance'] : [];
+    $categoryKeys = xfusion_result_evaluation_unified_performance_order($evaluation);
+
+    ob_start();
+    ?>
+<div class="xfusion-eval-card xfusion-eval-card--unified" style="--xf-eval-accent:<?php echo esc_attr($theme['accent']); ?>;--xf-eval-bg:<?php echo esc_attr($theme['bg']); ?>;">
+    <div class="xfusion-eval-card__header">
+        <div class="xfusion-eval-card__score-ring" aria-label="<?php echo esc_attr(sprintf(__('COR readiness score %d out of 100', 'xfusion'), $score)); ?>">
+            <span class="xfusion-eval-card__score-value"><?php echo (int) $score; ?></span>
+            <span class="xfusion-eval-card__score-max">/100</span>
+        </div>
+        <div class="xfusion-eval-card__meta">
+            <h2 class="xfusion-eval-card__title"><?php echo esc_html($groupTitle); ?></h2>
+            <p class="xfusion-eval-card__badge"><?php echo esc_html($theme['label']); ?></p>
+            <?php
+            $rowStatus = xfusion_result_evaluation_normalize_status((string) ($record['status'] ?? xfusion_result_evaluation_status_published()));
+            if ($rowStatus === xfusion_result_evaluation_status_draft()) :
+                ?>
+                <p class="xfusion-eval-card__badge" style="background:#646970;margin-left:6px;"><?php esc_html_e('Draft', 'xfusion'); ?></p>
+            <?php elseif ($rowStatus === xfusion_result_evaluation_status_sandbox()) : ?>
+                <p class="xfusion-eval-card__badge" style="background:#2271b1;margin-left:6px;"><?php esc_html_e('Sandbox', 'xfusion'); ?></p>
+            <?php endif; ?>
+            <p class="xfusion-eval-card__date">
+                <span><?php esc_html_e('Evaluated', 'xfusion'); ?>:</span> <?php echo $dateLabel; ?>
+                <?php if ($recordId > 0) : ?>
+                    <span class="xfusion-eval-card__ref">#<?php echo (int) $recordId; ?></span>
+                <?php endif; ?>
+            </p>
+            <p class="xfusion-eval-card__tokens">
+                <span><?php esc_html_e('Model', 'xfusion'); ?>:</span>
+                <?php echo esc_html($modelLabel); ?>
+                <code style="margin-left:4px;"><?php echo esc_html($insightModel); ?></code>
+            </p>
+            <p class="xfusion-eval-card__tokens">
+                <span><?php esc_html_e('Est. cost', 'xfusion'); ?>:</span>
+                <?php echo esc_html($costLabel); ?>
+            </p>
+            <p class="xfusion-eval-card__tokens">
+                <span><?php esc_html_e('Tokens used', 'xfusion'); ?>:</span>
+                <?php echo esc_html(number_format_i18n($tokensUsed)); ?>
+                <span class="xfusion-eval-card__tokens-detail">
+                    (<?php
+                    echo esc_html(sprintf(
+                        /* translators: 1: prompt tokens, 2: completion tokens */
+                        __('prompt: %1$s, completion: %2$s', 'xfusion'),
+                        number_format_i18n($promptTokens),
+                        number_format_i18n($completionTokens)
+                    ));
+                    ?>)
+                </span>
+            </p>
+        </div>
+    </div>
+    <div class="xfusion-eval-card__body xfusion-eval-card__body--unified">
+        <section class="xfusion-eval-unified-block">
+            <h3 class="xfusion-eval-unified-block__title"><?php esc_html_e('COR Insight', 'xfusion'); ?></h3>
+            <p class="xfusion-eval-unified-block__text"><?php echo esc_html($corInsight !== '' ? $corInsight : '—'); ?></p>
+        </section>
+
+        <section class="xfusion-eval-unified-block">
+            <h3 class="xfusion-eval-unified-block__title"><?php esc_html_e('Overall Insight', 'xfusion'); ?></h3>
+            <p class="xfusion-eval-unified-block__text"><?php echo esc_html($overallInsight !== '' ? $overallInsight : '—'); ?></p>
+        </section>
+
+        <section class="xfusion-eval-unified-block">
+            <h3 class="xfusion-eval-unified-block__title"><?php esc_html_e('Recommended Focus Area', 'xfusion'); ?></h3>
+            <p class="xfusion-eval-unified-block__text"><?php echo esc_html($recommendedFocus !== '' ? $recommendedFocus : '—'); ?></p>
+        </section>
+
+        <?php if ($categoryKeys !== []) : ?>
+            <section class="xfusion-eval-unified-performance">
+                <h3 class="xfusion-eval-unified-performance__title"><?php esc_html_e('Performance by FUSION Dimension', 'xfusion'); ?></h3>
+                <?php foreach ($categoryKeys as $categoryKey) :
+                    $block = is_array($performance[$categoryKey] ?? null) ? $performance[$categoryKey] : [];
+                    $strength = trim((string) ($block['strength'] ?? ''));
+                    $opportunity = trim((string) ($block['opportunity'] ?? $block['weakness'] ?? ''));
+                    ?>
+                    <div class="xfusion-eval-unified-category">
+                        <h4 class="xfusion-eval-unified-category__title"><?php echo esc_html(xfusion_result_evaluation_unified_category_label($categoryKey)); ?></h4>
+                        <?php
+                        echo xfusion_result_evaluation_render_feedback_sections([
+                            'strength' => $strength,
+                            'opportunity' => $opportunity,
+                        ], false, xfusion_result_evaluation_unified_feedback_sections());
+                        ?>
+                    </div>
+                <?php endforeach; ?>
+            </section>
+        <?php endif; ?>
+    </div>
+</div>
+    <?php
+
+    return (string) ob_get_clean();
+}
+
+/**
+ * Resolve insight model slug stored on a record (column → generation_context → default).
+ */
+function xfusion_result_evaluation_record_insight_model(array $record): string
+{
+    $model = trim((string) ($record['insight_model'] ?? ''));
+    if ($model !== '') {
+        return $model;
+    }
+
+    $input = is_array($record['evaluation_input'] ?? null) ? $record['evaluation_input'] : [];
+    $ctx = is_array($input['generation_context'] ?? null) ? $input['generation_context'] : [];
+    $fromCtx = trim((string) ($ctx['model'] ?? $input['model'] ?? ''));
+
+    return $fromCtx !== '' ? $fromCtx : 'gpt-4o-mini';
+}
+
+/**
+ * Estimated USD cost for a stored record.
+ */
+function xfusion_result_evaluation_record_cost_usd(array $record): float
+{
+    $stored = (float) ($record['cost_usd'] ?? 0);
+    if ($stored > 0) {
+        return $stored;
+    }
+
+    $model = xfusion_result_evaluation_record_insight_model($record);
+
+    return function_exists('xfusion_llm_estimate_cost')
+        ? xfusion_llm_estimate_cost($model, (int) ($record['prompt_tokens'] ?? 0), (int) ($record['completion_tokens'] ?? 0))
+        : xfusion_result_evaluation_estimate_cost((int) ($record['prompt_tokens'] ?? 0), (int) ($record['completion_tokens'] ?? 0))['usd'];
+}
+
+/**
  * @return array{input_usd: float, output_usd: float}
  */
-function xfusion_result_evaluation_token_pricing(): array
+function xfusion_result_evaluation_token_pricing(?string $model = null): array
 {
-    return [
-        'input_usd' => 0.15,
-        'output_usd' => 0.60,
-    ];
+    if ($model !== null && $model !== '' && function_exists('xfusion_llm_model_token_pricing')) {
+        return xfusion_llm_model_token_pricing($model);
+    }
+
+    return ['input_usd' => 0.15, 'output_usd' => 0.60];
 }
 
 /**
  * @return array{usd: float}
  */
-function xfusion_result_evaluation_estimate_cost(int $promptTokens, int $completionTokens): array
+function xfusion_result_evaluation_estimate_cost(int $promptTokens, int $completionTokens, ?string $model = null): array
 {
-    $rates = xfusion_result_evaluation_token_pricing();
-
+    $rates = xfusion_result_evaluation_token_pricing($model);
     $usd = ($promptTokens / 1000000) * $rates['input_usd']
         + ($completionTokens / 1000000) * $rates['output_usd'];
 
-    return [
-        'usd' => max(0.0, $usd),
-    ];
+    return ['usd' => max(0.0, $usd)];
 }
 
 /**
@@ -638,6 +1393,10 @@ function xfusion_result_evaluation_format_cost_estimate(array $cost): string
 {
     $usd = (float) ($cost['usd'] ?? 0);
 
+    if (function_exists('xfusion_llm_format_cost_usd')) {
+        return xfusion_llm_format_cost_usd($usd);
+    }
+
     if ($usd <= 0) {
         return '~$0.00';
     }
@@ -645,6 +1404,18 @@ function xfusion_result_evaluation_format_cost_estimate(array $cost): string
     $usdDecimals = $usd < 0.01 ? 4 : 2;
 
     return '~$' . number_format_i18n($usd, $usdDecimals);
+}
+
+/**
+ * Format stored or estimated cost for a single evaluation record.
+ */
+function xfusion_result_evaluation_format_record_cost(array $record): string
+{
+    $usd = xfusion_result_evaluation_record_cost_usd($record);
+
+    return function_exists('xfusion_llm_format_cost_usd')
+        ? xfusion_llm_format_cost_usd($usd)
+        : xfusion_result_evaluation_format_cost_estimate(['usd' => $usd]);
 }
 
 /**
@@ -675,7 +1446,8 @@ function xfusion_result_evaluation_admin_stats(?string $evaluatedFrom = null, ?s
             COUNT(DISTINCT user_id) AS unique_users,
             COALESCE(SUM(tokens_used), 0) AS total_tokens,
             COALESCE(SUM(prompt_tokens), 0) AS total_prompt_tokens,
-            COALESCE(SUM(completion_tokens), 0) AS total_completion_tokens
+            COALESCE(SUM(completion_tokens), 0) AS total_completion_tokens,
+            COALESCE(SUM(cost_usd), 0) AS total_cost_usd
         FROM {$table}{$where}",
         ARRAY_A
     );
@@ -693,6 +1465,7 @@ function xfusion_result_evaluation_admin_stats(?string $evaluatedFrom = null, ?s
 
     $promptTokens = (int) ($row['total_prompt_tokens'] ?? 0);
     $completionTokens = (int) ($row['total_completion_tokens'] ?? 0);
+    $totalCostUsd = (float) ($row['total_cost_usd'] ?? 0);
 
     return [
         'total_evaluations' => (int) ($row['total_evaluations'] ?? 0),
@@ -700,7 +1473,11 @@ function xfusion_result_evaluation_admin_stats(?string $evaluatedFrom = null, ?s
         'total_tokens' => (int) ($row['total_tokens'] ?? 0),
         'total_prompt_tokens' => $promptTokens,
         'total_completion_tokens' => $completionTokens,
-        'estimated_cost' => xfusion_result_evaluation_estimate_cost($promptTokens, $completionTokens),
+        'estimated_cost' => [
+            'usd' => $totalCostUsd > 0
+                ? $totalCostUsd
+                : xfusion_result_evaluation_estimate_cost($promptTokens, $completionTokens)['usd'],
+        ],
     ];
 }
 
@@ -762,6 +1539,9 @@ function xfusion_result_evaluation_render_admin_details(array $record): string
     $employeeName = xfusion_result_evaluation_user_first_name($userId);
 
     $evaluationInput = $record['evaluation_input'] ?? [];
+    $generationContext = is_array($evaluationInput['generation_context'] ?? null)
+        ? $evaluationInput['generation_context']
+        : [];
     $inputJson = is_array($evaluationInput)
         ? wp_json_encode($evaluationInput, JSON_UNESCAPED_UNICODE | JSON_PRETTY_PRINT)
         : (string) $evaluationInput;
@@ -771,10 +1551,27 @@ function xfusion_result_evaluation_render_admin_details(array $record): string
         ? wp_json_encode($evaluationPayload, JSON_UNESCAPED_UNICODE | JSON_PRETTY_PRINT)
         : (string) $evaluationPayload;
 
+    $insightModel = xfusion_result_evaluation_record_insight_model($record);
+    $modelMeta = function_exists('xfusion_llm_insight_model_meta') ? xfusion_llm_insight_model_meta($insightModel) : null;
+    $modelLabel = $modelMeta !== null ? (string) ($modelMeta['label'] ?? $insightModel) : $insightModel;
+    $promptVersionLabel = trim((string) ($record['prompt_version_label'] ?? ''));
+    $promptVersionId = trim((string) ($record['prompt_version_id'] ?? ''));
+    if ($promptVersionLabel === '' && $promptVersionId === '') {
+        $promptVersionLabel = trim((string) ($generationContext['prompt_version_label'] ?? ''));
+        $promptVersionId = trim((string) ($generationContext['prompt_version_id'] ?? ''));
+    }
+    $costLabel = xfusion_result_evaluation_format_record_cost($record);
+
     $rows = [
         __('Record ID', 'xfusion') => (string) ((int) ($record['id'] ?? 0)),
+        __('Status', 'xfusion') => xfusion_result_evaluation_status_label((string) ($record['status'] ?? xfusion_result_evaluation_status_published())),
         __('User', 'xfusion') => $employeeName !== '' ? sprintf('%s (#%d)', $employeeName, $userId) : (string) $userId,
         __('Score', 'xfusion') => sprintf('%d/100', (int) ($record['score'] ?? 0)),
+        __('Insight model', 'xfusion') => $modelLabel !== '' ? sprintf('%s (%s)', $modelLabel, $insightModel) : '—',
+        __('Prompt version', 'xfusion') => ($promptVersionLabel !== '' || $promptVersionId !== '')
+            ? trim($promptVersionLabel . ($promptVersionId !== '' ? ' (' . $promptVersionId . ')' : ''))
+            : '—',
+        __('Estimated cost (USD)', 'xfusion') => $costLabel,
         __('Created at', 'xfusion') => (string) ($record['created_at'] ?? '—'),
         __('Evaluated at', 'xfusion') => (string) ($record['evaluated_at'] ?? '—'),
         __('Inserted at', 'xfusion') => (string) ($record['inserted_at'] ?? '—'),
@@ -798,6 +1595,80 @@ function xfusion_result_evaluation_render_admin_details(array $record): string
             </div>
         <?php endforeach; ?>
     </dl>
+    <?php if ($generationContext !== []) : ?>
+        <div class="xfusion-eval-details__json">
+            <h4 class="xfusion-eval-details__json-title"><?php esc_html_e('Generation context (model, prompt, knowledge)', 'xfusion'); ?></h4>
+            <dl class="xfusion-eval-details__list">
+                <?php if (! empty($generationContext['model'])) : ?>
+                    <div class="xfusion-eval-details__row">
+                        <dt><?php esc_html_e('Model', 'xfusion'); ?></dt>
+                        <dd><?php echo esc_html((string) $generationContext['model']); ?></dd>
+                    </div>
+                <?php endif; ?>
+                <?php if (isset($generationContext['cost_usd']) && is_numeric($generationContext['cost_usd'])) : ?>
+                    <div class="xfusion-eval-details__row">
+                        <dt><?php esc_html_e('Cost (USD)', 'xfusion'); ?></dt>
+                        <dd><?php echo esc_html(function_exists('xfusion_llm_format_cost_usd') ? xfusion_llm_format_cost_usd((float) $generationContext['cost_usd']) : '$' . number_format((float) $generationContext['cost_usd'], 4)); ?></dd>
+                    </div>
+                <?php endif; ?>
+                <?php if (isset($generationContext['pricing_input_per_1m'], $generationContext['pricing_output_per_1m'])) : ?>
+                    <div class="xfusion-eval-details__row">
+                        <dt><?php esc_html_e('Pricing (list)', 'xfusion'); ?></dt>
+                        <dd><?php
+                        echo esc_html(sprintf(
+                            /* translators: 1: input USD, 2: output USD */
+                            __('$%1$s input / $%2$s output per 1M tokens', 'xfusion'),
+                            number_format((float) $generationContext['pricing_input_per_1m'], 2),
+                            number_format((float) $generationContext['pricing_output_per_1m'], 2)
+                        ));
+                        ?></dd>
+                    </div>
+                <?php endif; ?>
+                <?php if (! empty($generationContext['prompt_version_label']) || ! empty($generationContext['prompt_version_id'])) : ?>
+                    <div class="xfusion-eval-details__row">
+                        <dt><?php esc_html_e('Prompt version', 'xfusion'); ?></dt>
+                        <dd><?php echo esc_html(trim((string) ($generationContext['prompt_version_label'] ?? '') . ' (' . (string) ($generationContext['prompt_version_id'] ?? '') . ')')); ?></dd>
+                    </div>
+                <?php endif; ?>
+                <?php if (isset($generationContext['knowledge_chunk_total'])) : ?>
+                    <div class="xfusion-eval-details__row">
+                        <dt><?php esc_html_e('Knowledge chunks used', 'xfusion'); ?></dt>
+                        <dd><?php echo esc_html(number_format_i18n((int) $generationContext['knowledge_chunk_total'])); ?></dd>
+                    </div>
+                <?php endif; ?>
+            </dl>
+            <?php
+            $sources = is_array($generationContext['knowledge_sources'] ?? null) ? $generationContext['knowledge_sources'] : [];
+            if ($sources !== []) :
+                ?>
+                <table class="widefat striped" style="margin-top:10px;">
+                    <thead>
+                    <tr>
+                        <th><?php esc_html_e('WP post ID', 'xfusion'); ?></th>
+                        <th><?php esc_html_e('Category', 'xfusion'); ?></th>
+                        <th><?php esc_html_e('Chunks', 'xfusion'); ?></th>
+                        <th><?php esc_html_e('Updated', 'xfusion'); ?></th>
+                    </tr>
+                    </thead>
+                    <tbody>
+                    <?php foreach ($sources as $source) :
+                        if (! is_array($source)) {
+                            continue;
+                        }
+                        $postId = (int) ($source['wordpress_post_id'] ?? 0);
+                        ?>
+                        <tr>
+                            <td><?php echo $postId > 0 ? (int) $postId : '—'; ?></td>
+                            <td><?php echo esc_html((string) ($source['category'] ?? '')); ?></td>
+                            <td><?php echo esc_html(number_format_i18n((int) ($source['chunk_count'] ?? 0))); ?></td>
+                            <td><?php echo esc_html((string) ($source['updated_at'] ?? '—')); ?></td>
+                        </tr>
+                    <?php endforeach; ?>
+                    </tbody>
+                </table>
+            <?php endif; ?>
+        </div>
+    <?php endif; ?>
     <?php if (is_string($inputJson) && $inputJson !== '') : ?>
         <div class="xfusion-eval-details__json">
             <h4 class="xfusion-eval-details__json-title"><?php esc_html_e('Evaluation input (API request)', 'xfusion'); ?></h4>
@@ -836,6 +1707,16 @@ function xfusion_result_evaluation_admin_card_css(): string
 .xfusion-result-eval-admin-wrap .xfusion-eval-feedback-rows{gap:20px;}
 .xfusion-result-eval-admin-wrap .xfusion-eval-feedback-row__label{font-size:13px;}
 .xfusion-result-eval-admin-wrap .xfusion-eval-feedback-row__text{font-size:14px;}
+.xfusion-result-eval-admin-wrap .xfusion-eval-card__body--unified{display:flex;flex-direction:column;gap:20px;}
+.xfusion-result-eval-admin-wrap .xfusion-eval-unified-block{margin:0;padding:0 0 16px;border-bottom:1px solid #dcdcde;}
+.xfusion-result-eval-admin-wrap .xfusion-eval-unified-block:last-child{border-bottom:none;padding-bottom:0;}
+.xfusion-result-eval-admin-wrap .xfusion-eval-unified-block__title{margin:0 0 8px;font-size:13px;font-weight:700;text-transform:uppercase;letter-spacing:.04em;color:#1d2327;}
+.xfusion-result-eval-admin-wrap .xfusion-eval-unified-block__text{margin:0;font-size:14px;line-height:1.55;color:#374151;white-space:pre-wrap;word-break:break-word;}
+.xfusion-result-eval-admin-wrap .xfusion-eval-unified-performance{margin:0;padding:0;}
+.xfusion-result-eval-admin-wrap .xfusion-eval-unified-performance__title{margin:0 0 14px;font-size:13px;font-weight:700;text-transform:uppercase;letter-spacing:.04em;color:#1d2327;}
+.xfusion-result-eval-admin-wrap .xfusion-eval-unified-category{margin:0 0 18px;padding:14px 16px;border:1px solid #dcdcde;border-radius:8px;background:#f9fafb;}
+.xfusion-result-eval-admin-wrap .xfusion-eval-unified-category:last-child{margin-bottom:0;}
+.xfusion-result-eval-admin-wrap .xfusion-eval-unified-category__title{margin:0 0 12px;font-size:15px;font-weight:700;color:#1e3a5f;}
 .xfusion-result-eval-admin-wrap .xfusion-eval-details{margin-top:16px;padding:16px 20px;border:1px solid #c3c4c7;border-radius:8px;background:#fff;}
 .xfusion-result-eval-admin-wrap .xfusion-eval-details__title{margin:0 0 12px;font-size:14px;font-weight:600;color:#1d2327;}
 .xfusion-result-eval-admin-wrap .xfusion-eval-details__list{margin:0;display:grid;grid-template-columns:minmax(160px,220px) 1fr;gap:8px 16px;}
@@ -872,9 +1753,38 @@ function xfusion_result_evaluation_admin_enqueue_styles(string $hook): void
         return;
     }
 
-    wp_register_style('xfusion-result-eval-admin', false, [], '1.3');
+    wp_register_style('xfusion-result-eval-admin', false, [], '1.4');
     wp_enqueue_style('xfusion-result-eval-admin');
     wp_add_inline_style('xfusion-result-eval-admin', xfusion_result_evaluation_admin_card_css());
+}
+
+add_action('admin_init', 'xfusion_result_evaluation_admin_handle_status_update');
+
+function xfusion_result_evaluation_admin_handle_status_update(): void
+{
+    if (! is_admin() || ! current_user_can('edit_posts')) {
+        return;
+    }
+
+    if (! isset($_POST['xfusion_eval_status_update'], $_POST['record_id'], $_POST['xfusion_eval_status'])) {
+        return;
+    }
+
+    if (! isset($_GET['page']) || sanitize_key((string) $_GET['page']) !== 'xfusion-result-evaluations') {
+        return;
+    }
+
+    check_admin_referer('xfusion_eval_status_update');
+
+    $recordId = absint((string) $_POST['record_id']);
+    $status = sanitize_key((string) $_POST['xfusion_eval_status']);
+
+    if ($recordId > 0) {
+        xfusion_result_evaluation_update_status($recordId, $status);
+    }
+
+    wp_safe_redirect(xfusion_result_evaluation_admin_url($recordId));
+    exit;
 }
 
 add_action('admin_menu', 'xfusion_result_evaluation_register_admin_menu');
@@ -928,15 +1838,9 @@ function xfusion_result_evaluation_admin_render_stats(): void
     $stats = $bundle['all_time'];
     $monthStats = $bundle['this_month'];
     $lastMonthStats = $bundle['last_month'];
-    $rates = xfusion_result_evaluation_token_pricing();
 
     echo '<p class="xfusion-result-eval-pricing-note">';
-    echo esc_html(sprintf(
-        /* translators: 1: input USD, 2: output USD */
-        __('Cost estimates use gpt-4o-mini list pricing: $%1$s per 1M input tokens and $%2$s per 1M output tokens.', 'xfusion'),
-        number_format_i18n($rates['input_usd'], 2),
-        number_format_i18n($rates['output_usd'], 2)
-    ));
+    esc_html_e('Cost totals sum stored per-evaluation costs (model-specific list pricing). Legacy rows without stored cost fall back to gpt-4o-mini rates.', 'xfusion');
     echo '</p>';
 
     $aiNotifyCount = xfusion_result_evaluation_ai_notify_count();
@@ -1129,7 +2033,7 @@ function xfusion_result_evaluation_admin_list_page(): void
     $total = (int) $wpdb->get_var("SELECT COUNT(*) FROM {$table}");
     $rows = $wpdb->get_results(
         $wpdb->prepare(
-            "SELECT id, user_id, scoring_group_title, score, tokens_used, evaluated_at FROM {$table} ORDER BY id DESC LIMIT %d OFFSET %d",
+            "SELECT id, user_id, scoring_group_title, score, tokens_used, prompt_tokens, completion_tokens, insight_model, cost_usd, evaluated_at, status FROM {$table} ORDER BY id DESC LIMIT %d OFFSET %d",
             $perPage,
             $offset
         )
@@ -1154,6 +2058,9 @@ function xfusion_result_evaluation_admin_list_page(): void
     echo '<th>' . esc_html__('Scoring group', 'xfusion') . '</th>';
     echo '<th class="column-score">' . esc_html__('Score', 'xfusion') . '</th>';
     echo '<th class="column-tokens">' . esc_html__('Tokens', 'xfusion') . '</th>';
+    echo '<th>' . esc_html__('Model', 'xfusion') . '</th>';
+    echo '<th>' . esc_html__('Est. cost', 'xfusion') . '</th>';
+    echo '<th>' . esc_html__('Status', 'xfusion') . '</th>';
     echo '<th>' . esc_html__('Evaluated at', 'xfusion') . '</th>';
     echo '</tr></thead><tbody>';
 
@@ -1170,6 +2077,24 @@ function xfusion_result_evaluation_admin_list_page(): void
         echo '<td>' . esc_html((string) $row->scoring_group_title) . '</td>';
         echo '<td>' . (int) $row->score . '/100</td>';
         echo '<td>' . esc_html(number_format_i18n((int) $row->tokens_used)) . '</td>';
+        $listModel = trim((string) ($row->insight_model ?? ''));
+        if ($listModel === '') {
+            $listModel = 'gpt-4o-mini';
+        }
+        $listMeta = function_exists('xfusion_llm_insight_model_meta') ? xfusion_llm_insight_model_meta($listModel) : null;
+        $listModelLabel = $listMeta !== null ? (string) ($listMeta['label'] ?? $listModel) : $listModel;
+        echo '<td><code>' . esc_html($listModel) . '</code><br/><span class="description">' . esc_html($listModelLabel) . '</span></td>';
+        $listCostUsd = (float) ($row->cost_usd ?? 0);
+        if ($listCostUsd <= 0 && function_exists('xfusion_llm_estimate_cost')) {
+            $listCostUsd = xfusion_llm_estimate_cost($listModel, (int) ($row->prompt_tokens ?? 0), (int) ($row->completion_tokens ?? 0));
+        }
+        echo '<td>' . esc_html(function_exists('xfusion_llm_format_cost_usd') ? xfusion_llm_format_cost_usd($listCostUsd) : xfusion_result_evaluation_format_cost_estimate(['usd' => $listCostUsd])) . '</td>';
+        $status = function_exists('xfusion_result_evaluation_normalize_status')
+            ? xfusion_result_evaluation_normalize_status((string) ($row->status ?? 'published'))
+            : (string) ($row->status ?? 'published');
+        echo '<td>' . esc_html(function_exists('xfusion_result_evaluation_status_label')
+            ? xfusion_result_evaluation_status_label($status)
+            : ucfirst($status)) . '</td>';
         echo '<td>' . esc_html((string) $row->evaluated_at) . '</td>';
         echo '</tr>';
     }
@@ -1211,7 +2136,6 @@ function xfusion_result_evaluation_admin_detail_page(int $recordId): void
 
     $record = xfusion_result_evaluation_row_to_record($row);
     $evaluation = is_array($record['evaluation']) ? $record['evaluation'] : [];
-    $feedback = xfusion_result_evaluation_extract_feedback($evaluation);
 
     if ($evaluation === []) {
         echo '<div class="notice notice-info inline"><p>';
@@ -1219,18 +2143,42 @@ function xfusion_result_evaluation_admin_detail_page(int $recordId): void
         echo '</p></div>';
     }
 
-    echo xfusion_result_evaluation_render_card([
-        'score' => (int) ($evaluation['score'] ?? $record['score']),
-        'strengths' => $feedback['strengths'],
-        'improvements' => $feedback['improvements'],
-        'evaluator_notes' => $feedback['evaluator_notes'],
-        'group_title' => $record['scoring_group_title'],
-        'evaluated_at' => $record['evaluated_at'],
-        'id' => $record['id'],
-        'tokens_used' => $record['tokens_used'],
-        'prompt_tokens' => $record['prompt_tokens'],
-        'completion_tokens' => $record['completion_tokens'],
-    ]);
+    if (xfusion_result_evaluation_is_unified_record($record)) {
+        echo xfusion_result_evaluation_render_unified_admin_card($record);
+    } else {
+        $feedback = xfusion_result_evaluation_extract_feedback($evaluation);
+
+        echo xfusion_result_evaluation_render_card([
+            'score' => (int) ($evaluation['score'] ?? $record['score']),
+            'strengths' => $feedback['strengths'],
+            'improvements' => $feedback['improvements'],
+            'evaluator_notes' => $feedback['evaluator_notes'],
+            'group_title' => $record['scoring_group_title'],
+            'evaluated_at' => $record['evaluated_at'],
+            'id' => $record['id'],
+            'tokens_used' => $record['tokens_used'],
+            'prompt_tokens' => $record['prompt_tokens'],
+            'completion_tokens' => $record['completion_tokens'],
+        ]);
+    }
+
+    $currentStatus = xfusion_result_evaluation_normalize_status((string) ($record['status'] ?? xfusion_result_evaluation_status_published()));
+    ?>
+    <form method="post" action="" class="xfusion-eval-status-form" style="margin:16px 0;padding:12px 16px;border:1px solid #c3c4c7;border-radius:8px;background:#fff;max-width:960px;">
+        <?php wp_nonce_field('xfusion_eval_status_update'); ?>
+        <input type="hidden" name="record_id" value="<?php echo (int) $record['id']; ?>"/>
+        <p style="margin:0 0 8px;"><strong><?php esc_html_e('Insight status', 'xfusion'); ?></strong></p>
+        <p class="description" style="margin:0 0 10px;"><?php esc_html_e('Draft: hidden from dashboard, no cooldown. Sandbox: visible on dashboard, user can generate again without cooldown. Published: visible, cooldown applies.', 'xfusion'); ?></p>
+        <label>
+            <select name="xfusion_eval_status">
+                <option value="<?php echo esc_attr(xfusion_result_evaluation_status_draft()); ?>" <?php selected($currentStatus, xfusion_result_evaluation_status_draft()); ?>><?php esc_html_e('Draft', 'xfusion'); ?></option>
+                <option value="<?php echo esc_attr(xfusion_result_evaluation_status_sandbox()); ?>" <?php selected($currentStatus, xfusion_result_evaluation_status_sandbox()); ?>><?php esc_html_e('Sandbox', 'xfusion'); ?></option>
+                <option value="<?php echo esc_attr(xfusion_result_evaluation_status_published()); ?>" <?php selected($currentStatus, xfusion_result_evaluation_status_published()); ?>><?php esc_html_e('Published', 'xfusion'); ?></option>
+            </select>
+        </label>
+        <?php submit_button(__('Update status', 'xfusion'), 'secondary', 'xfusion_eval_status_update', false); ?>
+    </form>
+    <?php
 
     echo xfusion_result_evaluation_render_admin_details($record);
     echo '</div>';

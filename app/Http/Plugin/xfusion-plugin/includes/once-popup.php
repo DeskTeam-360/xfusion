@@ -196,7 +196,19 @@ function xfusion_once_popup_record_dismiss(int $userId): bool
         return true;
     }
 
-    return update_user_meta($userId, XFUSION_ONCE_POPUP_USER_META, gmdate('Y-m-d H:i:s')) !== false;
+    $timestamp = gmdate('Y-m-d H:i:s');
+
+    delete_user_meta($userId, XFUSION_ONCE_POPUP_USER_META);
+
+    $metaId = add_user_meta($userId, XFUSION_ONCE_POPUP_USER_META, $timestamp, true);
+    if (! $metaId) {
+        update_user_meta($userId, XFUSION_ONCE_POPUP_USER_META, $timestamp);
+    }
+
+    wp_cache_delete($userId, 'user_meta');
+    clean_user_cache($userId);
+
+    return xfusion_once_popup_user_dismissed($userId);
 }
 
 function xfusion_once_popup_dismissed_user_count(): int
@@ -303,6 +315,111 @@ function xfusion_once_popup_should_display(): bool
     }
 
     return ! xfusion_once_popup_user_dismissed((int) get_current_user_id());
+}
+
+/** Shared DOM id for the Generate Insights AI Notify gate popup. */
+const XFUSION_ONCE_POPUP_GATE_ID = 'xfusion-ai-notify-gate';
+
+/**
+ * Gate before Generate Insights — site-wide, ignores page/path restrictions.
+ */
+function xfusion_once_popup_should_show_gate(): bool
+{
+    if (! is_user_logged_in()) {
+        return false;
+    }
+
+    $settings = xfusion_once_popup_get_settings();
+    if (! $settings['enabled']) {
+        return false;
+    }
+
+    if (trim($settings['title']) === '' && trim(wp_strip_all_tags($settings['content'])) === '') {
+        return false;
+    }
+
+    return ! xfusion_once_popup_user_dismissed((int) get_current_user_id());
+}
+
+function xfusion_once_popup_flag_gate_needed(): void
+{
+    $GLOBALS['xfusion_once_popup_gate_needed'] = true;
+}
+
+function xfusion_once_popup_print_inline_styles_once(): void
+{
+    static $printed = false;
+    if ($printed) {
+        return;
+    }
+    $printed = true;
+    echo '<style id="xfusion-once-popup-styles">' . xfusion_once_popup_css() . '</style>';
+}
+
+/**
+ * Hidden AI Notify dialog markup (opened on Generate Insights click).
+ */
+function xfusion_once_popup_gate_markup(): string
+{
+    return xfusion_once_popup_notice_markup(XFUSION_ONCE_POPUP_GATE_ID, true);
+}
+
+/**
+ * @param string $elementId DOM id for this popup instance.
+ */
+function xfusion_once_popup_notice_markup(string $elementId, bool $withCancel = true): string
+{
+    $settings = xfusion_once_popup_get_settings();
+    $title = trim($settings['title']);
+    $content = trim($settings['content']);
+    $buttonLabel = trim($settings['button_label']) !== ''
+        ? $settings['button_label']
+        : __('Close', 'xfusion');
+
+    $aria = $title !== ''
+        ? 'aria-labelledby="' . esc_attr($elementId) . '-title"'
+        : 'aria-label="' . esc_attr__('Notice', 'xfusion') . '"';
+
+    ob_start();
+    ?>
+    <div id="<?php echo esc_attr($elementId); ?>" class="xfusion-once-popup xfusion-once-popup--gate" hidden role="dialog" aria-modal="true" <?php echo $aria; ?>>
+        <div class="xfusion-once-popup__dialog">
+            <?php if ($title !== '') : ?>
+                <h2 id="<?php echo esc_attr($elementId); ?>-title" class="xfusion-once-popup__title"><?php echo esc_html($title); ?></h2>
+            <?php endif; ?>
+            <?php if ($content !== '') : ?>
+                <div class="xfusion-once-popup__content"><?php echo wp_kses_post(wpautop($content)); ?></div>
+            <?php endif; ?>
+            <div class="xfusion-once-popup__actions">
+                <?php if ($withCancel) : ?>
+                    <button type="button" class="xfusion-once-popup__btn xfusion-once-popup__btn--secondary" data-notice-dismiss><?php esc_html_e('Cancel', 'xfusion'); ?></button>
+                <?php endif; ?>
+                <button type="button" class="xfusion-once-popup__btn xfusion-once-popup__btn--confirm"><?php echo esc_html($buttonLabel); ?></button>
+            </div>
+        </div>
+    </div>
+    <?php
+
+    return (string) ob_get_clean();
+}
+
+/**
+ * @return array{show: bool, element_id: string, markup: string}
+ */
+function xfusion_once_popup_gate_for_shortcode(string $instanceId): array
+{
+    unset($instanceId);
+
+    $show = xfusion_once_popup_should_show_gate();
+    if ($show) {
+        xfusion_once_popup_flag_gate_needed();
+    }
+
+    return [
+        'show' => $show,
+        'element_id' => XFUSION_ONCE_POPUP_GATE_ID,
+        'markup' => '',
+    ];
 }
 
 add_action('admin_menu', 'xfusion_once_popup_register_admin_menu');
@@ -523,19 +640,24 @@ function xfusion_once_popup_admin_page(): void
     <?php
 }
 
-add_action('wp_enqueue_scripts', 'xfusion_once_popup_enqueue_assets');
-
-function xfusion_once_popup_enqueue_assets(): void
+function xfusion_once_popup_register_styles(): void
 {
-    if (is_admin() || ! xfusion_once_popup_should_display()) {
+    if (wp_style_is('xfusion-once-popup', 'registered')) {
         return;
     }
 
-    $handle = 'xfusion-once-popup';
+    wp_register_style('xfusion-once-popup', false, [], '1.3');
+    wp_add_inline_style('xfusion-once-popup', xfusion_once_popup_css());
+}
 
-    wp_register_style($handle, false, [], '1.1');
-    wp_enqueue_style($handle);
-    wp_add_inline_style($handle, xfusion_once_popup_css());
+function xfusion_once_popup_enqueue_styles(): void
+{
+    if (is_admin()) {
+        return;
+    }
+
+    xfusion_once_popup_register_styles();
+    wp_enqueue_style('xfusion-once-popup');
 }
 
 function xfusion_once_popup_css(): string
@@ -548,88 +670,26 @@ function xfusion_once_popup_css(): string
 .xfusion-once-popup__content{margin:0 0 20px;font-size:15px;line-height:1.55;color:#374151;}
 .xfusion-once-popup__content p{margin:0 0 0.75em;}
 .xfusion-once-popup__content p:last-child{margin-bottom:0;}
-.xfusion-once-popup__actions{display:flex;justify-content:center;margin:0;}
+.xfusion-once-popup__actions{display:flex;flex-wrap:wrap;justify-content:center;gap:8px;margin:0;}
 .xfusion-once-popup__btn{display:inline-block;padding:10px 24px;border:0;border-radius:6px;background:#2271b1;color:#fff;font-size:14px;font-weight:600;cursor:pointer;}
 .xfusion-once-popup__btn:hover{background:#135e96;}
+.xfusion-once-popup__btn--secondary{background:#fff;border:1px solid #d1d5db;color:#374151;}
+.xfusion-once-popup__btn--secondary:hover{background:#f6f7f7;}
+html.xfusion-once-popup-open{overflow:hidden;}
 CSS;
 }
 
-add_action('wp_footer', 'xfusion_once_popup_render', 20);
+add_action('wp_footer', 'xfusion_once_popup_footer_gate', 20);
 
-function xfusion_once_popup_render(): void
+function xfusion_once_popup_footer_gate(): void
 {
-    if (! xfusion_once_popup_should_display()) {
+    if (is_admin() || ! xfusion_once_popup_should_show_gate()) {
         return;
     }
 
-    $settings = xfusion_once_popup_get_settings();
-    $title = trim($settings['title']);
-    $content = trim($settings['content']);
-    $buttonLabel = trim($settings['button_label']) !== ''
-        ? $settings['button_label']
-        : __('Close', 'xfusion');
-
-    ?>
-    <div id="xfusion-once-popup" class="xfusion-once-popup" role="dialog" aria-modal="true"
-         <?php echo $title !== '' ? 'aria-labelledby="xfusion-once-popup-title"' : 'aria-label="' . esc_attr__('Notice', 'xfusion') . '"'; ?>>
-        <div class="xfusion-once-popup__dialog">
-            <?php if ($title !== '') : ?>
-                <h2 id="xfusion-once-popup-title" class="xfusion-once-popup__title"><?php echo esc_html($title); ?></h2>
-            <?php endif; ?>
-            <?php if ($content !== '') : ?>
-                <div class="xfusion-once-popup__content"><?php echo wp_kses_post(wpautop($content)); ?></div>
-            <?php endif; ?>
-            <div class="xfusion-once-popup__actions">
-                <button type="button" class="xfusion-once-popup__btn"><?php echo esc_html($buttonLabel); ?></button>
-            </div>
-        </div>
-    </div>
-    <style id="xfusion-once-popup-body-lock">html.xfusion-once-popup-open{overflow:hidden;}</style>
-    <script>
-    (function () {
-        var root = document.getElementById('xfusion-once-popup');
-        if (!root) return;
-
-        document.documentElement.classList.add('xfusion-once-popup-open');
-
-        var btn = root.querySelector('.xfusion-once-popup__btn');
-        if (!btn) return;
-
-        var config = <?php echo wp_json_encode([
-            'ajaxUrl' => admin_url('admin-ajax.php'),
-            'nonce' => wp_create_nonce(XFUSION_ONCE_POPUP_NONCE),
-        ]); ?>;
-
-        function closePopup() {
-            root.classList.add('is-closed');
-            root.setAttribute('hidden', 'hidden');
-            root.style.display = 'none';
-            document.documentElement.classList.remove('xfusion-once-popup-open');
-        }
-
-        btn.addEventListener('click', function (e) {
-            e.preventDefault();
-            closePopup();
-
-            var fd = new FormData();
-            fd.append('action', 'xfusion_once_popup_dismiss');
-            fd.append('nonce', config.nonce || '');
-
-            fetch(config.ajaxUrl, {
-                method: 'POST',
-                body: fd,
-                credentials: 'same-origin',
-            }).catch(function () {});
-        });
-
-        document.addEventListener('keydown', function (e) {
-            if (e.key === 'Escape' && !root.classList.contains('is-closed')) {
-                btn.click();
-            }
-        });
-    })();
-    </script>
-    <?php
+    xfusion_once_popup_enqueue_styles();
+    xfusion_once_popup_print_inline_styles_once();
+    echo xfusion_once_popup_gate_markup();
 }
 
 add_action('wp_ajax_xfusion_once_popup_dismiss', 'xfusion_once_popup_ajax_dismiss');
@@ -649,4 +709,160 @@ function xfusion_once_popup_ajax_dismiss(): void
     }
 
     wp_send_json_success(['dismissed' => true]);
+}
+
+/**
+ * Block evaluation AJAX until the user has confirmed the AI Notify popup.
+ */
+function xfusion_once_popup_require_confirmed_or_error(): void
+{
+    if (! xfusion_once_popup_should_show_gate()) {
+        return;
+    }
+
+    wp_send_json_error([
+        'message' => __('Please read and confirm the AI notification before generating insights.', 'xfusion'),
+        'require_popup' => true,
+        'ai_notify_required' => true,
+    ], 403);
+}
+
+/**
+ * Wrap shortcode JS so Generate Insights waits for popup confirmation when required.
+ */
+function xfusion_once_popup_gate_script(array $gate, string $coreJs): string
+{
+    if (empty($gate['show'])) {
+        return '(function () { ' . $coreJs . ' })();';
+    }
+
+    $popupId = wp_json_encode(
+        ! empty($gate['element_id']) ? (string) $gate['element_id'] : XFUSION_ONCE_POPUP_GATE_ID
+    );
+    $ajaxUrl = wp_json_encode(admin_url('admin-ajax.php'));
+    $dismissNonce = wp_json_encode(wp_create_nonce(XFUSION_ONCE_POPUP_NONCE));
+
+    return <<<JS
+(function () {
+    var popupId = {$popupId};
+    var ajaxUrl = {$ajaxUrl};
+    var dismissNonce = {$dismissNonce};
+    var pendingRunFn = null;
+
+    function getPopup() {
+        return document.getElementById(popupId);
+    }
+
+    function closePopup() {
+        var popup = getPopup();
+        if (!popup) {
+            return;
+        }
+        popup.setAttribute('hidden', 'hidden');
+        popup.style.display = '';
+        document.documentElement.classList.remove('xfusion-once-popup-open');
+    }
+
+    function openPopup() {
+        var popup = getPopup();
+        if (!popup) {
+            return false;
+        }
+        if (popup.parentNode && popup.parentNode !== document.body) {
+            document.body.appendChild(popup);
+        }
+        popup.removeAttribute('hidden');
+        popup.style.display = 'flex';
+        document.documentElement.classList.add('xfusion-once-popup-open');
+        return true;
+    }
+
+    function saveDismissal() {
+        var fd = new FormData();
+        fd.append('action', 'xfusion_once_popup_dismiss');
+        fd.append('nonce', dismissNonce || '');
+        return fetch(ajaxUrl, { method: 'POST', body: fd, credentials: 'same-origin' })
+            .then(function (r) {
+                return r.text().then(function (text) {
+                    var j = null;
+                    try {
+                        j = JSON.parse(text);
+                    } catch (err) {
+                        j = null;
+                    }
+                    return { ok: r.ok, j: j };
+                });
+            });
+    }
+
+    function bindPopupControls() {
+        var popup = getPopup();
+        if (!popup || popup.getAttribute('data-gate-bound') === '1') {
+            return;
+        }
+        popup.setAttribute('data-gate-bound', '1');
+        popup.querySelectorAll('[data-notice-dismiss]').forEach(function (el) {
+            el.addEventListener('click', function () {
+                pendingRunFn = null;
+                closePopup();
+            });
+        });
+        document.addEventListener('keydown', function (e) {
+            if (e.key === 'Escape' && popup && !popup.hasAttribute('hidden')) {
+                pendingRunFn = null;
+                closePopup();
+            }
+        });
+        var confirmBtn = popup.querySelector('.xfusion-once-popup__btn--confirm');
+        if (!confirmBtn) {
+            return;
+        }
+        confirmBtn.addEventListener('click', function (e) {
+            if (e && e.preventDefault) {
+                e.preventDefault();
+            }
+            var runFn = pendingRunFn;
+            pendingRunFn = null;
+            closePopup();
+            saveDismissal().then(function (res) {
+                if (res && res.j && res.j.success) {
+                    if (typeof runFn === 'function') {
+                        runFn(e);
+                    }
+                    return;
+                }
+                window.alert('Could not save confirmation. Please try again.');
+                pendingRunFn = runFn;
+                openPopup();
+            }).catch(function () {
+                window.alert('Could not save confirmation. Please try again.');
+                pendingRunFn = runFn;
+                openPopup();
+            });
+        });
+    }
+
+    function onGenerateClick(runFn) {
+        return function (e) {
+            if (e && e.preventDefault) {
+                e.preventDefault();
+            }
+            bindPopupControls();
+            pendingRunFn = runFn;
+            if (!openPopup()) {
+                pendingRunFn = null;
+                window.alert('AI notification could not be loaded. Please refresh the page and try again.');
+            }
+        };
+    }
+
+    window.xfusionOpenAiNotifyGate = function (afterConfirmFn) {
+        bindPopupControls();
+        pendingRunFn = typeof afterConfirmFn === 'function' ? afterConfirmFn : null;
+        return openPopup();
+    };
+
+    {$coreJs}
+})();
+JS;
 }

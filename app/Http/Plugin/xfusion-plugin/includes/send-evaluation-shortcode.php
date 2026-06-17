@@ -4,11 +4,16 @@
  * and COR™ readiness summary dashboard with batch "Generate Insights".
  *
  * Usage:
- *   [send_evaluation category="Customer Service"]
+ *   [send_evaluation category="Get Real"]  — display Greatest Strength / Greatest Opportunity from unified insight (read-only)
  *   [send_evaluation category="1"]  (numeric = group id)
  *   [send_evaluation category="My Group" user_id="89"]  (admin only)
- *   [xfusion_core_readiness]
+ *   [xfusion_core_readiness]  — Generate Insights → POST /api/v1/evaluation/evaluate-unified (1 DB row)
  *   [xfusion_core_readiness user_id="89"]  (admin only)
+ *   [xfusion_core_dimensions]
+ *   [xfusion_core_dimensions user_id="89"]  (admin only)
+ *   [xfusion_cor_organization_capabilities]  — unified insight narrative (read-only)
+ *   [xfusion_cor_key_observation]  — unified key observation (read-only)
+ *   [xfusion_insight_date_filter]
  *
  * @package XFusion
  */
@@ -19,8 +24,8 @@ const XFUSION_SEND_EVAL_NONCE_ACTION = 'xfusion_send_evaluation';
 
 const XFUSION_COR_READINESS_NONCE_ACTION = 'xfusion_core_readiness';
 
-/** Cooldown between evaluations for the same user + scoring group (24 hours). */
-const XFUSION_SEND_EVAL_COOLDOWN_SECONDS = DAY_IN_SECONDS;
+/** Cooldown between Generate Insights runs (1 week). */
+const XFUSION_SEND_EVAL_COOLDOWN_SECONDS = 7 * DAY_IN_SECONDS;
 
 /**
  * @return array{
@@ -81,8 +86,26 @@ function xfusion_send_eval_format_cooldown_remaining(int $seconds): string
         return '';
     }
 
-    $hours = (int) floor($seconds / HOUR_IN_SECONDS);
+    $days = (int) floor($seconds / DAY_IN_SECONDS);
+    $hours = (int) floor(($seconds % DAY_IN_SECONDS) / HOUR_IN_SECONDS);
     $minutes = (int) floor(($seconds % HOUR_IN_SECONDS) / MINUTE_IN_SECONDS);
+
+    if ($days > 0 && $hours > 0) {
+        return sprintf(
+            /* translators: 1: days, 2: hours */
+            _n('%1$d day %2$d hours', '%1$d days %2$d hours', $days, 'xfusion'),
+            $days,
+            $hours
+        );
+    }
+
+    if ($days > 0) {
+        return sprintf(
+            /* translators: %d: days */
+            _n('%d day', '%d days', $days, 'xfusion'),
+            $days
+        );
+    }
 
     if ($hours > 0 && $minutes > 0) {
         return sprintf(
@@ -604,6 +627,10 @@ function xfusion_send_eval_ajax_handler(): void
         wp_send_json_error(['message' => __('You must be logged in.', 'xfusion')], 401);
     }
 
+    if (function_exists('xfusion_once_popup_require_confirmed_or_error')) {
+        xfusion_once_popup_require_confirmed_or_error();
+    }
+
     $category = isset($_POST['category']) ? sanitize_text_field(wp_unslash((string) $_POST['category'])) : '';
     $groupId = xfusion_send_eval_group_id_from_category($category);
 
@@ -725,7 +752,7 @@ function xfusion_send_eval_ai_disclaimer_html(): string
  *
  * @param array{strengths?: string, improvements?: string, evaluator_notes?: string}|array<string, mixed> $evaluation
  */
-function xfusion_send_eval_render_feedback_html(array $evaluation): string
+function xfusion_send_eval_render_feedback_html(array $evaluation, bool $withDisclaimer = false): string
 {
     if (function_exists('xfusion_result_evaluation_extract_feedback')) {
         $feedback = xfusion_result_evaluation_extract_feedback($evaluation);
@@ -737,54 +764,117 @@ function xfusion_send_eval_render_feedback_html(array $evaluation): string
         ];
     }
 
-    if (function_exists('xfusion_result_evaluation_render_feedback_sections')) {
-        return xfusion_result_evaluation_render_feedback_sections($feedback, true)
-            . xfusion_send_eval_ai_disclaimer_html();
+    if (! function_exists('xfusion_result_evaluation_render_feedback_sections')) {
+        return $withDisclaimer ? xfusion_send_eval_ai_disclaimer_html() : '';
     }
 
-    return xfusion_send_eval_ai_disclaimer_html();
+    $html = xfusion_result_evaluation_render_feedback_sections($feedback, true);
+
+    if ($withDisclaimer) {
+        $html .= xfusion_send_eval_ai_disclaimer_html();
+    }
+
+    return $html;
 }
 
 /**
+ * Unified insight feedback: Greatest Strength + Greatest Opportunity.
+ *
+ * @param array{strength?: string, opportunity?: string} $feedback
+ */
+function xfusion_send_eval_render_unified_feedback_html(array $feedback, bool $withDisclaimer = false): string
+{
+    if (! function_exists('xfusion_result_evaluation_render_feedback_sections')) {
+        return $withDisclaimer ? xfusion_send_eval_ai_disclaimer_html() : '';
+    }
+
+    $sections = function_exists('xfusion_result_evaluation_unified_feedback_sections')
+        ? xfusion_result_evaluation_unified_feedback_sections()
+        : null;
+
+    $html = xfusion_result_evaluation_render_feedback_sections([
+        'strength' => (string) ($feedback['strength'] ?? ''),
+        'opportunity' => (string) ($feedback['opportunity'] ?? ''),
+    ], true, $sections);
+
+    if ($withDisclaimer) {
+        $html .= xfusion_send_eval_ai_disclaimer_html();
+    }
+
+    return $html;
+}
+
+/**
+ * Resolve group title for a scoring group id.
+ */
+function xfusion_send_eval_group_title(int $groupId): string
+{
+    if ($groupId < 1) {
+        return '';
+    }
+
+    global $wpdb;
+
+    $gtable = $wpdb->prefix . 'course_scoring_groups';
+
+    return (string) $wpdb->get_var(
+        $wpdb->prepare("SELECT title FROM {$gtable} WHERE id = %d", $groupId)
+    );
+}
+
+/**
+ * Build read-only feedback HTML from unified COR insight for one category.
+ *
  * @return array{html: string, has_result: bool}
  */
-function xfusion_send_eval_build_latest_block(int $userId, int $groupId): array
+function xfusion_send_eval_build_latest_block(int $userId, int $groupId, string $groupTitle = ''): array
 {
-    if ($userId < 1 || $groupId < 1 || ! function_exists('xfusion_result_evaluation_latest_for_group')) {
+    if ($userId < 1 || $groupId < 1) {
         return [
-            'html' => '<p class="xfusion-send-eval__latest-empty">' . esc_html__('No evaluation submitted yet.', 'xfusion') . '</p>',
+            'html' => '<p class="xfusion-send-eval__latest-empty">' . esc_html__('No insights generated yet.', 'xfusion') . '</p>',
             'has_result' => false,
         ];
     }
 
-    $latest = xfusion_result_evaluation_latest_for_group($userId, $groupId);
+    if ($groupTitle === '') {
+        $groupTitle = xfusion_send_eval_group_title($groupId);
+    }
+
+    $latest = function_exists('xfusion_insight_date_filter_resolve_unified')
+        ? xfusion_insight_date_filter_resolve_unified($userId)
+        : (function_exists('xfusion_result_evaluation_latest_unified')
+            ? xfusion_result_evaluation_latest_unified($userId)
+            : null);
+
     if ($latest === null) {
+        $emptyMessage = function_exists('xfusion_insight_date_filter_is_active') && xfusion_insight_date_filter_is_active()
+            ? __('No unified insights found for the selected date.', 'xfusion')
+            : __('No insights generated yet.', 'xfusion');
+
         return [
-            'html' => '<p class="xfusion-send-eval__latest-empty">' . esc_html__('No evaluation submitted yet.', 'xfusion') . '</p>',
+            'html' => '<p class="xfusion-send-eval__latest-empty">' . esc_html($emptyMessage) . '</p>',
             'has_result' => false,
         ];
     }
 
-    $evaluation = is_array($latest['evaluation'] ?? null) ? $latest['evaluation'] : [];
+    $feedback = function_exists('xfusion_cor_unified_performance_feedback_for_category')
+        ? xfusion_cor_unified_performance_feedback_for_category($userId, $groupTitle)
+        : ['strength' => '', 'opportunity' => ''];
 
-    if ($evaluation === [] && ! empty($latest['id']) && function_exists('xfusion_result_evaluation_get')) {
-        $row = xfusion_result_evaluation_get((int) $latest['id']);
-        if ($row !== null && function_exists('xfusion_result_evaluation_decode_json')) {
-            $decoded = xfusion_result_evaluation_decode_json((string) $row->evaluation);
-            if (is_array($decoded)) {
-                $evaluation = $decoded;
-            }
-        }
+    if (trim($feedback['strength']) === '' && trim($feedback['opportunity']) === '') {
+        return [
+            'html' => '<p class="xfusion-send-eval__latest-empty">' . esc_html__(
+                'No feedback for this category in the latest unified insight.',
+                'xfusion'
+            ) . '</p>',
+            'has_result' => false,
+        ];
     }
 
-    $evaluatedAt = trim((string) ($latest['evaluated_at'] ?? ''));
-    $feedbackHtml = xfusion_send_eval_render_feedback_html($evaluation);
+    $feedbackHtml = xfusion_send_eval_render_unified_feedback_html($feedback);
 
     return [
-        'html' => ($evaluatedAt !== ''
-                ? '<p class="xfusion-send-eval__latest-date"><span>' . esc_html__('Last evaluated', 'xfusion') . ':</span> ' . esc_html($evaluatedAt) . ' UTC</p>'
-                : '')
-            . $feedbackHtml,
+        'html' => $feedbackHtml,
         'has_result' => true,
     ];
 }
@@ -793,9 +883,9 @@ function xfusion_send_eval_build_latest_block(int $userId, int $groupId): array
  * Render the user's latest evaluation for a scoring group (from the DB table).
  * Always outputs a visible block (result or empty state).
  */
-function xfusion_send_eval_latest_html(int $userId, int $groupId): string
+function xfusion_send_eval_latest_html(int $userId, int $groupId, string $groupTitle = ''): string
 {
-    $block = xfusion_send_eval_build_latest_block($userId, $groupId);
+    $block = xfusion_send_eval_build_latest_block($userId, $groupId, $groupTitle);
 
     ob_start();
     xfusion_send_eval_print_card_styles();
@@ -830,7 +920,7 @@ function xfusion_send_eval_cooldown_notice_html(array $cooldown): string
     <?php
     echo esc_html(sprintf(
         /* translators: %s: remaining time */
-        __('Next evaluation available in %s. One evaluation per group every 24 hours.', 'xfusion'),
+        __('Next evaluation available in %s. One evaluation per group every 7 days.', 'xfusion'),
         $remaining
     ));
     ?>
@@ -849,7 +939,6 @@ function xfusion_send_evaluation_shortcode($atts): string
         [
             'category' => '',
             'user_id' => '0',
-            'button_label' => __('Generate Insights', 'xfusion'),
             'class' => '',
         ],
         $atts,
@@ -862,7 +951,7 @@ function xfusion_send_evaluation_shortcode($atts): string
     }
 
     if (! is_user_logged_in()) {
-        return '<p class="xfusion-send-eval xfusion-send-eval--error">' . esc_html__('Please log in to send evaluation.', 'xfusion') . '</p>';
+        return '<p class="xfusion-send-eval xfusion-send-eval--error">' . esc_html__('Please log in to view insights.', 'xfusion') . '</p>';
     }
 
     $groupId = xfusion_send_eval_group_id_from_category($category);
@@ -873,11 +962,7 @@ function xfusion_send_evaluation_shortcode($atts): string
         )) . '</p>';
     }
 
-    global $wpdb;
-    $gtable = $wpdb->prefix . 'course_scoring_groups';
-    $groupTitle = (string) $wpdb->get_var(
-        $wpdb->prepare("SELECT title FROM {$gtable} WHERE id = %d", $groupId)
-    );
+    $groupTitle = xfusion_send_eval_group_title($groupId);
 
     $uid = (int) get_current_user_id();
     $attrUserId = absint($atts['user_id']);
@@ -885,167 +970,13 @@ function xfusion_send_evaluation_shortcode($atts): string
         $uid = $attrUserId;
     }
 
-    $instanceId = 'xfusion-send-eval-' . wp_unique_id();
     $wrapClass = trim('xfusion-send-eval ' . (string) $atts['class']);
-    $ajaxUrl = admin_url('admin-ajax.php');
-    $nonce = wp_create_nonce(XFUSION_SEND_EVAL_NONCE_ACTION);
-    $btnLabel = (string) $atts['button_label'];
-    $sendingLabel = esc_attr__('Generating…', 'xfusion');
-    $cooldown = xfusion_send_eval_cooldown_status($uid, $groupId);
-    $onCooldown = $cooldown['on_cooldown'];
-    $cooldownHtml = xfusion_send_eval_cooldown_notice_html($cooldown);
-    $latestBlock = xfusion_send_eval_build_latest_block($uid, $groupId);
 
     ob_start();
-    xfusion_send_eval_print_card_styles();
     ?>
-<div class="<?php echo esc_attr($wrapClass); ?>" id="<?php echo esc_attr($instanceId); ?>" data-category="<?php echo esc_attr($category); ?>" data-user-id="<?php echo (int) $uid; ?>" data-group-id="<?php echo (int) $groupId; ?>" data-group-title="<?php echo esc_attr($groupTitle); ?>" data-cooldown-until="<?php echo (int) ($cooldown['available_at_ts'] ?? 0); ?>">
-    <div class="xfusion-send-eval__latest-slot" aria-live="polite"><div class="xfusion-send-eval__latest xfusion-result-eval-wrap<?php echo $latestBlock['has_result'] ? '' : ' xfusion-send-eval__latest--empty'; ?>"><?php echo $latestBlock['html']; ?></div></div>
-
-    <?php echo $cooldownHtml; ?>
-
-    <button type="button" class="xfusion-send-eval__btn button<?php echo $onCooldown ? ' is-cooldown-hidden' : ''; ?>" style="cursor:pointer;margin-top:0.75rem;">
-        <?php echo esc_html($btnLabel); ?>
-    </button>
-    <div class="xfusion-send-eval__status" style="margin-top:0.75rem;font-size:0.9rem;display:none;" role="status" aria-live="polite"></div>
+<div class="<?php echo esc_attr($wrapClass); ?>" data-category="<?php echo esc_attr($category); ?>" data-group-id="<?php echo (int) $groupId; ?>">
+    <?php echo xfusion_send_eval_latest_html($uid, $groupId, $groupTitle); ?>
 </div>
-<script>
-(function () {
-    var root = document.getElementById(<?php echo wp_json_encode($instanceId); ?>);
-    if (!root) return;
-    var btn = root.querySelector('.xfusion-send-eval__btn');
-    var statusEl = root.querySelector('.xfusion-send-eval__status');
-    var latestSlot = root.querySelector('.xfusion-send-eval__latest-slot');
-    var cooldownEl = root.querySelector('.xfusion-send-eval__cooldown');
-    if (!btn || !statusEl) return;
-
-    var defaultBtnLabel = <?php echo wp_json_encode($btnLabel); ?>;
-
-    function setButtonCooldownHidden(hidden) {
-        if (hidden) {
-            btn.classList.add('is-cooldown-hidden');
-            btn.disabled = true;
-            btn.textContent = defaultBtnLabel;
-        } else {
-            btn.classList.remove('is-cooldown-hidden');
-            btn.disabled = false;
-            btn.textContent = defaultBtnLabel;
-        }
-    }
-
-    function applyCooldown(untilTs) {
-        var now = Math.floor(Date.now() / 1000);
-        var remaining = untilTs - now;
-        if (remaining <= 0) {
-            setButtonCooldownHidden(false);
-            if (cooldownEl) cooldownEl.style.display = 'none';
-            root.setAttribute('data-cooldown-until', '0');
-            return false;
-        }
-        setButtonCooldownHidden(true);
-        root.setAttribute('data-cooldown-until', String(untilTs));
-        return true;
-    }
-
-    function tickCooldown() {
-        var until = parseInt(root.getAttribute('data-cooldown-until') || '0', 10);
-        if (!until) return;
-        if (!applyCooldown(until)) {
-            var el = root.querySelector('.xfusion-send-eval__cooldown');
-            if (el) {
-                el.style.display = 'none';
-            }
-        }
-    }
-
-    tickCooldown();
-    setInterval(tickCooldown, 30000);
-
-    function showStatus(msg, isError, html) {
-        statusEl.style.display = 'block';
-        statusEl.style.color = isError ? '#b91c1c' : '#166534';
-        if (html) {
-            statusEl.innerHTML = msg;
-        } else {
-            statusEl.textContent = msg;
-        }
-    }
-
-    btn.addEventListener('click', function () {
-        if (btn.classList.contains('is-cooldown-hidden')) return;
-
-        btn.disabled = true;
-        var prev = btn.textContent;
-        btn.textContent = <?php echo wp_json_encode($sendingLabel); ?>;
-        showStatus('', false);
-        statusEl.style.display = 'none';
-
-        var fd = new FormData();
-        fd.append('action', 'xfusion_send_evaluation');
-        fd.append('nonce', <?php echo wp_json_encode($nonce); ?>);
-        fd.append('category', root.getAttribute('data-category') || '');
-        fd.append('user_id', root.getAttribute('data-user-id') || '0');
-
-        fetch(<?php echo wp_json_encode($ajaxUrl); ?>, { method: 'POST', body: fd, credentials: 'same-origin' })
-            .then(function (r) { return r.json().then(function (j) { return { ok: r.ok, j: j }; }); })
-            .then(function (res) {
-                if (!res.j || !res.j.success) {
-                    var err = (res.j && res.j.data && res.j.data.message) ? res.j.data.message : 'Request failed.';
-                    if (res.j && res.j.data && res.j.data.cooldown && res.j.data.cooldown.available_at_ts) {
-                        applyCooldown(res.j.data.cooldown.available_at_ts);
-                    } else {
-                        btn.disabled = false;
-                        btn.textContent = prev;
-                    }
-                    showStatus(err, true);
-                    return;
-                }
-
-                var data = res.j.data || {};
-
-                if (data.result_card_html && latestSlot) {
-                    var latestInner = latestSlot.querySelector('.xfusion-send-eval__latest');
-                    if (latestInner) {
-                        latestInner.innerHTML = data.result_card_html;
-                        latestInner.classList.remove('xfusion-send-eval__latest--empty');
-                    } else {
-                        latestSlot.innerHTML = '<div class="xfusion-send-eval__latest xfusion-result-eval-wrap">' + data.result_card_html + '</div>';
-                    }
-                }
-
-                if (data.cooldown && data.cooldown.available_at_ts) {
-                    applyCooldown(data.cooldown.available_at_ts);
-                    if (data.cooldown_notice_html) {
-                        if (cooldownEl) {
-                            cooldownEl.outerHTML = data.cooldown_notice_html;
-                        } else {
-                            var temp = document.createElement('div');
-                            temp.innerHTML = data.cooldown_notice_html.trim();
-                            var notice = temp.firstElementChild;
-                            if (notice && btn.parentNode) {
-                                btn.parentNode.insertBefore(notice, btn);
-                            }
-                            cooldownEl = root.querySelector('.xfusion-send-eval__cooldown');
-                        }
-                    }
-                    if (cooldownEl) {
-                        cooldownEl.style.display = 'block';
-                    }
-                } else {
-                    setButtonCooldownHidden(false);
-                }
-
-                statusEl.style.display = 'none';
-                statusEl.textContent = '';
-            })
-            .catch(function () {
-                btn.disabled = false;
-                btn.textContent = prev;
-                showStatus('Network error. Please try again.', true);
-            });
-    });
-})();
-</script>
     <?php
 
     return (string) ob_get_clean();
@@ -1072,13 +1003,218 @@ function xfusion_cor_readiness_categories(): array
 }
 
 /**
+ * Cooldown for batch "Generate Insights" — 1 week after the user's most recent
+ * unified insight.
+ *
+ * @return array{
+ *   on_cooldown: bool,
+ *   seconds_remaining: int,
+ *   available_at: string,
+ *   available_at_ts: int,
+ *   last_evaluated_at: string
+ * }
+ */
+function xfusion_cor_readiness_batch_cooldown_status(int $userId): array
+{
+    if (function_exists('xfusion_cor_unified_cooldown_status')) {
+        return xfusion_cor_unified_cooldown_status($userId);
+    }
+
+    $empty = [
+        'on_cooldown' => false,
+        'seconds_remaining' => 0,
+        'available_at' => '',
+        'available_at_ts' => 0,
+        'last_evaluated_at' => '',
+    ];
+
+    if ($userId < 1) {
+        return $empty;
+    }
+
+    $latestTs = 0;
+    $latestEvaluatedAt = '';
+
+    foreach (xfusion_cor_readiness_categories() as $title) {
+        $groupId = xfusion_send_eval_group_id_from_category($title);
+        if ($groupId < 1) {
+            continue;
+        }
+
+        $status = xfusion_send_eval_cooldown_status($userId, $groupId);
+        $evaluatedAt = trim((string) ($status['last_evaluated_at'] ?? ''));
+        if ($evaluatedAt === '') {
+            continue;
+        }
+
+        $ts = strtotime($evaluatedAt . ' UTC');
+        if ($ts !== false && $ts > $latestTs) {
+            $latestTs = $ts;
+            $latestEvaluatedAt = $evaluatedAt;
+        }
+    }
+
+    if ($latestTs < 1) {
+        return $empty;
+    }
+
+    $availableTs = $latestTs + XFUSION_SEND_EVAL_COOLDOWN_SECONDS;
+    $remaining = $availableTs - time();
+
+    return [
+        'on_cooldown' => $remaining > 0,
+        'seconds_remaining' => $remaining > 0 ? $remaining : 0,
+        'available_at' => gmdate('Y-m-d H:i:s', $availableTs),
+        'available_at_ts' => $availableTs,
+        'last_evaluated_at' => $latestEvaluatedAt,
+    ];
+}
+
+/**
+ * @param array{
+ *   on_cooldown: bool,
+ *   seconds_remaining: int,
+ *   available_at: string,
+ *   available_at_ts: int
+ * } $cooldown
+ */
+function xfusion_cor_readiness_batch_cooldown_notice_html(array $cooldown): string
+{
+    if (! $cooldown['on_cooldown']) {
+        return '';
+    }
+
+    $remaining = xfusion_send_eval_format_cooldown_remaining((int) $cooldown['seconds_remaining']);
+
+    ob_start();
+    ?>
+<p class="xfusion-cor-readiness__cooldown" data-cooldown-until="<?php echo (int) ($cooldown['available_at_ts'] ?? 0); ?>">
+    <?php
+    echo esc_html(sprintf(
+        /* translators: %s: remaining time */
+        __('Generate Insights available again in %s (1 week after your last generated data).', 'xfusion'),
+        $remaining
+    ));
+    ?>
+</p>
+    <?php
+
+    return (string) ob_get_clean();
+}
+
+/**
+ * All course scoring group titles from the database.
+ *
+ * @return list<string>
+ */
+function xfusion_cor_all_scoring_group_titles(): array
+{
+    global $wpdb;
+
+    $gtable = $wpdb->prefix . 'course_scoring_groups';
+    $rows = $wpdb->get_col("SELECT title FROM {$gtable} WHERE title != '' ORDER BY id ASC");
+
+    if (! is_array($rows)) {
+        return [];
+    }
+
+    $titles = [];
+    foreach ($rows as $row) {
+        $title = trim((string) $row);
+        if ($title !== '') {
+            $titles[] = $title;
+        }
+    }
+
+    return $titles;
+}
+
+/**
+ * Fetch course scoring group scores by group title (same lookup as readiness / send_evaluation).
+ *
+ * @return list<array{title: string, group_id: int, average: ?float, zone_label: string, zone_color: string}>
+ */
+function xfusion_cor_scoring_groups_data(int $userId, array $titles): array
+{
+    $groups = [];
+
+    foreach ($titles as $title) {
+        $title = trim((string) $title);
+        if ($title === '') {
+            continue;
+        }
+
+        $groupId = xfusion_send_eval_group_id_from_category($title);
+
+        $scorePeriod = function_exists('xfusion_insight_date_filter_score_period')
+            ? xfusion_insight_date_filter_score_period()
+            : null;
+
+        $payload = ($groupId > 0 && function_exists('xfusion_csg_gauge_payload'))
+            ? xfusion_csg_gauge_payload($groupId, $userId, $scorePeriod === null, $scorePeriod)
+            : null;
+
+        $average = is_array($payload) ? ($payload['average'] ?? null) : null;
+        $zoneLabel = is_array($payload) ? (string) ($payload['gauge_zone_label'] ?? 'No data') : 'No data';
+        $zoneColor = is_array($payload) ? (string) ($payload['gauge_zone_color'] ?? '#6b7280') : '#6b7280';
+        $resolvedTitle = is_array($payload) && ! empty($payload['title'])
+            ? (string) $payload['title']
+            : $title;
+
+        $groups[] = [
+            'title' => $resolvedTitle,
+            'group_id' => $groupId,
+            'average' => $average,
+            'zone_label' => $zoneLabel,
+            'zone_color' => $zoneColor,
+        ];
+    }
+
+    return $groups;
+}
+
+/**
+ * Snapshot weighted gauge averages for every scoring group (saved with unified insights).
+ *
+ * @return array<string, array{group_id: int, title: string, average: float}>
+ */
+function xfusion_cor_collect_gauge_snapshots(int $userId): array
+{
+    if ($userId < 1) {
+        return [];
+    }
+
+    $titles = xfusion_cor_all_scoring_group_titles();
+    if ($titles === []) {
+        $titles = xfusion_cor_readiness_categories();
+    }
+
+    $groups = xfusion_cor_scoring_groups_data($userId, $titles);
+    $snapshots = [];
+
+    foreach ($groups as $group) {
+        $groupId = (int) ($group['group_id'] ?? 0);
+        if ($groupId < 1 || $group['average'] === null) {
+            continue;
+        }
+
+        $snapshots[(string) $groupId] = [
+            'group_id' => $groupId,
+            'title' => (string) ($group['title'] ?? ''),
+            'average' => round((float) $group['average'], 2),
+        ];
+    }
+
+    return $snapshots;
+}
+
+/**
  * @return array{
  *   readiness_average: ?float,
  *   readiness_label: string,
  *   readiness_color: string,
  *   primary_strength: array{title: string, average: ?float},
  *   primary_opportunity: array{title: string, average: ?float},
- *   suggested_count: int,
  *   key_observation: string,
  *   recommended_focus: string,
  *   groups: list<array{title: string, group_id: int, average: ?float, zone_label: string, zone_color: string}>
@@ -1086,40 +1222,34 @@ function xfusion_cor_readiness_categories(): array
  */
 function xfusion_cor_readiness_dashboard_data(int $userId): array
 {
-    $groups = [];
-    $scored = [];
+    $groups = xfusion_cor_scoring_groups_data($userId, xfusion_cor_readiness_categories());
 
-    foreach (xfusion_cor_readiness_categories() as $title) {
-        $groupId = xfusion_send_eval_group_id_from_category($title);
+    // COR™ Readiness Indicator = mean gauge score (0–5) across every scoring group in DB.
+    $allTitles = xfusion_cor_all_scoring_group_titles();
+    $allGroups = $allTitles !== []
+        ? xfusion_cor_scoring_groups_data($userId, $allTitles)
+        : $groups;
 
-        $payload = ($groupId > 0 && function_exists('xfusion_csg_gauge_payload'))
-            ? xfusion_csg_gauge_payload($groupId, $userId)
-            : null;
-
-        $average = is_array($payload) ? ($payload['average'] ?? null) : null;
-        $zoneLabel = is_array($payload) ? (string) ($payload['gauge_zone_label'] ?? 'No data') : 'No data';
-        $zoneColor = is_array($payload) ? (string) ($payload['gauge_zone_color'] ?? '#6b7280') : '#6b7280';
-
-        $groups[] = [
-            'title' => $title,
-            'group_id' => $groupId,
-            'average' => $average,
-            'zone_label' => $zoneLabel,
-            'zone_color' => $zoneColor,
-        ];
-
-        if ($average !== null) {
-            $scored[] = [
-                'title' => $title,
-                'average' => (float) $average,
-                'group_id' => $groupId,
-            ];
+    $readinessScores = [];
+    foreach ($allGroups as $group) {
+        if ($group['average'] !== null) {
+            $readinessScores[] = (float) $group['average'];
         }
     }
 
-    $readinessAverage = null;
-    if ($scored !== []) {
-        $readinessAverage = round(array_sum(array_column($scored, 'average')) / count($scored), 2);
+    $readinessAverage = $readinessScores !== []
+        ? round(array_sum($readinessScores) / count($readinessScores), 2)
+        : null;
+
+    $scored = [];
+    foreach ($groups as $group) {
+        if ($group['average'] !== null) {
+            $scored[] = [
+                'title' => $group['title'],
+                'average' => (float) $group['average'],
+                'group_id' => $group['group_id'],
+            ];
+        }
     }
 
     $readinessZone = function_exists('xfusion_csg_gauge_zone_meta')
@@ -1140,18 +1270,36 @@ function xfusion_cor_readiness_dashboard_data(int $userId): array
         'average' => $scored !== [] ? (float) $scored[count($scored) - 1]['average'] : null,
     ];
 
+    $keyObservation = __(
+        'You demonstrate strong resilience and persistence when facing challenges. However, your lower score in Fill Buckets suggests limited awareness of the factors that restore and sustain your energy. This combination often leads to sustained effort but can reduce long-term effectiveness if recovery and energy management are neglected.',
+        'xfusion'
+    );
+
+    if (function_exists('xfusion_cor_unified_key_observation_for_user')) {
+        $fromAi = xfusion_cor_unified_key_observation_for_user($userId);
+        if ($fromAi !== '') {
+            $keyObservation = $fromAi;
+        }
+    }
+
+    $recommendedFocus = $primaryOpportunity['title'] !== '—'
+        ? $primaryOpportunity['title']
+        : __('Fill Buckets', 'xfusion');
+    if (function_exists('xfusion_cor_unified_recommended_focus_area_for_user')) {
+        $fromAiFocus = xfusion_cor_unified_recommended_focus_area_for_user($userId);
+        if ($fromAiFocus !== '') {
+            $recommendedFocus = $fromAiFocus;
+        }
+    }
+
     return [
         'readiness_average' => $readinessAverage,
         'readiness_label' => (string) $readinessZone['label'],
         'readiness_color' => (string) $readinessZone['color'],
         'primary_strength' => $primaryStrength,
         'primary_opportunity' => $primaryOpportunity,
-        'suggested_count' => 3,
-        'key_observation' => __(
-            'You demonstrate strong resilience and persistence when facing challenges. However, your lower score in Fill Buckets suggests limited awareness of the factors that restore and sustain your energy. This combination often leads to sustained effort but can reduce long-term effectiveness if recovery and energy management are neglected.',
-            'xfusion'
-        ),
-        'recommended_focus' => $primaryOpportunity['title'] !== '—' ? $primaryOpportunity['title'] : __('Fill Buckets', 'xfusion'),
+        'key_observation' => $keyObservation,
+        'recommended_focus' => $recommendedFocus,
         'groups' => $groups,
     ];
 }
@@ -1165,54 +1313,43 @@ function xfusion_cor_readiness_format_score(?float $score): string
     return number_format($score, 2, '.', '');
 }
 
-function xfusion_cor_readiness_note_icon_url(): string
-{
-    return content_url('uploads/2026/06/xfusion-note-icon.png');
-}
-
 function xfusion_cor_readiness_dashboard_css(): string
 {
     return <<<'CSS'
-.xfusion-cor-readiness{box-sizing:border-box;max-width:960px;margin:0 auto;padding:28px 32px 32px;background:#fff;border:1px solid #e5e7eb;border-radius:12px;font-family:inherit;line-height:1.5;color:#1e3a5f;}
-.xfusion-cor-readiness__metrics{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:0;margin:0 0 28px;}
+.xfusion-cor-readiness{box-sizing:border-box;max-width:960px;margin:0;padding:0px;background:#fff;font-family:inherit;line-height:1.5;color:#1e3a5f;}
+.xfusion-cor-readiness__metrics{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:0;margin:0 0 28px;}
 .xfusion-cor-readiness__metric{position:relative;padding:0 24px;text-align:center;}
 .xfusion-cor-readiness__metric:not(:last-child)::after{content:"";position:absolute;top:8%;right:0;width:1px;height:84%;background:#d1d5db;}
 .xfusion-cor-readiness__metric:first-child{padding-left:0;}
 .xfusion-cor-readiness__metric:last-child{padding-right:0;}
-.xfusion-cor-readiness__metric-label{margin:0 0 10px;font-size:11px;font-weight:700;letter-spacing:.04em;text-transform:uppercase;color:#1e3a5f;line-height:1.35;}
+.xfusion-cor-readiness__metric-label{margin:0 0 10px;font-size:22px;font-weight:700;letter-spacing:.04em;text-transform:uppercase;color:#1e3a5f;line-height:1.35;}
 .xfusion-cor-readiness__metric-value{margin:0;font-size:42px;font-weight:700;line-height:1;color:#1e3a5f;}
 .xfusion-cor-readiness__metric-status{margin:8px 0 0;font-size:22px;font-weight:600;line-height:1.2;}
-.xfusion-cor-readiness__metric-name{margin:0 0 6px;font-size:22px;font-weight:600;line-height:1.25;}
+.xfusion-cor-readiness__metric-name{margin:0 0 6px;font-size:30px;font-weight:600;line-height:1.25;}
 .xfusion-cor-readiness__metric-name--strength{color:#e8913a;}
 .xfusion-cor-readiness__metric-name--opportunity{color:#dc2626;}
 .xfusion-cor-readiness__metric-subscore{margin:0;font-size:22px;font-weight:700;color:#1e3a5f;line-height:1.2;}
-.xfusion-cor-readiness__activities{display:flex;align-items:center;justify-content:center;gap:14px;margin-top:4px;}
-.xfusion-cor-readiness__activities-icon{width:52px;height:52px;object-fit:contain;flex-shrink:0;}
-.xfusion-cor-readiness__activities-body{text-align:left;}
-.xfusion-cor-readiness__activities-count{margin:0;font-size:42px;font-weight:700;line-height:1;color:#1e3a5f;}
-.xfusion-cor-readiness__activities-label{margin:4px 0 0;font-size:13px;font-weight:700;color:#1e3a5f;line-height:1.2;}
 .xfusion-cor-readiness__observation{margin:0 0 24px;}
-.xfusion-cor-readiness__observation-title{margin:0 0 12px;font-size:13px;font-weight:700;letter-spacing:.04em;text-transform:uppercase;color:#1e3a5f;}
-.xfusion-cor-readiness__observation-text{margin:0;font-size:15px;line-height:1.65;color:#1e3a5f;}
-.xfusion-cor-readiness__footer{display:flex;align-items:flex-end;justify-content:space-between;gap:20px;flex-wrap:wrap;}
-.xfusion-cor-readiness__focus{margin:0;font-size:13px;font-weight:700;letter-spacing:.03em;text-transform:uppercase;color:#1e3a5f;line-height:1.5;}
-.xfusion-cor-readiness__focus-value{color:#dc2626;font-weight:700;}
-.xfusion-cor-readiness__actions{margin-left:auto;}
+.xfusion-cor-readiness__observation-title{margin:0 0 12px;font-size:22px;font-weight:700;letter-spacing:.04em;text-transform:uppercase;color:#1e3a5f;}
+.xfusion-cor-readiness__observation-text{margin:0;font-size:20px;line-height:1.65;color:#1e3a5f;}
+.xfusion-cor-readiness__footer{display:flex;align-items:flex-end;justify-content:flex-end;gap:20px;flex-wrap:wrap;margin-top:4px;}
+.xfusion-cor-readiness__actions{display:flex;flex-direction:column;align-items:flex-end;}
 .xfusion-cor-readiness__btn{display:inline-flex;align-items:center;justify-content:center;gap:10px;padding:14px 28px;border:none;border-radius:999px;background:linear-gradient(135deg,#3d9a50 0%,#2f7d3e 100%);color:#fff;font-size:13px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;cursor:pointer;box-shadow:0 4px 14px rgba(47,125,62,.28);transition:opacity .15s ease,transform .15s ease;}
 .xfusion-cor-readiness__btn:hover{opacity:.94;transform:translateY(-1px);}
 .xfusion-cor-readiness__btn:disabled{opacity:.55;cursor:not-allowed;transform:none;}
 .xfusion-cor-readiness__btn-icon{width:18px;height:18px;flex-shrink:0;}
+.xfusion-cor-readiness__cooldown{margin:10px 0 0;font-size:13px;line-height:1.45;color:#92400e;text-align:center;}
 .xfusion-cor-readiness__status{margin:16px 0 0;font-size:14px;line-height:1.5;}
 .xfusion-cor-readiness__status--error{color:#b91c1c;}
 .xfusion-cor-readiness__status--success{color:#166534;}
 @media (max-width:860px){
 .xfusion-cor-readiness{padding:20px 18px 24px;}
-.xfusion-cor-readiness__metrics{grid-template-columns:repeat(2,minmax(0,1fr));row-gap:24px;}
-.xfusion-cor-readiness__metric:nth-child(2)::after{display:none;}
-.xfusion-cor-readiness__metric:nth-child(odd){padding-left:0;}
-.xfusion-cor-readiness__metric:nth-child(even){padding-right:0;}
-.xfusion-cor-readiness__metric-value,.xfusion-cor-readiness__activities-count{font-size:34px;}
-.xfusion-cor-readiness__metric-name,.xfusion-cor-readiness__metric-subscore,.xfusion-cor-readiness__metric-status{font-size:18px;}
+.xfusion-cor-readiness__metrics{grid-template-columns:1fr;row-gap:24px;}
+.xfusion-cor-readiness__metric::after{display:none;}
+.xfusion-cor-readiness__metric{padding:0;}
+.xfusion-cor-readiness__metric-value{font-size:34px;}
+.xfusion-cor-readiness__metric-name{font-size:30px;}
+.xfusion-cor-readiness__metric-subscore,.xfusion-cor-readiness__metric-status{font-size:18px;}
 .xfusion-cor-readiness__footer{flex-direction:column;align-items:stretch;}
 .xfusion-cor-readiness__actions{margin-left:0;}
 .xfusion-cor-readiness__btn{width:100%;}
@@ -1264,14 +1401,33 @@ function xfusion_cor_readiness_dashboard_shortcode($atts): string
     $wrapClass = trim('xfusion-cor-readiness ' . (string) $atts['class']);
     $ajaxUrl = admin_url('admin-ajax.php');
     $nonce = wp_create_nonce(XFUSION_COR_READINESS_NONCE_ACTION);
-    $noteIcon = esc_url(xfusion_cor_readiness_note_icon_url());
     $btnLabel = esc_html__('Generate Insights', 'xfusion');
     $sendingLabel = esc_attr__('Generating…', 'xfusion');
+    $historicalView = function_exists('xfusion_insight_date_filter_is_active') && xfusion_insight_date_filter_is_active();
+    $sandboxMode = function_exists('xfusion_llm_insight_cooldown_enabled') && ! xfusion_llm_insight_cooldown_enabled();
+    $cooldown = xfusion_cor_readiness_batch_cooldown_status($userId);
+    $onCooldown = ! $sandboxMode && $cooldown['on_cooldown'];
+    $btnDisabled = $historicalView || $onCooldown;
+    $cooldownHtml = ($historicalView || $sandboxMode) ? '' : xfusion_cor_readiness_batch_cooldown_notice_html($cooldown);
+    $aiNotifyGate = function_exists('xfusion_once_popup_gate_for_shortcode')
+        ? xfusion_once_popup_gate_for_shortcode($instanceId)
+        : ['show' => false, 'element_id' => '', 'markup' => ''];
+    if ($historicalView) {
+        $aiNotifyGate['show'] = false;
+    }
 
     ob_start();
     xfusion_cor_readiness_print_styles();
+    if (function_exists('xfusion_insight_date_filter_print_styles')) {
+        xfusion_insight_date_filter_print_styles();
+    }
     ?>
-<div class="<?php echo esc_attr($wrapClass); ?>" id="<?php echo esc_attr($instanceId); ?>" data-user-id="<?php echo (int) $userId; ?>">
+<div class="<?php echo esc_attr($wrapClass); ?>" id="<?php echo esc_attr($instanceId); ?>" data-user-id="<?php echo (int) $userId; ?>" data-cooldown-until="<?php echo $sandboxMode ? 0 : (int) ($cooldown['available_at_ts'] ?? 0); ?>"<?php echo $sandboxMode ? ' data-sandbox-mode="1"' : ''; ?>>
+    <?php
+    if ($historicalView && function_exists('xfusion_insight_date_filter_notice_html')) {
+        echo xfusion_insight_date_filter_notice_html();
+    }
+    ?>
     <div class="xfusion-cor-readiness__metrics" role="group" aria-label="<?php esc_attr_e('Readiness summary', 'xfusion'); ?>">
         <div class="xfusion-cor-readiness__metric">
             <p class="xfusion-cor-readiness__metric-label"><?php esc_html_e('COR™ Readiness Indicator', 'xfusion'); ?></p>
@@ -1292,31 +1448,21 @@ function xfusion_cor_readiness_dashboard_shortcode($atts): string
             <p class="xfusion-cor-readiness__metric-name xfusion-cor-readiness__metric-name--opportunity"><?php echo esc_html($data['primary_opportunity']['title']); ?></p>
             <p class="xfusion-cor-readiness__metric-subscore"><?php echo esc_html(xfusion_cor_readiness_format_score($data['primary_opportunity']['average'])); ?></p>
         </div>
-
-        <div class="xfusion-cor-readiness__metric">
-            <p class="xfusion-cor-readiness__metric-label"><?php esc_html_e('Suggested Activities', 'xfusion'); ?></p>
-            <div class="xfusion-cor-readiness__activities">
-                <img class="xfusion-cor-readiness__activities-icon" src="<?php echo $noteIcon; ?>" alt="" width="52" height="52" decoding="async" />
-                <div class="xfusion-cor-readiness__activities-body">
-                    <p class="xfusion-cor-readiness__activities-count"><?php echo (int) $data['suggested_count']; ?></p>
-                    <p class="xfusion-cor-readiness__activities-label"><?php esc_html_e('Recommended', 'xfusion'); ?></p>
-                </div>
-            </div>
-        </div>
     </div>
 
     <div class="xfusion-cor-readiness__observation">
-        <h3 class="xfusion-cor-readiness__observation-title"><?php esc_html_e('Key Observation', 'xfusion'); ?></h3>
+        <p class="xfusion-cor-readiness__observation-title"><?php esc_html_e('Overall Insight', 'xfusion'); ?></p>
         <p class="xfusion-cor-readiness__observation-text"><?php echo esc_html($data['key_observation']); ?></p>
     </div>
 
+    <div class="xfusion-cor-readiness__observation">
+        <p class="xfusion-cor-readiness__observation-title"><?php esc_html_e('Recommended Focus Area', 'xfusion'); ?></p>
+        <p class="xfusion-cor-readiness__observation-text"><?php echo esc_html($data['recommended_focus']); ?></p>
+    </div>
+
     <div class="xfusion-cor-readiness__footer">
-        <p class="xfusion-cor-readiness__focus">
-            <?php esc_html_e('Recommended Focus:', 'xfusion'); ?>
-            <span class="xfusion-cor-readiness__focus-value"><?php echo esc_html($data['recommended_focus']); ?></span>
-        </p>
         <div class="xfusion-cor-readiness__actions">
-            <button type="button" class="xfusion-cor-readiness__btn">
+            <button type="button" class="xfusion-cor-readiness__btn"<?php echo $btnDisabled ? ' disabled' : ''; ?>>
                 <svg class="xfusion-cor-readiness__btn-icon" viewBox="0 0 24 24" fill="none" aria-hidden="true" xmlns="http://www.w3.org/2000/svg">
                     <path d="M12 2l1.2 4.2L17 7l-3.8 1.8L12 13l-1.2-4.2L7 7l3.8-1.8L12 2z" fill="currentColor"/>
                     <path d="M19 11l.8 2.8L22.5 14l-2.7 1.2L19 18l-.8-2.8L15.5 14l2.7-1.2L19 11z" fill="currentColor"/>
@@ -1324,21 +1470,62 @@ function xfusion_cor_readiness_dashboard_shortcode($atts): string
                 </svg>
                 <span class="xfusion-cor-readiness__btn-label"><?php echo $btnLabel; ?></span>
             </button>
+            <?php echo $cooldownHtml; ?>
         </div>
     </div>
 
     <div class="xfusion-cor-readiness__status" style="display:none;" role="status" aria-live="polite"></div>
 </div>
+<?php echo $aiNotifyGate['markup']; ?>
 <script>
-(function () {
-    var root = document.getElementById(<?php echo wp_json_encode($instanceId); ?>);
+<?php
+    $corCoreJs = <<<'CORJS'
+    var root = document.getElementById(INSTANCE_ID);
     if (!root) return;
     var btn = root.querySelector('.xfusion-cor-readiness__btn');
     var btnLabelEl = root.querySelector('.xfusion-cor-readiness__btn-label');
     var statusEl = root.querySelector('.xfusion-cor-readiness__status');
     if (!btn || !btnLabelEl || !statusEl) return;
 
-    var defaultBtnLabel = <?php echo wp_json_encode($btnLabel); ?>;
+    var defaultBtnLabel = BTN_LABEL;
+    var historicalView = HISTORICAL_VIEW;
+    var sandboxMode = root.getAttribute('data-sandbox-mode') === '1';
+    var cooldownEl = root.querySelector('.xfusion-cor-readiness__cooldown');
+
+    function setButtonDisabled(disabled) {
+        btn.disabled = disabled || historicalView;
+    }
+
+    function applyCooldown(untilTs) {
+        if (sandboxMode) {
+            setButtonDisabled(false);
+            return false;
+        }
+        var now = Math.floor(Date.now() / 1000);
+        var remaining = untilTs - now;
+        if (remaining <= 0) {
+            setButtonDisabled(false);
+            if (cooldownEl) cooldownEl.style.display = 'none';
+            root.setAttribute('data-cooldown-until', '0');
+            return false;
+        }
+        setButtonDisabled(true);
+        root.setAttribute('data-cooldown-until', String(untilTs));
+        return true;
+    }
+
+    function tickCooldown() {
+        if (sandboxMode) return;
+        var until = parseInt(root.getAttribute('data-cooldown-until') || '0', 10);
+        if (!until) return;
+        if (!applyCooldown(until)) {
+            cooldownEl = root.querySelector('.xfusion-cor-readiness__cooldown');
+            if (cooldownEl) cooldownEl.style.display = 'none';
+        }
+    }
+
+    tickCooldown();
+    setInterval(tickCooldown, 30000);
 
     function showStatus(msg, isError) {
         statusEl.style.display = 'block';
@@ -1346,22 +1533,49 @@ function xfusion_cor_readiness_dashboard_shortcode($atts): string
         statusEl.textContent = msg;
     }
 
-    btn.addEventListener('click', function () {
-        btn.disabled = true;
-        btnLabelEl.textContent = <?php echo wp_json_encode(trim($sendingLabel)); ?>;
+    function runEvaluation() {
+        if (btn.disabled) return;
+
+        setButtonDisabled(true);
+        btnLabelEl.textContent = SENDING_LABEL;
         statusEl.style.display = 'none';
 
         var fd = new FormData();
         fd.append('action', 'xfusion_core_readiness_generate_all');
-        fd.append('nonce', <?php echo wp_json_encode($nonce); ?>);
+        fd.append('nonce', EVAL_NONCE);
         fd.append('user_id', root.getAttribute('data-user-id') || '0');
 
-        fetch(<?php echo wp_json_encode($ajaxUrl); ?>, { method: 'POST', body: fd, credentials: 'same-origin' })
+        fetch(AJAX_URL, { method: 'POST', body: fd, credentials: 'same-origin' })
             .then(function (r) { return r.json().then(function (j) { return { ok: r.ok, j: j }; }); })
             .then(function (res) {
                 if (!res.j || !res.j.success) {
                     var err = (res.j && res.j.data && res.j.data.message) ? res.j.data.message : 'Request failed.';
-                    btn.disabled = false;
+                    if (res.j && res.j.data && (res.j.data.require_popup || res.j.data.ai_notify_required) && typeof window.xfusionOpenAiNotifyGate === 'function') {
+                        setButtonDisabled(false);
+                        btnLabelEl.textContent = defaultBtnLabel;
+                        statusEl.style.display = 'none';
+                        window.xfusionOpenAiNotifyGate(runEvaluation);
+                        return;
+                    }
+                    if (res.j && res.j.data && res.j.data.cooldown && res.j.data.cooldown.available_at_ts) {
+                        applyCooldown(res.j.data.cooldown.available_at_ts);
+                        if (res.j.data.cooldown_notice_html) {
+                            if (cooldownEl) {
+                                cooldownEl.outerHTML = res.j.data.cooldown_notice_html;
+                            } else {
+                                var temp = document.createElement('div');
+                                temp.innerHTML = res.j.data.cooldown_notice_html.trim();
+                                var notice = temp.firstElementChild;
+                                if (notice) {
+                                    btn.insertAdjacentElement('afterend', notice);
+                                }
+                            }
+                            cooldownEl = root.querySelector('.xfusion-cor-readiness__cooldown');
+                            if (cooldownEl) cooldownEl.style.display = 'block';
+                        }
+                    } else {
+                        setButtonDisabled(false);
+                    }
                     btnLabelEl.textContent = defaultBtnLabel;
                     showStatus(err, true);
                     return;
@@ -1375,12 +1589,34 @@ function xfusion_cor_readiness_dashboard_shortcode($atts): string
                 }
             })
             .catch(function () {
-                btn.disabled = false;
+                setButtonDisabled(false);
                 btnLabelEl.textContent = defaultBtnLabel;
                 showStatus('Network error. Please try again.', true);
             });
-    });
-})();
+    }
+
+    CLICK_BINDING
+CORJS;
+    $corClickBinding = ! empty($aiNotifyGate['show'])
+        ? "btn.addEventListener('click', onGenerateClick(runEvaluation));"
+        : "btn.addEventListener('click', runEvaluation);";
+    $corCoreJs = str_replace(
+        ['INSTANCE_ID', 'BTN_LABEL', 'SENDING_LABEL', 'EVAL_NONCE', 'AJAX_URL', 'HISTORICAL_VIEW', 'CLICK_BINDING'],
+        [
+            wp_json_encode($instanceId),
+            wp_json_encode($btnLabel),
+            wp_json_encode(trim($sendingLabel)),
+            wp_json_encode($nonce),
+            wp_json_encode($ajaxUrl),
+            $historicalView ? 'true' : 'false',
+            $corClickBinding,
+        ],
+        $corCoreJs
+    );
+    echo function_exists('xfusion_once_popup_gate_script')
+        ? xfusion_once_popup_gate_script($aiNotifyGate, $corCoreJs)
+        : '(function () { ' . $corCoreJs . ' })();';
+    ?>
 </script>
     <?php
 
@@ -1397,6 +1633,10 @@ function xfusion_cor_readiness_batch_ajax_handler(): void
         wp_send_json_error(['message' => __('You must be logged in.', 'xfusion')], 401);
     }
 
+    if (function_exists('xfusion_once_popup_require_confirmed_or_error')) {
+        xfusion_once_popup_require_confirmed_or_error();
+    }
+
     $userId = (int) get_current_user_id();
     $postedUserId = isset($_POST['user_id']) ? absint($_POST['user_id']) : 0;
     if ($postedUserId > 0 && $postedUserId !== $userId) {
@@ -1406,81 +1646,393 @@ function xfusion_cor_readiness_batch_ajax_handler(): void
         $userId = $postedUserId;
     }
 
-    $categories = xfusion_cor_readiness_categories();
-    $results = [];
-    $successCount = 0;
-    $skippedCount = 0;
-    $failedCount = 0;
-
-    foreach ($categories as $title) {
-        $groupId = xfusion_send_eval_group_id_from_category($title);
-        if ($groupId < 1) {
-            $results[$title] = [
-                'ok' => false,
-                'skipped' => true,
-                'message' => sprintf(
-                    /* translators: %s: category title */
-                    __('Course scoring group not found for category: %s', 'xfusion'),
-                    $title
-                ),
-            ];
-            ++$skippedCount;
-            continue;
-        }
-
-        $processed = xfusion_send_eval_process_group($userId, $groupId, true);
-        $results[$title] = $processed;
-
-        if ($processed['ok']) {
-            ++$successCount;
-        } elseif ($processed['skipped']) {
-            ++$skippedCount;
-        } else {
-            ++$failedCount;
-        }
-    }
-
-    $total = count($categories);
-
-    if ($successCount < 1) {
-        $messages = array_values(array_filter(array_map(
-            static fn (array $row): string => isset($row['message']) ? (string) $row['message'] : '',
-            $results
-        )));
-
+    $batchCooldown = xfusion_cor_readiness_batch_cooldown_status($userId);
+    if ($batchCooldown['on_cooldown']
+        && (! function_exists('xfusion_llm_insight_cooldown_enabled') || xfusion_llm_insight_cooldown_enabled())) {
         wp_send_json_error([
-            'message' => $messages[0] ?? __('No insights could be generated. Check that all categories have answers and cooldown periods have passed.', 'xfusion'),
-            'results' => $results,
-            'success_count' => $successCount,
-            'skipped_count' => $skippedCount,
-            'failed_count' => $failedCount,
-        ], $failedCount > 0 ? 502 : 429);
+            'message' => sprintf(
+                /* translators: %s: remaining time */
+                __('Generate Insights is available again in %s.', 'xfusion'),
+                xfusion_send_eval_format_cooldown_remaining((int) $batchCooldown['seconds_remaining'])
+            ),
+            'cooldown' => $batchCooldown,
+            'cooldown_notice_html' => xfusion_cor_readiness_batch_cooldown_notice_html($batchCooldown),
+        ], 429);
     }
 
-    $message = sprintf(
-        /* translators: 1: success count, 2: total categories */
-        _n(
-            'Generated insights for %1$d of %2$d category.',
-            'Generated insights for %1$d of %2$d categories.',
-            $total,
-            'xfusion'
-        ),
-        $successCount,
-        $total
-    );
+    if (! function_exists('xfusion_cor_unified_process')) {
+        wp_send_json_error([
+            'message' => __('Unified insights module is not loaded. Deploy cor-unified-insights.php.', 'xfusion'),
+        ], 500);
+    }
 
-    if ($skippedCount > 0 || $failedCount > 0) {
-        $message .= ' ' . __('Some categories were skipped (cooldown, missing answers, or errors).', 'xfusion');
+    $processed = xfusion_cor_unified_process($userId, false);
+
+    if (! $processed['ok']) {
+        $status = $processed['skipped'] ? 429 : 502;
+        if (isset($processed['cooldown'])) {
+            $status = 429;
+        }
+
+        $error = [
+            'message' => $processed['message'] ?: __('No insights could be generated.', 'xfusion'),
+            'unified' => true,
+        ];
+
+        if (isset($processed['cooldown'])) {
+            $error['cooldown'] = $processed['cooldown'];
+            $error['cooldown_notice_html'] = xfusion_cor_readiness_batch_cooldown_notice_html($processed['cooldown']);
+        }
+
+        wp_send_json_error($error, $status);
     }
 
     wp_send_json_success([
-        'message' => $message,
-        'results' => $results,
-        'success_count' => $successCount,
-        'skipped_count' => $skippedCount,
-        'failed_count' => $failedCount,
+        'message' => $processed['message'],
+        'unified' => true,
+        'result_id' => (int) ($processed['result_id'] ?? 0),
         'reload' => true,
     ]);
 }
 
 add_shortcode('xfusion_core_readiness', 'xfusion_cor_readiness_dashboard_shortcode');
+
+/**
+ * COR™ dimension pillars — course scoring group titles (must match wp_course_scoring_groups.title).
+ *
+ * @return list<array{key: string, title: string, icon: string, bar_color: string}>
+ */
+function xfusion_cor_dimensions_categories(): array
+{
+    $iconBase = content_url('uploads/2026/06');
+
+    return [
+        [
+            'key' => 'alignment',
+            'title' => 'Alignment',
+            'icon' => $iconBase . '/icon-profile-blue.png',
+            'bar_color' => '#16a34a',
+        ],
+        [
+            'key' => 'accountability',
+            'title' => 'Accountability',
+            'icon' => $iconBase . '/icon-shield.png',
+            'bar_color' => '#e8913a',
+        ],
+        [
+            'key' => 'communication',
+            'title' => 'Communication',
+            'icon' => $iconBase . '/icon-chat.png',
+            'bar_color' => '#3b82f6',
+        ],
+        [
+            'key' => 'leadership',
+            'title' => 'Leadership',
+            'icon' => $iconBase . '/icon-group-of-people.png',
+            'bar_color' => '#16a34a',
+        ],
+        [
+            'key' => 'execution',
+            'title' => 'Execution',
+            'icon' => $iconBase . '/icon-gear.png',
+            'bar_color' => '#1e3a5f',
+        ],
+    ];
+}
+
+/**
+ * @return list<array{key: string, title: string, icon: string, bar_color: string, group_id: int, average: ?float, bar_percent: float, zone_label: string, zone_color: string}>
+ */
+function xfusion_cor_dimensions_data(int $userId): array
+{
+    $categories = xfusion_cor_dimensions_categories();
+    $titles = array_column($categories, 'title');
+    $groups = xfusion_cor_scoring_groups_data($userId, $titles);
+    $groupsByTitle = [];
+
+    foreach ($groups as $group) {
+        $groupsByTitle[strtolower($group['title'])] = $group;
+    }
+
+    $items = [];
+    $gaugeMax = defined('XFUSION_CSG_GAUGE_MAX') ? (float) XFUSION_CSG_GAUGE_MAX : 5.0;
+
+    foreach ($categories as $category) {
+        $lookupKey = strtolower($category['title']);
+        $group = $groupsByTitle[$lookupKey] ?? [
+            'title' => $category['title'],
+            'group_id' => 0,
+            'average' => null,
+            'zone_label' => 'No data',
+            'zone_color' => '#6b7280',
+        ];
+
+        $average = $group['average'];
+        $barPercent = 0.0;
+        if ($average !== null && $gaugeMax > 0) {
+            $barPercent = min(100.0, max(0.0, round(((float) $average / $gaugeMax) * 100, 1)));
+        }
+
+        $items[] = array_merge($category, [
+            'title' => (string) $group['title'],
+            'group_id' => (int) $group['group_id'],
+            'average' => $average,
+            'bar_percent' => $barPercent,
+            'zone_label' => (string) $group['zone_label'],
+            'zone_color' => (string) $group['zone_color'],
+        ]);
+    }
+
+    return $items;
+}
+
+function xfusion_cor_dimensions_css(): string
+{
+    return <<<'CSS'
+.xfusion-cor-dimensions{box-sizing:border-box;max-width:1200px;margin:0 auto;padding:0px;background:#fff;font-family:inherit;line-height:1.5;color:#1e3a5f;}
+.xfusion-cor-dimensions__grid{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:0;margin:0;}
+.xfusion-cor-dimensions__item{position:relative;display:flex;flex-direction:column;align-items:stretch;padding:0 16px;}
+.xfusion-cor-dimensions__item:not(:last-child)::after{content:"";position:absolute;top:6%;right:0;width:1px;height:88%;background:#d1d5db;}
+.xfusion-cor-dimensions__item:first-child{padding-left:0;}
+.xfusion-cor-dimensions__item:last-child{padding-right:0;}
+.xfusion-cor-dimensions__head{display:flex;align-items:flex-start;gap:12px;margin:0 0 12px;}
+.xfusion-cor-dimensions__icon{flex-shrink:0;width:40px;height:40px;object-fit:contain;display:block;margin:0;}
+.xfusion-cor-dimensions__text{flex:1;min-width:0;text-align:left;}
+.xfusion-cor-dimensions__label{margin:0 0 6px;font-size:15px;font-weight:700;letter-spacing:.04em;text-transform:uppercase;color:#1e3a5f;line-height:1.3;}
+.xfusion-cor-dimensions__score{margin:0;font-size:20px;font-weight:600;line-height:1.2;color:#1e3a5f;}
+.xfusion-cor-dimensions__bar{width:100%;height:10px;border-radius:999px;background:#e5e7eb;overflow:hidden;}
+.xfusion-cor-dimensions__bar-fill{display:block;height:100%;border-radius:999px;transition:width .3s ease;}
+@media (max-width:1024px){
+.xfusion-cor-dimensions{padding:24px 20px;}
+.xfusion-cor-dimensions__grid{grid-template-columns:repeat(3,minmax(0,1fr));row-gap:28px;}
+.xfusion-cor-dimensions__item:nth-child(3n)::after{display:none;}
+.xfusion-cor-dimensions__item{padding:0 12px;}
+}
+@media (max-width:640px){
+.xfusion-cor-dimensions{padding:20px 16px;}
+.xfusion-cor-dimensions__grid{grid-template-columns:1fr;row-gap:24px;}
+.xfusion-cor-dimensions__item::after{display:none;}
+.xfusion-cor-dimensions__item{padding:0;}
+.xfusion-cor-dimensions__icon{width:64px;height:64px;}
+}
+CSS;
+}
+
+function xfusion_cor_dimensions_print_styles(): void
+{
+    static $printed = false;
+    if ($printed) {
+        return;
+    }
+    $printed = true;
+
+    echo '<style id="xfusion-cor-dimensions-css">' . xfusion_cor_dimensions_css() . '</style>';
+}
+
+/**
+ * @param array<string, string> $atts
+ */
+function xfusion_cor_dimensions_shortcode($atts): string
+{
+    $atts = shortcode_atts(
+        [
+            'user_id' => '0',
+            'class' => '',
+        ],
+        $atts,
+        'xfusion_core_dimensions'
+    );
+
+    if (! is_user_logged_in()) {
+        return '<p class="xfusion-cor-dimensions xfusion-cor-dimensions--error">' . esc_html__('Please log in to view your dimension scores.', 'xfusion') . '</p>';
+    }
+
+    if (! function_exists('xfusion_csg_gauge_payload')) {
+        return '<p class="xfusion-cor-dimensions xfusion-cor-dimensions--error">' . esc_html__('Required scoring helpers are not loaded.', 'xfusion') . '</p>';
+    }
+
+    $userId = (int) get_current_user_id();
+    $attrUserId = absint($atts['user_id']);
+    if ($attrUserId > 0 && current_user_can('edit_users')) {
+        $userId = $attrUserId;
+    }
+
+    $items = xfusion_cor_dimensions_data($userId);
+    $wrapClass = trim('xfusion-cor-dimensions ' . (string) $atts['class']);
+    $gaugeMax = defined('XFUSION_CSG_GAUGE_MAX') ? (float) XFUSION_CSG_GAUGE_MAX : 5.0;
+
+    ob_start();
+    xfusion_cor_dimensions_print_styles();
+    ?>
+<div class="<?php echo esc_attr($wrapClass); ?>" role="region" aria-label="<?php esc_attr_e('COR dimension scores', 'xfusion'); ?>">
+    <div class="xfusion-cor-dimensions__grid" role="group" aria-label="<?php esc_attr_e('Alignment, accountability, communication, leadership, and execution', 'xfusion'); ?>">
+        <?php foreach ($items as $item) : ?>
+            <div class="xfusion-cor-dimensions__item xfusion-cor-dimensions__item--<?php echo esc_attr($item['key']); ?>">
+                <div class="xfusion-cor-dimensions__head">
+                    <img
+                        class="xfusion-cor-dimensions__icon"
+                        src="<?php echo esc_url($item['icon']); ?>"
+                        alt=""
+                        width="72"
+                        height="72"
+                        decoding="async"
+                    />
+                    <div class="xfusion-cor-dimensions__text">
+                        <p class="xfusion-cor-dimensions__label"><?php echo esc_html($item['title']); ?></p>
+                        <p class="xfusion-cor-dimensions__score"><?php echo esc_html(xfusion_cor_readiness_format_score($item['average'])); ?></p>
+                    </div>
+                </div>
+                <div
+                    class="xfusion-cor-dimensions__bar"
+                    role="progressbar"
+                    aria-valuemin="0"
+                    aria-valuemax="<?php echo esc_attr((string) $gaugeMax); ?>"
+                    aria-valuenow="<?php echo esc_attr($item['average'] !== null ? (string) $item['average'] : '0'); ?>"
+                    aria-label="<?php echo esc_attr($item['title']); ?>"
+                >
+                    <span
+                        class="xfusion-cor-dimensions__bar-fill"
+                        style="width:<?php echo esc_attr((string) $item['bar_percent']); ?>%;background-color:<?php echo esc_attr($item['bar_color']); ?>"
+                    ></span>
+                </div>
+            </div>
+        <?php endforeach; ?>
+    </div>
+</div>
+    <?php
+
+    return (string) ob_get_clean();
+}
+
+add_shortcode('xfusion_core_dimensions', 'xfusion_cor_dimensions_shortcode');
+
+// -------------------------------------------------------------------------
+// Unified insight snippets (read-only text blocks)
+// -------------------------------------------------------------------------
+
+/**
+ * Resolve target user for COR insight shortcodes.
+ */
+function xfusion_cor_insight_shortcode_user_id(array $atts): int
+{
+    if (! is_user_logged_in()) {
+        return 0;
+    }
+
+    $userId = (int) get_current_user_id();
+    $attrUserId = absint($atts['user_id'] ?? 0);
+    if ($attrUserId > 0 && current_user_can('edit_users')) {
+        $userId = $attrUserId;
+    }
+
+    return $userId;
+}
+
+function xfusion_cor_insight_text_css(): string
+{
+    return <<<'CSS'
+.xfusion-cor-insight{box-sizing:border-box;margin:0;padding:0;font-family:inherit;line-height:1.65;color:#1e3a5f;}
+.xfusion-cor-insight__text{margin:0;font-size:18px;line-height:1.65;color:#1e3a5f;white-space:pre-wrap;word-break:break-word;}
+.xfusion-cor-insight__empty{margin:0;font-size:15px;color:#6b7280;font-style:italic;}
+CSS;
+}
+
+function xfusion_cor_insight_print_styles(): void
+{
+    static $printed = false;
+    if ($printed) {
+        return;
+    }
+    $printed = true;
+
+    echo '<style id="xfusion-cor-insight-css">' . xfusion_cor_insight_text_css() . '</style>';
+}
+
+/**
+ * @param array<string, string> $atts
+ */
+function xfusion_cor_organization_capabilities_shortcode($atts): string
+{
+    $atts = shortcode_atts(
+        [
+            'user_id' => '0',
+            'class' => '',
+        ],
+        $atts,
+        'xfusion_cor_organization_capabilities'
+    );
+
+    if (! is_user_logged_in()) {
+        return '<p class="xfusion-cor-insight xfusion-cor-insight--error">' . esc_html__('Please log in to view insights.', 'xfusion') . '</p>';
+    }
+
+    $userId = xfusion_cor_insight_shortcode_user_id($atts);
+    $text = function_exists('xfusion_cor_unified_organization_capabilities_for_user')
+        ? xfusion_cor_unified_organization_capabilities_for_user($userId)
+        : '';
+
+    $wrapClass = trim('xfusion-cor-insight xfusion-cor-insight--capabilities ' . (string) $atts['class']);
+    $emptyMessage = function_exists('xfusion_insight_date_filter_is_active') && xfusion_insight_date_filter_is_active()
+        ? __('No COR insight for the selected date.', 'xfusion')
+        : __('No COR insight generated yet.', 'xfusion');
+
+    ob_start();
+    xfusion_cor_insight_print_styles();
+    ?>
+<div class="<?php echo esc_attr($wrapClass); ?>">
+    <?php if ($text !== '') : ?>
+        <p class="xfusion-cor-insight__text"><?php echo esc_html($text); ?></p>
+    <?php else : ?>
+        <p class="xfusion-cor-insight__empty"><?php echo esc_html($emptyMessage); ?></p>
+    <?php endif; ?>
+</div>
+    <?php
+
+    return (string) ob_get_clean();
+}
+
+/**
+ * @param array<string, string> $atts
+ */
+function xfusion_cor_key_observation_shortcode($atts): string
+{
+    $atts = shortcode_atts(
+        [
+            'user_id' => '0',
+            'class' => '',
+        ],
+        $atts,
+        'xfusion_cor_key_observation'
+    );
+
+    if (! is_user_logged_in()) {
+        return '<p class="xfusion-cor-insight xfusion-cor-insight--error">' . esc_html__('Please log in to view insights.', 'xfusion') . '</p>';
+    }
+
+    $userId = xfusion_cor_insight_shortcode_user_id($atts);
+    $text = function_exists('xfusion_cor_unified_key_observation_for_user')
+        ? xfusion_cor_unified_key_observation_for_user($userId)
+        : '';
+
+    $wrapClass = trim('xfusion-cor-insight xfusion-cor-insight--key-observation ' . (string) $atts['class']);
+    $emptyMessage = function_exists('xfusion_insight_date_filter_is_active') && xfusion_insight_date_filter_is_active()
+        ? __('No overall insight for the selected date.', 'xfusion')
+        : __('No overall insight generated yet.', 'xfusion');
+
+    ob_start();
+    xfusion_cor_insight_print_styles();
+    ?>
+<div class="<?php echo esc_attr($wrapClass); ?>">
+    <?php if ($text !== '') : ?>
+        <p class="xfusion-cor-insight__text"><?php echo esc_html($text); ?></p>
+    <?php else : ?>
+        <p class="xfusion-cor-insight__empty"><?php echo esc_html($emptyMessage); ?></p>
+    <?php endif; ?>
+</div>
+    <?php
+
+    return (string) ob_get_clean();
+}
+
+add_shortcode('xfusion_cor_organization_capabilities', 'xfusion_cor_organization_capabilities_shortcode');
+add_shortcode('xfusion_cor_key_observation', 'xfusion_cor_key_observation_shortcode');

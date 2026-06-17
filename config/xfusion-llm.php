@@ -30,7 +30,8 @@ return [
         'Be Intentional',
         'Foster Grit',
         'Drive Growth',
-        'Company Information'
+        'Company Information',
+        'COR Performance',
     ],
 
 ];

@@ -147,7 +147,8 @@ function xfusion_knowledge_render_meta_box(\WP_Post $post): void
         'Be Intentional',
         'Foster Grit',
         'Drive Growth',
-        'Company Information'
+        'Company Information',
+        'COR Performance',
     ]);
     ?>
     <p>
@@ -379,8 +380,10 @@ function xfusion_knowledge_render_settings_page(): void
                     </td>
                 </tr>
             </table>
+            <?php do_action('xfusion_llm_settings_in_form'); ?>
             <?php submit_button(); ?>
         </form>
+        <?php do_action('xfusion_llm_settings_after_connection'); ?>
     </div>
     <?php
 }

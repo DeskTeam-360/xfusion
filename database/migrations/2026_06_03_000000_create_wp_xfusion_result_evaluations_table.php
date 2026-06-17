@@ -22,6 +22,11 @@ return new class extends Migration
             $table->unsignedInteger('prompt_tokens')->default(0);
             $table->unsignedInteger('completion_tokens')->default(0);
             $table->unsignedInteger('tokens_used')->default(0);
+            $table->string('status', 20)->default('published');
+            $table->string('insight_model', 64)->default('');
+            $table->string('prompt_version_id', 64)->default('');
+            $table->string('prompt_version_label', 255)->default('');
+            $table->decimal('cost_usd', 12, 6)->default(0);
             $table->dateTime('inserted_at');
 
             $table->index(['user_id', 'scoring_group_id'], 'xfre_user_group_idx');
