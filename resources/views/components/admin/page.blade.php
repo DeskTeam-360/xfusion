@@ -15,7 +15,13 @@
                 @endisset
             </div>
 
-            <div class="admin-page-content p-5 pt-4">
+            @isset($toolbar)
+                <div class="border-b border-border px-5 py-4 dark:border-darkborder">
+                    {{ $toolbar }}
+                </div>
+            @endisset
+
+            <div class="admin-page-content">
                 {{ $slot }}
             </div>
         </div>

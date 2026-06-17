@@ -13,7 +13,8 @@
     .admin-data-table .btn,
     .admin-data-table a.btn,
     .admin-data-table button.btn,
-    td .flex.flex-wrap .btn {
+    td .flex.flex-wrap .btn,
+    .admin-table-actions .btn {
         display: inline-flex !important;
         align-items: center;
         justify-content: center;
@@ -101,11 +102,53 @@
         color: #fff;
     }
 
+    .admin-data-table {
+        width: 100%;
+    }
+
+    .admin-data-table .overflow-x-auto {
+        -webkit-overflow-scrolling: touch;
+    }
+
     .admin-table {
         width: 100%;
-        min-width: 100%;
+        min-width: 56rem;
+        table-layout: fixed;
+        display: table;
         font-size: 0.875rem;
         border-collapse: collapse;
+    }
+
+    .admin-table thead th.admin-table__col-actions,
+    .admin-table tbody td.admin-table__cell-actions {
+        width: 32%;
+        min-width: 16rem;
+    }
+
+    .admin-table tbody td.admin-table__cell-actions {
+        vertical-align: top;
+    }
+
+    .admin-table-actions {
+        display: flex;
+        flex-wrap: wrap;
+        align-items: center;
+        gap: 0.375rem;
+        max-width: 100%;
+    }
+
+    .admin-table-actions .btn {
+        margin: 0;
+    }
+
+    .admin-table-user {
+        min-width: 0;
+        line-height: 1.4;
+    }
+
+    .admin-table tbody td {
+        word-wrap: break-word;
+        overflow-wrap: anywhere;
     }
 
     .admin-table thead {

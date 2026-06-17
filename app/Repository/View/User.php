@@ -56,17 +56,13 @@ class User extends \App\Models\User implements View
                 ['label' => 'Email', 'sort' => 'user_email'],
                 ['label' => 'Role'],
                 ['label' => 'Access'],
-                ['label' => 'Actions', 'text-align' => 'center'],
+                ['label' => 'Actions', 'text-align' => 'center', 'class' => 'admin-table__col-actions'],
             ];
         }
 
         $roleUser = self::authWpCapabilityFirst();
         if ($roleUser === 'administrator') {
-            return [
-                ['label' => 'Profile', 'sort' => 'user_nicename'],
-                ['label' => 'Status'],
-                ['label' => 'Action'],
-            ];
+            return self::administratorTableFields();
         }
 
         return [
@@ -75,7 +71,7 @@ class User extends \App\Models\User implements View
             ['label' => 'Company'],
             ['label' => 'Access'],
             ['label' => 'Role'],
-            ['label' => 'Actions', 'text-align' => 'center'],
+            ['label' => 'Actions', 'text-align' => 'center', 'class' => 'admin-table__col-actions'],
         ];
     }
 
@@ -90,7 +86,7 @@ class User extends \App\Models\User implements View
         $roleUser = self::authWpCapabilityFirst();
 
         if ($roleUser === 'administrator') {
-            return self::buildAdministratorRow($data);
+            return self::administratorTableRow($data);
         }
 
         if (CompanyAdmin::isCompanyAdminPortalUser(Auth::user())) {
@@ -128,48 +124,63 @@ class User extends \App\Models\User implements View
         return trim((string) $v);
     }
 
-    private static function buildAdministratorRow($data): array
+    /** @return list<array<string, mixed>> */
+    public static function administratorTableFields(): array
+    {
+        return [
+            ['label' => '#', 'sort' => 'ID', 'width' => '4rem'],
+            ['label' => 'Employee', 'sort' => 'user_nicename', 'width' => '16%'],
+            ['label' => 'Email', 'sort' => 'user_email', 'width' => '18%'],
+            ['label' => 'Company', 'width' => '14%'],
+            ['label' => 'Role & Keap', 'width' => '16%'],
+            ['label' => 'Actions', 'width' => '32%', 'class' => 'admin-table__col-actions'],
+        ];
+    }
+
+    /** @return list<array<string, mixed>> */
+    public static function administratorTableRow($data): array
     {
         $fn = self::metaScalar($data->meta, 'first_name');
         $ln = self::metaScalar($data->meta, 'last_name');
-        $fullName = trim("$fn $ln");
+        $fullName = trim("$fn $ln") ?: ($data->user_nicename ?? $data->user_login ?? '—');
         $role = self::metaScalar($data->meta, 'user_role');
 
         $keaps = self::metaScalar($data->meta, 'keap_contact_id');
         $keapStatusRaw = self::metaScalar($data->meta, 'keap_status');
         $keapStatus = filter_var($keapStatusRaw, FILTER_VALIDATE_BOOLEAN) || $keapStatusRaw === '1';
 
-        $keap = "<div class='text-nowrap text-xs text-danger' style='color: red'>Not connected to Keap</div>";
-
+        $keapClass = 'text-error';
+        $keapLabel = 'Not connected to Keap';
         if ($keaps !== '' && $keapStatus === true) {
-            $keap = "<div class='text-nowrap text-xs text-success' style='color: green;'>Connected to Keap</div>";
+            $keapClass = 'text-success';
+            $keapLabel = 'Connected to Keap';
         }
 
-        $companies = $data->meta->where('meta_key', '=', 'company');
         $company = 'Non Company';
-        foreach ($companies as $r) {
+        foreach ($data->meta->where('meta_key', '=', 'company') as $r) {
             $c = Company::find($r['meta_value']);
-            if ($c != null) {
-                $company = $c->title;
-            } else {
-                $company = 'Company has been delete';
-            }
+            $company = $c !== null ? $c->title : 'Company has been deleted';
         }
+
+        $employeeHtml = '<div class="admin-table-user">'
+            . '<div class="font-semibold leading-snug text-dark dark:text-white">' . e($fullName) . '</div>'
+            . '<div class="text-xs text-warning">' . e($data->user_login ?? '') . '</div>'
+            . '</div>';
+
+        $statusHtml = '<div class="space-y-1 text-sm">'
+            . '<div class="font-medium text-dark dark:text-white">' . e($role ?: '—') . '</div>'
+            . '<div class="text-xs ' . $keapClass . '">' . e($keapLabel) . '</div>'
+            . '</div>';
 
         $toolbar = self::actionToolbarHtml($data, route('user.edit', $data->ID));
 
         return [
-            ['type' => 'raw_html', 'data' => "<div>
-                <span class='text-xl'>" . e($fullName) . '</span> <br>
-                <font color=\'#ffd700\'>' . e($data->user_login) . '</font> <br>
-                ' . e($data->user_email) . "
-                </div>"],
-            ['type' => 'raw_html', 'data' => "<div>
-                <span class='text-xl'>" . e($company) . '</span> <br>
-                <span class="text-xs">' . e($role ?: '—') . '</span> <br>
-                ' . $keap . '
-                </div>'],
-            ['type' => 'raw_html', 'text-align' => 'center', 'data' => $toolbar],
+            ['type' => 'string', 'data' => $data->ID],
+            ['type' => 'raw_html', 'data' => $employeeHtml],
+            ['type' => 'string', 'data' => $data->user_email ?? '—'],
+            ['type' => 'string', 'data' => $company],
+            ['type' => 'raw_html', 'data' => $statusHtml],
+            ['type' => 'raw_html', 'class' => 'admin-table__cell-actions', 'data' => $toolbar],
         ];
     }
 
@@ -195,7 +206,7 @@ class User extends \App\Models\User implements View
             ['type' => 'string', 'data' => $data->user_email ?? ''],
             ['type' => 'string', 'data' => $role !== '' ? $role : '—'],
             ['type' => 'raw_html', 'data' => $accessHtml],
-            ['type' => 'raw_html', 'text-align' => 'center', 'data' => $toolbar],
+            ['type' => 'raw_html', 'class' => 'admin-table__cell-actions', 'text-align' => 'center', 'data' => $toolbar],
         ];
     }
 
@@ -232,12 +243,12 @@ class User extends \App\Models\User implements View
             ['type' => 'string', 'data' => $company],
             ['type' => 'raw_html', 'data' => $accessHtml],
             ['type' => 'string', 'data' => $role !== '' ? $role : '—'],
-            ['type' => 'raw_html', 'text-align' => 'center', 'data' => $toolbar],
+            ['type' => 'raw_html', 'class' => 'admin-table__cell-actions', 'text-align' => 'center', 'data' => $toolbar],
         ];
     }
 
     /**
-     * Full action toolbar (same as legacy admin Users table): Access, Edit (custom URL), Activity, Keap mail, Reset password, Delete, passwords.
+     * Full action toolbar
      */
     public static function actionToolbarHtml($data, string $editHref): string
     {
@@ -255,21 +266,21 @@ class User extends \App\Models\User implements View
         if ($password != null) {
             $passwordVal = is_object($password) ? ($password->meta_value ?? '') : ($password['meta_value'] ?? '');
             $passwordValJs = htmlspecialchars((string) $passwordVal, ENT_QUOTES, 'UTF-8');
-            $passwordButton = "<span><a href='#' onclick='showPassword(\"$passwordValJs\")' class='btn btn-light-info text-nowrap'>Show Password</a></span>";
+            $passwordButton = "<a href='#' onclick='showPassword(\"$passwordValJs\")' class='btn btn-light-info text-nowrap'>Show Password</a>";
             $exportPasswordLink = route('export-password-to-keap');
-            $exportPasswordButton = "<span><a href='$exportPasswordLink' class='btn btn-light-warning text-nowrap'>Export Password to Keap</a></span>";
+            $exportPasswordButton = "<a href='$exportPasswordLink' class='btn btn-light-warning text-nowrap'>Export Password to Keap</a>";
         }
 
         $button4 = '';
         if ($activity != null) {
             $link4 = route('user.course', [$data->ID]);
-            $button4 = "<span><a href='$link4' class='btn btn-light-success text-nowrap'>Activity Check</a></span>";
+            $button4 = "<a href='$link4' class='btn btn-light-success text-nowrap'>Activity Check</a>";
         }
 
         $keapMailButton = '';
         if ($keaps !== '' && $keapStatus === true) {
             $keapMailLink = route('user.keap-mail-send', $keaps);
-            $keapMailButton = "<span><a href='$keapMailLink' class='btn btn-light-warning text-nowrap'>Send Keap Mail</a></span>";
+            $keapMailButton = "<a href='$keapMailLink' class='btn btn-light-warning text-nowrap'>Send Keap Mail</a>";
         }
 
         $linkReset = route('user.show', $data->ID);
@@ -282,16 +293,16 @@ class User extends \App\Models\User implements View
         }
 
                 return "
-                <div class='flex flex-wrap items-center gap-2 justify-start'>
-                    <span><a href='" . htmlspecialchars($routeAccess, ENT_QUOTES, 'UTF-8') . "' class='btn btn-light-secondary text-nowrap'>Access</a></span>
-                    <span><a href='" . htmlspecialchars($linkDetail, ENT_QUOTES, 'UTF-8') . "' class='btn btn-light-info text-nowrap'>Detail</a></span>
-                    <span><a "
+                <div class='admin-table-actions'>
+                    <a href='" . htmlspecialchars($routeAccess, ENT_QUOTES, 'UTF-8') . "' class='btn btn-light-secondary text-nowrap'>Access</a>
+                    <a href='" . htmlspecialchars($linkDetail, ENT_QUOTES, 'UTF-8') . "' class='btn btn-light-info text-nowrap'>Detail</a>
+                    <a "
             . ($editAttr !== '' ? $editAttr : "href='$editHrefSafe' class='btn btn-primary text-nowrap'")
-            . ">Edit</a></span>
+            . ">Edit</a>
                     $button4
                     $keapMailButton
-                    <span><a href='$linkReset' class='btn btn-secondary text-nowrap'>Reset Password</a></span>
-                    <span><a href='#' wire:click='deleteItem($data->ID)' class='btn btn-error text-nowrap'>Delete</a></span>
+                    <a href='$linkReset' class='btn btn-secondary text-nowrap'>Reset Password</a>
+                    <a href='#' wire:click='deleteItem($data->ID)' class='btn btn-error text-nowrap'>Delete</a>
                     $passwordButton
                     $exportPasswordButton
                 </div>";

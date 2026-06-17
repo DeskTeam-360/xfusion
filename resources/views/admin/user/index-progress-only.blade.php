@@ -15,7 +15,9 @@
             </button>
         </x-slot:actions>
 
-        @include('admin.user.partials.keap-export-and-refresh')
+        <x-slot:toolbar>
+            @include('admin.user.partials.keap-export-and-refresh')
+        </x-slot:toolbar>
 
         <livewire:table.master name="UserProgressOnly"/>
     </x-admin.page>

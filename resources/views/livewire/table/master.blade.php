@@ -1,4 +1,4 @@
-<div class="admin-data-table">
+<div class="admin-data-table w-full">
     <div class="admin-data-table__toolbar">
         <div class="admin-data-table__field">
             <span class="admin-data-table__label">Per page</span>
@@ -35,7 +35,8 @@
             <thead>
             <tr>
                 @foreach($model::tableField() as $field)
-                    <th style="{{ isset($field['width']) ? 'width:'.$field['width'] : '' }}{{ isset($field['text-align']) ? ';text-align:'.$field['text-align'] : '' }}">
+                    <th class="{{ $field['class'] ?? '' }}"
+                        style="{{ isset($field['width']) ? 'width:'.$field['width'].';' : '' }}{{ isset($field['text-align']) ? 'text-align:'.$field['text-align'].';' : '' }}">
                         <a @isset($field['sort']) wire:click.prevent="sortBy('{{ $field['sort'] }}')" @endisset role="button" href="#">
                             {{ $field['label'] }}
                             @isset($field['sort'])
@@ -55,27 +56,33 @@
                         @endif
                         @switch($cell['type'])
                             @case('index')
-                                <td style="{{ isset($cell['text-align']) ? 'text-align:'.$cell['text-align'] : '' }}">
+                                <td class="{{ $cell['class'] ?? '' }}"
+                                    style="{{ isset($cell['text-align']) ? 'text-align:'.$cell['text-align'].';' : '' }}">
                                     {{ $index + 1 + (request()->get('page') ? request()->get('page') - 1 : 0) * $perPage }}
                                 </td>
                                 @break
                             @case('string')
-                                <td style="{{ isset($cell['text-align']) ? 'text-align:'.$cell['text-align'] : '' }}">{{ $cell['data'] }}</td>
+                                <td class="{{ $cell['class'] ?? '' }}"
+                                    style="{{ isset($cell['text-align']) ? 'text-align:'.$cell['text-align'].';' : '' }}">{{ $cell['data'] }}</td>
                                 @break
                             @case('thousand_format')
-                                <td style="{{ isset($cell['text-align']) ? 'text-align:'.$cell['text-align'] : '' }}">{{ thousand_format($cell['data']) }}</td>
+                                <td class="{{ $cell['class'] ?? '' }}"
+                                    style="{{ isset($cell['text-align']) ? 'text-align:'.$cell['text-align'].';' : '' }}">{{ thousand_format($cell['data']) }}</td>
                                 @break
                             @case('raw_html')
-                                <td style="{{ isset($cell['text-align']) ? 'text-align:'.$cell['text-align'] : '' }}">{!! $cell['data'] !!}</td>
+                                <td class="{{ $cell['class'] ?? '' }}"
+                                    style="{{ isset($cell['text-align']) ? 'text-align:'.$cell['text-align'].';' : '' }}">{!! $cell['data'] !!}</td>
                                 @break
                             @case('img')
-                                <td style="{{ isset($cell['text-align']) ? 'text-align:'.$cell['text-align'] : '' }}">
+                                <td class="{{ $cell['class'] ?? '' }}"
+                                    style="{{ isset($cell['text-align']) ? 'text-align:'.$cell['text-align'].';' : '' }}">
                                     <img src="{{ $cell['data'] }}" alt=""
                                          style="{{ isset($cell['width']) ? 'width:'.$cell['width'].';' : '' }}{{ isset($cell['height']) ? 'height:'.$cell['height'].';' : '' }}">
                                 </td>
                                 @break
                             @case('action')
-                                <td style="{{ isset($cell['text-align']) ? 'text-align:'.$cell['text-align'] : '' }}">
+                                <td class="{{ $cell['class'] ?? 'admin-table__cell-actions' }}"
+                                    style="{{ isset($cell['text-align']) ? 'text-align:'.$cell['text-align'].';' : '' }}">
                                     <div class="flex flex-wrap items-center gap-2">
                                         @foreach($cell['data'] as $action)
                                             <a @isset($action['link']) href="{{ $action['link'] }}" @else href="#" wire:click.prevent="{{ $action['live'] }}" @endisset
