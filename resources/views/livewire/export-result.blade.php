@@ -403,62 +403,61 @@ document.addEventListener('livewire:init', function () {
             </div>
             @endif
 
-            {{-- Pivot readable --}}
-            <div class="text-center mt-4">
-                <hr style="display: inline-block; width: 40%; margin: 0 10px;"> Pivot readable <hr style="display: inline-block; width: 40%; margin: 0 10px;">
-            </div>
-            
-            <div class="flex gap-2">
-                <div class="mt-3">
-                    <label for="headerFormatPivot1">Course Title Format</label>
-                    <select wire:model.live="headerFormatPivot1" class="form-control">
-                        @foreach($headerFormatPivotOption as $option)
-                            <option value="{{$option}}">{{$option}}</option>
-                        @endforeach
-                    </select>
-                </div>
-                <div class="mt-3">
-                    <label for="headerFormatPivot2">Question Format</label>
-                    <select wire:model.live="headerFormatPivot2" class="form-control">
-                        @foreach($headerFormatPivotOption as $option)
-                            <option value="{{$option}}">{{$option}}</option>
-                        @endforeach
-                    </select>
-                </div>
-            </div>
-
-         
-            <div class="mt-3">
-                <button class="btn btn-success" 
-                        wire:click="getData2" 
-                        wire:loading.attr="disabled" 
-                        wire:target="getData2">
-                    Show Data
-                </button>
-
-                <button wire:click="exportCsv2" 
-                        class="btn btn-success"
-                        wire:loading.attr="disabled"
-                        wire:target="exportCsv2">
-                    Download CSV
-                </button>
-
-                <div class="spinner-border text-primary" 
-                    role="status" 
-                    wire:loading 
-                    wire:target="getData2">
-                    <span class="visually-hidden">Loading...</span>
+            {{-- Data views: minimalist tabs --}}
+            <div x-data="{ tab: 'human' }" class="mt-8">
+                <div class="flex items-center gap-1 border-b border-gray-200 dark:border-gray-700">
+                    <button type="button"
+                            @click="tab = 'human'"
+                            :class="tab === 'human' ? 'border-primary text-primary' : 'border-transparent text-gray-500 hover:text-gray-700 dark:hover:text-gray-300'"
+                            class="-mb-px border-b-2 px-4 py-2 text-sm font-semibold transition-colors">
+                        Human readable
+                    </button>
+                    <button type="button"
+                            @click="tab = 'pivot'"
+                            :class="tab === 'pivot' ? 'border-primary text-primary' : 'border-transparent text-gray-500 hover:text-gray-700 dark:hover:text-gray-300'"
+                            class="-mb-px border-b-2 px-4 py-2 text-sm font-semibold transition-colors">
+                        Pivot readable
+                    </button>
                 </div>
 
-                <div class="spinner-border text-success" 
-                    role="status" 
-                    wire:loading 
-                    wire:target="exportCsv2">
-                    <span class="visually-hidden">Loading...</span>
-                </div>
-            </div>
+                {{-- Pivot readable panel --}}
+                <div x-show="tab === 'pivot'" x-cloak class="pt-4">
+                    <div class="flex flex-wrap items-end gap-3">
+                        <div>
+                            <label for="headerFormatPivot1" class="mb-1 block text-xs font-semibold text-gray-500 dark:text-gray-400">Course Title Format</label>
+                            <select wire:model.live="headerFormatPivot1" class="form-control rounded border border-gray-200 bg-white px-2 py-1.5 text-sm dark:border-gray-600 dark:bg-dark">
+                                @foreach($headerFormatPivotOption as $option)
+                                    <option value="{{$option}}">{{$option}}</option>
+                                @endforeach
+                            </select>
+                        </div>
+                        <div>
+                            <label for="headerFormatPivot2" class="mb-1 block text-xs font-semibold text-gray-500 dark:text-gray-400">Question Format</label>
+                            <select wire:model.live="headerFormatPivot2" class="form-control rounded border border-gray-200 bg-white px-2 py-1.5 text-sm dark:border-gray-600 dark:bg-dark">
+                                @foreach($headerFormatPivotOption as $option)
+                                    <option value="{{$option}}">{{$option}}</option>
+                                @endforeach
+                            </select>
+                        </div>
 
-            <div class="overflow-auto " style="width: 100%; padding: 10px">
+                        <button class="btn btn-sm btn-success"
+                                wire:click="getData2"
+                                wire:loading.attr="disabled"
+                                wire:target="getData2">
+                            <span wire:loading.remove wire:target="getData2">Show Data</span>
+                            <span wire:loading wire:target="getData2">Loading…</span>
+                        </button>
+
+                        <button wire:click="exportCsv2"
+                                class="btn btn-sm btn-outline-success"
+                                wire:loading.attr="disabled"
+                                wire:target="exportCsv2">
+                            <span wire:loading.remove wire:target="exportCsv2">Download CSV</span>
+                            <span wire:loading wire:target="exportCsv2">Preparing…</span>
+                        </button>
+                    </div>
+
+            <div class="overflow-auto mt-3" style="width: 100%;">
                 @if($field_target!=[] and $table==2)
                     <table
                         class="border-collapse border-wishka-400 w-full text-sm text-center rounded table-auto">
@@ -515,49 +514,66 @@ document.addEventListener('livewire:init', function () {
                     </table>
                 @endif
             </div>
+                </div>
 
-            {{-- Human readable --}}
-            <div class="text-center mt-5">
-                <hr style="display: inline-block; width: 40%; margin: 0 10px;"> Human readable <hr style="display: inline-block; width: 40%; margin: 0 10px;">
-            </div>
-            <div class="mt-3 ">
-                <x-input title="Header format" model="headerFormat"/>
-                <div><b>[course_title]</b> for full course title</div>
-                <div><b>[clean_course_title]</b> for clean course title</div>
-                <div><b>[question]</b> for full question</div>
-                <div><b>[clean_question]</b> for clean question</div>
-            </div>
-            <br>
+                {{-- Human readable panel --}}
+                <div x-show="tab === 'human'" x-cloak class="pt-4">
+                    <details class="mb-3 rounded-lg border border-gray-200 dark:border-gray-700">
+                        <summary class="cursor-pointer select-none px-3 py-2 text-xs font-semibold text-gray-500 dark:text-gray-400">
+                            Header format options
+                        </summary>
+                        <div class="border-t border-gray-200 px-3 py-3 dark:border-gray-700">
+                            <x-input title="Header format" model="headerFormat"/>
+                            <div class="mt-2 grid grid-cols-2 gap-1 text-xs text-gray-500 dark:text-gray-400">
+                                <div><b>[course_title]</b> full course title</div>
+                                <div><b>[clean_course_title]</b> clean course title</div>
+                                <div><b>[question]</b> full question</div>
+                                <div><b>[clean_question]</b> clean question</div>
+                            </div>
+                        </div>
+                    </details>
 
-            <button class="btn btn-success" 
-                    wire:click="getData" 
-                    wire:loading.attr="disabled" 
-                    wire:target="getData">
-                Show Data
-            </button>
+                    <div class="flex flex-wrap items-center gap-2">
+                        <button class="btn btn-sm btn-success"
+                                wire:click="getData"
+                                wire:loading.attr="disabled"
+                                wire:target="getData">
+                            <span wire:loading.remove wire:target="getData">Show Data</span>
+                            <span wire:loading wire:target="getData">Loading…</span>
+                        </button>
 
-            <button wire:click="exportCsv" 
-                    class="btn btn-primary"
-                    wire:loading.attr="disabled"
-                    wire:target="exportCsv">
-                Download CSV
-            </button>
-            <div class="spinner-border text-primary" 
-                role="status" 
-                wire:loading 
-                wire:target="getData">
-                <span class="visually-hidden">Loading...</span>
-            </div>
-            <div class="spinner-border text-primary" 
-                role="status" 
-                wire:loading 
-                wire:target="exportCsv">
-                <span class="visually-hidden">Loading...</span>
-            </div>
+                        <button wire:click="exportCsv"
+                                class="btn btn-sm btn-outline-primary"
+                                wire:loading.attr="disabled"
+                                wire:target="exportCsv">
+                            <span wire:loading.remove wire:target="exportCsv">Download CSV</span>
+                            <span wire:loading wire:target="exportCsv">Preparing…</span>
+                        </button>
 
-            <div class="overflow-auto " style="width: 100%; margin-top: 20px">
+                        @if($humanReadableChartsEnabled && $activityFooterStats !== [] && $table === 1)
+                            @if(!$chartsVisible)
+                            <button wire:click="showCharts"
+                                    class="btn btn-sm btn-outline-secondary inline-flex items-center gap-1.5"
+                                    wire:loading.attr="disabled"
+                                    wire:target="showCharts">
+                                <i class="ti ti-chart-pie text-base" aria-hidden="true"></i>
+                                <span wire:loading.remove wire:target="showCharts">Show Charts</span>
+                                <span wire:loading wire:target="showCharts">Rendering…</span>
+                            </button>
+                            <span class="text-xs text-gray-400">Charts render on demand to keep this page light.</span>
+                            @else
+                            <button wire:click="hideCharts"
+                                    class="btn btn-sm btn-outline-secondary inline-flex items-center gap-1.5">
+                                <i class="ti ti-eye-off text-base" aria-hidden="true"></i>
+                                Hide Charts
+                            </button>
+                            @endif
+                        @endif
+                    </div>
+
+            <div class="overflow-auto mt-3" style="width: 100%;">
                 @if($field_target!=[] and $table==1)
-                    @if($humanReadableChartsEnabled && $activityFooterStats !== [])
+                    @if($chartsVisible && $humanReadableChartsEnabled && $activityFooterStats !== [])
                     <div wire:key="export-charts-{{ $dashboardCourseGroupId }}-{{ count($activityFooterStats) }}"
                          class="mb-8 grid gap-8 lg:grid-cols-2">
                         <div class="rounded-lg border border-gray-200 p-4 dark:border-gray-600">
@@ -653,9 +669,9 @@ document.addEventListener('livewire:init', function () {
                         </tfoot>
                         @endif
                     </table>
-
-                    <br><br>
                 @endif
+            </div>
+                </div>
             </div>
 
         </div>

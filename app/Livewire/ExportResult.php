@@ -70,6 +70,9 @@ class ExportResult extends Component
     /** When true, participation pie/bar render: course group `chart` = 1 and every included column is a GF radio field. */
     public bool $humanReadableChartsEnabled = false;
 
+    /** Charts only render after the user clicks "Show Charts" (avoids high load on every filter change). */
+    public bool $chartsVisible = false;
+
     /** @var array<int, string> */
     public array $workTypeByUser = [];
 
@@ -184,6 +187,7 @@ class ExportResult extends Component
             $this->form_ids = [];
             $this->table = 0;
             $this->humanReadableChartsEnabled = false;
+            $this->chartsVisible = false;
             $this->computeHumanReadableStats();
             $this->dispatchEmptyCharts();
 
@@ -385,18 +389,36 @@ class ExportResult extends Component
 
         $this->refreshHumanReadableChartsEnabledFlag();
 
-        if ($this->table === 1) {
-            if ($this->humanReadableChartsEnabled && $this->activityFooterStats !== []) {
-                $this->dispatch(
-                    'export-result-charts-updated',
-                    pie: $this->chartUserParticipationPie,
-                    pieByWt: array_values($this->chartUserParticipationPieByWorkType),
-                    bar: $this->chartParticipationBar,
-                );
-            } else {
-                $this->dispatchEmptyCharts();
-            }
+        // Charts are heavy to render (ApexCharts); only show again once the user
+        // explicitly re-triggers via showCharts() after a filter change.
+        $this->chartsVisible = false;
+        $this->dispatchEmptyCharts();
+    }
+
+    /**
+     * Explicit user trigger to render charts — avoids recomputing/rendering ApexCharts
+     * automatically on every filter change (high load with large participant sets).
+     */
+    public function showCharts(): void
+    {
+        if (! $this->humanReadableChartsEnabled || $this->activityFooterStats === []) {
+            return;
         }
+
+        $this->chartsVisible = true;
+
+        $this->dispatch(
+            'export-result-charts-updated',
+            pie: $this->chartUserParticipationPie,
+            pieByWt: array_values($this->chartUserParticipationPieByWorkType),
+            bar: $this->chartParticipationBar,
+        );
+    }
+
+    public function hideCharts(): void
+    {
+        $this->chartsVisible = false;
+        $this->dispatchEmptyCharts();
     }
 
     /** True when course group `chart` is 1 and every human-readable column is a Gravity Forms `radio` field. */
