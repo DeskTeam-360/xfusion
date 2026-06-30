@@ -33,4 +33,9 @@ class Company extends Model
     {
         return $this->belongsTo(User::class,'user_id');
     }
+
+    public function companyGroups()
+    {
+        return $this->hasMany(CompanyGroup::class, 'company_id');
+    }
 }

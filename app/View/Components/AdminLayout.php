@@ -104,6 +104,7 @@ class AdminLayout extends Component
                     'title' => 'Organization',
                     'lists' => [
                         ['title' => 'Companies', 'type' => 'link', 'route' => route('company.index'), 'icon' => '<i class="ti ti-building-community text-xl flex-shrink-0"></i>'],
+                        ['title' => 'Company groups', 'type' => 'link', 'route' => route('company-group.index'), 'icon' => '<i class="ti ti-users-group text-xl flex-shrink-0"></i>'],
                         ['title' => 'Users', 'type' => 'link', 'route' => route('user.index'), 'icon' => '<i class="ti ti-users text-xl flex-shrink-0"></i>'],
                         ['title' => 'User Progress Only', 'type' => 'link', 'route' => route('user-progress-only'), 'icon' => '<i class="ti ti-progress text-xl flex-shrink-0"></i>'],
                         ['title' => 'User-role', 'type' => 'link', 'route' => route('user.roles'), 'icon' => '<i class="ti ti-shield text-xl flex-shrink-0"></i>'],
