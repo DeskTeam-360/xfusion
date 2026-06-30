@@ -222,6 +222,87 @@ document.addEventListener('livewire:init', function () {
                 </script>
             </div>
             @else
+            {{-- Company Group filter --}}
+            <div class="mb-5">
+                <label for="dashboard-company-group" class="form-label mb-2 block text-sm font-bold dark:text-light">
+                    Company Group
+                </label>
+                <select
+                    id="dashboard-company-group"
+                    class="form-control w-full rounded border border-gray-200 bg-white px-3 py-2 text-sm dark:border-gray-600 dark:bg-dark dark:text-light"
+                    wire:model.live="companyGroupId"
+                >
+                    <option value="">All groups</option>
+                    @foreach($companyGroupOptions as $cg)
+                        <option value="{{ $cg['id'] }}">{{ $cg['title'] }}</option>
+                    @endforeach
+                </select>
+            </div>
+
+            {{-- RPM Gauges per Course Scoring Group --}}
+            @if(count($gauges) > 0)
+            <div class="mb-8">
+                <h2 class="mb-4 text-base font-bold text-dark dark:text-white">Course Scoring Overview</h2>
+                <div class="grid grid-cols-2 gap-4 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5">
+                    @foreach($gauges as $gauge)
+                    @php
+                        $needleDeg  = $gauge['needle_deg'];
+                        $avg        = $gauge['average'];
+                        $zoneColor  = $gauge['zone_color'];
+                        $zoneLabel  = $gauge['zone_label'];
+                        $title      = $gauge['title'];
+                        $partCount  = $gauge['participant_count'];
+                        $noData     = $gauge['no_data_count'];
+                    @endphp
+                    <div class="flex flex-col items-center rounded-xl border border-gray-200 bg-white p-3 text-center shadow-sm dark:border-gray-700 dark:bg-darkgray">
+                        {{-- SVG Gauge --}}
+                        <svg viewBox="0 0 220 130" class="w-full max-w-[10rem]" role="img" aria-label="{{ $title }} gauge">
+                            {{-- Red zone: 0→3 --}}
+                            <path fill="none" stroke="#dc2626" stroke-width="10" stroke-linecap="round"
+                                  d="M 35.000 110.000 A 75 75 0 0 1 133.176 38.670"/>
+                            {{-- Amber zone: 3→4.5 --}}
+                            <path fill="none" stroke="#ca8a04" stroke-width="10" stroke-linecap="round"
+                                  d="M 133.176 38.670 A 75 75 0 0 1 181.330 86.824"/>
+                            {{-- Green zone: 4.5→5 --}}
+                            <path fill="none" stroke="#16a34a" stroke-width="10" stroke-linecap="round"
+                                  d="M 181.330 86.824 A 75 75 0 0 1 185.000 110.000"/>
+                            {{-- Tick marks 0–5 --}}
+                            <line x1="35" y1="110" x2="46.7" y2="110" stroke="#9ca3af" stroke-opacity=".45" stroke-width="2" stroke-linecap="round"/>
+                            <text x="58" y="114" text-anchor="middle" fill="#6b7280" font-size="11" font-weight="600">0</text>
+                            <line x1="68.0" y1="79.4" x2="77.8" y2="85.2" stroke="#9ca3af" stroke-opacity=".45" stroke-width="2" stroke-linecap="round"/>
+                            <text x="68" y="71" text-anchor="middle" fill="#6b7280" font-size="11" font-weight="600">1</text>
+                            <line x1="93.9" y1="60.6" x2="100.4" y2="70.1" stroke="#9ca3af" stroke-opacity=".45" stroke-width="2" stroke-linecap="round"/>
+                            <text x="88" y="52" text-anchor="middle" fill="#6b7280" font-size="11" font-weight="600">2</text>
+                            <line x1="126.1" y1="60.6" x2="119.6" y2="70.1" stroke="#9ca3af" stroke-opacity=".45" stroke-width="2" stroke-linecap="round"/>
+                            <text x="132" y="52" text-anchor="middle" fill="#6b7280" font-size="11" font-weight="600">3</text>
+                            <line x1="152.1" y1="79.4" x2="142.2" y2="85.2" stroke="#9ca3af" stroke-opacity=".45" stroke-width="2" stroke-linecap="round"/>
+                            <text x="152" y="71" text-anchor="middle" fill="#6b7280" font-size="11" font-weight="600">4</text>
+                            <line x1="185" y1="110" x2="173.3" y2="110" stroke="#9ca3af" stroke-opacity=".45" stroke-width="2" stroke-linecap="round"/>
+                            <text x="162" y="114" text-anchor="middle" fill="#6b7280" font-size="11" font-weight="600">5</text>
+                            {{-- Needle --}}
+                            <g transform="rotate({{ $needleDeg }} 110 110)">
+                                <line x1="110" y1="112" x2="110" y2="36" fill="none" stroke="#1f2937" stroke-width="4" stroke-linecap="round"/>
+                            </g>
+                            <circle cx="110" cy="110" r="7" fill="#1f2937"/>
+                            <circle cx="110" cy="110" r="4" fill="#ffffff"/>
+                        </svg>
+                        {{-- Labels --}}
+                        <h3 class="mt-1 min-h-[2.5rem] text-xs font-semibold leading-tight text-dark dark:text-white" title="{{ $title }}">{{ $title }}</h3>
+                        <p class="text-lg font-bold tabular-nums text-dark dark:text-white">
+                            {{ $avg !== null ? number_format($avg, 2) : '—' }}
+                        </p>
+                        <p class="text-xs font-semibold" style="color:{{ $zoneColor }}">{{ $zoneLabel }}</p>
+                        <p class="mt-1 text-[11px] text-gray-400 tabular-nums">
+                            {{ $partCount }} participant{{ $partCount !== 1 ? 's' : '' }}@if($noData > 0), {{ $noData }} no data@endif
+                        </p>
+                    </div>
+                    @endforeach
+                </div>
+            </div>
+            @endif
+
+            <hr class="my-6 border-gray-200 dark:border-gray-700">
+
             <div class="mb-4">
                 <label for="dashboard-course-group" class="form-label mb-2 block text-sm font-bold dark:text-light">
                     Course group

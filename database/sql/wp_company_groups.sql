@@ -1,4 +1,8 @@
 -- Company groups (parent + member details). Run if migrate is not used on production.
+-- FK constraints are intentionally omitted here: wp_companies/wp_users engine or
+-- collation may not match exactly, which makes `errno: 150` likely. Referential
+-- integrity for these columns is enforced at the application layer instead
+-- (see App\Models\CompanyGroup / CompanyGroupDetail).
 
 CREATE TABLE IF NOT EXISTS `wp_company_groups` (
     `id` BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
@@ -7,9 +11,7 @@ CREATE TABLE IF NOT EXISTS `wp_company_groups` (
     `description` TEXT NULL,
     `created_at` TIMESTAMP NULL,
     `updated_at` TIMESTAMP NULL,
-    PRIMARY KEY (`id`),
-    CONSTRAINT `wp_company_groups_company_id_foreign`
-        FOREIGN KEY (`company_id`) REFERENCES `wp_companies` (`id`) ON DELETE CASCADE
+    PRIMARY KEY (`id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 CREATE TABLE IF NOT EXISTS `wp_company_group_details` (
@@ -20,9 +22,5 @@ CREATE TABLE IF NOT EXISTS `wp_company_group_details` (
     `created_at` TIMESTAMP NULL,
     `updated_at` TIMESTAMP NULL,
     PRIMARY KEY (`id`),
-    UNIQUE KEY `cg_unique_group_user` (`company_group_id`, `user_id`),
-    CONSTRAINT `wp_company_group_details_group_id_foreign`
-        FOREIGN KEY (`company_group_id`) REFERENCES `wp_company_groups` (`id`) ON DELETE CASCADE,
-    CONSTRAINT `wp_company_group_details_user_id_foreign`
-        FOREIGN KEY (`user_id`) REFERENCES `wp_users` (`id`)
+    UNIQUE KEY `cg_unique_group_user` (`company_group_id`, `user_id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;

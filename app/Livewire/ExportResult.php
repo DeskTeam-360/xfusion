@@ -3,10 +3,13 @@
 namespace App\Livewire;
 
 use App\Models\Company;
+use App\Models\CompanyGroup;
+use App\Models\CompanyGroupDetail;
 use App\Models\CourseList;
 use App\Models\CourseGroup;
 
 use App\Models\CompanyEmployee;
+use App\Models\CourseScoringGroup;
 use App\Models\CourseGroupDetail;
 use App\Models\User;
 use App\Models\WpUserMeta;
@@ -23,6 +26,15 @@ class ExportResult extends Component
     public bool $isCompanyDashboard = false;
 
     public ?int $lockedCompanyId = null;
+
+    /** Company Group filter for dashboard ('' = All). */
+    public string $companyGroupId = '';
+
+    /** @var list<array{id: int, title: string}> */
+    public array $companyGroupOptions = [];
+
+    /** @var list<array{title: string, average: ?float, needle_deg: float, zone_label: string, zone_color: string, participant_count: int, no_data_count: int}> */
+    public array $gauges = [];
 
     /** Single native select; syncs hidden course lists from group. */
     public string $dashboardCourseGroupId = '';
@@ -129,6 +141,17 @@ class ExportResult extends Component
 
         if ($this->isCompanyDashboard) {
             $this->fields = $this->optionFields;
+
+            if ($this->lockedCompanyId !== null) {
+                $this->companyGroupOptions = CompanyGroup::query()
+                    ->where('company_id', $this->lockedCompanyId)
+                    ->orderBy('title')
+                    ->get(['id', 'title'])
+                    ->map(fn ($g) => ['id' => (int) $g->id, 'title' => (string) $g->title])
+                    ->all();
+            }
+
+            $this->refreshGauges();
         }
     }
 
@@ -173,6 +196,15 @@ class ExportResult extends Component
 
         $this->table = 1;
         $this->getMainData();
+    }
+
+    public function updatedCompanyGroupId(): void
+    {
+        $this->refreshGauges();
+
+        if ($this->dashboardCourseGroupId !== '' && (int) $this->dashboardCourseGroupId > 0) {
+            $this->getMainData();
+        }
     }
 
     /**
@@ -248,15 +280,7 @@ class ExportResult extends Component
         $course_ids = is_array($this->courseLists) ? $this->courseLists : [];
 
         if ($this->isCompanyDashboard && $this->lockedCompanyId) {
-            // company_employees lives on the app DB; users live on WordPress. whereHas() across connections is unreliable.
-            $employeeUserIds = CompanyEmployee::query()
-                ->where('company_id', $this->lockedCompanyId)
-                ->pluck('user_id')
-                ->filter()
-                ->map(fn ($id) => (int) $id)
-                ->unique()
-                ->values()
-                ->all();
+            $employeeUserIds = $this->dashboardUserIds();
 
             $this->userLists = $employeeUserIds !== []
                 ? User::query()->whereIn('ID', $employeeUserIds)->get()
@@ -928,6 +952,208 @@ class ExportResult extends Component
     }
 
 
+
+    // ──────────────────────────────────────────────
+    // Company Group filter + Gauge helpers
+    // ──────────────────────────────────────────────
+
+    /**
+     * Resolve user IDs for the company dashboard, respecting the Company Group filter.
+     *
+     * @return list<int>
+     */
+    private function dashboardUserIds(): array
+    {
+        if ($this->lockedCompanyId === null) {
+            return [];
+        }
+
+        if ($this->companyGroupId !== '' && (int) $this->companyGroupId > 0) {
+            return CompanyGroupDetail::query()
+                ->where('company_group_id', (int) $this->companyGroupId)
+                ->pluck('user_id')
+                ->filter()
+                ->map(fn ($id) => (int) $id)
+                ->unique()
+                ->values()
+                ->all();
+        }
+
+        return CompanyEmployee::query()
+            ->where('company_id', $this->lockedCompanyId)
+            ->pluck('user_id')
+            ->filter()
+            ->map(fn ($id) => (int) $id)
+            ->unique()
+            ->values()
+            ->all();
+    }
+
+    public function refreshGauges(): void
+    {
+        $userIds = $this->isCompanyDashboard ? $this->dashboardUserIds() : [];
+        $this->computeGauges($userIds);
+    }
+
+    /**
+     * @param list<int> $userIds
+     */
+    private function computeGauges(array $userIds): void
+    {
+        $this->gauges = [];
+
+        if ($userIds === []) {
+            return;
+        }
+
+        $groups = CourseScoringGroup::with('details')->get();
+        if ($groups->isEmpty()) {
+            return;
+        }
+
+        $allFormIds = $groups
+            ->flatMap(fn ($g) => $g->details->pluck('form_id'))
+            ->map(fn ($id) => (int) $id)
+            ->filter(fn ($id) => $id > 0)
+            ->unique()
+            ->values()
+            ->all();
+
+        if ($allFormIds === []) {
+            return;
+        }
+
+        // Latest entry per user per form (take highest id = most recent).
+        $latestEntryMap = []; // [user_id][form_id] => entry_id
+        \App\Models\WpGfEntry::query()
+            ->whereIn('form_id', $allFormIds)
+            ->whereIn('created_by', $userIds)
+            ->whereIn('status', ['active', 'Active', 'ACTIVE'])
+            ->select(['id', 'form_id', 'created_by'])
+            ->orderByDesc('id')
+            ->get()
+            ->each(function ($e) use (&$latestEntryMap) {
+                $uid = (int) $e->created_by;
+                $fid = (int) $e->form_id;
+                if (! isset($latestEntryMap[$uid][$fid])) {
+                    $latestEntryMap[$uid][$fid] = (int) $e->id;
+                }
+            });
+
+        $entryIds = collect($latestEntryMap)
+            ->flatMap(fn ($byForm) => array_values($byForm))
+            ->unique()
+            ->values()
+            ->all();
+
+        $valueMap = []; // [entry_id][field_id_str] => meta_value
+        if ($entryIds !== []) {
+            \App\Models\WpGfEntryMeta::query()
+                ->whereIn('entry_id', $entryIds)
+                ->get(['entry_id', 'form_id', 'meta_key', 'meta_value'])
+                ->each(function ($m) use (&$valueMap) {
+                    $k = explode('.', (string) $m->meta_key)[0];
+                    $valueMap[(int) $m->entry_id][$k] = (string) $m->meta_value;
+                });
+        }
+
+        foreach ($groups as $group) {
+            $details = $group->details->filter(
+                fn ($d) => (int) $d->form_id > 0 && (int) $d->field_id > 0 && (float) ($d->weight ?? 1.0) > 0
+            );
+
+            if ($details->isEmpty()) {
+                continue;
+            }
+
+            $userScores = [];
+            $noDataCount = 0;
+
+            foreach ($userIds as $uid) {
+                $weightedSum = 0.0;
+                $weightTotal = 0.0;
+
+                foreach ($details as $d) {
+                    $fid = (int) $d->form_id;
+                    $fieldKey = (string) (int) $d->field_id;
+                    $weight = (float) ($d->weight ?? 1.0);
+
+                    $entryId = $latestEntryMap[$uid][$fid] ?? null;
+                    if ($entryId === null) {
+                        continue;
+                    }
+
+                    $raw = $valueMap[$entryId][$fieldKey] ?? null;
+                    $num = $this->parseScaleScore($raw);
+                    if ($num === null) {
+                        continue;
+                    }
+
+                    $weightedSum += $num * $weight;
+                    $weightTotal += $weight;
+                }
+
+                if ($weightTotal > 0) {
+                    $userScores[] = round($weightedSum / $weightTotal, 2);
+                } else {
+                    $noDataCount++;
+                }
+            }
+
+            $avg = $userScores !== [] ? round(array_sum($userScores) / count($userScores), 2) : null;
+            $gaugeMax = 5.0;
+            $gaugeValue = $avg !== null ? min(max($avg, 0.0), $gaugeMax) : null;
+            $needleDeg = $gaugeValue !== null ? -90.0 + ($gaugeValue / $gaugeMax) * 180.0 : -90.0;
+            $zone = $this->gaugeZoneMeta($gaugeValue);
+
+            $this->gauges[] = [
+                'title' => (string) $group->title,
+                'average' => $avg,
+                'needle_deg' => round($needleDeg, 2),
+                'zone_label' => $zone['label'],
+                'zone_color' => $zone['color'],
+                'participant_count' => count($userScores),
+                'no_data_count' => $noDataCount,
+            ];
+        }
+    }
+
+    /** @return array{color: string, label: string} */
+    private function gaugeZoneMeta(?float $v): array
+    {
+        if ($v === null) {
+            return ['color' => '#6b7280', 'label' => 'No data'];
+        }
+        if ($v < 3.0) {
+            return ['color' => '#dc2626', 'label' => 'Needs improvement'];
+        }
+        if ($v < 4.5) {
+            return ['color' => '#ca8a04', 'label' => 'Progressing'];
+        }
+
+        return ['color' => '#16a34a', 'label' => 'Excellent'];
+    }
+
+    private function parseScaleScore(?string $raw): ?float
+    {
+        if ($raw === null) {
+            return null;
+        }
+        $s = trim($raw);
+        if ($s === '' || $s === '-') {
+            return null;
+        }
+        $s = str_replace(',', '.', $s);
+        if (! preg_match('/^-?\d+(\.\d+)?$/', $s)) {
+            return null;
+        }
+        $num = (float) $s;
+        if ($num < 1.0 || $num > 5.0 || abs($num - round($num)) > 0.00001) {
+            return null;
+        }
+
+        return $num;
+    }
 
     public function render()
     {
