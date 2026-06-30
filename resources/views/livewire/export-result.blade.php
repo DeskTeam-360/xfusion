@@ -256,7 +256,7 @@ document.addEventListener('livewire:init', function () {
                     @endphp
                     <div class="flex flex-col items-center rounded-xl border border-gray-200 bg-white p-3 text-center shadow-sm dark:border-gray-700 dark:bg-darkgray">
                         {{-- SVG Gauge --}}
-                        <svg viewBox="0 0 220 145" class="w-full max-w-[10rem]" role="img" aria-label="{{ $title }} gauge">
+                        <svg viewBox="0 0 220 130" class="w-full max-w-[10rem]" role="img" aria-label="{{ $title }} gauge">
                             {{-- Red zone: 0→3 --}}
                             <path fill="none" stroke="#dc2626" stroke-width="10" stroke-linecap="round"
                                   d="M 35.000 110.000 A 75 75 0 0 1 133.176 38.670"/>
@@ -266,21 +266,19 @@ document.addEventListener('livewire:init', function () {
                             {{-- Green zone: 4.5→5 --}}
                             <path fill="none" stroke="#16a34a" stroke-width="10" stroke-linecap="round"
                                   d="M 181.330 86.824 A 75 75 0 0 1 185.000 110.000"/>
-                            {{-- Tick marks 1–4 (inner) --}}
+                            {{-- Tick marks 0–5 --}}
+                            <line x1="35" y1="110" x2="46.7" y2="110" stroke="#9ca3af" stroke-opacity=".45" stroke-width="2" stroke-linecap="round"/>
+                            <text x="58" y="114" text-anchor="middle" fill="#6b7280" font-size="11" font-weight="600">0</text>
                             <line x1="68.0" y1="79.4" x2="77.8" y2="85.2" stroke="#9ca3af" stroke-opacity=".45" stroke-width="2" stroke-linecap="round"/>
-                            <text x="68" y="71" text-anchor="middle" fill="#9ca3af" font-size="10">1</text>
+                            <text x="68" y="71" text-anchor="middle" fill="#6b7280" font-size="11" font-weight="600">1</text>
                             <line x1="93.9" y1="60.6" x2="100.4" y2="70.1" stroke="#9ca3af" stroke-opacity=".45" stroke-width="2" stroke-linecap="round"/>
-                            <text x="88" y="52" text-anchor="middle" fill="#9ca3af" font-size="10">2</text>
+                            <text x="88" y="52" text-anchor="middle" fill="#6b7280" font-size="11" font-weight="600">2</text>
                             <line x1="126.1" y1="60.6" x2="119.6" y2="70.1" stroke="#9ca3af" stroke-opacity=".45" stroke-width="2" stroke-linecap="round"/>
-                            <text x="132" y="52" text-anchor="middle" fill="#9ca3af" font-size="10">3</text>
+                            <text x="132" y="52" text-anchor="middle" fill="#6b7280" font-size="11" font-weight="600">3</text>
                             <line x1="152.1" y1="79.4" x2="142.2" y2="85.2" stroke="#9ca3af" stroke-opacity=".45" stroke-width="2" stroke-linecap="round"/>
-                            <text x="152" y="71" text-anchor="middle" fill="#9ca3af" font-size="10">4</text>
-                            {{-- Min label (left end = 0) --}}
-                            <text x="22" y="127" text-anchor="middle" fill="#dc2626" font-size="11" font-weight="700">Min</text>
-                            <text x="22" y="139" text-anchor="middle" fill="#6b7280" font-size="10">0</text>
-                            {{-- Max label (right end = 5) --}}
-                            <text x="198" y="127" text-anchor="middle" fill="#16a34a" font-size="11" font-weight="700">Max</text>
-                            <text x="198" y="139" text-anchor="middle" fill="#6b7280" font-size="10">5</text>
+                            <text x="152" y="71" text-anchor="middle" fill="#6b7280" font-size="11" font-weight="600">4</text>
+                            <line x1="185" y1="110" x2="173.3" y2="110" stroke="#9ca3af" stroke-opacity=".45" stroke-width="2" stroke-linecap="round"/>
+                            <text x="162" y="114" text-anchor="middle" fill="#6b7280" font-size="11" font-weight="600">5</text>
                             {{-- Needle --}}
                             <g transform="rotate({{ $needleDeg }} 110 110)">
                                 <line x1="110" y1="112" x2="110" y2="36" fill="none" stroke="#1f2937" stroke-width="4" stroke-linecap="round"/>
@@ -297,6 +295,34 @@ document.addEventListener('livewire:init', function () {
                         <p class="mt-1 text-[11px] text-gray-400 tabular-nums">
                             {{ $partCount }} participant{{ $partCount !== 1 ? 's' : '' }}{{ $noData > 0 ? ', '.$noData.' no data' : '' }}
                         </p>
+                        @if($gauge['max_member'] || $gauge['min_member'])
+                        <div class="mt-2 w-full divide-y divide-gray-100 rounded-lg border border-gray-100 text-left text-[11px] dark:divide-gray-700 dark:border-gray-700">
+                            @if($gauge['max_member'])
+                            <div class="flex items-center justify-between gap-1 px-2 py-1">
+                                <span class="flex items-center gap-1 font-semibold text-emerald-600 dark:text-emerald-400">
+                                    <svg class="h-3 w-3 shrink-0" viewBox="0 0 16 16" fill="currentColor"><path d="M8 2l2.5 5 5.5.8-4 3.9.9 5.5L8 14.5l-4.9 2.7.9-5.5L0 7.8l5.5-.8z"/></svg>
+                                    Highest
+                                </span>
+                                <span class="truncate text-right text-gray-700 dark:text-gray-300" title="{{ $gauge['max_member']['name'] }}">
+                                    {{ $gauge['max_member']['name'] }}
+                                </span>
+                                <span class="shrink-0 font-bold tabular-nums text-emerald-600 dark:text-emerald-400">{{ number_format($gauge['max_member']['score'], 2) }}</span>
+                            </div>
+                            @endif
+                            @if($gauge['min_member'])
+                            <div class="flex items-center justify-between gap-1 px-2 py-1">
+                                <span class="flex items-center gap-1 font-semibold text-red-500 dark:text-red-400">
+                                    <svg class="h-3 w-3 shrink-0" viewBox="0 0 16 16" fill="currentColor"><path d="M8 14l-2.5-5L0 8.2l4-3.9L3.1.8 8 3.5l4.9-2.7-.9 5.5L16 10.2l-5.5.8z"/></svg>
+                                    Lowest
+                                </span>
+                                <span class="truncate text-right text-gray-700 dark:text-gray-300" title="{{ $gauge['min_member']['name'] }}">
+                                    {{ $gauge['min_member']['name'] }}
+                                </span>
+                                <span class="shrink-0 font-bold tabular-nums text-red-500 dark:text-red-400">{{ number_format($gauge['min_member']['score'], 2) }}</span>
+                            </div>
+                            @endif
+                        </div>
+                        @endif
                     </div>
                     @endforeach
                 </div>

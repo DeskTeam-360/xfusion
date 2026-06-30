@@ -1057,6 +1057,13 @@ class ExportResult extends Component
                 });
         }
 
+        // [uid => User] for name lookup in min/max
+        $userModels = User::query()
+            ->whereIn('ID', $userIds)
+            ->get(['ID', 'display_name', 'user_nicename'])
+            ->keyBy('ID')
+            ->all();
+
         foreach ($groups as $group) {
             $details = $group->details->filter(
                 fn ($d) => (int) $d->form_id > 0 && (int) $d->field_id > 0 && (float) ($d->weight ?? 1.0) > 0
@@ -1066,17 +1073,18 @@ class ExportResult extends Component
                 continue;
             }
 
-            $userScores = [];
-            $noDataCount = 0;
+            // [uid => score] untuk semua user yang punya data
+            $userScoreMap = [];
+            $noDataCount  = 0;
 
             foreach ($userIds as $uid) {
                 $weightedSum = 0.0;
                 $weightTotal = 0.0;
 
                 foreach ($details as $d) {
-                    $fid = (int) $d->form_id;
+                    $fid      = (int) $d->form_id;
                     $fieldKey = (string) (int) $d->field_id;
-                    $weight = (float) ($d->weight ?? 1.0);
+                    $weight   = (float) ($d->weight ?? 1.0);
 
                     $entryId = $latestEntryMap[$uid][$fid] ?? null;
                     if ($entryId === null) {
@@ -1094,26 +1102,47 @@ class ExportResult extends Component
                 }
 
                 if ($weightTotal > 0) {
-                    $userScores[] = round($weightedSum / $weightTotal, 2);
+                    $userScoreMap[$uid] = round($weightedSum / $weightTotal, 2);
                 } else {
                     $noDataCount++;
                 }
             }
 
-            $avg = $userScores !== [] ? round(array_sum($userScores) / count($userScores), 2) : null;
-            $gaugeMax = 5.0;
+            $userScores = array_values($userScoreMap);
+            $avg        = $userScores !== [] ? round(array_sum($userScores) / count($userScores), 2) : null;
+            $gaugeMax   = 5.0;
             $gaugeValue = $avg !== null ? min(max($avg, 0.0), $gaugeMax) : null;
-            $needleDeg = $gaugeValue !== null ? -90.0 + ($gaugeValue / $gaugeMax) * 180.0 : -90.0;
-            $zone = $this->gaugeZoneMeta($gaugeValue);
+            $needleDeg  = $gaugeValue !== null ? -90.0 + ($gaugeValue / $gaugeMax) * 180.0 : -90.0;
+            $zone       = $this->gaugeZoneMeta($gaugeValue);
+
+            // Min & max member
+            $minMember = null;
+            $maxMember = null;
+            if ($userScoreMap !== []) {
+                $minUid = (int) array_search(min($userScoreMap), $userScoreMap, true);
+                $maxUid = (int) array_search(max($userScoreMap), $userScoreMap, true);
+                $minUser = $userModels[$minUid] ?? null;
+                $maxUser = $userModels[$maxUid] ?? null;
+                $minMember = [
+                    'name'  => $minUser ? (trim((string) $minUser->display_name) ?: (string) $minUser->user_nicename) : "User #{$minUid}",
+                    'score' => min($userScoreMap),
+                ];
+                $maxMember = [
+                    'name'  => $maxUser ? (trim((string) $maxUser->display_name) ?: (string) $maxUser->user_nicename) : "User #{$maxUid}",
+                    'score' => max($userScoreMap),
+                ];
+            }
 
             $this->gauges[] = [
-                'title' => (string) $group->title,
-                'average' => $avg,
-                'needle_deg' => round($needleDeg, 2),
-                'zone_label' => $zone['label'],
-                'zone_color' => $zone['color'],
+                'title'             => (string) $group->title,
+                'average'           => $avg,
+                'needle_deg'        => round($needleDeg, 2),
+                'zone_label'        => $zone['label'],
+                'zone_color'        => $zone['color'],
                 'participant_count' => count($userScores),
-                'no_data_count' => $noDataCount,
+                'no_data_count'     => $noDataCount,
+                'min_member'        => $minMember,
+                'max_member'        => $maxMember,
             ];
         }
     }
