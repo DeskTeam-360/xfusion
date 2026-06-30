@@ -2,6 +2,7 @@
 
 use App\Http\Controllers\Api\CompanyPublicController;
 use App\Http\Controllers\Api\CourseGroupPublicController;
+use App\Http\Controllers\Api\OneOnOneController;
 use App\Http\Controllers\Api\ParticipationChartsController;
 use App\Models\CourseList;
 use App\Models\Tag;
@@ -411,5 +412,20 @@ Route::prefix('v1')->middleware('fusion.api')->group(function () {
     Route::get('/companies/{company}', [CompanyPublicController::class, 'show']);
     Route::get('/companies/{company}/participation-charts', [ParticipationChartsController::class, 'show']);
     Route::get('/course-groups', [CourseGroupPublicController::class, 'index']);
+
+    // 1-on-1 Alignment Capture — consumed by the [fusion_one_on_one] WordPress shortcode.
+    Route::prefix('one-on-one')->group(function () {
+        Route::get('/pairs', [OneOnOneController::class, 'pairsForUser']);
+        Route::get('/{oneOnOne}/conversations', [OneOnOneController::class, 'conversations']);
+        Route::post('/{oneOnOne}/conversations', [OneOnOneController::class, 'scheduleConversation']);
+        Route::post('/conversations/{conversation}/preparation', [OneOnOneController::class, 'submitPreparation']);
+        Route::get('/conversations/{conversation}/preparation-status', [OneOnOneController::class, 'preparationStatus']);
+        Route::post('/conversations/{conversation}/reveal', [OneOnOneController::class, 'reveal']);
+        Route::get('/conversations/{conversation}/brief', [OneOnOneController::class, 'brief']);
+        Route::post('/conversations/{conversation}/notes', [OneOnOneController::class, 'storeNote']);
+        Route::post('/conversations/{conversation}/commitments', [OneOnOneController::class, 'storeCommitment']);
+        Route::patch('/commitments/{commitment}', [OneOnOneController::class, 'updateCommitment']);
+        Route::post('/conversations/{conversation}/complete', [OneOnOneController::class, 'complete']);
+    });
 });
 

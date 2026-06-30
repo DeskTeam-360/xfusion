@@ -9,6 +9,7 @@ defined('ABSPATH') || exit;
 
 $xfusion_include_files = [
     'course-scoring-group-gauge-shortcode.php',
+    'one-on-one-shortcode.php',
     'woocommerce-mindful-mothers-checkout.php',
     'woocommerce-mindful-mothers-email.php',
     'learndash-topic-global-search.php',

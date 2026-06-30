@@ -6,6 +6,7 @@ use App\Http\Controllers\Admin\CompanyGroupController;
 use App\Http\Controllers\Admin\ContactController;
 use App\Http\Controllers\Admin\CourseGroupController;
 use App\Http\Controllers\Admin\CourseScoringGroupController;
+use App\Http\Controllers\Admin\OneOnOneController;
 use App\Http\Controllers\Admin\XfusionKnowledgeController;
 use App\Http\Controllers\Admin\ExportController;
 use App\Http\Controllers\Admin\ImportController;
@@ -333,6 +334,7 @@ Route::middleware(['auth',],)->group(function () {
     Route::resource('campaign', CampaignController::class,)->only('index', 'create', 'edit',);
     Route::resource('company', CompanyController::class,)->only('index', 'create', 'edit',);
     Route::resource('company-group', CompanyGroupController::class)->only('index', 'create', 'edit');
+    Route::resource('one-on-one', OneOnOneController::class)->only('index', 'create', 'edit');
     Route::resource('user', UserController::class,)->only('index', 'create', 'edit', 'show',);
     Route::resource('report', ReportController::class,)->only('index', 'create', 'edit',);
     Route::resource('tag', TagController::class,)->only('index', 'create', 'show',);
