@@ -293,7 +293,7 @@ document.addEventListener('livewire:init', function () {
                         </p>
                         <p class="text-xs font-semibold" style="color:{{ $zoneColor }}">{{ $zoneLabel }}</p>
                         <p class="mt-1 text-[11px] text-gray-400 tabular-nums">
-                            {{ $partCount }} participant{{ $partCount !== 1 ? 's' : '' }}@if($noData > 0), {{ $noData }} no data@endif
+                            {{ $partCount }} participant{{ $partCount !== 1 ? 's' : '' }}{{ $noData > 0 ? ', '.$noData.' no data' : '' }}
                         </p>
                     </div>
                     @endforeach
