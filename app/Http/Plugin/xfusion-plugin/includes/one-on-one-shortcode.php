@@ -252,25 +252,41 @@ table.xfoo-table td{padding:.35rem .5rem;border-bottom:1px solid #f3f4f6;vertica
     }
 
     // -----------------------------------------------------------------------
-    // Button loading state helpers
+    // Button loading state helpers — double-click safe
     // -----------------------------------------------------------------------
     function btnLoading(btn, label) {
+        if (btn.dataset.busy === '1') return false;   // already in-flight → reject
+        btn.dataset.busy = '1';
         btn.disabled = true;
         btn.dataset.originalText = btn.textContent;
         btn.textContent = label || 'Saving…';
+        return true;
     }
 
     function btnDone(btn, label, durationMs) {
         btn.textContent = label || 'Saved!';
         setTimeout(function () {
             btn.disabled = false;
+            btn.dataset.busy = '';
             btn.textContent = btn.dataset.originalText || btn.textContent;
         }, durationMs || 1200);
     }
 
     function btnError(btn) {
         btn.disabled = false;
+        btn.dataset.busy = '';
         btn.textContent = btn.dataset.originalText || 'Error';
+    }
+
+    // Guard wrapper: call async fn only if button is not already busy.
+    function withBtn(btn, loadingText, fn) {
+        if (!btnLoading(btn, loadingText)) return;
+        var p;
+        try { p = fn(); } catch (e) { btnError(btn); return; }
+        if (p && typeof p.then === 'function') {
+            p.then(function () { /* caller handles btnDone */ })
+             .catch(function () { btnError(btn); });
+        }
     }
 
     // -----------------------------------------------------------------------
@@ -342,12 +358,13 @@ table.xfoo-table td{padding:.35rem .5rem;border-bottom:1px solid #f3f4f6;vertica
                 var dt = document.getElementById('xfoo-new-date').value;
                 if (!dt) return;
                 var btn = this;
-                btnLoading(btn, 'Scheduling…');
-                call('xfusion_oo_schedule', { pair_id: pairId, scheduled_at: dt }).then(function () {
-                    document.getElementById('xfoo-new-date').value = '';
-                    btnDone(btn, 'Scheduled!');
-                    loadConversations();
-                }).catch(function () { btnError(btn); });
+                withBtn(btn, 'Scheduling…', function () {
+                    return call('xfusion_oo_schedule', { pair_id: pairId, scheduled_at: dt }).then(function () {
+                        document.getElementById('xfoo-new-date').value = '';
+                        btnDone(btn, 'Scheduled!');
+                        loadConversations(pairsMap);
+                    });
+                });
             });
         });
     }
@@ -536,23 +553,27 @@ table.xfoo-table td{padding:.35rem .5rem;border-bottom:1px solid #f3f4f6;vertica
             var content = document.getElementById('xfoo-prep-text').value.trim();
             if (!content) return;
             var btn = this;
-            btnLoading(btn, 'Saving…');
-            call('xfusion_oo_save_preparation', {
-                conversation_id: conversationId, author_role: role, content: content,
-            }).then(function () {
-                btnDone(btn, 'Saved!');
-                loadMyPrep();
-                checkPrepStatus();
-            }).catch(function () { btnError(btn); });
+            withBtn(btn, 'Saving…', function () {
+                return call('xfusion_oo_save_preparation', {
+                    conversation_id: conversationId, author_role: role, content: content,
+                }).then(function () {
+                    btnDone(btn, 'Saved!');
+                    loadMyPrep();
+                    checkPrepStatus();
+                });
+            });
         });
 
         document.getElementById('xfoo-reveal-btn').addEventListener('click', function () {
             if (!confirm('Start the meeting? Both preparations will become visible to each other.')) return;
             var btn = this;
-            btnLoading(btn, 'Starting meeting…');
+            if (btn.dataset.busy === '1') return;
+            btn.dataset.busy = '1';
+            btn.disabled = true;
+            btn.textContent = 'Starting meeting…';
             loadOtherPrep();
             loadBrief();
-            btn.style.display = 'none';
+            setTimeout(function () { btn.style.display = 'none'; }, 800);
         });
 
         document.getElementById('xfoo-add-note').addEventListener('click', function () {
@@ -560,43 +581,46 @@ table.xfoo-table td{padding:.35rem .5rem;border-bottom:1px solid #f3f4f6;vertica
             if (!t.value.trim()) return;
             var btn = this;
             var section = document.getElementById('xfoo-note-section').value;
-            btnLoading(btn, 'Saving…');
-            call('xfusion_oo_save_note', { conversation_id: conversationId, section: section, note: t.value }).then(function () {
-                t.value = '';
-                btnDone(btn, 'Added!');
-                loadNotes();
-            }).catch(function () { btnError(btn); });
+            withBtn(btn, 'Saving…', function () {
+                return call('xfusion_oo_save_note', { conversation_id: conversationId, section: section, note: t.value }).then(function () {
+                    t.value = '';
+                    btnDone(btn, 'Added!');
+                    loadNotes();
+                });
+            });
         });
 
         document.getElementById('xfoo-add-commit').addEventListener('click', function () {
             var t = document.getElementById('xfoo-commit-title');
             if (!t.value.trim()) return;
             var btn = this;
-            btnLoading(btn, 'Saving…');
-            call('xfusion_oo_save_commitment', {
-                conversation_id: conversationId,
-                title: t.value,
-                owner_role: document.getElementById('xfoo-commit-owner').value,
-                due_date: document.getElementById('xfoo-commit-due').value || '',
-            }).then(function () {
-                t.value = '';
-                btnDone(btn, 'Added!');
-                loadCommitments();
-            }).catch(function () { btnError(btn); });
+            withBtn(btn, 'Saving…', function () {
+                return call('xfusion_oo_save_commitment', {
+                    conversation_id: conversationId,
+                    title: t.value,
+                    owner_role: document.getElementById('xfoo-commit-owner').value,
+                    due_date: document.getElementById('xfoo-commit-due').value || '',
+                }).then(function () {
+                    t.value = '';
+                    btnDone(btn, 'Added!');
+                    loadCommitments();
+                });
+            });
         });
 
         document.getElementById('xfoo-complete-btn').addEventListener('click', function () {
             if (!confirm('Mark this meeting as completed and generate AI synthesis?')) return;
             var btn = this;
-            btnLoading(btn, 'Completing meeting…');
-            call('xfusion_oo_complete', { conversation_id: conversationId }).then(function (res) {
-                btnDone(btn, 'Completed!', 3000);
-                var el = document.getElementById('xfoo-synthesis');
-                if (!res.success) { el.innerHTML = '<p class="xfoo-muted">Completed. AI synthesis unavailable — Python service not configured yet.</p>'; return; }
-                el.innerHTML = res.data.synthesis_available
-                    ? '<div class="xfoo-section-label">AI Meeting Synthesis</div>' +
-                      '<div class="xfoo-prep-box" style="white-space:pre-wrap">' + escHtml(JSON.stringify(res.data.synthesis, null, 2)) + '</div>'
-                    : '<p class="xfoo-muted">Completed. AI synthesis unavailable — Python service not configured yet.</p>';
+            withBtn(btn, 'Completing meeting…', function () {
+                return call('xfusion_oo_complete', { conversation_id: conversationId }).then(function (res) {
+                    btnDone(btn, 'Completed!', 3000);
+                    var el = document.getElementById('xfoo-synthesis');
+                    if (!res.success) { el.innerHTML = '<p class="xfoo-muted">Completed. AI synthesis unavailable — Python service not configured yet.</p>'; return; }
+                    el.innerHTML = res.data.synthesis_available
+                        ? '<div class="xfoo-section-label">AI Meeting Synthesis</div>' +
+                          '<div class="xfoo-prep-box" style="white-space:pre-wrap">' + escHtml(JSON.stringify(res.data.synthesis, null, 2)) + '</div>'
+                        : '<p class="xfoo-muted">Completed. AI synthesis unavailable — Python service not configured yet.</p>';
+                });
             });
         });
 
@@ -604,9 +628,10 @@ table.xfoo-table td{padding:.35rem .5rem;border-bottom:1px solid #f3f4f6;vertica
         if (role === 'leader') {
             document.getElementById('xfoo-export-btn').addEventListener('click', function () {
                 var btn = this;
-                btnLoading(btn, 'Preparing export…');
-                exportConversation(conversationId).then(function () {
-                    btnDone(btn, 'Exported!');
+                withBtn(btn, 'Preparing export…', function () {
+                    return exportConversation(conversationId).then(function () {
+                        btnDone(btn, 'Exported!');
+                    });
                 });
             });
         }
