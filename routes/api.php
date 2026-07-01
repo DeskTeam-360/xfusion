@@ -419,10 +419,13 @@ Route::prefix('v1')->middleware('fusion.api')->group(function () {
         Route::get('/{oneOnOne}/conversations', [OneOnOneController::class, 'conversations']);
         Route::post('/{oneOnOne}/conversations', [OneOnOneController::class, 'scheduleConversation']);
         Route::post('/conversations/{conversation}/preparation', [OneOnOneController::class, 'submitPreparation']);
+        Route::get('/conversations/{conversation}/my-preparation', [OneOnOneController::class, 'myPreparation']);
         Route::get('/conversations/{conversation}/preparation-status', [OneOnOneController::class, 'preparationStatus']);
         Route::post('/conversations/{conversation}/reveal', [OneOnOneController::class, 'reveal']);
         Route::get('/conversations/{conversation}/brief', [OneOnOneController::class, 'brief']);
+        Route::get('/conversations/{conversation}/notes', [OneOnOneController::class, 'getNotes']);
         Route::post('/conversations/{conversation}/notes', [OneOnOneController::class, 'storeNote']);
+        Route::get('/conversations/{conversation}/commitments', [OneOnOneController::class, 'getCommitments']);
         Route::post('/conversations/{conversation}/commitments', [OneOnOneController::class, 'storeCommitment']);
         Route::patch('/commitments/{commitment}', [OneOnOneController::class, 'updateCommitment']);
         Route::post('/conversations/{conversation}/complete', [OneOnOneController::class, 'complete']);

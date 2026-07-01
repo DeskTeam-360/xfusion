@@ -134,6 +134,36 @@ class OneOnOneController extends Controller
         return response()->json(['success' => true, 'data' => $brief->brief]);
     }
 
+    /** Fetch the calling user's own preparation (never the other party's). */
+    public function myPreparation(Request $request, OneOnOneConversation $conversation)
+    {
+        $userId = (int) $request->query('user_id');
+        $prep = $conversation->preparations()->where('author_user_id', $userId)->first(['author_role', 'content', 'is_revealed']);
+
+        return response()->json([
+            'success' => true,
+            'data' => $prep ? ['content' => $prep->content, 'author_role' => $prep->author_role, 'is_revealed' => (bool) $prep->is_revealed] : null,
+        ]);
+    }
+
+    /** Fetch all notes for a conversation. */
+    public function getNotes(OneOnOneConversation $conversation)
+    {
+        return response()->json([
+            'success' => true,
+            'data' => $conversation->notes()->orderBy('id')->get(['id', 'section', 'note', 'created_by', 'created_at']),
+        ]);
+    }
+
+    /** Fetch all commitments for a conversation. */
+    public function getCommitments(OneOnOneConversation $conversation)
+    {
+        return response()->json([
+            'success' => true,
+            'data' => $conversation->commitments()->orderBy('id')->get(['id', 'title', 'description', 'owner_role', 'status', 'due_date']),
+        ]);
+    }
+
     public function storeNote(Request $request, OneOnOneConversation $conversation)
     {
         $data = $request->validate([
