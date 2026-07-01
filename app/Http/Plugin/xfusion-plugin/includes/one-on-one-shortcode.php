@@ -701,8 +701,17 @@ table.xfoo-table td{padding:.35rem .5rem;border-bottom:1px solid #f3f4f6;vertica
         if (role === 'leader') {
             document.getElementById('xfoo-export-btn').addEventListener('click', function () {
                 var btn = this;
+                // Open the tab synchronously, inside the click handler, so popup
+                // blockers see it as a direct user action. Fill it in once the
+                // async data (notes/commitments/prep status) has loaded.
+                var win = window.open('', '_blank');
+                if (!win) {
+                    alert('Popup blocked. Please allow popups for this site and try again.');
+                    return;
+                }
+                win.document.write('<p style="font-family:sans-serif;color:#6b7280">Preparing export…</p>');
                 withBtn(btn, 'Preparing export…', function () {
-                    return exportConversation(conversationId).then(function () {
+                    return exportConversation(conversationId, win).then(function () {
                         btnDone(btn, 'Exported!');
                     });
                 });
@@ -720,7 +729,7 @@ table.xfoo-table td{padding:.35rem .5rem;border-bottom:1px solid #f3f4f6;vertica
     // -----------------------------------------------------------------------
     // Export — build a printable HTML page and open in new tab
     // -----------------------------------------------------------------------
-    function exportConversation(conversationId) {
+    function exportConversation(conversationId, win) {
         return Promise.all([
             call('xfusion_oo_preparation_status', { conversation_id: conversationId }),
             call('xfusion_oo_get_notes',          { conversation_id: conversationId }),
@@ -778,10 +787,17 @@ table.xfoo-table td{padding:.35rem .5rem;border-bottom:1px solid #f3f4f6;vertica
 
             html += '</body></html>';
 
-            var win = window.open('', '_blank');
+            win.document.open();
             win.document.write(html);
             win.document.close();
             win.focus();
+        }).catch(function (err) {
+            if (win && !win.closed) {
+                win.document.open();
+                win.document.write('<p style="font-family:sans-serif;color:#dc2626">Failed to load export data.</p>');
+                win.document.close();
+            }
+            throw err;
         });
     }
 
