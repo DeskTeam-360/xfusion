@@ -221,6 +221,8 @@ function xfusion_one_on_one_shortcode(): string
 @media (min-width:1440px){
     #xfusion-oo-app{max-width:1320px;display:grid;grid-template-columns:380px 1fr;gap:1.25rem;align-items:start}
     #xfoo-left{position:sticky;top:1rem;max-height:calc(100vh - 2rem);overflow-y:auto}
+    #xfoo-left table.xfoo-table th,
+    #xfoo-left table.xfoo-table td{padding:.3rem .35rem;font-size:.76rem}
 }
 .xfoo-card{border:1px solid #e5e7eb;border-radius:.5rem;padding:1.2rem;margin-bottom:1rem;background:#fff}
 .xfoo-card h3{margin:0 0 .75rem;font-size:1rem}
@@ -230,6 +232,7 @@ function xfusion_one_on_one_shortcode(): string
 .xfoo-btn.danger{border-color:#dc2626;background:#dc2626;color:#fff}
 .xfoo-btn.success{border-color:#16a34a;background:#16a34a;color:#fff}
 .xfoo-btn:disabled{opacity:.5;cursor:default}
+.xfoo-btn.xs{padding:.15rem .5rem;font-size:.72rem}
 textarea.xfoo-input,input.xfoo-input,select.xfoo-input{width:100%;border:1px solid #d1d5db;border-radius:.375rem;padding:.35rem .55rem;margin:.15rem 0 .5rem;font-size:.85rem;box-sizing:border-box}
 .xfoo-badge{display:inline-block;padding:.1rem .5rem;border-radius:999px;font-size:.7rem;background:#f3f4f6;color:#374151}
 .xfoo-badge.green{background:#dcfce7;color:#166534}
@@ -373,7 +376,7 @@ table.xfoo-table td{padding:.35rem .5rem;border-bottom:1px solid #f3f4f6;vertica
                 html += '<tr><td>' + (c.scheduled_at || '—') + '</td>' +
                     '<td>' + linkCell + '</td>' +
                     '<td><span class="xfoo-badge ' + badge + '">' + c.status + '</span></td>' +
-                    '<td><button class="xfoo-btn secondary" data-open="' + c.id + '" data-role="' + role + '" data-link="' + escHtml(c.meeting_link || '') + '">Open</button></td></tr>';
+                    '<td><button class="xfoo-btn secondary xs" data-open="' + c.id + '" data-role="' + role + '" data-link="' + escHtml(c.meeting_link || '') + '">Open</button></td></tr>';
             });
             html += '</tbody></table>';
 
