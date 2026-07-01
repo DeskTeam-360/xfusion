@@ -103,7 +103,12 @@ add_action('wp_ajax_xfusion_oo_schedule', function (): void {
     xfusion_oo_require_login();
     $pairId      = (int) ($_POST['pair_id'] ?? 0);
     $scheduledAt = sanitize_text_field($_POST['scheduled_at'] ?? '');
-    xfusion_oo_send(xfusion_oo_api_request('POST', "/{$pairId}/conversations", [], ['scheduled_at' => $scheduledAt]));
+    $meetingLink = esc_url_raw(wp_unslash($_POST['meeting_link'] ?? ''));
+    $body = ['scheduled_at' => $scheduledAt];
+    if ($meetingLink !== '') {
+        $body['meeting_link'] = $meetingLink;
+    }
+    xfusion_oo_send(xfusion_oo_api_request('POST', "/{$pairId}/conversations", [], $body));
 });
 
 add_action('wp_ajax_xfusion_oo_my_preparation', function (): void {
@@ -338,41 +343,59 @@ table.xfoo-table td{padding:.35rem .5rem;border-bottom:1px solid #f3f4f6;vertica
             if (!res.success) { listEl.innerHTML = '<p class="xfoo-muted">' + (res.message || 'Error') + '</p>'; return; }
             var rows = res.data || [];
             var html = '<table class="xfoo-table" style="margin-top:.5rem"><thead><tr>' +
-                '<th>Scheduled</th><th>Status</th><th></th></tr></thead><tbody>';
+                '<th>Scheduled</th><th>Link</th><th>Status</th><th></th></tr></thead><tbody>';
             rows.forEach(function (c) {
                 var badge = c.status === 'completed' ? 'green' : (c.status === 'in_progress' ? 'blue' : 'amber');
+                var linkCell = c.meeting_link
+                    ? '<a href="' + escHtml(c.meeting_link) + '" target="_blank" rel="noopener" style="font-size:.8rem">Join</a>'
+                    : '<span class="xfoo-muted">—</span>';
                 html += '<tr><td>' + (c.scheduled_at || '—') + '</td>' +
+                    '<td>' + linkCell + '</td>' +
                     '<td><span class="xfoo-badge ' + badge + '">' + c.status + '</span></td>' +
-                    '<td><button class="xfoo-btn secondary" data-open="' + c.id + '" data-role="' + role + '">Open</button></td></tr>';
+                    '<td><button class="xfoo-btn secondary" data-open="' + c.id + '" data-role="' + role + '" data-link="' + escHtml(c.meeting_link || '') + '">Open</button></td></tr>';
             });
-            html += '</tbody></table>' +
-                '<div style="margin-top:.75rem" class="xfoo-row">' +
-                '<input type="datetime-local" class="xfoo-input" id="xfoo-new-date" style="width:auto;flex:1"/>' +
-                '<button class="xfoo-btn" id="xfoo-schedule-btn">Schedule new</button></div>';
+            html += '</tbody></table>';
+
+            // Schedule form — leader only
+            if (role === 'leader') {
+                html += '<div style="margin-top:.75rem;border-top:1px solid #f3f4f6;padding-top:.75rem">' +
+                    '<div class="xfoo-section-label" style="margin-top:0">Schedule new conversation</div>' +
+                    '<div class="xfoo-row">' +
+                    '<input type="datetime-local" class="xfoo-input" id="xfoo-new-date" style="width:auto;flex:1" placeholder="Date & time"/>' +
+                    '</div>' +
+                    '<input type="url" class="xfoo-input" id="xfoo-new-link" placeholder="Meeting link (Zoom, Meet, Teams…) — optional"/>' +
+                    '<button class="xfoo-btn" id="xfoo-schedule-btn">Schedule</button>' +
+                    '</div>';
+            }
+
             listEl.innerHTML = html;
 
             listEl.querySelectorAll('[data-open]').forEach(function (btn) {
-                btn.addEventListener('click', function () { openConversation(btn.dataset.open, btn.dataset.role, pair); });
+                btn.addEventListener('click', function () { openConversation(btn.dataset.open, btn.dataset.role, pair, btn.dataset.link || ''); });
             });
-            document.getElementById('xfoo-schedule-btn').addEventListener('click', function () {
-                var dt = document.getElementById('xfoo-new-date').value;
-                if (!dt) return;
-                var btn = this;
-                withBtn(btn, 'Scheduling…', function () {
-                    return call('xfusion_oo_schedule', { pair_id: pairId, scheduled_at: dt }).then(function () {
-                        document.getElementById('xfoo-new-date').value = '';
-                        btnDone(btn, 'Scheduled!');
-                        loadConversations(pairsMap);
+            if (role === 'leader') {
+                document.getElementById('xfoo-schedule-btn').addEventListener('click', function () {
+                    var dt   = document.getElementById('xfoo-new-date').value;
+                    var link = document.getElementById('xfoo-new-link').value.trim();
+                    if (!dt) return;
+                    var btn = this;
+                    withBtn(btn, 'Scheduling…', function () {
+                        return call('xfusion_oo_schedule', { pair_id: pairId, scheduled_at: dt, meeting_link: link }).then(function () {
+                            document.getElementById('xfoo-new-date').value = '';
+                            document.getElementById('xfoo-new-link').value = '';
+                            btnDone(btn, 'Scheduled!');
+                            loadConversations(pairsMap);
+                        });
                     });
                 });
-            });
+            }
         });
     }
 
     // -----------------------------------------------------------------------
     // Open one conversation — load all data on entry
     // -----------------------------------------------------------------------
-    function openConversation(conversationId, role, pair) {
+    function openConversation(conversationId, role, pair, meetingLink) {
         // Resolve display names from the pair object
         var myName    = role === 'leader' ? (pair.leader   ? pair.leader.name   : 'Leader')   : (pair.employee ? pair.employee.name : 'Employee');
         var otherName = role === 'leader' ? (pair.employee ? pair.employee.name : 'Employee') : (pair.leader   ? pair.leader.name   : 'Leader');
@@ -394,6 +417,11 @@ table.xfoo-table td{padding:.35rem .5rem;border-bottom:1px solid #f3f4f6;vertica
                 ? '<button class="xfoo-btn secondary" id="xfoo-export-btn">Export conversation</button>'
                 : '') +
             '</div>' +
+
+            // Meeting link (visible to both parties)
+            (meetingLink
+                ? '<p style="margin:.4rem 0 .6rem"><a href="' + escHtml(meetingLink) + '" target="_blank" rel="noopener" class="xfoo-btn secondary" style="display:inline-flex;align-items:center;gap:.3rem">&#128249; Join meeting</a></p>'
+                : '') +
 
             // Prep status bar
             '<p id="xfoo-prep-status" class="xfoo-muted" style="margin:.5rem 0 .75rem"></p>' +

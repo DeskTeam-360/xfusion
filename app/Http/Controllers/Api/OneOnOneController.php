@@ -50,7 +50,7 @@ class OneOnOneController extends Controller
     {
         return response()->json([
             'success' => true,
-            'data' => $oneOnOne->conversations()->get(['id', 'scheduled_at', 'held_at', 'status']),
+            'data' => $oneOnOne->conversations()->get(['id', 'scheduled_at', 'held_at', 'meeting_link', 'status']),
         ]);
     }
 
@@ -58,10 +58,12 @@ class OneOnOneController extends Controller
     {
         $data = $request->validate([
             'scheduled_at' => 'required|date',
+            'meeting_link' => 'nullable|url|max:500',
         ]);
 
         $conversation = $oneOnOne->conversations()->create([
             'scheduled_at' => $data['scheduled_at'],
+            'meeting_link' => $data['meeting_link'] ?? null,
             'status' => OneOnOneConversation::STATUS_SCHEDULED,
         ]);
 

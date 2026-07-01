@@ -43,7 +43,7 @@ CREATE TABLE IF NOT EXISTS `wp_fusion_evidence_log` (
 
 
 -- -----------------------------------------------------------------------------
--- ARP — Annual Readiness Plan™ (strategic anchor, tahunan)
+-- ARP — Annual Readiness Plan™ (strategic anchor, annual)
 -- -----------------------------------------------------------------------------
 CREATE TABLE IF NOT EXISTS `wp_fusion_arps` (
     `id` BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
@@ -64,7 +64,7 @@ CREATE TABLE IF NOT EXISTS `wp_fusion_arps` (
 CREATE TABLE IF NOT EXISTS `wp_fusion_arp_future_states` (
     `id` BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
     `arp_id` BIGINT UNSIGNED NOT NULL,
-    `narrative` TEXT NOT NULL COMMENT '"Harus jadi organisasi seperti apa kita?"',
+    `narrative` TEXT NOT NULL COMMENT '"What kind of organization do we need to become?"',
     `created_at` TIMESTAMP NULL,
     `updated_at` TIMESTAMP NULL,
     PRIMARY KEY (`id`),
@@ -125,7 +125,7 @@ CREATE TABLE IF NOT EXISTS `wp_fusion_arp_ai_assessments` (
 
 
 -- -----------------------------------------------------------------------------
--- QBR — Quarterly Business Review™ (kesiapan organisasi, per kuartal)
+-- QBR — Quarterly Business Review™ (organizational readiness, per quarter)
 -- -----------------------------------------------------------------------------
 CREATE TABLE IF NOT EXISTS `wp_fusion_qbrs` (
     `id` BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
@@ -197,7 +197,7 @@ CREATE TABLE IF NOT EXISTS `wp_fusion_qbr_ai_syntheses` (
 
 
 -- -----------------------------------------------------------------------------
--- 1-on-1 — Alignment Capture™ (coaching individu, bulanan)
+-- 1-on-1 — Alignment Capture™ (individual coaching, monthly)
 -- -----------------------------------------------------------------------------
 CREATE TABLE IF NOT EXISTS `wp_fusion_one_on_ones` (
     `id` BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
@@ -218,6 +218,7 @@ CREATE TABLE IF NOT EXISTS `wp_fusion_one_on_one_conversations` (
     `one_on_one_id` BIGINT UNSIGNED NOT NULL,
     `scheduled_at` TIMESTAMP NULL,
     `held_at` TIMESTAMP NULL,
+    `meeting_link` VARCHAR(500) NULL COMMENT 'Video call URL set by leader (Zoom, Meet, Teams, etc.)',
     `status` VARCHAR(20) NOT NULL DEFAULT 'scheduled' COMMENT 'scheduled | in_progress | completed | cancelled',
     `created_at` TIMESTAMP NULL,
     `updated_at` TIMESTAMP NULL,
@@ -298,7 +299,7 @@ CREATE TABLE IF NOT EXISTS `wp_fusion_one_on_one_ai_syntheses` (
 
 
 -- -----------------------------------------------------------------------------
--- 360 Review — sintesis pengembangan individu (tahunan)
+-- 360 Review — individual development synthesis (annual)
 -- -----------------------------------------------------------------------------
 CREATE TABLE IF NOT EXISTS `wp_fusion_360_reviews` (
     `id` BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
@@ -376,7 +377,7 @@ CREATE TABLE IF NOT EXISTS `wp_fusion_360_ai_syntheses` (
 
 
 -- -----------------------------------------------------------------------------
--- ARR — Annual Readiness Review™ (pembelajaran organisasi, tahunan)
+-- ARR — Annual Readiness Review™ (organizational learning, annual)
 -- -----------------------------------------------------------------------------
 CREATE TABLE IF NOT EXISTS `wp_fusion_arrs` (
     `id` BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
