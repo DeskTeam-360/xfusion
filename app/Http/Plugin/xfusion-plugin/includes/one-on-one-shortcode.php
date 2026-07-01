@@ -219,7 +219,7 @@ function xfusion_one_on_one_shortcode(): string
 #xfusion-oo-app{max-width:780px;margin:0 auto;font-family:inherit;color:#111}
 #xfoo-left,#xfoo-right{min-width:0}
 @media (min-width:1440px){
-    #xfusion-oo-app{max-width:1320px;display:grid;grid-template-columns:380px 1fr;gap:1.25rem;align-items:start}
+    #xfusion-oo-app{max-width:1440px;display:grid;grid-template-columns:380px 1fr;gap:1.25rem;align-items:start}
     #xfoo-left{position:sticky;top:1rem;max-height:calc(100vh - 2rem);overflow-y:auto}
     #xfoo-left table.xfoo-table th,
     #xfoo-left table.xfoo-table td{padding:.3rem .35rem;font-size:.76rem}
