@@ -205,12 +205,22 @@ function xfusion_one_on_one_shortcode(): string
      data-ajax-url="<?php echo $ajaxUrl; ?>"
      data-nonce="<?php echo esc_attr($nonce); ?>"
      data-user-id="<?php echo (int) get_current_user_id(); ?>">
-    <div id="xfoo-pairs-panel"><p class="xfoo-muted">Loading…</p></div>
-    <div id="xfoo-workspace" style="display:none;"></div>
+    <div id="xfoo-left">
+        <div id="xfoo-pairs-panel"><p class="xfoo-muted">Loading…</p></div>
+    </div>
+    <div id="xfoo-right">
+        <div id="xfoo-conv-panel"></div>
+        <div id="xfoo-workspace" style="display:none;"></div>
+    </div>
 </div>
 
 <style>
 #xfusion-oo-app{max-width:780px;margin:0 auto;font-family:inherit;color:#111}
+#xfoo-left,#xfoo-right{min-width:0}
+@media (min-width:1440px){
+    #xfusion-oo-app{max-width:1200px;display:grid;grid-template-columns:320px 1fr;gap:1.25rem;align-items:start}
+    #xfoo-left{position:sticky;top:1rem}
+}
 .xfoo-card{border:1px solid #e5e7eb;border-radius:.5rem;padding:1.2rem;margin-bottom:1rem;background:#fff}
 .xfoo-card h3{margin:0 0 .75rem;font-size:1rem}
 .xfoo-card h4{margin:.9rem 0 .4rem;font-size:.875rem;font-weight:600}
@@ -245,6 +255,7 @@ table.xfoo-table td{padding:.35rem .5rem;border-bottom:1px solid #f3f4f6;vertica
     var NONCE    = ROOT.dataset.nonce;
     var USER_ID  = parseInt(ROOT.dataset.userId, 10);
     var pairsEl  = ROOT.querySelector('#xfoo-pairs-panel');
+    var convEl   = ROOT.querySelector('#xfoo-conv-panel');
     var wsEl     = ROOT.querySelector('#xfoo-workspace');
 
     // -----------------------------------------------------------------------
@@ -314,16 +325,20 @@ table.xfoo-table td{padding:.35rem .5rem;border-bottom:1px solid #f3f4f6;vertica
             pairs.forEach(function (p) { pairsMap[p.id] = p; });
 
             var html = '<div class="xfoo-card"><label style="font-weight:600;font-size:.85rem">Select pairing</label>' +
-                '<select class="xfoo-input" id="xfoo-pair-select">';
+                '<select class="xfoo-input" id="xfoo-pair-select" style="margin-bottom:0">';
             pairs.forEach(function (p) {
                 var other = p.role === 'leader' ? p.employee : p.leader;
                 html += '<option value="' + p.id + '" data-role="' + p.role + '">' +
                     (other ? other.name : '—') + ' (' + p.role + ')</option>';
             });
-            html += '</select><div id="xfoo-conv-list"></div></div>';
+            html += '</select></div>';
             pairsEl.innerHTML = html;
             var sel = document.getElementById('xfoo-pair-select');
-            sel.addEventListener('change', function () { loadConversations(pairsMap); });
+            sel.addEventListener('change', function () {
+                wsEl.style.display = 'none';
+                wsEl.innerHTML = '';
+                loadConversations(pairsMap);
+            });
             loadConversations(pairsMap);
         });
     }
@@ -336,13 +351,16 @@ table.xfoo-table td{padding:.35rem .5rem;border-bottom:1px solid #f3f4f6;vertica
         var pairId = sel.value;
         var role   = sel.selectedOptions[0].dataset.role;
         var pair   = pairsMap[pairId];
-        var listEl = document.getElementById('xfoo-conv-list');
-        listEl.innerHTML = '<p class="xfoo-muted">Loading conversations…</p>';
+        var listEl = convEl;
+        listEl.innerHTML = '<div class="xfoo-card"><p class="xfoo-muted">Loading conversations…</p></div>';
 
         call('xfusion_oo_conversations', { pair_id: pairId }).then(function (res) {
-            if (!res.success) { listEl.innerHTML = '<p class="xfoo-muted">' + (res.message || 'Error') + '</p>'; return; }
+            if (!res.success) { listEl.innerHTML = '<div class="xfoo-card"><p class="xfoo-muted">' + (res.message || 'Error') + '</p></div>'; return; }
             var rows = res.data || [];
-            var html = '<table class="xfoo-table" style="margin-top:.5rem"><thead><tr>' +
+            var html = '<div class="xfoo-card"><h3 style="margin-top:0">Conversations with ' +
+                escHtml((role === 'leader' ? (pair.employee ? pair.employee.name : '—') : (pair.leader ? pair.leader.name : '—'))) +
+                '</h3>' +
+                '<table class="xfoo-table" style="margin-top:.5rem"><thead><tr>' +
                 '<th>Scheduled</th><th>Link</th><th>Status</th><th></th></tr></thead><tbody>';
             rows.forEach(function (c) {
                 var badge = c.status === 'completed' ? 'green' : (c.status === 'in_progress' ? 'blue' : 'amber');
@@ -368,6 +386,7 @@ table.xfoo-table td{padding:.35rem .5rem;border-bottom:1px solid #f3f4f6;vertica
                     '</div>';
             }
 
+            html += '</div>';
             listEl.innerHTML = html;
 
             listEl.querySelectorAll('[data-open]').forEach(function (btn) {
