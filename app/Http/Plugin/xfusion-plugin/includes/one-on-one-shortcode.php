@@ -223,7 +223,6 @@ function xfusion_one_on_one_shortcode(): string
     #xfoo-left{position:sticky;top:1rem;max-height:calc(100vh - 2rem);overflow-y:auto}
     #xfoo-left table.xfoo-table th,
     #xfoo-left table.xfoo-table td{padding:.3rem .35rem;font-size:.76rem}
-    #xfoo-right{max-width:640px}
 }
 .xfoo-card{border:1px solid #e5e7eb;border-radius:.5rem;padding:1.2rem;margin-bottom:1rem;background:#fff}
 .xfoo-card h3{margin:0 0 .75rem;font-size:1rem}
