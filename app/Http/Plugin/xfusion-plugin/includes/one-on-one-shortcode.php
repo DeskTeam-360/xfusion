@@ -275,6 +275,9 @@ table.xfoo-table{width:100%;border-collapse:collapse;font-size:.83rem}
 table.xfoo-table th{text-align:left;padding:.35rem .5rem;background:#f9fafb;font-weight:600;border-bottom:1px solid #e5e7eb}
 table.xfoo-table td{padding:.35rem .5rem;border-bottom:1px solid #f3f4f6;vertical-align:middle}
 .xfoo-section-label{font-size:.7rem;text-transform:uppercase;letter-spacing:.05em;color:#9ca3af;margin:.75rem 0 .25rem}
+.xfoo-spinner-row{display:flex;align-items:center;gap:.5rem;padding:.5rem 0}
+.xfoo-spinner{width:14px;height:14px;border:2px solid #e5e7eb;border-top-color:#2563eb;border-radius:50%;display:inline-block;animation:xfoo-spin .7s linear infinite}
+@keyframes xfoo-spin{to{transform:rotate(360deg)}}
 </style>
 
 <script>
@@ -465,9 +468,6 @@ table.xfoo-table td{padding:.35rem .5rem;border-bottom:1px solid #f3f4f6;vertica
             '<div class="xfoo-card" id="xfoo-ws-inner">' +
             '<div class="xfoo-row" style="justify-content:space-between">' +
             '<h3 style="margin:0">Conversation #' + conversationId + ' <span class="xfoo-badge blue">' + role + ' — ' + escHtml(myName) + '</span></h3>' +
-            (role === 'leader'
-                ? '<button class="xfoo-btn secondary" id="xfoo-export-btn">Export conversation</button>'
-                : '') +
             '</div>' +
 
             // Meeting link (visible to both parties)
@@ -528,6 +528,7 @@ table.xfoo-table td{padding:.35rem .5rem;border-bottom:1px solid #f3f4f6;vertica
 
         // --- load own preparation ---
         function loadMyPrep() {
+            document.getElementById('xfoo-my-prep-display').innerHTML = xfooSpinner();
             call('xfusion_oo_my_preparation', { conversation_id: conversationId }).then(function (res) {
                 var el = document.getElementById('xfoo-my-prep-display');
                 if (res.success && res.data) {
@@ -541,6 +542,7 @@ table.xfoo-table td{padding:.35rem .5rem;border-bottom:1px solid #f3f4f6;vertica
 
         // --- load notes ---
         function loadNotes() {
+            document.getElementById('xfoo-notes-list').innerHTML = xfooSpinner();
             call('xfusion_oo_get_notes', { conversation_id: conversationId }).then(function (res) {
                 var el = document.getElementById('xfoo-notes-list');
                 if (!res.success || !(res.data || []).length) { el.innerHTML = '<p class="xfoo-muted">No notes yet.</p>'; return; }
@@ -561,6 +563,7 @@ table.xfoo-table td{padding:.35rem .5rem;border-bottom:1px solid #f3f4f6;vertica
 
         // --- load commitments ---
         function loadCommitments() {
+            document.getElementById('xfoo-commitments-list').innerHTML = xfooSpinner();
             call('xfusion_oo_get_commitments', { conversation_id: conversationId }).then(function (res) {
                 var el = document.getElementById('xfoo-commitments-list');
                 if (!res.success || !(res.data || []).length) { el.innerHTML = '<p class="xfoo-muted">No commitments yet.</p>'; return; }
@@ -704,27 +707,6 @@ table.xfoo-table td{padding:.35rem .5rem;border-bottom:1px solid #f3f4f6;vertica
             });
         });
 
-        // Export — leader only
-        if (role === 'leader') {
-            document.getElementById('xfoo-export-btn').addEventListener('click', function () {
-                var btn = this;
-                // Open the tab synchronously, inside the click handler, so popup
-                // blockers see it as a direct user action. Fill it in once the
-                // async data (notes/commitments/prep status) has loaded.
-                var win = window.open('', '_blank');
-                if (!win) {
-                    alert('Popup blocked. Please allow popups for this site and try again.');
-                    return;
-                }
-                win.document.write('<p style="font-family:sans-serif;color:#6b7280">Preparing export…</p>');
-                withBtn(btn, 'Preparing export…', function () {
-                    return exportConversation(conversationId, win).then(function () {
-                        btnDone(btn, 'Exported!');
-                    });
-                });
-            });
-        }
-
         // --- initial load ---
         loadMyPrep();
         loadNotes();
@@ -734,86 +716,15 @@ table.xfoo-table td{padding:.35rem .5rem;border-bottom:1px solid #f3f4f6;vertica
     }
 
     // -----------------------------------------------------------------------
-    // Export — build a printable HTML page and open in new tab
-    // -----------------------------------------------------------------------
-    function exportConversation(conversationId, win) {
-        return Promise.all([
-            call('xfusion_oo_preparation_status', { conversation_id: conversationId }),
-            call('xfusion_oo_get_notes',          { conversation_id: conversationId }),
-            call('xfusion_oo_get_commitments',    { conversation_id: conversationId }),
-        ]).then(function (results) {
-            var prepStatus   = results[0].data  || {};
-            var notes        = (results[1].data  || []);
-            var commitments  = (results[2].data  || []);
-
-            var html = '<!DOCTYPE html><html><head><meta charset="utf-8">' +
-                '<title>1-on-1 Conversation #' + conversationId + '</title>' +
-                '<style>body{font-family:sans-serif;max-width:680px;margin:2rem auto;color:#111}' +
-                'h1{font-size:1.2rem}h2{font-size:1rem;margin-top:1.5rem;border-bottom:1px solid #e5e7eb;padding-bottom:.25rem}' +
-                '.item{background:#f9fafb;border:1px solid #e5e7eb;border-radius:.375rem;padding:.5rem .75rem;margin-bottom:.4rem;font-size:.9rem}' +
-                '.badge{display:inline-block;padding:.1rem .4rem;border-radius:999px;font-size:.7rem;background:#f3f4f6}' +
-                '@media print{body{margin:0}}</style></head><body>' +
-                '<h1>1-on-1 Conversation #' + conversationId + '</h1>' +
-                '<p style="color:#6b7280;font-size:.85rem">Exported ' + new Date().toLocaleString() + '</p>' +
-
-                '<h2>Preparation status</h2>' +
-                '<p>' + (pair.employee ? pair.employee.name : 'Employee') + ': <strong>' + (prepStatus.employee_submitted ? 'Submitted' : 'Not submitted') + '</strong> &nbsp;' +
-                (pair.leader ? pair.leader.name : 'Leader') + ': <strong>' + (prepStatus.leader_submitted ? 'Submitted' : 'Not submitted') + '</strong> &nbsp;' +
-                'Revealed: <strong>' + (prepStatus.revealed ? 'Yes' : 'No') + '</strong></p>' +
-
-                '<h2>Notes (' + notes.length + ')</h2>';
-
-            var leaderUid   = pair.leader   ? pair.leader.id   : null;
-            var employeeUid = pair.employee ? pair.employee.id : null;
-            if (notes.length === 0) {
-                html += '<p style="color:#6b7280">No notes recorded.</p>';
-            } else {
-                notes.forEach(function (n) {
-                    var authorName = n.created_by == leaderUid
-                        ? (pair.leader ? pair.leader.name : 'Leader')
-                        : (n.created_by == employeeUid ? (pair.employee ? pair.employee.name : 'Employee') : 'User #' + n.created_by);
-                    html += '<div class="item"><span class="badge">' + escHtml(n.section) + '</span> <em>' + escHtml(authorName) + ':</em> ' + escHtml(n.note) + '</div>';
-                });
-            }
-
-            html += '<h2>Commitments (' + commitments.length + ')</h2>';
-            if (commitments.length === 0) {
-                html += '<p style="color:#6b7280">No commitments recorded.</p>';
-            } else {
-                commitments.forEach(function (c) {
-                    var ownerLabel = c.owner_role === 'shared' ? 'Shared'
-                        : (c.owner_role === 'leader' ? (pair.leader ? pair.leader.name : 'Leader') : (pair.employee ? pair.employee.name : 'Employee')) + ' (' + c.owner_role + ')';
-                    html += '<div class="item"><strong>' + escHtml(c.title) + '</strong>' +
-                        ' <span class="badge">' + escHtml(ownerLabel) + '</span>' +
-                        ' <span class="badge">' + escHtml(c.status) + '</span>' +
-                        (c.due_date ? ' <span style="color:#6b7280;font-size:.8rem">Due: ' + escHtml(c.due_date) + '</span>' : '') +
-                        (c.description ? '<br><span style="color:#374151;font-size:.85rem">' + escHtml(c.description) + '</span>' : '') +
-                        '</div>';
-                });
-            }
-
-            html += '</body></html>';
-
-            win.document.open();
-            win.document.write(html);
-            win.document.close();
-            win.focus();
-        }).catch(function (err) {
-            if (win && !win.closed) {
-                win.document.open();
-                win.document.write('<p style="font-family:sans-serif;color:#dc2626">Failed to load export data.</p>');
-                win.document.close();
-            }
-            throw err;
-        });
-    }
-
-    // -----------------------------------------------------------------------
     // Utility
     // -----------------------------------------------------------------------
     function escHtml(str) {
         if (str == null) return '';
         return String(str).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+    }
+
+    function xfooSpinner() {
+        return '<div class="xfoo-spinner-row"><span class="xfoo-spinner"></span> <span class="xfoo-muted">Loading…</span></div>';
     }
 
     loadPairs();
