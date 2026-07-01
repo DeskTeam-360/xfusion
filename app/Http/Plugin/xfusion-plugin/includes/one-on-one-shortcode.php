@@ -288,6 +288,10 @@ table.xfoo-table td{padding:.35rem .5rem;border-bottom:1px solid #f3f4f6;vertica
                 pairsEl.innerHTML = '<p class="xfoo-muted">No 1-on-1 pairs found.</p>';
                 return;
             }
+            // Index pairs by id so openConversation can look up names
+            var pairsMap = {};
+            pairs.forEach(function (p) { pairsMap[p.id] = p; });
+
             var html = '<div class="xfoo-card"><label style="font-weight:600;font-size:.85rem">Select pairing</label>' +
                 '<select class="xfoo-input" id="xfoo-pair-select">';
             pairs.forEach(function (p) {
@@ -298,18 +302,19 @@ table.xfoo-table td{padding:.35rem .5rem;border-bottom:1px solid #f3f4f6;vertica
             html += '</select><div id="xfoo-conv-list"></div></div>';
             pairsEl.innerHTML = html;
             var sel = document.getElementById('xfoo-pair-select');
-            sel.addEventListener('change', loadConversations);
-            loadConversations();
+            sel.addEventListener('change', function () { loadConversations(pairsMap); });
+            loadConversations(pairsMap);
         });
     }
 
     // -----------------------------------------------------------------------
     // Conversations list
     // -----------------------------------------------------------------------
-    function loadConversations() {
+    function loadConversations(pairsMap) {
         var sel    = document.getElementById('xfoo-pair-select');
         var pairId = sel.value;
         var role   = sel.selectedOptions[0].dataset.role;
+        var pair   = pairsMap[pairId];
         var listEl = document.getElementById('xfoo-conv-list');
         listEl.innerHTML = '<p class="xfoo-muted">Loading conversations…</p>';
 
@@ -331,7 +336,7 @@ table.xfoo-table td{padding:.35rem .5rem;border-bottom:1px solid #f3f4f6;vertica
             listEl.innerHTML = html;
 
             listEl.querySelectorAll('[data-open]').forEach(function (btn) {
-                btn.addEventListener('click', function () { openConversation(btn.dataset.open, btn.dataset.role); });
+                btn.addEventListener('click', function () { openConversation(btn.dataset.open, btn.dataset.role, pair); });
             });
             document.getElementById('xfoo-schedule-btn').addEventListener('click', function () {
                 var dt = document.getElementById('xfoo-new-date').value;
@@ -350,12 +355,24 @@ table.xfoo-table td{padding:.35rem .5rem;border-bottom:1px solid #f3f4f6;vertica
     // -----------------------------------------------------------------------
     // Open one conversation — load all data on entry
     // -----------------------------------------------------------------------
-    function openConversation(conversationId, role) {
+    function openConversation(conversationId, role, pair) {
+        // Resolve display names from the pair object
+        var myName    = role === 'leader' ? (pair.leader   ? pair.leader.name   : 'Leader')   : (pair.employee ? pair.employee.name : 'Employee');
+        var otherName = role === 'leader' ? (pair.employee ? pair.employee.name : 'Employee') : (pair.leader   ? pair.leader.name   : 'Leader');
+        var otherRole = role === 'leader' ? 'employee' : 'leader';
+
+        // Map role → name for notes/commitments display
+        function nameFor(r) {
+            if (r === 'leader')   return pair.leader   ? pair.leader.name   : 'Leader';
+            if (r === 'employee') return pair.employee ? pair.employee.name : 'Employee';
+            return 'Shared';
+        }
+
         wsEl.style.display = 'block';
         wsEl.innerHTML =
             '<div class="xfoo-card" id="xfoo-ws-inner">' +
             '<div class="xfoo-row" style="justify-content:space-between">' +
-            '<h3 style="margin:0">Conversation #' + conversationId + ' <span class="xfoo-badge blue">' + role + '</span></h3>' +
+            '<h3 style="margin:0">Conversation #' + conversationId + ' <span class="xfoo-badge blue">' + role + ' — ' + escHtml(myName) + '</span></h3>' +
             (role === 'leader'
                 ? '<button class="xfoo-btn secondary" id="xfoo-export-btn">Export conversation</button>'
                 : '') +
@@ -430,8 +447,17 @@ table.xfoo-table td{padding:.35rem .5rem;border-bottom:1px solid #f3f4f6;vertica
             call('xfusion_oo_get_notes', { conversation_id: conversationId }).then(function (res) {
                 var el = document.getElementById('xfoo-notes-list');
                 if (!res.success || !(res.data || []).length) { el.innerHTML = '<p class="xfoo-muted">No notes yet.</p>'; return; }
+                // Map created_by user id → name
+                var leaderUid   = pair.leader   ? pair.leader.id   : null;
+                var employeeUid = pair.employee ? pair.employee.id : null;
                 el.innerHTML = res.data.map(function (n) {
-                    return '<div class="xfoo-note-item"><span class="xfoo-badge">' + escHtml(n.section) + '</span> ' + escHtml(n.note) + '</div>';
+                    var authorName = n.created_by == leaderUid
+                        ? nameFor('leader')
+                        : (n.created_by == employeeUid ? nameFor('employee') : 'User #' + n.created_by);
+                    return '<div class="xfoo-note-item">' +
+                        '<span class="xfoo-badge">' + escHtml(n.section) + '</span> ' +
+                        '<span class="xfoo-muted" style="margin-right:.4rem">' + escHtml(authorName) + ':</span>' +
+                        escHtml(n.note) + '</div>';
                 }).join('');
             });
         }
@@ -442,12 +468,15 @@ table.xfoo-table td{padding:.35rem .5rem;border-bottom:1px solid #f3f4f6;vertica
                 var el = document.getElementById('xfoo-commitments-list');
                 if (!res.success || !(res.data || []).length) { el.innerHTML = '<p class="xfoo-muted">No commitments yet.</p>'; return; }
                 el.innerHTML = res.data.map(function (c) {
-                    var badge = c.status === 'done' ? 'green' : (c.status === 'in_progress' ? 'blue' : '');
+                    var badge      = c.status === 'done' ? 'green' : (c.status === 'in_progress' ? 'blue' : '');
+                    var ownerLabel = c.owner_role === 'shared'
+                        ? 'Shared'
+                        : nameFor(c.owner_role) + ' (' + c.owner_role + ')';
                     return '<div class="xfoo-commitment-item">' +
                         '<span class="title">' + escHtml(c.title) + '</span>' +
-                        '<span class="xfoo-badge">' + escHtml(c.owner_role) + '</span>' +
+                        '<span class="xfoo-badge">' + escHtml(ownerLabel) + '</span>' +
                         '<span class="xfoo-badge ' + badge + '">' + escHtml(c.status) + '</span>' +
-                        (c.due_date ? '<span class="xfoo-muted">' + escHtml(c.due_date) + '</span>' : '') +
+                        (c.due_date ? '<span class="xfoo-muted">Due: ' + escHtml(c.due_date) + '</span>' : '') +
                         '</div>';
                 }).join('');
             });
@@ -460,9 +489,11 @@ table.xfoo-table td{padding:.35rem .5rem;border-bottom:1px solid #f3f4f6;vertica
                 var d = res.data;
                 var statusEl = document.getElementById('xfoo-prep-status');
                 if (statusEl) {
+                    var leaderName   = pair.leader   ? pair.leader.name   : 'Leader';
+                    var employeeName = pair.employee ? pair.employee.name : 'Employee';
                     statusEl.textContent =
-                        'Employee: ' + (d.employee_submitted ? 'submitted' : 'pending') +
-                        ' · Leader: ' + (d.leader_submitted ? 'submitted' : 'pending') +
+                        employeeName + ': ' + (d.employee_submitted ? 'submitted' : 'pending') +
+                        ' · ' + leaderName + ': ' + (d.leader_submitted ? 'submitted' : 'pending') +
                         (d.revealed ? ' · Revealed' : '');
                 }
                 // If already revealed, load the other party's prep immediately
@@ -482,8 +513,9 @@ table.xfoo-table td{padding:.35rem .5rem;border-bottom:1px solid #f3f4f6;vertica
                 var el = document.getElementById('xfoo-other-prep');
                 var html = '<div class="xfoo-section-label">Both preparations</div>';
                 (res.data || []).forEach(function (p) {
+                    var label = nameFor(p.author_role) + ' (' + p.author_role + ')';
                     html += '<div class="xfoo-prep-box' + (p.author_role !== role ? ' other' : '') + '">' +
-                        '<strong>' + escHtml(p.author_role) + '</strong><br>' + escHtml(p.content) + '</div>';
+                        '<strong>' + escHtml(label) + '</strong><br>' + escHtml(p.content) + '</div>';
                 });
                 el.innerHTML = html;
             });
@@ -611,17 +643,22 @@ table.xfoo-table td{padding:.35rem .5rem;border-bottom:1px solid #f3f4f6;vertica
                 '<p style="color:#6b7280;font-size:.85rem">Exported ' + new Date().toLocaleString() + '</p>' +
 
                 '<h2>Preparation status</h2>' +
-                '<p>Employee: <strong>' + (prepStatus.employee_submitted ? 'Submitted' : 'Not submitted') + '</strong> &nbsp;' +
-                'Leader: <strong>' + (prepStatus.leader_submitted ? 'Submitted' : 'Not submitted') + '</strong> &nbsp;' +
+                '<p>' + (pair.employee ? pair.employee.name : 'Employee') + ': <strong>' + (prepStatus.employee_submitted ? 'Submitted' : 'Not submitted') + '</strong> &nbsp;' +
+                (pair.leader ? pair.leader.name : 'Leader') + ': <strong>' + (prepStatus.leader_submitted ? 'Submitted' : 'Not submitted') + '</strong> &nbsp;' +
                 'Revealed: <strong>' + (prepStatus.revealed ? 'Yes' : 'No') + '</strong></p>' +
 
                 '<h2>Notes (' + notes.length + ')</h2>';
 
+            var leaderUid   = pair.leader   ? pair.leader.id   : null;
+            var employeeUid = pair.employee ? pair.employee.id : null;
             if (notes.length === 0) {
                 html += '<p style="color:#6b7280">No notes recorded.</p>';
             } else {
                 notes.forEach(function (n) {
-                    html += '<div class="item"><span class="badge">' + escHtml(n.section) + '</span> ' + escHtml(n.note) + '</div>';
+                    var authorName = n.created_by == leaderUid
+                        ? (pair.leader ? pair.leader.name : 'Leader')
+                        : (n.created_by == employeeUid ? (pair.employee ? pair.employee.name : 'Employee') : 'User #' + n.created_by);
+                    html += '<div class="item"><span class="badge">' + escHtml(n.section) + '</span> <em>' + escHtml(authorName) + ':</em> ' + escHtml(n.note) + '</div>';
                 });
             }
 
@@ -630,8 +667,10 @@ table.xfoo-table td{padding:.35rem .5rem;border-bottom:1px solid #f3f4f6;vertica
                 html += '<p style="color:#6b7280">No commitments recorded.</p>';
             } else {
                 commitments.forEach(function (c) {
+                    var ownerLabel = c.owner_role === 'shared' ? 'Shared'
+                        : (c.owner_role === 'leader' ? (pair.leader ? pair.leader.name : 'Leader') : (pair.employee ? pair.employee.name : 'Employee')) + ' (' + c.owner_role + ')';
                     html += '<div class="item"><strong>' + escHtml(c.title) + '</strong>' +
-                        ' <span class="badge">' + escHtml(c.owner_role) + '</span>' +
+                        ' <span class="badge">' + escHtml(ownerLabel) + '</span>' +
                         ' <span class="badge">' + escHtml(c.status) + '</span>' +
                         (c.due_date ? ' <span style="color:#6b7280;font-size:.8rem">Due: ' + escHtml(c.due_date) + '</span>' : '') +
                         (c.description ? '<br><span style="color:#374151;font-size:.85rem">' + escHtml(c.description) + '</span>' : '') +
