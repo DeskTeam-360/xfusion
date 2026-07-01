@@ -252,6 +252,28 @@ table.xfoo-table td{padding:.35rem .5rem;border-bottom:1px solid #f3f4f6;vertica
     }
 
     // -----------------------------------------------------------------------
+    // Button loading state helpers
+    // -----------------------------------------------------------------------
+    function btnLoading(btn, label) {
+        btn.disabled = true;
+        btn.dataset.originalText = btn.textContent;
+        btn.textContent = label || 'Saving…';
+    }
+
+    function btnDone(btn, label, durationMs) {
+        btn.textContent = label || 'Saved!';
+        setTimeout(function () {
+            btn.disabled = false;
+            btn.textContent = btn.dataset.originalText || btn.textContent;
+        }, durationMs || 1200);
+    }
+
+    function btnError(btn) {
+        btn.disabled = false;
+        btn.textContent = btn.dataset.originalText || 'Error';
+    }
+
+    // -----------------------------------------------------------------------
     // Pairs list
     // -----------------------------------------------------------------------
     function loadPairs() {
@@ -314,10 +336,13 @@ table.xfoo-table td{padding:.35rem .5rem;border-bottom:1px solid #f3f4f6;vertica
             document.getElementById('xfoo-schedule-btn').addEventListener('click', function () {
                 var dt = document.getElementById('xfoo-new-date').value;
                 if (!dt) return;
+                var btn = this;
+                btnLoading(btn, 'Scheduling…');
                 call('xfusion_oo_schedule', { pair_id: pairId, scheduled_at: dt }).then(function () {
                     document.getElementById('xfoo-new-date').value = '';
+                    btnDone(btn, 'Scheduled!');
                     loadConversations();
-                });
+                }).catch(function () { btnError(btn); });
             });
         });
     }
@@ -478,45 +503,62 @@ table.xfoo-table td{padding:.35rem .5rem;border-bottom:1px solid #f3f4f6;vertica
         document.getElementById('xfoo-save-prep').addEventListener('click', function () {
             var content = document.getElementById('xfoo-prep-text').value.trim();
             if (!content) return;
+            var btn = this;
+            btnLoading(btn, 'Saving…');
             call('xfusion_oo_save_preparation', {
                 conversation_id: conversationId, author_role: role, content: content,
-            }).then(function () { loadMyPrep(); checkPrepStatus(); });
+            }).then(function () {
+                btnDone(btn, 'Saved!');
+                loadMyPrep();
+                checkPrepStatus();
+            }).catch(function () { btnError(btn); });
         });
 
         document.getElementById('xfoo-reveal-btn').addEventListener('click', function () {
             if (!confirm('Start the meeting? Both preparations will become visible to each other.')) return;
+            var btn = this;
+            btnLoading(btn, 'Starting meeting…');
             loadOtherPrep();
             loadBrief();
-            this.style.display = 'none';
+            btn.style.display = 'none';
         });
 
         document.getElementById('xfoo-add-note').addEventListener('click', function () {
             var t = document.getElementById('xfoo-note-text');
             if (!t.value.trim()) return;
+            var btn = this;
             var section = document.getElementById('xfoo-note-section').value;
+            btnLoading(btn, 'Saving…');
             call('xfusion_oo_save_note', { conversation_id: conversationId, section: section, note: t.value }).then(function () {
                 t.value = '';
+                btnDone(btn, 'Added!');
                 loadNotes();
-            });
+            }).catch(function () { btnError(btn); });
         });
 
         document.getElementById('xfoo-add-commit').addEventListener('click', function () {
             var t = document.getElementById('xfoo-commit-title');
             if (!t.value.trim()) return;
+            var btn = this;
+            btnLoading(btn, 'Saving…');
             call('xfusion_oo_save_commitment', {
                 conversation_id: conversationId,
                 title: t.value,
                 owner_role: document.getElementById('xfoo-commit-owner').value,
                 due_date: document.getElementById('xfoo-commit-due').value || '',
-            }).then(function () { t.value = ''; loadCommitments(); });
+            }).then(function () {
+                t.value = '';
+                btnDone(btn, 'Added!');
+                loadCommitments();
+            }).catch(function () { btnError(btn); });
         });
 
         document.getElementById('xfoo-complete-btn').addEventListener('click', function () {
             if (!confirm('Mark this meeting as completed and generate AI synthesis?')) return;
             var btn = this;
-            btn.disabled = true;
+            btnLoading(btn, 'Completing meeting…');
             call('xfusion_oo_complete', { conversation_id: conversationId }).then(function (res) {
-                btn.disabled = false;
+                btnDone(btn, 'Completed!', 3000);
                 var el = document.getElementById('xfoo-synthesis');
                 if (!res.success) { el.innerHTML = '<p class="xfoo-muted">Completed. AI synthesis unavailable — Python service not configured yet.</p>'; return; }
                 el.innerHTML = res.data.synthesis_available
@@ -529,7 +571,11 @@ table.xfoo-table td{padding:.35rem .5rem;border-bottom:1px solid #f3f4f6;vertica
         // Export — leader only
         if (role === 'leader') {
             document.getElementById('xfoo-export-btn').addEventListener('click', function () {
-                exportConversation(conversationId);
+                var btn = this;
+                btnLoading(btn, 'Preparing export…');
+                exportConversation(conversationId).then(function () {
+                    btnDone(btn, 'Exported!');
+                });
             });
         }
 
@@ -545,7 +591,7 @@ table.xfoo-table td{padding:.35rem .5rem;border-bottom:1px solid #f3f4f6;vertica
     // Export — build a printable HTML page and open in new tab
     // -----------------------------------------------------------------------
     function exportConversation(conversationId) {
-        Promise.all([
+        return Promise.all([
             call('xfusion_oo_preparation_status', { conversation_id: conversationId }),
             call('xfusion_oo_get_notes',          { conversation_id: conversationId }),
             call('xfusion_oo_get_commitments',    { conversation_id: conversationId }),
