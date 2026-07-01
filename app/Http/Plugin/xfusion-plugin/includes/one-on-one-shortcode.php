@@ -227,12 +227,28 @@ function xfusion_one_on_one_shortcode(): string
 .xfoo-card{border:1px solid #e5e7eb;border-radius:.5rem;padding:1.2rem;margin-bottom:1rem;background:#fff}
 .xfoo-card h3{margin:0 0 .75rem;font-size:1rem}
 .xfoo-card h4{margin:.9rem 0 .4rem;font-size:.875rem;font-weight:600}
-.xfoo-btn{cursor:pointer;border:1px solid #2563eb;background:#2563eb;color:#fff;border-radius:.375rem;padding:.35rem .85rem;font-size:.82rem;line-height:1.4}
-.xfoo-btn.secondary{background:#fff;color:#2563eb}
-.xfoo-btn.danger{border-color:#dc2626;background:#dc2626;color:#fff}
-.xfoo-btn.success{border-color:#16a34a;background:#16a34a;color:#fff}
-.xfoo-btn:disabled{opacity:.5;cursor:default}
-.xfoo-btn.xs{padding:.15rem .5rem;font-size:.72rem}
+#xfusion-oo-app button.xfoo-btn{
+    cursor:pointer;
+    border:1px solid #2563eb !important;
+    background:#2563eb !important;
+    color:#fff !important;
+    border-radius:.375rem !important;
+    padding:.35rem .85rem !important;
+    font-size:.82rem !important;
+    line-height:1.4 !important;
+    font-weight:500 !important;
+    text-transform:none !important;
+    letter-spacing:normal !important;
+    min-height:0 !important;
+    height:auto !important;
+    box-shadow:none !important;
+}
+#xfusion-oo-app button.xfoo-btn.secondary{background:#fff !important;color:#2563eb !important}
+#xfusion-oo-app button.xfoo-btn.danger{border-color:#dc2626 !important;background:#dc2626 !important}
+#xfusion-oo-app button.xfoo-btn.success{border-color:#16a34a !important;background:#16a34a !important}
+#xfusion-oo-app button.xfoo-btn:disabled{opacity:.5;cursor:default}
+#xfusion-oo-app button.xfoo-btn.xs{padding:.15rem .5rem !important;font-size:.72rem !important}
+#xfusion-oo-app button#xfoo-schedule-btn{font-size:.9rem !important}
 a.xfoo-link-btn{cursor:pointer;display:inline;border:none !important;background:none !important;color:#2563eb !important;font-size:.8rem;font-weight:500;padding:0 !important;margin:0;text-decoration:underline;border-radius:0 !important;box-shadow:none !important;text-transform:none !important}
 a.xfoo-link-btn:hover,a.xfoo-link-btn:focus{color:#1d4ed8 !important;text-decoration:underline}
 a.xfoo-link-btn[disabled],a.xfoo-link-btn.disabled{opacity:.5;pointer-events:none}
