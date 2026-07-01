@@ -390,7 +390,7 @@ table.xfoo-table td{padding:.35rem .5rem;border-bottom:1px solid #f3f4f6;vertica
                     '<input type="datetime-local" class="xfoo-input" id="xfoo-new-date" style="width:auto;flex:1" placeholder="Date & time"/>' +
                     '</div>' +
                     '<input type="url" class="xfoo-input" id="xfoo-new-link" placeholder="Meeting link (Zoom, Meet, Teams…) — optional"/>' +
-                    '<button class="xfoo-btn xs" id="xfoo-schedule-btn" style="width:100%">Schedule</button>' +
+                    '<button class="xfoo-btn xs" id="xfoo-schedule-btn" style="width:100%;font-size:.9rem">Schedule</button>' +
                     '</div>';
             }
 
