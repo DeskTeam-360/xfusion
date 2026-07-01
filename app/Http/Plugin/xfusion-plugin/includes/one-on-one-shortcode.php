@@ -207,9 +207,10 @@ function xfusion_one_on_one_shortcode(): string
      data-user-id="<?php echo (int) get_current_user_id(); ?>">
     <div id="xfoo-left">
         <div id="xfoo-pairs-panel"><p class="xfoo-muted">Loading…</p></div>
+        <div id="xfoo-conv-panel"></div>
     </div>
     <div id="xfoo-right">
-        <div id="xfoo-conv-panel"></div>
+        <div id="xfoo-workspace-placeholder" class="xfoo-card"><p class="xfoo-muted" style="margin:0">Select a conversation from the list on the left to see details here.</p></div>
         <div id="xfoo-workspace" style="display:none;"></div>
     </div>
 </div>
@@ -218,8 +219,8 @@ function xfusion_one_on_one_shortcode(): string
 #xfusion-oo-app{max-width:780px;margin:0 auto;font-family:inherit;color:#111}
 #xfoo-left,#xfoo-right{min-width:0}
 @media (min-width:1440px){
-    #xfusion-oo-app{max-width:1200px;display:grid;grid-template-columns:320px 1fr;gap:1.25rem;align-items:start}
-    #xfoo-left{position:sticky;top:1rem}
+    #xfusion-oo-app{max-width:1320px;display:grid;grid-template-columns:380px 1fr;gap:1.25rem;align-items:start}
+    #xfoo-left{position:sticky;top:1rem;max-height:calc(100vh - 2rem);overflow-y:auto}
 }
 .xfoo-card{border:1px solid #e5e7eb;border-radius:.5rem;padding:1.2rem;margin-bottom:1rem;background:#fff}
 .xfoo-card h3{margin:0 0 .75rem;font-size:1rem}
@@ -257,6 +258,7 @@ table.xfoo-table td{padding:.35rem .5rem;border-bottom:1px solid #f3f4f6;vertica
     var pairsEl  = ROOT.querySelector('#xfoo-pairs-panel');
     var convEl   = ROOT.querySelector('#xfoo-conv-panel');
     var wsEl     = ROOT.querySelector('#xfoo-workspace');
+    var wsPhEl   = ROOT.querySelector('#xfoo-workspace-placeholder');
 
     // -----------------------------------------------------------------------
     // HTTP helper
@@ -337,6 +339,7 @@ table.xfoo-table td{padding:.35rem .5rem;border-bottom:1px solid #f3f4f6;vertica
             sel.addEventListener('change', function () {
                 wsEl.style.display = 'none';
                 wsEl.innerHTML = '';
+                if (wsPhEl) wsPhEl.style.display = 'block';
                 loadConversations(pairsMap);
             });
             loadConversations(pairsMap);
@@ -427,6 +430,7 @@ table.xfoo-table td{padding:.35rem .5rem;border-bottom:1px solid #f3f4f6;vertica
             return 'Shared';
         }
 
+        if (wsPhEl) wsPhEl.style.display = 'none';
         wsEl.style.display = 'block';
         wsEl.innerHTML =
             '<div class="xfoo-card" id="xfoo-ws-inner">' +
