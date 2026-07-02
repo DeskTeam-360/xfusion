@@ -19,7 +19,7 @@ class OneOnOneConversation extends Model
 
     protected $table = 'wp_fusion_one_on_one_conversations';
 
-    protected $fillable = ['one_on_one_id', 'scheduled_at', 'held_at', 'status'];
+    protected $fillable = ['one_on_one_id', 'scheduled_at', 'held_at', 'meeting_link', 'status'];
 
     protected $casts = [
         'scheduled_at' => 'datetime',
