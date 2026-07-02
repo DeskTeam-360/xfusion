@@ -93,6 +93,12 @@ add_action('wp_ajax_xfusion_oo_pairs', function (): void {
     xfusion_oo_send(xfusion_oo_api_request('GET', '/pairs', ['user_id' => get_current_user_id()]));
 });
 
+add_action('wp_ajax_xfusion_oo_employee_scoring', function (): void {
+    xfusion_oo_require_login();
+    $pairId = (int) ($_POST['pair_id'] ?? 0);
+    xfusion_oo_send(xfusion_oo_api_request('GET', "/{$pairId}/employee-scoring"));
+});
+
 add_action('wp_ajax_xfusion_oo_conversations', function (): void {
     xfusion_oo_require_login();
     $pairId = (int) ($_POST['pair_id'] ?? 0);
@@ -475,6 +481,11 @@ table.xfoo-table td{padding:.35rem .5rem;border-bottom:1px solid #f3f4f6;vertica
                 ? '<p style="margin:.4rem 0 .6rem"><a href="' + escHtml(meetingLink) + '" target="_blank" rel="noopener" class="xfoo-btn secondary" style="display:inline-flex;align-items:center;gap:.3rem">&#128249; Join meeting</a></p>'
                 : '') +
 
+            // Employee performance status — leader only, label badges only (no gauge)
+            (role === 'leader'
+                ? '<div class="xfoo-section-label">' + escHtml(otherName) + '’s status</div><div id="xfoo-employee-scoring"></div>'
+                : '') +
+
             // Prep status bar
             '<p id="xfoo-prep-status" class="xfoo-muted" style="margin:.5rem 0 .75rem"></p>' +
 
@@ -525,6 +536,20 @@ table.xfoo-table td{padding:.35rem .5rem;border-bottom:1px solid #f3f4f6;vertica
             '</div>' +
             '<div id="xfoo-synthesis"></div>' +
             '</div>';
+
+        // --- load employee performance status (leader only) ---
+        function loadEmployeeScoring() {
+            var el = document.getElementById('xfoo-employee-scoring');
+            if (!el) return;
+            el.innerHTML = xfooSpinner();
+            call('xfusion_oo_employee_scoring', { pair_id: pair.id }).then(function (res) {
+                if (!res.success || !(res.data || []).length) { el.innerHTML = '<p class="xfoo-muted">No scoring data yet.</p>'; return; }
+                el.innerHTML = '<div class="xfoo-row">' + res.data.map(function (g) {
+                    return '<span class="xfoo-badge" style="background:' + g.zone_color + '22;color:' + g.zone_color + '">' +
+                        escHtml(g.title) + ': ' + escHtml(g.zone_label) + '</span>';
+                }).join('') + '</div>';
+            });
+        }
 
         // --- load own preparation ---
         function loadMyPrep() {
@@ -708,6 +733,7 @@ table.xfoo-table td{padding:.35rem .5rem;border-bottom:1px solid #f3f4f6;vertica
         });
 
         // --- initial load ---
+        if (role === 'leader') loadEmployeeScoring();
         loadMyPrep();
         loadNotes();
         loadCommitments();

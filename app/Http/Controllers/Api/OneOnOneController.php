@@ -3,11 +3,14 @@
 namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
+use App\Models\CourseScoringGroup;
 use App\Models\OneOnOne;
 use App\Models\OneOnOneCommitment;
 use App\Models\OneOnOneConversation;
 use App\Models\OneOnOneNote;
 use App\Models\OneOnOnePreparation;
+use App\Models\WpGfEntry;
+use App\Models\WpGfEntryMeta;
 use App\Services\OneOnOneAiService;
 use Illuminate\Http\Request;
 
@@ -44,6 +47,128 @@ class OneOnOneController extends Controller
                 'employee' => $p->employee ? ['id' => $p->employee->ID, 'name' => $p->employee->display_name ?: $p->employee->user_nicename] : null,
             ]),
         ]);
+    }
+
+    /**
+     * Per-scoring-group status badges (label only, no gauge/needle) for the
+     * employee side of this pairing. Lets the leader see where the employee
+     * currently stands without leaving the 1-on-1 conversation.
+     */
+    public function employeeScoring(OneOnOne $oneOnOne)
+    {
+        $userId = $oneOnOne->employee_user_id;
+
+        $groups = CourseScoringGroup::with('details')->get();
+        $result = [];
+
+        foreach ($groups as $group) {
+            $details = $group->details->filter(
+                fn ($d) => (int) $d->form_id > 0 && (int) $d->field_id > 0 && (float) ($d->weight ?? 1.0) > 0
+            );
+
+            if ($details->isEmpty()) {
+                continue;
+            }
+
+            $formIds = $details->pluck('form_id')->map(fn ($id) => (int) $id)->unique()->values()->all();
+
+            $latestEntryByForm = [];
+            WpGfEntry::query()
+                ->whereIn('form_id', $formIds)
+                ->where('created_by', $userId)
+                ->whereIn('status', ['active', 'Active', 'ACTIVE'])
+                ->select(['id', 'form_id'])
+                ->orderByDesc('id')
+                ->get()
+                ->each(function ($e) use (&$latestEntryByForm) {
+                    $fid = (int) $e->form_id;
+                    if (! isset($latestEntryByForm[$fid])) {
+                        $latestEntryByForm[$fid] = (int) $e->id;
+                    }
+                });
+
+            $entryIds = array_values($latestEntryByForm);
+            $valueMap = [];
+            if ($entryIds !== []) {
+                WpGfEntryMeta::query()
+                    ->whereIn('entry_id', $entryIds)
+                    ->get(['entry_id', 'meta_key', 'meta_value'])
+                    ->each(function ($m) use (&$valueMap) {
+                        $k = explode('.', (string) $m->meta_key)[0];
+                        $valueMap[(int) $m->entry_id][$k] = (string) $m->meta_value;
+                    });
+            }
+
+            $weightedSum = 0.0;
+            $weightTotal = 0.0;
+            foreach ($details as $d) {
+                $fid      = (int) $d->form_id;
+                $fieldKey = (string) (int) $d->field_id;
+                $weight   = (float) ($d->weight ?? 1.0);
+
+                $entryId = $latestEntryByForm[$fid] ?? null;
+                if ($entryId === null) {
+                    continue;
+                }
+
+                $num = $this->parseScaleScore($valueMap[$entryId][$fieldKey] ?? null);
+                if ($num === null) {
+                    continue;
+                }
+
+                $weightedSum += $num * $weight;
+                $weightTotal += $weight;
+            }
+
+            $avg  = $weightTotal > 0 ? round($weightedSum / $weightTotal, 2) : null;
+            $zone = $this->scoringZoneMeta($avg);
+
+            $result[] = [
+                'title'      => (string) $group->title,
+                'average'    => $avg,
+                'zone_label' => $zone['label'],
+                'zone_color' => $zone['color'],
+            ];
+        }
+
+        return response()->json(['success' => true, 'data' => $result]);
+    }
+
+    /** @return array{color: string, label: string} */
+    private function scoringZoneMeta(?float $v): array
+    {
+        if ($v === null) {
+            return ['color' => '#6b7280', 'label' => 'No data'];
+        }
+        if ($v < 3.0) {
+            return ['color' => '#dc2626', 'label' => 'Needs improvement'];
+        }
+        if ($v < 4.5) {
+            return ['color' => '#ca8a04', 'label' => 'Progressing'];
+        }
+
+        return ['color' => '#16a34a', 'label' => 'Excellent'];
+    }
+
+    private function parseScaleScore(?string $raw): ?float
+    {
+        if ($raw === null) {
+            return null;
+        }
+        $s = trim($raw);
+        if ($s === '' || $s === '-') {
+            return null;
+        }
+        $s = str_replace(',', '.', $s);
+        if (! preg_match('/^-?\d+(\.\d+)?$/', $s)) {
+            return null;
+        }
+        $num = (float) $s;
+        if ($num < 1.0 || $num > 5.0 || abs($num - round($num)) > 0.00001) {
+            return null;
+        }
+
+        return $num;
     }
 
     public function conversations(OneOnOne $oneOnOne)

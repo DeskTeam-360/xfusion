@@ -416,6 +416,7 @@ Route::prefix('v1')->middleware('fusion.api')->group(function () {
     // 1-on-1 Alignment Capture — consumed by the [fusion_one_on_one] WordPress shortcode.
     Route::prefix('one-on-one')->group(function () {
         Route::get('/pairs', [OneOnOneController::class, 'pairsForUser']);
+        Route::get('/{oneOnOne}/employee-scoring', [OneOnOneController::class, 'employeeScoring']);
         Route::get('/{oneOnOne}/conversations', [OneOnOneController::class, 'conversations']);
         Route::post('/{oneOnOne}/conversations', [OneOnOneController::class, 'scheduleConversation']);
         Route::post('/conversations/{conversation}/preparation', [OneOnOneController::class, 'submitPreparation']);
