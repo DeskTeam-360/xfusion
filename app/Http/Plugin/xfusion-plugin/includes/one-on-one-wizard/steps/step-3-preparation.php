@@ -35,7 +35,7 @@ preparation: function () {
         scaleQ('employee', 'Alignment Clarity', 'How clear are you on your current priorities?', 'Not Clear', 'Very Clear', 4) +
         scaleQ('employee', 'Current Workload Sustainability', 'How sustainable is your current workload?', 'Not Sustainable', 'Very Sustainable', 3) +
         scaleQ('employee', 'Confidence in Current Priorities', 'How confident are you in your current priorities?', 'Not Confident', 'Very Confident', 4) +
-        '<div class="xfw-section-label" style="margin-top:1rem;font-weight:800;color:var(--navy);font-size:.8rem">Open Reflections</div>' +
+        '<div class="xfw-section-label" style="margin-top:1rem;font-weight:800;color:var(--navy);font-size:18px;">Open Reflections</div>' +
         textField('Biggest accomplishment since last meeting', 1000) +
         textField('Biggest current obstacle', 1000) +
         textField('Support needed from your leader', 1000) +
@@ -46,7 +46,7 @@ preparation: function () {
         scaleQ('leader', 'Priority Alignment', 'How well aligned are priorities with team and org goals?', 'Not Aligned', 'Highly Aligned', 4) +
         scaleQ('leader', 'Observed Progress', 'How would you rate their progress since our last meeting?', 'Minimal Progress', 'Exceptional Progress', 3) +
         scaleQ('leader', 'Support Effectiveness', 'How effective has the support you\'ve provided been?', 'Not Effective', 'Very Effective', 4) +
-        '<div class="xfw-section-label" style="margin-top:1rem;font-weight:800;color:var(--navy);font-size:.8rem">Open Reflections</div>' +
+        '<div class="xfw-section-label" style="margin-top:1rem;font-weight:800;color:var(--navy);font-size:18px;">Open Reflections</div>' +
         textField('Coaching topics to discuss', 1000) +
         textField('Organizational updates to share', 1000) +
         textField('Top discussion priorities', 1000) +
