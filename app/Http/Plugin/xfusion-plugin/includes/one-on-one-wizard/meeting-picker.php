@@ -151,6 +151,12 @@ var xfwApplyMeetingContext = function (ctx, options) {
     if (prevId !== ctx.conversationId && typeof xfwResetCommitmentsCache === 'function') {
         xfwResetCommitmentsCache();
     }
+    if (prevId !== ctx.conversationId && typeof xfwResetEvidenceCache === 'function') {
+        xfwResetEvidenceCache();
+    }
+    if (prevId !== ctx.conversationId && typeof xfwResetBriefCache === 'function') {
+        xfwResetBriefCache();
+    }
     window.XFW_WIZARD.conversationId = ctx.conversationId;
     window.XFW_WIZARD.userRole = ctx.userRole || '';
     window.XFW_WIZARD.pairId = ctx.pairId || 0;

@@ -236,6 +236,100 @@ function xfoo_gf_save_conversation_notes(int $conversationId, array $values)
 }
 
 /**
+ * All active GF entries for a conversation (no author filter).
+ *
+ * @return list<array<string, mixed>>
+ */
+function xfoo_gf_find_entries_by_conversation(int $formId, int $conversationFieldId, int $conversationId): array
+{
+    if (! class_exists('GFAPI') || $formId < 1 || $conversationFieldId < 1 || $conversationId < 1) {
+        return [];
+    }
+
+    $entries = GFAPI::get_entries($formId, [
+        'status' => 'active',
+        'field_filters' => [
+            'mode' => 'all',
+            [
+                'key' => (string) $conversationFieldId,
+                'value' => (string) $conversationId,
+            ],
+        ],
+    ]);
+
+    if (is_wp_error($entries) || $entries === []) {
+        return [];
+    }
+
+    usort($entries, static fn ($a, $b) => (int) ($b['id'] ?? 0) <=> (int) ($a['id'] ?? 0));
+
+    return $entries;
+}
+
+/**
+ * Preparation values for one role on any conversation (latest entry, any author).
+ *
+ * @return array<string, string>
+ */
+function xfoo_gf_load_preparation_for_conversation(string $role, int $conversationId): array
+{
+    if (! xfoo_preparation_gf_is_configured()) {
+        return [];
+    }
+
+    $config = xfoo_preparation_gf_role_config($role);
+    if ($config === null) {
+        return [];
+    }
+
+    $entries = xfoo_gf_find_entries_by_conversation(
+        (int) $config['form_id'],
+        (int) ($config['hidden']['conversation_id'] ?? 0),
+        $conversationId
+    );
+
+    if ($entries === []) {
+        return [];
+    }
+
+    return xfoo_preparation_gf_entry_to_values($role, $entries[0]);
+}
+
+/**
+ * Conversation notes for any conversation (merge all entries, newest wins per field).
+ *
+ * @return array<string, string>
+ */
+function xfoo_gf_load_conversation_notes_for_conversation(int $conversationId): array
+{
+    if (! xfoo_conversation_gf_is_configured()) {
+        return [];
+    }
+
+    $config = xfoo_conversation_gf_mapping();
+    $entries = xfoo_gf_find_entries_by_conversation(
+        (int) $config['form_id'],
+        (int) ($config['hidden']['conversation_id'] ?? 0),
+        $conversationId
+    );
+
+    if ($entries === []) {
+        return [];
+    }
+
+    $merged = [];
+    foreach (array_reverse($entries) as $entry) {
+        foreach (xfoo_conversation_gf_entry_to_values($entry) as $slug => $value) {
+            if ($value !== '') {
+                $merged[$slug] = $value;
+            }
+        }
+    }
+
+    return $merged;
+}
+
+/**
  * Load preparation values for one role from GF (current user entry only).
  *
  * @return array<string, string>

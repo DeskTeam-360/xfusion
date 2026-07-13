@@ -20,6 +20,8 @@ require_once __DIR__ . '/preparation-gf-mapping.php';
 require_once __DIR__ . '/conversation-gf-mapping.php';
 require_once __DIR__ . '/gf-entry-service.php';
 require_once __DIR__ . '/commitments-fusion-service.php';
+require_once __DIR__ . '/step-1-evidence-service.php';
+require_once __DIR__ . '/brief-wizard-service.php';
 require_once __DIR__ . '/save-draft.php';
 require_once __DIR__ . '/load-draft.php';
 require_once __DIR__ . '/meeting-picker.php';
@@ -61,6 +63,8 @@ function xfusion_one_on_one_wizard_shortcode($atts = []): string
     $coreJs     = xfoo_wizard_core_js();
     $pickerJs   = xfoo_wizard_meeting_picker_js();
     $commitJs   = xfoo_wizard_commitments_js();
+    $evidenceJs = xfoo_wizard_evidence_js();
+    $briefJs    = xfoo_wizard_brief_js();
     $saveJs     = xfoo_wizard_save_draft_js();
     $loadJs     = xfoo_wizard_load_draft_js();
     $css        = xfoo_wizard_styles_css();
@@ -170,7 +174,7 @@ function xfusion_one_on_one_wizard_shortcode($atts = []): string
 <script>
 (function () {
 window.XFW_WIZARD = <?php echo wp_json_encode($wizardConfig); ?>;
-<?php echo $panelsJs . "\n\n" . $coreJs . "\n\n" . $pickerJs . "\n\n" . $commitJs . "\n\n" . $loadJs . "\n\n" . $saveJs; ?>
+<?php echo $panelsJs . "\n\n" . $coreJs . "\n\n" . $pickerJs . "\n\n" . $commitJs . "\n\n" . $evidenceJs . "\n\n" . $briefJs . "\n\n" . $loadJs . "\n\n" . $saveJs; ?>
 })();
 </script>
     <?php

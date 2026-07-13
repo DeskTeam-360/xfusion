@@ -131,6 +131,14 @@ if (root) {
             initCommitmentsStep();
         }
 
+        if (STEPS[current].key === 'evidence' && typeof initEvidenceStep === 'function') {
+            initEvidenceStep();
+        }
+
+        if (STEPS[current].key === 'brief' && typeof initBriefStep === 'function') {
+            initBriefStep();
+        }
+
         if ((STEPS[current].key === 'preparation' || STEPS[current].key === 'conversation') && typeof applyDraftForCurrentStep === 'function') {
             if (window.xfwDraftCache && window.xfwDraftCache.loaded) {
                 applyDraftForCurrentStep();

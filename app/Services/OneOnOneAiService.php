@@ -31,11 +31,26 @@ class OneOnOneAiService
      */
     public function meetingBrief(OneOnOneConversation $conversation, bool $forceRefresh = false): ?OneOnOneAiBrief
     {
+        return $this->meetingBriefFromEvidence($conversation, [], $forceRefresh);
+    }
+
+    /**
+     * Generate AI Meeting Brief using Step 1 continuous evidence context.
+     *
+     * @param  array<string, mixed>  $evidenceContext
+     */
+    public function meetingBriefFromEvidence(
+        OneOnOneConversation $conversation,
+        array $evidenceContext = [],
+        bool $forceRefresh = false
+    ): ?OneOnOneAiBrief {
         if (! $forceRefresh) {
             $existing = $conversation->brief;
             if ($existing !== null) {
                 return $existing;
             }
+        } else {
+            OneOnOneAiBrief::query()->where('conversation_id', $conversation->id)->delete();
         }
 
         if (! $this->isConfigured()) {
@@ -56,14 +71,16 @@ class OneOnOneAiService
                     'leader_user_id' => $pair->leader_user_id,
                     'employee_user_id' => $pair->employee_user_id,
                     'prior_syntheses' => $priorSyntheses->values()->all(),
+                    'evidence_context' => $evidenceContext,
                 ])
                 ->throw();
 
             $body = $response->json();
+            $briefPayload = $body['brief'] ?? $body;
 
             return OneOnOneAiBrief::create([
                 'conversation_id' => $conversation->id,
-                'brief' => $body['brief'] ?? $body,
+                'brief' => is_array($briefPayload) ? $briefPayload : ['raw' => $briefPayload],
                 'insight_model' => $body['model'] ?? null,
                 'tokens_used' => (int) ($body['tokens_used'] ?? 0),
                 'cost_usd' => (float) ($body['cost_usd'] ?? 0),

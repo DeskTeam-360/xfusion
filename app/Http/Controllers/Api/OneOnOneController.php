@@ -5,12 +5,14 @@ namespace App\Http\Controllers\Api;
 use App\Http\Controllers\Controller;
 use App\Models\CourseScoringGroup;
 use App\Models\OneOnOne;
+use App\Models\OneOnOneAiBrief;
 use App\Models\OneOnOneCommitment;
 use App\Models\OneOnOneConversation;
 use App\Models\OneOnOneNote;
 use App\Models\OneOnOnePreparation;
 use App\Models\WpGfEntry;
 use App\Models\WpGfEntryMeta;
+use App\Services\MeetingBriefFromEvidenceService;
 use App\Services\OneOnOneAiService;
 use Illuminate\Http\Request;
 
@@ -317,13 +319,55 @@ class OneOnOneController extends Controller
 
     public function brief(OneOnOneConversation $conversation, OneOnOneAiService $ai)
     {
-        $brief = $ai->meetingBrief($conversation);
+        $brief = $conversation->brief;
 
         if ($brief === null) {
-            return response()->json(['success' => false, 'message' => 'Brief unavailable (AI service not configured or request failed).'], 503);
+            return response()->json(['success' => false, 'message' => 'AI Meeting Brief has not been generated yet.'], 404);
         }
 
         return response()->json(['success' => true, 'data' => $brief->brief]);
+    }
+
+    /**
+     * Generate AI Meeting Brief from Step 1 continuous evidence (all 12 sections).
+     */
+    public function generateBrief(
+        Request $request,
+        OneOnOneConversation $conversation,
+        OneOnOneAiService $ai,
+        MeetingBriefFromEvidenceService $composer
+    ) {
+        $this->mergeJsonPayload($request);
+
+        $evidenceContext = $request->input('evidence_context', []);
+        if (! is_array($evidenceContext)) {
+            $evidenceContext = [];
+        }
+
+        $forceRefresh = $request->boolean('force_refresh', true);
+
+        $briefModel = $ai->meetingBriefFromEvidence($conversation, $evidenceContext, $forceRefresh);
+
+        if ($briefModel === null) {
+            $composed = $composer->compose($evidenceContext);
+            OneOnOneAiBrief::query()->where('conversation_id', $conversation->id)->delete();
+            $briefModel = OneOnOneAiBrief::create([
+                'conversation_id' => $conversation->id,
+                'brief' => $composed,
+                'insight_model' => 'evidence-composer',
+                'tokens_used' => 0,
+                'cost_usd' => 0,
+            ]);
+        }
+
+        return response()->json([
+            'success' => true,
+            'data' => $briefModel->brief,
+            'meta' => [
+                'insight_model' => $briefModel->insight_model,
+                'generated_at' => $briefModel->created_at?->toIso8601String(),
+            ],
+        ]);
     }
 
     /** Fetch the calling user's own preparation (never the other party's). */
@@ -431,6 +475,86 @@ class OneOnOneController extends Controller
         $commitment->save();
 
         return response()->json(['success' => true, 'data' => $commitment->fresh()]);
+    }
+
+    /**
+     * Step 1 evidence — previous meetings + all commitments for the employee
+     * in this pairing (regardless of which leader held prior meetings).
+     */
+    public function evidence(OneOnOneConversation $conversation)
+    {
+        $conversation->loadMissing('oneOnOne.leader:ID,display_name,user_nicename');
+        $oneOnOne = $conversation->oneOnOne;
+        if ($oneOnOne === null) {
+            return response()->json(['success' => false, 'message' => 'Pairing not found.'], 404);
+        }
+
+        $employeeId = (int) $oneOnOne->employee_user_id;
+        $currentId = (int) $conversation->id;
+
+        $previousMeetings = OneOnOneConversation::query()
+            ->where('id', '!=', $currentId)
+            ->whereHas('oneOnOne', fn ($q) => $q->where('employee_user_id', $employeeId))
+            ->with(['oneOnOne.leader:ID,display_name,user_nicename'])
+            ->orderByRaw('COALESCE(held_at, scheduled_at) DESC')
+            ->get()
+            ->map(fn (OneOnOneConversation $c) => [
+                'id' => $c->id,
+                'scheduled_at' => $c->scheduled_at?->toIso8601String(),
+                'held_at' => $c->held_at?->toIso8601String(),
+                'status' => $c->status,
+                'leader' => $c->oneOnOne?->leader ? [
+                    'id' => (int) $c->oneOnOne->leader->ID,
+                    'name' => $c->oneOnOne->leader->display_name ?: $c->oneOnOne->leader->user_nicename,
+                ] : null,
+            ])
+            ->values();
+
+        $commitments = OneOnOneCommitment::query()
+            ->whereHas('conversation.oneOnOne', fn ($q) => $q->where('employee_user_id', $employeeId))
+            ->with(['conversation.oneOnOne.leader:ID,display_name,user_nicename'])
+            ->orderByDesc('created_at')
+            ->get()
+            ->map(function (OneOnOneCommitment $row) {
+                $conv = $row->conversation;
+                $leader = $conv?->oneOnOne?->leader;
+                $meetingAt = $conv?->held_at ?? $conv?->scheduled_at;
+
+                return [
+                    'id' => $row->id,
+                    'conversation_id' => $row->conversation_id,
+                    'title' => $row->title,
+                    'description' => $row->description,
+                    'priority' => $row->priority,
+                    'behavioral_driver' => $row->behavioral_driver,
+                    'success_indicator' => $row->success_indicator,
+                    'owner_role' => $row->owner_role,
+                    'owner_user_id' => $row->owner_user_id,
+                    'status' => $row->status,
+                    'due_date' => $row->due_date?->format('Y-m-d'),
+                    'created_at' => $row->created_at?->toIso8601String(),
+                    'meeting' => [
+                        'scheduled_at' => $conv?->scheduled_at?->toIso8601String(),
+                        'held_at' => $conv?->held_at?->toIso8601String(),
+                        'meeting_at' => $meetingAt?->toIso8601String(),
+                        'status' => $conv?->status,
+                        'leader_name' => $leader
+                            ? ($leader->display_name ?: $leader->user_nicename)
+                            : null,
+                    ],
+                ];
+            })
+            ->values();
+
+        return response()->json([
+            'success' => true,
+            'data' => [
+                'employee_id' => $employeeId,
+                'current_conversation_id' => $currentId,
+                'previous_meetings' => $previousMeetings,
+                'commitments' => $commitments,
+            ],
+        ]);
     }
 
     /** Mark conversation held + trigger AI synthesis. */

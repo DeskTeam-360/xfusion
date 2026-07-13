@@ -172,3 +172,19 @@ function xfoo_conversation_gf_entry_to_values(array $entry): array
 
     return $values;
 }
+
+/**
+ * Field slugs + labels for read-only evidence display.
+ *
+ * @return array<string, string>
+ */
+function xfoo_conversation_gf_field_labels(): array
+{
+    $out = [];
+
+    foreach (xfoo_conversation_gf_mapping()['fields'] ?? [] as $slug => $field) {
+        $out[$slug] = (string) ($field['label'] ?? $slug);
+    }
+
+    return $out;
+}

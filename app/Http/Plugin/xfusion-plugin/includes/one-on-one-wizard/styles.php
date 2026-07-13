@@ -95,12 +95,46 @@ function xfoo_wizard_styles_css(): string
 
 /* Evidence list (step 1) */
 .xfw-evidence{border:1px solid var(--border);border-radius:.5rem;overflow:hidden}
-.xfw-evidence-row{display:flex;align-items:center;gap:.85rem;padding:.85rem 1rem;border-bottom:1px solid var(--border)}
-.xfw-evidence-row:last-child{border-bottom:none}
+.xfw-evidence-accordion-item{border-bottom:1px solid var(--border)}
+.xfw-evidence-accordion-item:last-child{border-bottom:none}
+.xfw-evidence-row{display:flex;align-items:center;gap:.85rem;padding:.85rem 1rem;cursor:pointer;user-select:none}
+.xfw-evidence-row:focus{outline:2px solid var(--green);outline-offset:-2px}
 .xfw-evidence-icon{width:50px;height:50px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:1rem;flex-shrink:0}
 .xfw-evidence-title{font-weight:700;font-size:24px}
 .xfw-evidence-desc{color:var(--muted)}
-.xfw-evidence-status{margin-left:auto;color:var(--green);font-size:18px;font-weight:600;white-space:nowrap}
+.xfw-evidence-status{margin-left:auto;color:var(--green);font-size:18px;font-weight:600;white-space:nowrap;flex-shrink:0}
+.xfw-evidence-accordion-panel{padding:0 1rem 1rem calc(50px + 1.7rem);background:#fff}
+.xfw-evidence-footer{margin-top:1rem}
+.xfw-evidence-generate{padding:1rem 1.25rem;border-top:1px solid var(--border);background:#fff}
+.xfw-evidence-empty{margin:0;font-style:italic}
+
+/* Brief details modal */
+.xfw-modal{position:fixed;inset:0;z-index:10000;display:flex;align-items:center;justify-content:center;padding:1rem}
+.xfw-modal.xfw-hidden{display:none}
+.xfw-modal-backdrop{position:absolute;inset:0;background:rgba(15,23,42,.45)}
+.xfw-modal-card{position:relative;z-index:1;max-width:720px;width:100%;max-height:80vh;overflow:auto;margin:0}
+.xfw-evidence-meeting{border:1px solid var(--border);border-radius:.5rem;background:#fff;padding:1rem;margin-bottom:1rem}
+.xfw-evidence-meeting:last-child{margin-bottom:0}
+.xfw-evidence-meeting-head{display:flex;flex-wrap:wrap;gap:.5rem 1rem;align-items:center;margin-bottom:1rem;padding-bottom:.75rem;border-bottom:1px solid var(--border)}
+.xfw-evidence-section{margin-bottom:1rem}
+.xfw-evidence-section:last-child{margin-bottom:0}
+.xfw-evidence-section h5{margin:0 0 .5rem;color:var(--navy);font-size:1rem}
+.xfw-evidence-dl{margin:0;display:grid;gap:.65rem}
+.xfw-evidence-dl dt{font-weight:700;font-size:.9rem;color:var(--ink)}
+.xfw-evidence-dl dd{margin:0;color:var(--ink)}
+.xfw-evidence-text{font-size:.95rem;line-height:1.5;white-space:pre-wrap}
+.xfw-evidence-scale{display:inline-block;padding:.15rem .5rem;border-radius:.25rem;background:var(--green);color:#fff;font-weight:700}
+.xfw-evidence-commitments{display:grid;gap:.75rem}
+.xfw-evidence-commitment{border:1px solid var(--border);border-radius:.5rem;padding:.85rem 1rem;background:#fff}
+.xfw-evidence-commitment-title{font-weight:700;margin-bottom:.25rem}
+.xfw-evidence-commitment-meta{font-size:.85rem;color:var(--muted);margin-bottom:.35rem}
+.xfw-evidence-commitment-indicator{font-size:.9rem;line-height:1.45}
+.xfw-evidence-links{margin:0;padding-left:1.25rem}
+.xfw-evidence-links li{margin-bottom:.55rem;font-size:.95rem}
+.xfw-evidence-driver-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(140px,1fr));gap:.75rem}
+.xfw-evidence-driver{border:1px solid var(--border);border-radius:.5rem;padding:.85rem 1rem;background:#fff;text-align:center}
+.xfw-evidence-driver-title{font-size:.85rem;font-weight:700;color:var(--navy);margin-bottom:.35rem;line-height:1.3}
+.xfw-evidence-driver-score{font-size:1.75rem;font-weight:700;color:var(--green)}
 
 /* Insight grid (step 2 / step 6) */
 .xfw-grid-2{display:grid;grid-template-columns:1fr 1fr;gap:1rem}
@@ -214,6 +248,7 @@ table.xfw-table select.xfw-input{padding:.35rem .4rem}
 .xfw-card{padding:1rem;margin-bottom:.75rem}
 .xfw-evidence-row{flex-wrap:wrap;align-items:flex-start;padding:.75rem}
 .xfw-evidence-status{margin-left:0;width:100%;padding-left:calc(36px + .85rem);margin-top:.35rem;white-space:normal}
+.xfw-evidence-accordion-panel{padding-left:1rem;padding-right:.75rem}
 .xfw-guide-row{flex-wrap:wrap;padding:.75rem 0}
 .xfw-guide-notes-toggle{margin-left:0;width:100%;margin-top:.5rem;text-align:left;white-space:normal}
 .xfw-guide-notes-panel{padding-left:0}
