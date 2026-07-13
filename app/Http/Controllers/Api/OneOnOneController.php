@@ -22,6 +22,71 @@ use Illuminate\Http\Request;
  */
 class OneOnOneController extends Controller
 {
+    /**
+     * Convert empty strings to null so nullable validation rules accept cleared fields.
+     *
+     * @return array<string, mixed>
+     */
+    private function normalizeCommitmentPayload(Request $request): array
+    {
+        $data = $request->all();
+
+        foreach (['description', 'behavioral_driver', 'success_indicator', 'due_date', 'owner_user_id'] as $field) {
+            if (array_key_exists($field, $data) && $data[$field] === '') {
+                $data[$field] = null;
+            }
+        }
+
+        $request->merge($data);
+
+        return $data;
+    }
+
+    /**
+     * Ensure JSON request body is merged into input (needed for POST/PATCH updates).
+     */
+    private function mergeJsonPayload(Request $request): void
+    {
+        if ($request->isJson()) {
+            $request->merge($request->json()->all());
+        }
+    }
+
+    /**
+     * Merge request fields + description JSON so driver/indicator always persist.
+     *
+     * @param  array<string, mixed>  $data
+     * @return array<string, mixed>
+     */
+    private function syncCommitmentMeta(array $data): array
+    {
+        $meta = [];
+
+        if (! empty($data['description']) && is_string($data['description'])) {
+            $decoded = json_decode($data['description'], true);
+            if (is_array($decoded)) {
+                $meta = $decoded;
+            }
+        }
+
+        foreach (['priority', 'status', 'behavioral_driver', 'success_indicator'] as $field) {
+            if (array_key_exists($field, $data) && $data[$field] !== null && $data[$field] !== '') {
+                $meta[$field] = $data[$field];
+            }
+        }
+
+        if ($meta !== []) {
+            $data['description'] = json_encode($meta, JSON_UNESCAPED_UNICODE);
+            foreach (['priority', 'status', 'behavioral_driver', 'success_indicator'] as $field) {
+                if (array_key_exists($field, $meta) && $meta[$field] !== '') {
+                    $data[$field] = $meta[$field];
+                }
+            }
+        }
+
+        return $data;
+    }
+
     /** Pairs where the given user is leader or employee. */
     public function pairsForUser(Request $request)
     {
@@ -287,7 +352,10 @@ class OneOnOneController extends Controller
     {
         return response()->json([
             'success' => true,
-            'data' => $conversation->commitments()->orderBy('id')->get(['id', 'title', 'description', 'owner_role', 'status', 'due_date']),
+            'data' => $conversation->commitments()->orderBy('id')->get([
+                'id', 'title', 'description', 'priority', 'behavioral_driver',
+                'success_indicator', 'owner_role', 'status', 'due_date',
+            ]),
         ]);
     }
 
@@ -309,18 +377,27 @@ class OneOnOneController extends Controller
 
     public function storeCommitment(Request $request, OneOnOneConversation $conversation)
     {
+        $this->mergeJsonPayload($request);
+        $this->normalizeCommitmentPayload($request);
+
         $data = $request->validate([
             'title' => 'required|string|max:255',
             'description' => 'nullable|string',
+            'priority' => 'nullable|in:high,medium,low',
+            'status' => 'nullable|in:open,in_progress,done',
+            'behavioral_driver' => 'nullable|in:get_real,fill_buckets,be_intentional,foster_grit,drive_growth',
+            'success_indicator' => 'nullable|string',
             'owner_role' => 'required|in:employee,leader,shared',
             'owner_user_id' => 'nullable|integer|min:1',
             'due_date' => 'nullable|date',
         ]);
 
+        $data = $this->syncCommitmentMeta($data);
+
         $commitment = OneOnOneCommitment::create([
             'conversation_id' => $conversation->id,
-            'status' => OneOnOneCommitment::STATUS_OPEN,
             ...$data,
+            'status' => $data['status'] ?? OneOnOneCommitment::STATUS_OPEN,
         ]);
 
         return response()->json(['success' => true, 'data' => $commitment], 201);
@@ -328,13 +405,32 @@ class OneOnOneController extends Controller
 
     public function updateCommitment(Request $request, OneOnOneCommitment $commitment)
     {
+        $this->mergeJsonPayload($request);
+        $this->normalizeCommitmentPayload($request);
+
+        // Wizard always sends the full row — same rules as create (not "sometimes").
         $data = $request->validate([
-            'status' => 'required|in:open,in_progress,done',
+            'title' => 'required|string|max:255',
+            'description' => 'nullable|string',
+            'priority' => 'nullable|in:high,medium,low',
+            'status' => 'nullable|in:open,in_progress,done',
+            'behavioral_driver' => 'nullable|in:get_real,fill_buckets,be_intentional,foster_grit,drive_growth',
+            'success_indicator' => 'nullable|string',
+            'owner_role' => 'required|in:employee,leader,shared',
+            'owner_user_id' => 'nullable|integer|min:1',
+            'due_date' => 'nullable|date',
         ]);
 
-        $commitment->update($data);
+        if ($data === []) {
+            return response()->json(['success' => false, 'message' => 'No fields to update.'], 422);
+        }
 
-        return response()->json(['success' => true, 'data' => $commitment]);
+        $data = $this->syncCommitmentMeta($data);
+
+        $commitment->forceFill($data);
+        $commitment->save();
+
+        return response()->json(['success' => true, 'data' => $commitment->fresh()]);
     }
 
     /** Mark conversation held + trigger AI synthesis. */

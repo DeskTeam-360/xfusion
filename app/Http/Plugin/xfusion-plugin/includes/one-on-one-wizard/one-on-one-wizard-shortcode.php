@@ -1,19 +1,12 @@
 <?php
 /**
- * XFusion — 1-on-1 Alignment Capture™ Interactive Tool (UI shell)
+ * XFusion — 1-on-1 Alignment Capture™ Interactive Tool
  *
  * Usage: [fusion_one_on_one_wizard]
+ *        [fusion_one_on_one_wizard conversation_id="123"]
  *
- * Visual-only prototype of the 6-step wizard described in the FUSION 1-on-1
- * Framework docs (see app/Http/Plugin/1. 1-1/*.png for the reference mockups).
- * All data shown is static/dummy — no backend calls, no persistence. Once the
- * layout is approved this gets wired to real endpoints step by step.
- *
- * Code is split per file for maintainability:
- *   styles.php           — all CSS
- *   core.php             — step navigation / sidebar / render dispatch (JS)
- *   steps/step-N-*.php   — one file per wizard step, each returning its
- *                          panel-builder JS as a `key: function () {...}` entry
+ * Step 0 meeting picker → 6-step wizard. Save/load via GF (steps 3–4) and
+ * Laravel API (step 5 commitments).
  *
  * @package XFusion
  */
@@ -23,6 +16,13 @@ if (! defined('ABSPATH')) {
 }
 
 require_once __DIR__ . '/styles.php';
+require_once __DIR__ . '/preparation-gf-mapping.php';
+require_once __DIR__ . '/conversation-gf-mapping.php';
+require_once __DIR__ . '/gf-entry-service.php';
+require_once __DIR__ . '/commitments-fusion-service.php';
+require_once __DIR__ . '/save-draft.php';
+require_once __DIR__ . '/load-draft.php';
+require_once __DIR__ . '/meeting-picker.php';
 require_once __DIR__ . '/core.php';
 require_once __DIR__ . '/steps/step-1-evidence.php';
 require_once __DIR__ . '/steps/step-2-brief.php';
@@ -31,8 +31,23 @@ require_once __DIR__ . '/steps/step-4-conversation.php';
 require_once __DIR__ . '/steps/step-5-commitments.php';
 require_once __DIR__ . '/steps/step-6-synthesis.php';
 
-function xfusion_one_on_one_wizard_shortcode(): string
+function xfusion_one_on_one_wizard_shortcode($atts = []): string
 {
+    if (! is_user_logged_in()) {
+        return '<p class="xfw-muted">' . esc_html__('Please log in to use the 1-on-1 Alignment Capture™ wizard.', 'xfusion') . '</p>';
+    }
+
+    $atts = shortcode_atts([
+        'conversation_id' => '0',
+        'user_role'       => '',
+    ], $atts, 'fusion_one_on_one_wizard');
+
+    $conversationId = absint($atts['conversation_id']);
+    if ($conversationId < 1 && isset($_GET['conversation_id'])) {
+        $conversationId = absint($_GET['conversation_id']);
+    }
+    $userRole = sanitize_key($atts['user_role']);
+
     $panelFns = [
         xfoo_wizard_step_evidence_js(),
         xfoo_wizard_step_brief_js(),
@@ -42,85 +57,110 @@ function xfusion_one_on_one_wizard_shortcode(): string
         xfoo_wizard_step_synthesis_js(),
     ];
 
-    $panelsJs = 'var PANELS = {' . "\n" . implode(",\n\n", $panelFns) . "\n" . '};';
-    $coreJs   = xfoo_wizard_core_js();
-    $css      = xfoo_wizard_styles_css();
+    $panelsJs   = 'var PANELS = {' . "\n" . implode(",\n\n", $panelFns) . "\n" . '};';
+    $coreJs     = xfoo_wizard_core_js();
+    $pickerJs   = xfoo_wizard_meeting_picker_js();
+    $commitJs   = xfoo_wizard_commitments_js();
+    $saveJs     = xfoo_wizard_save_draft_js();
+    $loadJs     = xfoo_wizard_load_draft_js();
+    $css        = xfoo_wizard_styles_css();
+
+    $wizardConfig = [
+        'ajaxUrl'                => admin_url('admin-ajax.php'),
+        'nonce'                  => wp_create_nonce('xfoo_wizard_save_draft'),
+        'ooNonce'                => wp_create_nonce('xfusion_one_on_one'),
+        'userId'                 => get_current_user_id(),
+        'conversationId'         => $conversationId,
+        'pairId'                 => 0,
+        'userRole'               => $userRole,
+        'prepConfigured'         => xfoo_preparation_gf_is_configured(),
+        'conversationConfigured' => xfoo_conversation_gf_is_configured(),
+    ];
+
+    $workspaceHidden = $conversationId < 1 ? ' xfw-hidden' : '';
 
     ob_start();
     ?>
-<div id="xfoo-wiz">
+<div id="xfoo-wiz" data-conversation-id="<?php echo esc_attr((string) $conversationId); ?>"<?php echo $userRole !== '' ? ' data-user-role="' . esc_attr($userRole) . '"' : ''; ?>>
 
-    <!-- Header -->
     <div class="xfw-header">
         <div class="xfw-header-inner">
             <div>
                 <h1>1-ON-1 ALIGNMENT CAPTURE&trade; INTERACTIVE TOOL</h1>
                 <p>Continuous Alignment Process</p>
             </div>
-            <div class="xfw-header-actions">
+            <div class="xfw-header-actions xfw-wizard-only<?php echo esc_attr($workspaceHidden); ?>">
                 <button class="xfw-btn xfw-btn-outline-white" id="xfw-save-draft">Save Draft</button>
                 <button class="xfw-btn xfw-btn-accent" id="xfw-next-step">Next Step &rarr;</button>
             </div>
         </div>
     </div>
 
-    <!-- Step indicator -->
-    <div class="xfw-steps">
-        <div class="xfw-steps-inner" id="xfw-steps-inner">
-            <!-- filled by JS -->
+    <div id="xfw-meeting-gate" class="xfw-meeting-gate<?php echo $conversationId > 0 ? ' xfw-hidden' : ''; ?>">
+        <div class="xfw-card xfw-gate-card">
+            <h2 class="xfw-section-title" style="margin-top:0">Select your 1-on-1 meeting</h2>
+            <p class="xfw-section-desc">Choose your pairing and meeting before starting the alignment wizard.</p>
+            <div id="xfw-gate-pairs"><p class="xfw-muted">Loading pairings&hellip;</p></div>
+            <div id="xfw-gate-conversations" class="xfw-hidden"></div>
         </div>
     </div>
 
-    <!-- Body -->
-    <div class="xfw-body">
-        <div class="xfw-main" id="xfw-main">
-            <!-- filled by JS per step -->
+    <div id="xfw-wizard-workspace" class="<?php echo $conversationId > 0 ? '' : 'xfw-hidden'; ?>">
+
+        <div class="xfw-steps">
+            <div class="xfw-steps-inner" id="xfw-steps-inner"></div>
         </div>
 
-        <aside class="xfw-sidebar">
-            <div class="xfw-card">
-                <h4>Meeting Information</h4>
-                <dl class="xfw-dl">
-                    <dt>Employee</dt><dd>Michael Wilson</dd>
-                    <dt>Leader</dt><dd>James Scott</dd>
-                    <dt>Group</dt><dd>Operations</dd>
-                    <dt>Meeting Date</dt><dd>May 14, 2025</dd>
-                    <dt>Meeting Time</dt><dd>9:00 AM</dd>
-                    <dt>Recurrence</dt><dd>Bi-Weekly</dd>
-                    <dt>Status</dt><dd><span class="xfw-badge amber">Draft</span></dd>
-                </dl>
-            </div>
+        <div class="xfw-body">
+            <div class="xfw-main" id="xfw-main"></div>
 
-            <div class="xfw-card">
-                <h4>About This Step</h4>
-                <p class="xfw-muted" id="xfw-about-step">This step ensures both participants enter the conversation with the most relevant and comprehensive context available.</p>
-            </div>
-
-            <div class="xfw-card">
-                <h4>Progress</h4>
-                <div class="xfw-row" style="justify-content:space-between">
-                    <span class="xfw-muted" id="xfw-progress-label">Step 1 of 6</span>
-                    <span class="xfw-muted" id="xfw-progress-pct">17%</span>
+            <aside class="xfw-sidebar">
+                <div class="xfw-card">
+                    <div class="xfw-row" style="justify-content:space-between;align-items:flex-start;margin-bottom:.5rem">
+                        <h4 style="margin:0">Meeting Information</h4>
+                        <a href="#" class="xfw-link" id="xfw-change-meeting" style="font-size:.8rem">Change</a>
+                    </div>
+                    <dl class="xfw-dl">
+                        <dt>Employee</dt><dd id="xfw-si-employee">&mdash;</dd>
+                        <dt>Leader</dt><dd id="xfw-si-leader">&mdash;</dd>
+                        <dt>Your role</dt><dd id="xfw-si-role">&mdash;</dd>
+                        <dt>Meeting Date</dt><dd id="xfw-si-date">&mdash;</dd>
+                        <dt>Meeting Time</dt><dd id="xfw-si-time">&mdash;</dd>
+                        <dt>Status</dt><dd id="xfw-si-status"><span class="xfw-badge amber">—</span></dd>
+                        <dt id="xfw-si-link-row" style="display:none">Meeting Link</dt><dd id="xfw-si-link"></dd>
+                    </dl>
                 </div>
-                <div class="xfw-progress-track"><div class="xfw-progress-fill" id="xfw-progress-fill" style="width:17%"></div></div>
-                <p class="xfw-muted" style="margin-top:.6rem">Estimated Completion<br><strong>25 &ndash; 40 minutes</strong></p>
-            </div>
 
-            <div class="xfw-card">
-                <h4>Have a question?</h4>
-                <p class="xfw-muted">Learn more about how this step works in 1-on-1 Alignment Capture&trade;.</p>
-                <a href="#" class="xfw-link">View Help Article &rarr;</a>
-            </div>
-        </aside>
-    </div>
+                <div class="xfw-card">
+                    <h4>About This Step</h4>
+                    <p class="xfw-muted" id="xfw-about-step">This step ensures both participants enter the conversation with the most relevant and comprehensive context available.</p>
+                </div>
 
-    <!-- Footer nav -->
-    <div class="xfw-footer">
-        <button class="xfw-btn xfw-btn-outline" id="xfw-prev-step">&larr; Previous Step</button>
-        <span class="xfw-muted xfw-autosave">&#10003; Draft autosaved 10:32 AM</span>
-        <div class="xfw-row">
-            <button class="xfw-btn xfw-btn-outline" id="xfw-save-draft-2">Save Draft</button>
-            <button class="xfw-btn xfw-btn-accent" id="xfw-next-step-2">Next Step &rarr;</button>
+                <div class="xfw-card">
+                    <h4>Progress</h4>
+                    <div class="xfw-row" style="justify-content:space-between">
+                        <span class="xfw-muted" id="xfw-progress-label">Step 1 of 6</span>
+                        <span class="xfw-muted" id="xfw-progress-pct">17%</span>
+                    </div>
+                    <div class="xfw-progress-track"><div class="xfw-progress-fill" id="xfw-progress-fill" style="width:17%"></div></div>
+                    <p class="xfw-muted" style="margin-top:.6rem">Estimated Completion<br><strong>25 &ndash; 40 minutes</strong></p>
+                </div>
+
+                <div class="xfw-card">
+                    <h4>Have a question?</h4>
+                    <p class="xfw-muted">Learn more about how this step works in 1-on-1 Alignment Capture&trade;.</p>
+                    <a href="#" class="xfw-link">View Help Article &rarr;</a>
+                </div>
+            </aside>
+        </div>
+
+        <div class="xfw-footer">
+            <button class="xfw-btn xfw-btn-outline" id="xfw-prev-step">&larr; Previous Step</button>
+            <span class="xfw-muted xfw-autosave">Select a meeting to begin</span>
+            <div class="xfw-row">
+                <button class="xfw-btn xfw-btn-outline" id="xfw-save-draft-2">Save Draft</button>
+                <button class="xfw-btn xfw-btn-accent" id="xfw-next-step-2">Next Step &rarr;</button>
+            </div>
         </div>
     </div>
 </div>
@@ -129,7 +169,8 @@ function xfusion_one_on_one_wizard_shortcode(): string
 
 <script>
 (function () {
-<?php echo $panelsJs . "\n\n" . $coreJs; ?>
+window.XFW_WIZARD = <?php echo wp_json_encode($wizardConfig); ?>;
+<?php echo $panelsJs . "\n\n" . $coreJs . "\n\n" . $pickerJs . "\n\n" . $commitJs . "\n\n" . $loadJs . "\n\n" . $saveJs; ?>
 })();
 </script>
     <?php

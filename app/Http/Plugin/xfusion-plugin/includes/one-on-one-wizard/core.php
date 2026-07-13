@@ -37,6 +37,8 @@ var ABOUT = [
 var root = document.getElementById('xfoo-wiz');
 if (root) {
     var current = 0;
+    var wizardBooted = false;
+    var navBound = false;
 
     var renderSteps = function () {
         var el = root.querySelector('#xfw-steps-inner');
@@ -78,17 +80,66 @@ if (root) {
         main.querySelectorAll('.xfw-scale-btn').forEach(function (btn) {
             btn.addEventListener('click', function () {
                 var group = btn.closest('.xfw-scale');
-                group.querySelectorAll('.xfw-scale-btn').forEach(function (b) { b.classList.remove('selected'); });
+                if (!group) {
+                    return;
+                }
+                group.querySelectorAll('.xfw-scale-btn').forEach(function (b) {
+                    b.classList.remove('selected', 'employee', 'leader');
+                });
                 btn.classList.add('selected');
             });
         });
         main.querySelectorAll('textarea[data-maxlen]').forEach(function (t) {
-            var counter = t.closest('.xfw-textarea-field').querySelector('.count');
+            var wrap = t.closest('.xfw-textarea-field') || t.closest('.xfw-guide-notes-panel');
+            var counter = wrap ? wrap.querySelector('.count') : null;
             var max = parseInt(t.dataset.maxlen, 10);
+            if (!counter) {
+                return;
+            }
+            counter.textContent = t.value.length + ' / ' + max;
             t.addEventListener('input', function () {
                 counter.textContent = t.value.length + ' / ' + max;
             });
         });
+        main.querySelectorAll('.xfw-guide-notes-toggle').forEach(function (toggle) {
+            toggle.addEventListener('click', function () {
+                var item = toggle.closest('.xfw-guide-item');
+                var panel = item.querySelector('.xfw-guide-notes-panel');
+                var chevron = toggle.querySelector('.xfw-chevron');
+                var isOpen = !panel.classList.contains('xfw-hidden');
+                if (isOpen) {
+                    panel.classList.add('xfw-hidden');
+                    toggle.setAttribute('aria-expanded', 'false');
+                    if (chevron) {
+                        chevron.innerHTML = '&#9662;';
+                    }
+                } else {
+                    panel.classList.remove('xfw-hidden');
+                    toggle.setAttribute('aria-expanded', 'true');
+                    if (chevron) {
+                        chevron.innerHTML = '&#9652;';
+                    }
+                    var textarea = panel.querySelector('textarea');
+                    if (textarea) {
+                        textarea.focus();
+                    }
+                }
+            });
+        });
+
+        if (STEPS[current].key === 'commitments' && typeof initCommitmentsStep === 'function') {
+            initCommitmentsStep();
+        }
+
+        if ((STEPS[current].key === 'preparation' || STEPS[current].key === 'conversation') && typeof applyDraftForCurrentStep === 'function') {
+            if (window.xfwDraftCache && window.xfwDraftCache.loaded) {
+                applyDraftForCurrentStep();
+            } else if (typeof loadWizardDraft === 'function') {
+                loadWizardDraft().then(function () {
+                    applyDraftForCurrentStep();
+                });
+            }
+        }
     };
 
     var goTo = function (i) {
@@ -99,13 +150,32 @@ if (root) {
         root.scrollIntoView({ behavior: 'smooth', block: 'start' });
     };
 
-    root.querySelector('#xfw-next-step').addEventListener('click', function () { goTo(current + 1); });
-    root.querySelector('#xfw-next-step-2').addEventListener('click', function () { goTo(current + 1); });
-    root.querySelector('#xfw-prev-step').addEventListener('click', function () { goTo(current - 1); });
+    var bindNav = function () {
+        if (navBound) {
+            return;
+        }
+        navBound = true;
+        root.querySelector('#xfw-next-step').addEventListener('click', function () { goTo(current + 1); });
+        root.querySelector('#xfw-next-step-2').addEventListener('click', function () { goTo(current + 1); });
+        root.querySelector('#xfw-prev-step').addEventListener('click', function () { goTo(current - 1); });
+    };
 
-    renderSteps();
-    renderSidebar();
-    renderMain();
+    window.xfwBootWizard = function (resetStep) {
+        if (resetStep) {
+            current = 0;
+        }
+        bindNav();
+        if (!wizardBooted) {
+            wizardBooted = true;
+            renderSteps();
+            renderSidebar();
+            renderMain();
+            return;
+        }
+        renderSteps();
+        renderSidebar();
+        renderMain();
+    };
 }
 JS;
 }

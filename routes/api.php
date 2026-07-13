@@ -429,6 +429,7 @@ Route::prefix('v1')->middleware('fusion.api')->group(function () {
         Route::get('/conversations/{conversation}/commitments', [OneOnOneController::class, 'getCommitments']);
         Route::post('/conversations/{conversation}/commitments', [OneOnOneController::class, 'storeCommitment']);
         Route::patch('/commitments/{commitment}', [OneOnOneController::class, 'updateCommitment']);
+        Route::post('/commitments/{commitment}', [OneOnOneController::class, 'updateCommitment']);
         Route::post('/conversations/{conversation}/complete', [OneOnOneController::class, 'complete']);
     });
 });

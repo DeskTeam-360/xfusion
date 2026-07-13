@@ -18,7 +18,8 @@ class OneOnOneCommitment extends Model
     protected $table = 'wp_fusion_one_on_one_commitments';
 
     protected $fillable = [
-        'conversation_id', 'title', 'description', 'owner_role', 'owner_user_id', 'status', 'due_date',
+        'conversation_id', 'title', 'description', 'priority', 'behavioral_driver',
+        'success_indicator', 'owner_role', 'owner_user_id', 'status', 'due_date',
     ];
 
     protected $casts = [

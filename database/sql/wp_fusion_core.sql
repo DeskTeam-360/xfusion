@@ -272,7 +272,10 @@ CREATE TABLE IF NOT EXISTS `wp_fusion_one_on_one_commitments` (
     `id` BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
     `conversation_id` BIGINT UNSIGNED NOT NULL,
     `title` VARCHAR(255) NOT NULL,
-    `description` TEXT NULL,
+    `description` TEXT NULL COMMENT 'Optional free-form notes; Step 5 UI fields use dedicated columns below',
+    `priority` VARCHAR(20) NOT NULL DEFAULT 'medium' COMMENT 'high | medium | low',
+    `behavioral_driver` VARCHAR(40) NULL COMMENT 'get_real | fill_buckets | be_intentional | foster_grit | drive_growth',
+    `success_indicator` TEXT NULL COMMENT 'How success will be measured',
     `owner_role` VARCHAR(20) NOT NULL DEFAULT 'shared' COMMENT 'employee | leader | shared',
     `owner_user_id` BIGINT UNSIGNED NULL,
     `status` VARCHAR(20) NOT NULL DEFAULT 'open' COMMENT 'open | in_progress | done',
@@ -281,7 +284,9 @@ CREATE TABLE IF NOT EXISTS `wp_fusion_one_on_one_commitments` (
     `updated_at` TIMESTAMP NULL,
     PRIMARY KEY (`id`),
     KEY `ooco_conversation_idx` (`conversation_id`),
-    KEY `ooco_owner_idx` (`owner_user_id`)
+    KEY `ooco_owner_idx` (`owner_user_id`),
+    KEY `ooco_status_idx` (`status`),
+    KEY `ooco_due_date_idx` (`due_date`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 CREATE TABLE IF NOT EXISTS `wp_fusion_one_on_one_ai_syntheses` (
