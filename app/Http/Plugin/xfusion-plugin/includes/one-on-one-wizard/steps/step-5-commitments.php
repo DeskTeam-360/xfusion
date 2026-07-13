@@ -40,12 +40,12 @@ commitments: function () {
         '<div class="xfw-card">' +
         '<div class="xfw-commit-head"><h3 style="margin:0">Employee Commitments</h3><button class="xfw-btn xfw-btn-outline">+ Add Commitment</button></div>' +
         '<p class="xfw-muted" style="margin-top:-.4rem;margin-bottom:.6rem">Commitments you will take action on before our next meeting.</p>' +
-        table(employeeRows, 'Behavioral Driver™') +
+        '<div class="xfw-table-scroll">' + table(employeeRows, 'Behavioral Driver™') + '</div>' +
         '</div>' +
         '<div class="xfw-card" style="margin-top:1rem">' +
         '<div class="xfw-commit-head"><h3 style="margin:0">Leader Commitments</h3><button class="xfw-btn xfw-btn-outline">+ Add Commitment</button></div>' +
         '<p class="xfw-muted" style="margin-top:-.4rem;margin-bottom:.6rem">Commitments you will take action on to support your employee.</p>' +
-        table(leaderRows, 'Related Employee') +
+        '<div class="xfw-table-scroll">' + table(leaderRows, 'Related Employee') + '</div>' +
         '</div>' +
         '<div class="xfw-card" style="margin-top:1rem;background:#fbfaf5">' +
         '<h3>Commitment Tips</h3>' +
