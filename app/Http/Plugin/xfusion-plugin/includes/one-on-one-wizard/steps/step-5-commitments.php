@@ -13,10 +13,13 @@ function xfoo_wizard_step_commitments_js(): string
 {
     return <<<'JS'
 commitments: function () {
+    var iconBase = 'https://sandbox.xperiencefusion.com/wp-content/uploads/2026/07/';
     function tableShell(role, title, desc, colHeader, btnLabel) {
         var cardClass = 'xfw-card' + (role === 'leader' ? ' xfw-commit-card-leader' : '');
+        var titleIcon = role === 'leader' ? 'User-Icon-Dark-Blue.svg' : 'User-Icon-Green-Filled.svg';
         return '<div class="' + cardClass + '">' +
-            '<div class="xfw-commit-head"><h3 style="margin:0">' + title + '</h3>' +
+            '<div class="xfw-commit-head">' +
+            '<div class="xfw-commit-title"><img src="' + iconBase + titleIcon + '" alt="" width="40" height="40"><h3 style="margin:0">' + title + '</h3></div>' +
             '<button type="button" class="xfw-btn xfw-btn-outline" data-add-commitment="' + role + '">' + btnLabel + '</button></div>' +
             '<p class="xfw-muted" style="margin-top:-.4rem;margin-bottom:.6rem">' + desc + '</p>' +
             '<div class="xfw-table-scroll"><table class="xfw-table">' +
@@ -31,7 +34,7 @@ commitments: function () {
         tableShell('employee', 'Employee Commitments', 'Commitments you will take action on before our next meeting.', 'Behavioral Driver™', '+ Add Commitment') +
         tableShell('leader', 'Leader Commitments', 'Commitments you will take action on to support your employee.', 'Related Employee', '+ Add Commitment') +
         '<div class="xfw-card" style="margin-top:1rem;background:#fbfaf5">' +
-        '<h3>Commitment Tips</h3>' +
+        '<div class="xfw-commit-title"><img src="' + iconBase + 'Green-Light-Bulb-Icon.svg" alt="" width="50" height="50"><h3 style="margin:0">Commitment Tips</h3></div>' +
         '<ul class="xfw-numbered" style="list-style:disc;padding-left:1.2rem"><li>Be specific about what will be done.</li><li>Set a realistic target date.</li><li>Define how success will be measured.</li><li>Align commitments to Behavioral Drivers™ for stronger impact.</li></ul>' +
         '</div>';
 }

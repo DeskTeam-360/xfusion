@@ -22,13 +22,13 @@ var xfwResetBriefCache = function () {
 };
 
 var xfwBriefSectionMeta = {
-    alignment_snapshot: { color: '#16a34a', icon: '\u{1F3AF}', title: 'Alignment Snapshot\u2122' },
-    development_snapshot: { color: '#7c3aed', icon: '\u{1F464}', title: 'Development Snapshot\u2122' },
-    commitment_review: { color: '#ea580c', icon: '\u{1F4CB}', title: 'Commitment Review\u2122' },
-    behavioral_trends: { color: '#0891b2', icon: '\u{1F4C8}', title: 'Behavioral Trends\u2122' },
-    suggested_discussion_areas: { color: '#1e2a52', icon: '\u{1F4AC}', title: 'Suggested Discussion Areas\u2122' },
-    emerging_opportunities: { color: '#ca8a04', icon: '\u{1F4A1}', title: 'Emerging Opportunities\u2122' },
-    potential_barriers: { color: '#dc2626', icon: '\u26A0\uFE0F', title: 'Potential Barriers\u2122' },
+    alignment_snapshot: { color: '#16a34a', icon: 'https://sandbox.xperiencefusion.com/wp-content/uploads/2026/07/Arrow-on-Target-Icon.svg', title: 'Alignment Snapshot\u2122' },
+    development_snapshot: { color: '#7c3aed', icon: 'https://sandbox.xperiencefusion.com/wp-content/uploads/2026/07/Person-Growth-Icon.svg', title: 'Development Snapshot\u2122' },
+    commitment_review: { color: '#ea580c', icon: 'https://sandbox.xperiencefusion.com/wp-content/uploads/2026/07/Clipboard-Checkmark-Icon.svg', title: 'Commitment Review\u2122' },
+    behavioral_trends: { color: '#0891b2', icon: 'https://sandbox.xperiencefusion.com/wp-content/uploads/2026/07/Trending-Line-Chart-Icon.svg', title: 'Behavioral Trends\u2122' },
+    suggested_discussion_areas: { color: '#1e2a52', icon: 'https://sandbox.xperiencefusion.com/wp-content/uploads/2026/07/Chat-Bubbles-Icon.svg', title: 'Suggested Discussion Areas\u2122' },
+    emerging_opportunities: { color: '#ca8a04', icon: 'https://sandbox.xperiencefusion.com/wp-content/uploads/2026/07/Chat-Bubbles-Icon.svg', title: 'Emerging Opportunities\u2122' },
+    potential_barriers: { color: '#dc2626', icon: 'https://sandbox.xperiencefusion.com/wp-content/uploads/2026/07/Warning-Triangle-Icon-1.svg', title: 'Potential Barriers\u2122' },
 };
 
 var xfwBriefNormalizeSection = function (raw) {
@@ -45,14 +45,17 @@ var xfwBriefNormalizeSection = function (raw) {
 };
 
 var xfwBriefCard = function (sectionKey, sectionData) {
-    var meta = xfwBriefSectionMeta[sectionKey] || { color: '#6b7280', icon: '\u{1F4C4}', title: sectionKey };
+    var meta = xfwBriefSectionMeta[sectionKey] || { color: '#6b7280', icon: '', title: sectionKey };
     var normalized = xfwBriefNormalizeSection(sectionData);
     var items = normalized.items.length
         ? normalized.items
         : ['No summary available for this section yet.'];
+    var iconHtml = meta.icon
+        ? '<img src="' + meta.icon + '" alt="" width="50" height="50">'
+        : '';
 
     return '<div class="xfw-insight-card" data-brief-section="' + sectionKey + '">' +
-        '<div class="icon" style="background:' + meta.color + '22;color:' + meta.color + '">' + meta.icon + '</div>' +
+        '<div class="icon">' + iconHtml + '</div>' +
         '<h3>' + meta.title + '</h3>' +
         '<ul>' + items.map(function (i) {
             return '<li>' + xfwEvidenceEsc(i) + '</li>';

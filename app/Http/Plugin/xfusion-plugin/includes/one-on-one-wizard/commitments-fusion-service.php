@@ -432,6 +432,9 @@ var applyCommitmentsData = function (data, force) {
     }
     renderCommitmentRows('employee', payload.employee || [], force);
     renderCommitmentRows('leader', payload.leader || [], force);
+    if (typeof window.xfwRenderSidebar === 'function' && typeof STEPS !== 'undefined' && STEPS[current] && STEPS[current].key === 'commitments') {
+        window.xfwRenderSidebar();
+    }
 };
 
 window.xfwCommitmentsCache = { loaded: false, loading: false, data: null, conversationId: 0, _promise: null };

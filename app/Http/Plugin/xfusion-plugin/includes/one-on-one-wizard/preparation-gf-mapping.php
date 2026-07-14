@@ -2,9 +2,9 @@
 /**
  * Gravity Forms mapping — Step 3 Shared Preparation™.
  *
- * Isi form_id dan field_id setelah form GF dibuat di WordPress admin.
- * Custom UI di step-3-preparation.php memakai slug `data-field` yang sama
- * dengan key di bawah; Save Draft handler memetakan slug → GF field_id.
+ * Fill in form_id and field_id after the GF forms are created in WordPress admin.
+ * The custom UI in step-3-preparation.php uses the same `data-field` slugs as the
+ * keys below; the Save Draft handler maps each slug to its GF field_id.
  *
  * @package XFusion
  */

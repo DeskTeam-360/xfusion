@@ -13,19 +13,20 @@ function xfoo_wizard_step_conversation_js(): string
 {
     return <<<'JS'
 conversation: function () {
+    var iconBase = 'https://sandbox.xperiencefusion.com/wp-content/uploads/2026/07/';
     var items = [
-        ['priorities', '#dbeafe;color:#2563eb', '\u{1F3AF}', '1. Current Priorities', 'Discuss current priorities, alignment with team and organizational goals, and any shifts or new focus areas.'],
-        ['progress', '#dcfce7;color:#16a34a', '\u{1F4C8}', '2. Progress', 'Reflect on progress since the last meeting. What\'s working well and what impact is being made?'],
-        ['barriers', '#f1e9fb;color:#7c3aed', '⚠️', '3. Barriers', 'Explore obstacles or challenges that may be impacting performance or progress.'],
-        ['development', '#fde8d7;color:#ea580c', '\u{1F464}', '4. Development', 'Discuss growth opportunities, skill development, and experiences that will support future success.'],
-        ['support', '#e0f2f7;color:#0891b2', '\u{1F91D}', '5. Support', 'Talk about the support needed and how leadership can better enable success.'],
-        ['future_opportunities', '#e9f5e1;color:#3f7d1f', '⭐', '6. Future Opportunities', 'Look ahead. What opportunities exist for growth, impact, or advancement?'],
+        ['priorities', iconBase + 'Target-with-Sparkle-Icon.svg', '1. Current Priorities', 'Discuss current priorities, alignment with team and organizational goals, and any shifts or new focus areas.'],
+        ['progress', iconBase + 'Trending-Up-Arrow-Icon-Green.svg', '2. Progress', 'Reflect on progress since the last meeting. What\'s working well and what impact is being made?'],
+        ['barriers', iconBase + 'Purple-Warning-Triangle-Icon.svg', '3. Barriers', 'Explore obstacles or challenges that may be impacting performance or progress.'],
+        ['development', iconBase + 'Person-Icon-Orange.svg', '4. Development', 'Discuss growth opportunities, skill development, and experiences that will support future success.'],
+        ['support', iconBase + 'Hands-Holding-Icon.svg', '5. Support', 'Talk about the support needed and how leadership can better enable success.'],
+        ['future_opportunities', iconBase + 'Green-Star-Icon.svg', '6. Future Opportunities', 'Look ahead. What opportunities exist for growth, impact, or advancement?'],
     ];
     function guideItem(it) {
         return '<div class="xfw-guide-item" data-section="' + it[0] + '">' +
             '<div class="xfw-guide-row">' +
-            '<div class="xfw-guide-icon" style="background:' + it[1].split(';')[0] + ';color:' + it[1].split(';')[1].replace('color:','') + '">' + it[2] + '</div>' +
-            '<div class="xfw-guide-body"><div class="xfw-guide-title">' + it[3] + '</div><div class="xfw-guide-desc">' + it[4] + '</div></div>' +
+            '<div class="xfw-guide-icon"><img src="' + it[1] + '" alt="" width="50" height="50"></div>' +
+            '<div class="xfw-guide-body"><div class="xfw-guide-title">' + it[2] + '</div><div class="xfw-guide-desc">' + it[3] + '</div></div>' +
             '<button type="button" class="xfw-guide-notes-toggle" aria-expanded="false">' +
             '&#128172; Notes (optional) <span class="xfw-chevron">&#9662;</span></button>' +
             '</div>' +

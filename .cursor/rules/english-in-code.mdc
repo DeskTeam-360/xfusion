@@ -1,0 +1,37 @@
+---
+description: Require English for all source code comments, docs, and developer-facing text
+alwaysApply: true
+---
+
+# English Only in Source Code
+
+All code-authored text must be English. Do not use Indonesian or any other language in the repository.
+
+Applies to:
+- Comments (`//`, `/* */`, `/** */`, CSS comments, inline notes)
+- File/module docblocks and `@package` descriptions
+- TODO / FIXME / NOTE annotations
+- Commit messages and PR descriptions when creating them
+- User-facing UI copy in product code (labels, buttons, banners, empty states) unless the user explicitly requests another language for that UI
+
+Does not apply to:
+- Chat replies to the user (follow the user's language preference for conversation)
+- Existing third-party or vendor strings you are not editing
+
+```php
+// ❌ BAD
+/* dipanggil dari load-draft.php setelah semua script siap */
+
+// ✅ GOOD
+/* Called from load-draft.php after all scripts are ready */
+```
+
+```php
+// ❌ BAD
+ * Isi form_id dan field_id setelah form dibuat di WordPress admin.
+
+// ✅ GOOD
+ * Fill in form_id and field_id after the form is created in WordPress admin.
+```
+
+When editing a file that already has non-English comments, translate those comments to English in the same change when you touch that area.

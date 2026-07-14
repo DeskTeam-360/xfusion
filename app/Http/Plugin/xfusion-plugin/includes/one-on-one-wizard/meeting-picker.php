@@ -123,6 +123,9 @@ var xfwUpdateSidebarMeeting = function (ctx) {
     if (roleEl) {
         roleEl.textContent = ctx.userRole ? (ctx.userRole.charAt(0).toUpperCase() + ctx.userRole.slice(1)) : '—';
     }
+    if (typeof window.xfwRenderSidebar === 'function' && typeof STEPS !== 'undefined' && STEPS[current] && STEPS[current].key === 'synthesis') {
+        window.xfwRenderSidebar();
+    }
 };
 
 var xfwShowWizardWorkspace = function (show) {
@@ -487,6 +490,6 @@ var xfwInitMeetingGate = function () {
     window.xfwInitMeetingPicker();
 };
 
-/* xfwInitMeetingGate() dipanggil dari load-draft.php setelah semua script siap */
+/* xfwInitMeetingGate() is called from load-draft.php after all scripts are ready */
 JS;
 }

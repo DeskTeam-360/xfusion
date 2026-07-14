@@ -135,26 +135,7 @@ function xfusion_one_on_one_wizard_shortcode($atts = []): string
                     </dl>
                 </div>
 
-                <div class="xfw-card">
-                    <h4>About This Step</h4>
-                    <p class="xfw-muted" id="xfw-about-step">This step ensures both participants enter the conversation with the most relevant and comprehensive context available.</p>
-                </div>
-
-                <div class="xfw-card">
-                    <h4>Progress</h4>
-                    <div class="xfw-row" style="justify-content:space-between">
-                        <span class="xfw-muted" id="xfw-progress-label">Step 1 of 6</span>
-                        <span class="xfw-muted" id="xfw-progress-pct">17%</span>
-                    </div>
-                    <div class="xfw-progress-track"><div class="xfw-progress-fill" id="xfw-progress-fill" style="width:17%"></div></div>
-                    <p class="xfw-muted" style="margin-top:.6rem">Estimated Completion<br><strong>25 &ndash; 40 minutes</strong></p>
-                </div>
-
-                <div class="xfw-card">
-                    <h4>Have a question?</h4>
-                    <p class="xfw-muted">Learn more about how this step works in 1-on-1 Alignment Capture&trade;.</p>
-                    <a href="#" class="xfw-link">View Help Article &rarr;</a>
-                </div>
+                <div id="xfw-sidebar-panels"></div>
             </aside>
         </div>
 

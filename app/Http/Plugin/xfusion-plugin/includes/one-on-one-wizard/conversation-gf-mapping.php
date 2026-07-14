@@ -2,8 +2,8 @@
 /**
  * Gravity Forms mapping — Step 4 Alignment Conversation™ notes.
  *
- * Satu form GF untuk semua conversation notes (per-section + general).
- * Isi form_id dan field_id setelah form dibuat di WordPress admin.
+ * One GF form covers all conversation notes (per-section + general).
+ * Fill in form_id and field_id after the form is created in WordPress admin.
  *
  * @package XFusion
  */

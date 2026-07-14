@@ -61,6 +61,29 @@ function xfoo_wizard_styles_css(): string
 .xfw-card{background:#fff;border:1px solid var(--border);border-radius:.5rem;padding:1.1rem 1.25rem;margin-bottom:1rem}
 .xfw-card h4{margin:0 0 .6rem;text-transform:uppercase;letter-spacing:.04em;color:var(--navy);font-weight:500}
 .xfw-card h3{margin:0 0 .4rem;font-size:.95rem;color:var(--navy)}
+.xfw-about-step,.xfw-help-card{display:flex;gap:.85rem;align-items:flex-start}
+.xfw-about-step-icon{width:50px;height:50px;flex-shrink:0;display:block;object-fit:contain;margin-top:.15rem}
+.xfw-about-step-body,.xfw-help-body{min-width:0;flex:1}
+.xfw-about-step-body .xfw-muted{margin:0 0 .65rem}
+.xfw-about-step-body .xfw-muted:last-child{margin-bottom:0}
+.xfw-help-body .xfw-muted{margin:0}
+.xfw-help-icon{width:40px;height:40px;flex-shrink:0;border-radius:50%;border:2.5px solid var(--navy);color:var(--navy);display:flex;align-items:center;justify-content:center;font-size:1.25rem;font-weight:700;line-height:1}
+.xfw-help-body .xfw-link{display:inline-block;margin-top:.5rem}
+.xfw-next-icon{width:40px;height:40px;flex-shrink:0;color:var(--navy);display:flex;align-items:center;justify-content:center}
+.xfw-progress-row{display:flex;align-items:center;gap:.65rem}
+.xfw-progress-row .xfw-progress-track{flex:1;margin-top:0}
+.xfw-progress-row #xfw-progress-pct{flex-shrink:0;font-weight:600;color:var(--navy)}
+.xfw-tip-list{list-style:none;margin:0;padding:0}
+.xfw-tip-list li{display:flex;gap:.65rem;align-items:flex-start;margin-bottom:.55rem;color:var(--navy);font-size:16px;line-height:1.4}
+.xfw-tip-list li:last-child{margin-bottom:0}
+.xfw-tip-check{width:22px;height:22px;border-radius:50%;background:var(--green);color:#fff;display:flex;align-items:center;justify-content:center;font-size:.7rem;font-weight:700;flex-shrink:0;margin-top:.1rem}
+.xfw-commit-summary{display:flex;flex-direction:column}
+.xfw-commit-summary-row{display:flex;align-items:center;gap:.75rem;padding:.75rem 0;border-bottom:1px solid var(--border)}
+.xfw-commit-summary-row:last-child{border-bottom:none;padding-bottom:0}
+.xfw-commit-summary-row:first-child{padding-top:0}
+.xfw-commit-summary-row img{width:36px;height:36px;flex-shrink:0;display:block;object-fit:contain}
+.xfw-commit-summary-row .xfw-muted{display:block;margin:0;font-size:14px}
+.xfw-commit-summary-row strong{display:block;margin-top:.1rem;color:var(--navy);font-size:18px}
 .xfw-muted{color:var(--muted);line-height:1.5}
 .xfw-row{display:flex;gap:.6rem;align-items:center;flex-wrap:wrap}
 
@@ -92,6 +115,7 @@ function xfoo_wizard_styles_css(): string
 .xfw-banner{background:#eef4fc;border:1px solid #bfdbfe;color:#1e3a5f;border-radius:.5rem;padding:.85rem 1rem;font-size:.85rem;margin-bottom:1.25rem;display:flex;gap:.6rem;align-items:flex-start}
 .xfw-banner.warn{background:#fff8e6;border-color:#fde68a;color:#7c5b00}
 .xfw-banner b{display:block;margin-bottom:.1rem}
+.xfw-banner-icon{width:40px;height:40px;flex-shrink:0;display:block;object-fit:contain}
 
 /* Evidence list (step 1) */
 .xfw-evidence{border:1px solid var(--border);border-radius:.5rem;overflow:hidden}
@@ -99,7 +123,8 @@ function xfoo_wizard_styles_css(): string
 .xfw-evidence-accordion-item:last-child{border-bottom:none}
 .xfw-evidence-row{display:flex;align-items:center;gap:.85rem;padding:.85rem 1rem;cursor:pointer;user-select:none}
 .xfw-evidence-row:focus{outline:2px solid var(--green);outline-offset:-2px}
-.xfw-evidence-icon{width:50px;height:50px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:1rem;flex-shrink:0}
+.xfw-evidence-icon{width:50px;height:50px;flex-shrink:0;line-height:0}
+.xfw-evidence-icon img{width:100%;height:100%;display:block;object-fit:contain}
 .xfw-evidence-title{font-weight:700;font-size:24px}
 .xfw-evidence-desc{color:var(--muted)}
 .xfw-evidence-status{margin-left:auto;color:var(--green);font-size:18px;font-weight:600;white-space:nowrap;flex-shrink:0}
@@ -139,7 +164,8 @@ function xfoo_wizard_styles_css(): string
 /* Insight grid (step 2 / step 6) */
 .xfw-grid-2{display:grid;grid-template-columns:1fr 1fr;gap:1rem}
 .xfw-insight-card{background:#fff;border:1px solid var(--border);border-radius:.5rem;padding:1.1rem 1.25rem}
-.xfw-insight-card .icon{width:50px;height:50px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:1rem;margin-bottom:.6rem}
+.xfw-insight-card .icon{width:50px;height:50px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:1rem;margin-bottom:.6rem;line-height:0;overflow:hidden}
+.xfw-insight-card .icon img{width:100%;height:100%;display:block;object-fit:contain}
 .xfw-insight-card ul{margin:.4rem 0 0;padding-left:1.1rem;font-size:.83rem;color:var(--ink)}
 .xfw-insight-card li{margin-bottom:.3rem;font-size:18px;}
 
@@ -152,8 +178,11 @@ function xfoo_wizard_styles_css(): string
 .xfw-prep-col h3{color:var(--green)}
 .xfw-prep-col.leader h3{color:var(--navy)}
 .xfw-scale-q{margin-bottom:1.1rem}
-.xfw-scale-q label{font-weight:700;font-size:16px;display:block;margin-bottom:.15rem}
-.xfw-scale-q .q-desc{color:var(--muted);font-size:16px;margin-bottom:.4rem}
+.xfw-scale-q-head{display:flex;gap:.75rem;align-items:flex-start;margin-bottom:.4rem}
+.xfw-scale-q-icon{width:50px;height:50px;flex-shrink:0;display:block;object-fit:contain;margin-top:.1rem}
+.xfw-scale-q-text{min-width:0;flex:1}
+.xfw-scale-q label{font-weight:800;font-size:24px;display:block;margin-bottom:.15rem}
+.xfw-scale-q .q-desc{color:var(--muted);font-size:16px;margin-bottom:0}
 .xfw-scale{display:flex;gap:.4rem}
 .xfw-scale-btn{flex:1;text-align:center;padding:.4rem 0;border:1px solid var(--border);border-radius:.375rem;font-size:.85rem;font-weight:600;color:var(--ink);cursor:pointer;background:#fff}
 .xfw-prep-col.employee .xfw-scale-btn.selected{background:var(--green);border-color:var(--green);color:#fff}
@@ -168,12 +197,13 @@ function xfoo_wizard_styles_css(): string
 .xfw-guide-item{border-bottom:1px solid var(--border)}
 .xfw-guide-item:last-child{border-bottom:none}
 .xfw-guide-row{display:flex;gap:.85rem;padding:1rem 0;align-items:flex-start}
-.xfw-guide-icon{width:50px;height:50px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:1rem;flex-shrink:0}
+.xfw-guide-icon{width:50px;height:50px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:1rem;flex-shrink:0;line-height:0;overflow:hidden}
+.xfw-guide-icon img{width:100%;height:100%;display:block;object-fit:contain}
 .xfw-guide-body{flex:1;min-width:0}
-.xfw-guide-title{font-weight:700;font-size:18px;margin-bottom:.15rem}
+.xfw-guide-title{font-weight:700;font-size:22px;margin-bottom:.15rem}
 .xfw-guide-desc{color:var(--muted);font-size:16px}
-.xfw-guide-notes-toggle{margin-left:auto;flex-shrink:0;color:var(--muted);font-size:16px;white-space:nowrap;align-self:flex-start;background:none;border:none;padding:.25rem .5rem;cursor:pointer;font-family:inherit;border-radius:.375rem}
-.xfw-guide-notes-toggle:hover{color:var(--navy);background:#f8fafc}
+.xfw-guide-notes-toggle{margin-left:auto;flex-shrink:0;color:var(--muted);font-size:16px;white-space:nowrap;align-self:flex-start;background:transparent;border:1px solid var(--border);padding:.25rem .5rem;cursor:pointer;font-family:inherit;border-radius:.375rem}
+.xfw-guide-notes-toggle:hover{color:var(--navy);background:transparent;border-color:var(--navy)}
 .xfw-guide-notes-toggle .xfw-chevron{font-size:.75rem;margin-left:.15rem}
 .xfw-guide-notes-panel{padding:0 0 1rem 4.35rem}
 .xfw-guide-notes-panel textarea{width:100%;border:1px solid var(--border);border-radius:.375rem;padding:.6rem;font-size:.85rem;box-sizing:border-box;font-family:inherit;resize:vertical}
@@ -182,6 +212,10 @@ function xfoo_wizard_styles_css(): string
 /* Commitments table (step 5) */
 .xfw-commit-card-leader{margin-top:1rem}
 .xfw-commit-head{display:flex;justify-content:space-between;align-items:center;margin-bottom:.6rem;gap:.75rem;flex-wrap:wrap}
+.xfw-commit-title{display:flex;align-items:center;gap:.75rem;min-width:0}
+.xfw-commit-title img{width:40px;height:40px;flex-shrink:0;display:block;object-fit:contain}
+.xfw-commit-title h3{margin:0}
+.xfw-card>.xfw-commit-title{margin-bottom:.6rem}
 table.xfw-table{width:100%;border-collapse:collapse;font-size:.8rem;min-width:640px}
 table.xfw-table th{text-align:left;padding:.5rem .6rem;color:var(--muted);font-weight:600;border-bottom:1px solid var(--border);font-size:.72rem;text-transform:uppercase}
 table.xfw-table td{padding:.6rem;border-bottom:1px solid var(--border);vertical-align:middle;font-size:.70rem;}
@@ -247,7 +281,7 @@ table.xfw-table select.xfw-input{padding:.35rem .4rem}
 .xfw-grid-2{grid-template-columns:1fr}
 .xfw-card{padding:1rem;margin-bottom:.75rem}
 .xfw-evidence-row{flex-wrap:wrap;align-items:flex-start;padding:.75rem}
-.xfw-evidence-status{margin-left:0;width:100%;padding-left:calc(36px + .85rem);margin-top:.35rem;white-space:normal}
+.xfw-evidence-status{margin-left:0;width:100%;padding-left:calc(50px + .85rem);margin-top:.35rem;white-space:normal}
 .xfw-evidence-accordion-panel{padding-left:1rem;padding-right:.75rem}
 .xfw-guide-row{flex-wrap:wrap;padding:.75rem 0}
 .xfw-guide-notes-toggle{margin-left:0;width:100%;margin-top:.5rem;text-align:left;white-space:normal}
@@ -282,7 +316,7 @@ table.xfw-table select.xfw-input{padding:.35rem .4rem}
 .xfw-scale{gap:.25rem}
 .xfw-scale-btn{padding:.5rem 0;font-size:14px;min-width:0}
 .xfw-evidence-icon{width:46px;height:46px}
-.xfw-evidence-status{padding-left:calc(32px + .85rem)}
+.xfw-evidence-status{padding-left:calc(46px + .85rem)}
 .xfw-numbered .n{width:22px;height:22px;font-size:11px}
 }
 CSS;
