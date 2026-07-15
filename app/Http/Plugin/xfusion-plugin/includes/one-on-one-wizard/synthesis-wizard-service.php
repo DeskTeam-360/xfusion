@@ -418,12 +418,18 @@ var generateWizardSynthesis = function () {
         window.xfwSynthesisCache.conversationId = cid;
 
         console.log('[XFW Step 5] AI Meeting Synthesis response', json.data.synthesis, json.data.meta || {});
+        if (json.data.meta && json.data.meta.llm_fallback) {
+            console.warn('[XFW Step 5] LLM unavailable, used context-composer fallback', json.data.meta.llm_error || '');
+        }
         if (json.data.debug_payload) {
             console.log('[XFW Step 5] synthesis payload → LLM (from server)', json.data.debug_payload);
         }
 
         if (statusEl) {
-            statusEl.textContent = '\u2713 AI Meeting Synthesis generated. Continue to Step 6 to review.';
+            var fallbackNote = (json.data.meta && json.data.meta.llm_fallback)
+                ? ' (offline composer — LLM unavailable)'
+                : '';
+            statusEl.textContent = '\u2713 AI Meeting Synthesis generated' + fallbackNote + '. Continue to Step 6 to review.';
             statusEl.style.color = '#16a34a';
         }
         return json.data.synthesis;

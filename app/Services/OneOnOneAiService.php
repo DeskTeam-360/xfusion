@@ -146,11 +146,13 @@ class OneOnOneAiService
         }
 
         $preparations = isset($contextOverrides['preparations']) && is_array($contextOverrides['preparations'])
-            ? $contextOverrides['preparations']
-            : $conversation->preparations()
-                ->get(['author_role', 'content'])
-                ->mapWithKeys(fn (OneOnOnePreparation $p) => [$p->author_role => $p->content])
-                ->all();
+            ? $this->normalizePreparations($contextOverrides['preparations'])
+            : $this->normalizePreparations(
+                $conversation->preparations()
+                    ->get(['author_role', 'content'])
+                    ->mapWithKeys(fn (OneOnOnePreparation $p) => [$p->author_role => $p->content])
+                    ->all()
+            );
 
         $notes = isset($contextOverrides['notes']) && is_array($contextOverrides['notes'])
             ? $contextOverrides['notes']
@@ -243,5 +245,31 @@ class OneOnOneAiService
         }
 
         return $request;
+    }
+
+    /**
+     * @param  array<string, mixed>  $preparations
+     * @return array<string, array<string, mixed>>
+     */
+    private function normalizePreparations(array $preparations): array
+    {
+        $normalized = [];
+        foreach ($preparations as $role => $content) {
+            if (! is_string($role) || $role === '') {
+                continue;
+            }
+            if (is_array($content)) {
+                $normalized[$role] = $content;
+                continue;
+            }
+            if (! is_string($content) || trim($content) === '') {
+                $normalized[$role] = [];
+                continue;
+            }
+            $decoded = json_decode($content, true);
+            $normalized[$role] = is_array($decoded) ? $decoded : ['summary' => $content];
+        }
+
+        return $normalized;
     }
 }

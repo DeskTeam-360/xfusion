@@ -16,6 +16,7 @@ use App\Models\User;
 use App\Models\WpGfEntry;
 use App\Models\WpGfEntryMeta;
 use App\Services\MeetingBriefFromEvidenceService;
+use App\Services\MeetingSynthesisFromContextService;
 use App\Services\OneOnOneAiService;
 use App\Services\OneOnOneCompanyGroupSyncService;
 use Illuminate\Http\Request;
@@ -625,8 +626,12 @@ class OneOnOneController extends Controller
     }
 
     /** Generate AI Meeting Synthesis from prep, notes, and commitments for this conversation. */
-    public function generateSynthesis(Request $request, OneOnOneConversation $conversation, OneOnOneAiService $ai)
-    {
+    public function generateSynthesis(
+        Request $request,
+        OneOnOneConversation $conversation,
+        OneOnOneAiService $ai,
+        MeetingSynthesisFromContextService $composer
+    ) {
         $this->mergeJsonPayload($request);
 
         $forceRefresh = $request->boolean('force_refresh', true);
@@ -637,13 +642,55 @@ class OneOnOneController extends Controller
             'commitments' => $request->input('commitments'),
         ], static fn ($value) => is_array($value) && $value !== []);
 
+        $llmError = null;
         $synthesis = $ai->meetingSynthesis($conversation, $forceRefresh, $contextOverrides);
 
         if ($synthesis === null) {
-            return response()->json([
-                'success' => false,
-                'message' => $ai->getLastError() ?? 'Unable to generate AI Meeting Synthesis. Check LLM configuration and try again.',
-            ], 502);
+            $llmError = $ai->getLastError();
+            $pair = $conversation->oneOnOne;
+
+            $preparations = $contextOverrides['preparations'] ?? (
+                $pair
+                    ? $conversation->preparations()->get(['author_role', 'content'])->mapWithKeys(
+                        fn ($p) => [$p->author_role => $this->decodePrepContent($p->content)]
+                    )->all()
+                    : []
+            );
+
+            $notes = $contextOverrides['notes'] ?? $conversation->notes()->get(['section', 'note'])->map(
+                fn ($n) => ['section' => $n->section, 'note' => $n->note]
+            )->values()->all();
+
+            $commitments = $contextOverrides['commitments'] ?? $conversation->commitments()->get(['title', 'description', 'owner_role', 'status'])->map(
+                fn ($c) => [
+                    'title' => $c->title,
+                    'description' => $c->description,
+                    'owner_role' => $c->owner_role,
+                    'status' => $c->status,
+                ]
+            )->values()->all();
+
+            $composed = $composer->compose(
+                is_array($preparations) ? $preparations : [],
+                is_array($notes) ? $notes : [],
+                is_array($commitments) ? $commitments : [],
+            );
+
+            try {
+                $synthesis = OneOnOneAiSynthesis::create([
+                    'conversation_id' => $conversation->id,
+                    'synthesis' => $composed,
+                    'insight_model' => 'context-composer',
+                    'tokens_used' => 0,
+                    'cost_usd' => 0,
+                ]);
+            } catch (\Throwable $e) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Unable to save AI Meeting Synthesis: '.$e->getMessage(),
+                    'llm_error' => $llmError,
+                ], 500);
+            }
         }
 
         $debugPayload = null;
@@ -676,9 +723,27 @@ class OneOnOneController extends Controller
             'meta' => [
                 'insight_model' => $synthesis->insight_model,
                 'generated_at' => $synthesis->created_at?->toIso8601String(),
+                'llm_fallback' => $llmError !== null,
+                'llm_error' => $llmError,
             ],
             'debug_payload' => $debugPayload,
         ]);
+    }
+
+    /**
+     * @return array<string, mixed>
+     */
+    private function decodePrepContent(mixed $content): array
+    {
+        if (is_array($content)) {
+            return $content;
+        }
+        if (! is_string($content) || trim($content) === '') {
+            return [];
+        }
+        $decoded = json_decode($content, true);
+
+        return is_array($decoded) ? $decoded : ['summary' => $content];
     }
 
     public function synthesis(OneOnOneConversation $conversation)
