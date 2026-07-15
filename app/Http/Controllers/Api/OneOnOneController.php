@@ -630,12 +630,19 @@ class OneOnOneController extends Controller
         $this->mergeJsonPayload($request);
 
         $forceRefresh = $request->boolean('force_refresh', true);
-        $synthesis = $ai->meetingSynthesis($conversation, $forceRefresh);
+
+        $contextOverrides = array_filter([
+            'preparations' => $request->input('preparations'),
+            'notes' => $request->input('notes'),
+            'commitments' => $request->input('commitments'),
+        ], static fn ($value) => is_array($value) && $value !== []);
+
+        $synthesis = $ai->meetingSynthesis($conversation, $forceRefresh, $contextOverrides);
 
         if ($synthesis === null) {
             return response()->json([
                 'success' => false,
-                'message' => 'Unable to generate AI Meeting Synthesis. Check LLM configuration and try again.',
+                'message' => $ai->getLastError() ?? 'Unable to generate AI Meeting Synthesis. Check LLM configuration and try again.',
             ], 502);
         }
 
@@ -646,11 +653,20 @@ class OneOnOneController extends Controller
                 'conversation_id' => $conversation->id,
                 'leader_user_id' => $pair?->leader_user_id,
                 'employee_user_id' => $pair?->employee_user_id,
-                'preparations' => $conversation->preparations()->get(['author_role', 'content'])->mapWithKeys(
+                'preparations' => $contextOverrides['preparations'] ?? $conversation->preparations()->get(['author_role', 'content'])->mapWithKeys(
                     fn ($p) => [$p->author_role => $p->content]
-                ),
-                'notes' => $conversation->notes()->get(['section', 'note']),
-                'commitments' => $conversation->commitments()->get(['title', 'description', 'owner_role', 'status']),
+                )->all(),
+                'notes' => $contextOverrides['notes'] ?? $conversation->notes()->get(['section', 'note'])->map(
+                    fn ($n) => ['section' => $n->section, 'note' => $n->note]
+                )->values()->all(),
+                'commitments' => $contextOverrides['commitments'] ?? $conversation->commitments()->get(['title', 'description', 'owner_role', 'status'])->map(
+                    fn ($c) => [
+                        'title' => $c->title,
+                        'description' => $c->description,
+                        'owner_role' => $c->owner_role,
+                        'status' => $c->status,
+                    ]
+                )->values()->all(),
             ];
         }
 

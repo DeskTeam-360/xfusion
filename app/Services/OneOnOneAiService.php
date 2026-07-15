@@ -22,6 +22,13 @@ use Illuminate\Support\Facades\Log;
  */
 class OneOnOneAiService
 {
+    private ?string $lastError = null;
+
+    public function getLastError(): ?string
+    {
+        return $this->lastError;
+    }
+
     public function isConfigured(): bool
     {
         return config('xfusion-llm.api_url') !== '';
@@ -111,9 +118,16 @@ class OneOnOneAiService
      * Uses preparation content (current conversation only) + notes — never
      * forwarded to QBR/ARR/360, which only ever read the synthesis JSON.
      */
-    public function meetingSynthesis(OneOnOneConversation $conversation, bool $forceRefresh = false): ?OneOnOneAiSynthesis
-    {
+    public function meetingSynthesis(
+        OneOnOneConversation $conversation,
+        bool $forceRefresh = false,
+        array $contextOverrides = []
+    ): ?OneOnOneAiSynthesis {
+        $this->lastError = null;
+
         if (! $this->isConfigured()) {
+            $this->lastError = 'XFUSION_LLM_API_URL is not configured.';
+
             return null;
         }
 
@@ -125,13 +139,35 @@ class OneOnOneAiService
         }
 
         $pair = $conversation->oneOnOne;
+        if ($pair === null) {
+            $this->lastError = '1-on-1 pair not found for this conversation.';
 
-        $preparations = $conversation->preparations()
-            ->get(['author_role', 'content'])
-            ->mapWithKeys(fn (OneOnOnePreparation $p) => [$p->author_role => $p->content]);
+            return null;
+        }
 
-        $notes = $conversation->notes()->get(['section', 'note']);
-        $commitments = $conversation->commitments()->get(['title', 'description', 'owner_role', 'status']);
+        $preparations = isset($contextOverrides['preparations']) && is_array($contextOverrides['preparations'])
+            ? $contextOverrides['preparations']
+            : $conversation->preparations()
+                ->get(['author_role', 'content'])
+                ->mapWithKeys(fn (OneOnOnePreparation $p) => [$p->author_role => $p->content])
+                ->all();
+
+        $notes = isset($contextOverrides['notes']) && is_array($contextOverrides['notes'])
+            ? $contextOverrides['notes']
+            : $conversation->notes()->get(['section', 'note'])->map(
+                fn ($n) => ['section' => $n->section, 'note' => $n->note]
+            )->values()->all();
+
+        $commitments = isset($contextOverrides['commitments']) && is_array($contextOverrides['commitments'])
+            ? $contextOverrides['commitments']
+            : $conversation->commitments()->get(['title', 'description', 'owner_role', 'status'])->map(
+                fn ($c) => [
+                    'title' => $c->title,
+                    'description' => $c->description,
+                    'owner_role' => $c->owner_role,
+                    'status' => $c->status,
+                ]
+            )->values()->all();
 
         try {
             $synthesisPrompt = app(WordPressLlmPromptService::class)->getActivePrompt(WordPressLlmPromptService::SLUG_OO_SYNTHESIS);
@@ -151,25 +187,44 @@ class OneOnOneAiService
                 ->throw();
 
             $body = $response->json();
+            $synthesisPayload = $body['synthesis'] ?? $body;
+            if (! is_array($synthesisPayload)) {
+                $this->lastError = 'LLM returned an invalid synthesis payload.';
+
+                return null;
+            }
 
             return OneOnOneAiSynthesis::create([
                 'conversation_id' => $conversation->id,
-                'synthesis' => $body['synthesis'] ?? $body,
+                'synthesis' => $synthesisPayload,
                 'insight_model' => $body['model'] ?? null,
                 'tokens_used' => (int) ($body['tokens_used'] ?? 0),
                 'cost_usd' => (float) ($body['cost_usd'] ?? 0),
             ]);
         } catch (RequestException $e) {
+            $responseBody = $e->response?->json();
+            $detail = is_array($responseBody)
+                ? ($responseBody['detail'] ?? $responseBody['message'] ?? null)
+                : null;
+            if (is_array($detail)) {
+                $detail = json_encode($detail);
+            }
+            $this->lastError = is_string($detail) && $detail !== ''
+                ? $detail
+                : ($e->response?->body() ?: $e->getMessage());
+
             Log::warning('[xfusion-llm] one-on-one meeting-synthesis failed', [
                 'conversation_id' => $conversation->id,
-                'error' => $e->response?->body() ?? $e->getMessage(),
+                'error' => $this->lastError,
             ]);
 
             return null;
         } catch (\Throwable $e) {
+            $this->lastError = $e->getMessage();
+
             Log::warning('[xfusion-llm] one-on-one meeting-synthesis failed', [
                 'conversation_id' => $conversation->id,
-                'error' => $e->getMessage(),
+                'error' => $this->lastError,
             ]);
 
             return null;

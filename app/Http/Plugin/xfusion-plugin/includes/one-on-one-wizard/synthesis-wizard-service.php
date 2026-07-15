@@ -24,14 +24,31 @@ function xfoo_wizard_ajax_generate_synthesis(): void
         wp_send_json_error(['message' => 'conversation_id is required.'], 422);
     }
 
-    $result = xfoo_wizard_fusion_api_request('POST', "/conversations/{$conversationId}/generate-synthesis", [], [
+    $payload = [
         'force_refresh' => true,
         'debug' => true,
-    ]);
+    ];
+
+    $preparations = xfoo_wizard_decode_json_post('preparations');
+    if ($preparations !== []) {
+        $payload['preparations'] = $preparations;
+    }
+
+    $notes = xfoo_wizard_decode_json_post('notes');
+    if ($notes !== []) {
+        $payload['notes'] = $notes;
+    }
+
+    $commitments = xfoo_wizard_decode_json_post('commitments');
+    if ($commitments !== []) {
+        $payload['commitments'] = $commitments;
+    }
+
+    $result = xfoo_wizard_fusion_api_request('POST', "/conversations/{$conversationId}/generate-synthesis", [], $payload);
 
     if (! $result['ok']) {
         $body = is_array($result['body']) ? $result['body'] : [];
-        wp_send_json_error(['message' => $result['error'] ?? ($body['message'] ?? 'Failed to generate AI Meeting Synthesis.')], 200);
+        wp_send_json_error(['message' => $body['message'] ?? $result['error'] ?? 'Failed to generate AI Meeting Synthesis.'], 200);
     }
 
     $body = is_array($result['body']) ? $result['body'] : [];
@@ -250,6 +267,53 @@ var initSynthesisStep = function () {
     xfwRenderSynthesisStep();
 };
 
+var xfwCollectSynthesisNotes = function () {
+    if (typeof collectConversationNotes === 'function') {
+        var values = collectConversationNotes();
+        return Object.keys(values).filter(function (key) {
+            return String(values[key] || '').trim() !== '';
+        }).map(function (key) {
+            return { section: key, note: String(values[key]) };
+        });
+    }
+    var draft = window.xfwDraftCache && window.xfwDraftCache.data ? window.xfwDraftCache.data : {};
+    var conversation = draft.conversation || {};
+    return Object.keys(conversation).filter(function (key) {
+        return String(conversation[key] || '').trim() !== '';
+    }).map(function (key) {
+        return { section: key, note: String(conversation[key]) };
+    });
+};
+
+var xfwCollectSynthesisPreparations = function () {
+    var out = {};
+    if (typeof collectRolePrepValues === 'function') {
+        out.employee = collectRolePrepValues('employee') || {};
+        out.leader = collectRolePrepValues('leader') || {};
+    } else if (window.xfwDraftCache && window.xfwDraftCache.data) {
+        out.employee = window.xfwDraftCache.data.employee || {};
+        out.leader = window.xfwDraftCache.data.leader || {};
+    }
+    return out;
+};
+
+var xfwCollectSynthesisCommitments = function () {
+    if (typeof collectCommitmentRows !== 'function') {
+        return [];
+    }
+    var rows = collectCommitmentRows('employee').concat(collectCommitmentRows('leader'));
+    return rows.filter(function (row) {
+        return String(row.title || '').trim() !== '';
+    }).map(function (row) {
+        return {
+            title: String(row.title || ''),
+            description: String(row.description || ''),
+            owner_role: String(row.owner_role || 'shared'),
+            status: String(row.status || 'open'),
+        };
+    });
+};
+
 var xfwSaveCommitmentsBeforeSynthesis = function () {
     var conversationId = typeof xfwGetActiveConversationId === 'function'
         ? xfwGetActiveConversationId()
@@ -302,19 +366,37 @@ var generateWizardSynthesis = function () {
             statusEl.textContent = 'Generating AI Meeting Synthesis\u2026';
         }
 
-        console.log('[XFW Step 5] generate synthesis request', { conversation_id: cid });
+        var draftPromise = typeof loadWizardDraft === 'function'
+            ? loadWizardDraft(false)
+            : Promise.resolve(window.xfwDraftCache ? window.xfwDraftCache.data : null);
 
-        var body = new URLSearchParams({
-            action: 'xfoo_wizard_generate_synthesis',
-            nonce: window.XFW_WIZARD.nonce,
-            conversation_id: String(cid),
+        return draftPromise.then(function () {
+            var synthesisPayload = {
+                preparations: xfwCollectSynthesisPreparations(),
+                notes: xfwCollectSynthesisNotes(),
+                commitments: xfwCollectSynthesisCommitments(),
+            };
+
+            console.log('[XFW Step 5] generate synthesis request', {
+                conversation_id: cid,
+                payload: synthesisPayload,
+            });
+
+            var body = new URLSearchParams({
+                action: 'xfoo_wizard_generate_synthesis',
+                nonce: window.XFW_WIZARD.nonce,
+                conversation_id: String(cid),
+                preparations: JSON.stringify(synthesisPayload.preparations),
+                notes: JSON.stringify(synthesisPayload.notes),
+                commitments: JSON.stringify(synthesisPayload.commitments),
+            });
+
+            return fetch(window.XFW_WIZARD.ajaxUrl, {
+                method: 'POST',
+                credentials: 'same-origin',
+                body: body,
+            }).then(function (res) { return res.json(); });
         });
-
-        return fetch(window.XFW_WIZARD.ajaxUrl, {
-            method: 'POST',
-            credentials: 'same-origin',
-            body: body,
-        }).then(function (res) { return res.json(); });
     }).then(function (json) {
         btn.disabled = false;
         if (!json || !json.success || !json.data || !json.data.synthesis) {
