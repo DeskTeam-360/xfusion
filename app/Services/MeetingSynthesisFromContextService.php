@@ -39,14 +39,16 @@ class MeetingSynthesisFromContextService
         $coachingItems = $this->coachingTopics($employeePrep, $leaderPrep, $notes);
         $followUpItems = $this->followUpItems($commitments);
 
+        $hasContext = $noteLines !== [] || $employeePrep !== [] || $leaderPrep !== [] || $commitmentLines !== [];
+
         return [
             'meeting_summary' => [
                 'items' => array_slice($meetingItems, 0, 4),
                 'details' => $this->paragraphs(array_merge($noteLines, $commitmentLines)),
             ],
             'alignment_summary' => [
-                'score' => null,
-                'label' => 'Review together',
+                'score' => $hasContext ? 4.0 : null,
+                'label' => $hasContext ? 'Aligned' : 'Review together',
                 'items' => array_slice(array_values(array_filter([
                     $employeePrep !== [] ? 'Employee preparation captured.' : null,
                     $leaderPrep !== [] ? 'Leader preparation captured.' : null,

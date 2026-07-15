@@ -70,6 +70,21 @@ var xfwResetSynthesisCache = function () {
 
 var xfwSynthesisIconBase = 'https://sandbox.xperiencefusion.com/wp-content/uploads/2026/07/';
 
+var xfwSynthesisFollowupIcons = [
+    xfwSynthesisIconBase + 'Checkmark-Circle-Green-Icon_SVG.svg',
+    xfwSynthesisIconBase + 'Two-People-Dark-Blue-Icon_SVG.svg',
+    xfwSynthesisIconBase + 'Document-File-Icon_SVG.svg',
+];
+
+var xfwSynthesisSectionMeta = {
+    meeting_summary: { icon: xfwSynthesisIconBase + 'Clipboard-Checkmark-Blue-Icon.svg', title: 'Meeting Summary\u2122' },
+    alignment_summary: { icon: xfwSynthesisIconBase + 'Arrow-in-Target-Icon-1.svg', title: 'Alignment Summary\u2122' },
+    development_summary: { icon: xfwSynthesisIconBase + 'Arrow-in-Target-Icon-1.svg', title: 'Development Summary\u2122' },
+    commitment_summary: { icon: xfwSynthesisIconBase + 'Clipboard-Checkmark-Icon-1.svg', title: 'Commitment Summary\u2122' },
+    emerging_risks: { icon: xfwSynthesisIconBase + 'Warning-Triangle-Icon-2.svg', title: 'Emerging Risks\u2122' },
+    emerging_opportunities: { icon: xfwSynthesisIconBase + 'Trending-Up-Arrow-Icon-Green-1.svg', title: 'Emerging Opportunities\u2122' },
+};
+
 var xfwSynthesisNormalizeSection = function (raw) {
     if (!raw) {
         return { items: [], details: '' };
@@ -83,87 +98,101 @@ var xfwSynthesisNormalizeSection = function (raw) {
     };
 };
 
-var xfwSynthesisCard = function (iconSrc, title, bodyHtml) {
-    var iconHtml = iconSrc
-        ? '<div class="icon"><img src="' + iconSrc + '" alt="" width="50" height="50"></div>'
+var xfwSynthesisCard = function (sectionKey, bodyHtml) {
+    var meta = xfwSynthesisSectionMeta[sectionKey] || { icon: '', title: sectionKey };
+    var iconHtml = meta.icon
+        ? '<div class="icon"><img src="' + meta.icon + '" alt="" width="50" height="50"></div>'
         : '';
-    return '<div class="xfw-insight-card">' + iconHtml + '<h3>' + title + '</h3>' + bodyHtml + '</div>';
+    return '<div class="xfw-insight-card" data-synthesis-section="' + sectionKey + '">' +
+        iconHtml +
+        '<h3>' + meta.title + '</h3>' +
+        bodyHtml +
+        '<a href="#" class="xfw-link xfw-synthesis-details-link" data-synthesis-section="' + sectionKey + '">View Details &rarr;</a>' +
+        '</div>';
+};
+
+var xfwSynthesisAlignmentBody = function (alignment) {
+    var normalized = xfwSynthesisNormalizeSection(alignment);
+    var alignScore = alignment && alignment.score != null && !isNaN(parseFloat(alignment.score))
+        ? parseFloat(alignment.score)
+        : null;
+    var alignLabel = alignment && alignment.label ? String(alignment.label) : '';
+    var alignPct = alignScore != null ? Math.min(100, Math.max(0, (alignScore / 5) * 100)) : 0;
+    var html = '<p class="xfw-muted">How aligned both participants are on priorities, goals, and expectations.</p>';
+
+    if (alignScore != null) {
+        var scoreText = (Math.round(alignScore * 10) / 10).toFixed(alignScore % 1 === 0 ? 0 : 1);
+        html += '<div style="font-size:1.6rem;font-weight:800;color:var(--green)">' + scoreText +
+            '<span style="font-size:1rem;color:var(--muted);font-weight:400"> / 5</span></div>';
+    }
+
+    if (alignLabel) {
+        html += '<div class="xfw-muted">' + xfwEvidenceEsc(alignLabel) + '</div>';
+    }
+
+    if (alignScore != null) {
+        html += '<div class="xfw-progress-track" style="margin:.5rem 0"><div class="xfw-progress-fill" style="width:' + alignPct + '%"></div></div>';
+    } else if (normalized.items.length) {
+        html += '<ul>' + normalized.items.map(function (i) {
+            return '<li>' + xfwEvidenceEsc(i) + '</li>';
+        }).join('') + '</ul>';
+    }
+
+    return html;
+};
+
+var xfwSynthesisCommitmentBody = function (commitment) {
+    var normalized = xfwSynthesisNormalizeSection(commitment);
+    var employeeCount = commitment && commitment.employee_count != null ? parseInt(commitment.employee_count, 10) : null;
+    var leaderCount = commitment && commitment.leader_count != null ? parseInt(commitment.leader_count, 10) : null;
+    var openCount = commitment && commitment.open_count != null ? parseInt(commitment.open_count, 10) : null;
+
+    if (employeeCount != null || leaderCount != null || openCount != null) {
+        var html = '<ul>';
+        if (employeeCount != null) {
+            html += '<li>Employee Commitments: <b>' + employeeCount + ' active</b></li>';
+        }
+        if (leaderCount != null) {
+            html += '<li>Leader Commitments: <b>' + leaderCount + ' active</b></li>';
+        }
+        if (openCount != null) {
+            html += '<li>Open Commitments: <b>' + openCount + ' total</b></li>';
+        }
+        html += '</ul>';
+        return html;
+    }
+
+    if (normalized.items.length) {
+        return '<ul>' + normalized.items.map(function (i) {
+            return '<li>' + xfwEvidenceEsc(i) + '</li>';
+        }).join('') + '</ul>';
+    }
+
+    return '<ul><li>Employee Commitments: <b>0 active</b></li><li>Leader Commitments: <b>0 active</b></li><li>Open Commitments: <b>0 total</b></li></ul>';
+};
+
+var xfwSynthesisListBody = function (raw, emptyMessage) {
+    var normalized = xfwSynthesisNormalizeSection(raw);
+    var items = normalized.items.length ? normalized.items : [emptyMessage];
+    return '<ul>' + items.map(function (i) {
+        return '<li>' + xfwEvidenceEsc(i) + '</li>';
+    }).join('') + '</ul>';
+};
+
+var xfwSynthesisFollowupBody = function (raw) {
+    var normalized = xfwSynthesisNormalizeSection(raw);
+    var items = normalized.items.length ? normalized.items : ['No follow-up recommendations yet.'];
+    return '<div class="xfw-followup">' + items.map(function (item, index) {
+        var icon = xfwSynthesisFollowupIcons[index % xfwSynthesisFollowupIcons.length];
+        return '<div class="xfw-followup-item"><img src="' + icon + '" alt="" width="50" height="50"> ' +
+            xfwEvidenceEsc(item) + '</div>';
+    }).join('') + '</div>';
 };
 
 var xfwRenderSynthesisPanel = function (synthesis) {
     if (!synthesis || typeof synthesis !== 'object') {
         return '<div class="xfw-banner warn">ℹ️ <span>No AI Meeting Synthesis has been generated yet. Return to Step 5 and click <b>Generate AI Meeting Synthesis™</b>.</span></div>';
     }
-
-    var meeting = xfwSynthesisNormalizeSection(synthesis.meeting_summary);
-    var meetingItems = meeting.items.length
-        ? meeting.items
-        : ['No meeting summary available yet.'];
-    var meetingHtml = '<ul>' + meetingItems.map(function (i) {
-        return '<li>' + xfwEvidenceEsc(i) + '</li>';
-    }).join('') + '</ul>';
-
-    var alignment = synthesis.alignment_summary && typeof synthesis.alignment_summary === 'object'
-        ? synthesis.alignment_summary
-        : {};
-    var alignScore = alignment.score != null && !isNaN(parseFloat(alignment.score))
-        ? parseFloat(alignment.score)
-        : null;
-    var alignLabel = alignment.label ? String(alignment.label) : '';
-    var alignPct = alignScore != null ? Math.min(100, Math.max(0, (alignScore / 5) * 100)) : 0;
-    var alignmentHtml =
-        '<p class="xfw-muted">How aligned both participants are on priorities, goals, and expectations.</p>' +
-        (alignScore != null
-            ? '<div style="font-size:1.6rem;font-weight:800;color:var(--green)">' + alignScore +
-                '<span style="font-size:1rem;color:var(--muted);font-weight:400"> / 5</span></div>'
-            : '') +
-        (alignLabel ? '<div class="xfw-muted">' + xfwEvidenceEsc(alignLabel) + '</div>' : '') +
-        (alignScore != null
-            ? '<div class="xfw-progress-track" style="margin:.5rem 0"><div class="xfw-progress-fill" style="width:' + alignPct + '%"></div></div>'
-            : '');
-
-    var development = xfwSynthesisNormalizeSection(synthesis.development_summary);
-    var devItems = development.items.length ? development.items : ['No development summary yet.'];
-    var developmentHtml = '<ul>' + devItems.map(function (i) {
-        return '<li>' + xfwEvidenceEsc(i) + '</li>';
-    }).join('') + '</ul>';
-
-    var commitment = synthesis.commitment_summary && typeof synthesis.commitment_summary === 'object'
-        ? synthesis.commitment_summary
-        : {};
-    var commitmentNorm = xfwSynthesisNormalizeSection(commitment);
-    var commitmentHtml = '';
-    if (commitment.employee_count != null || commitment.leader_count != null || commitment.open_count != null) {
-        commitmentHtml += '<ul>';
-        if (commitment.employee_count != null) {
-            commitmentHtml += '<li>Employee Commitments: <b>' + xfwEvidenceEsc(String(commitment.employee_count)) + ' active</b></li>';
-        }
-        if (commitment.leader_count != null) {
-            commitmentHtml += '<li>Leader Commitments: <b>' + xfwEvidenceEsc(String(commitment.leader_count)) + ' active</b></li>';
-        }
-        if (commitment.open_count != null) {
-            commitmentHtml += '<li>Open Commitments: <b>' + xfwEvidenceEsc(String(commitment.open_count)) + ' total</b></li>';
-        }
-        commitmentHtml += '</ul>';
-    } else if (commitmentNorm.items.length) {
-        commitmentHtml = '<ul>' + commitmentNorm.items.map(function (i) {
-            return '<li>' + xfwEvidenceEsc(i) + '</li>';
-        }).join('') + '</ul>';
-    } else {
-        commitmentHtml = '<ul><li>No commitment summary yet.</li></ul>';
-    }
-
-    var risks = xfwSynthesisNormalizeSection(synthesis.emerging_risks);
-    var riskItems = risks.items.length ? risks.items : ['No emerging risks identified.'];
-    var risksHtml = '<ul>' + riskItems.map(function (i) {
-        return '<li>' + xfwEvidenceEsc(i) + '</li>';
-    }).join('') + '</ul>';
-
-    var opportunities = xfwSynthesisNormalizeSection(synthesis.emerging_opportunities);
-    var oppItems = opportunities.items.length ? opportunities.items : ['No emerging opportunities identified.'];
-    var opportunitiesHtml = '<ul>' + oppItems.map(function (i) {
-        return '<li>' + xfwEvidenceEsc(i) + '</li>';
-    }).join('') + '</ul>';
 
     var coaching = xfwSynthesisNormalizeSection(synthesis.suggested_coaching_topics);
     var coachingItems = coaching.items.length ? coaching.items : [];
@@ -173,23 +202,17 @@ var xfwRenderSynthesisPanel = function (synthesis) {
         }).join('') + '</div>'
         : '<p class="xfw-muted">No coaching topics suggested yet.</p>';
 
-    var followUp = xfwSynthesisNormalizeSection(synthesis.recommended_follow_up);
-    var followItems = followUp.items.length ? followUp.items : ['No follow-up recommendations yet.'];
-    var followHtml = '<div class="xfw-followup">' + followItems.map(function (item) {
-        return '<div class="xfw-followup-item">' + xfwEvidenceEsc(item) + '</div>';
-    }).join('') + '</div>';
-
     return '<div class="xfw-grid-2" style="margin-bottom:1rem">' +
-        xfwSynthesisCard(xfwSynthesisIconBase + 'Clipboard-Checkmark-Blue-Icon.svg', 'Meeting Summary\u2122', meetingHtml) +
-        xfwSynthesisCard(xfwSynthesisIconBase + 'Arrow-in-Target-Icon-1.svg', 'Alignment Summary\u2122', alignmentHtml) +
+        xfwSynthesisCard('meeting_summary', xfwSynthesisListBody(synthesis.meeting_summary, 'No meeting summary available yet.')) +
+        xfwSynthesisCard('alignment_summary', xfwSynthesisAlignmentBody(synthesis.alignment_summary || {})) +
         '</div>' +
         '<div class="xfw-grid-2" style="margin-bottom:1rem">' +
-        xfwSynthesisCard(xfwSynthesisIconBase + 'Arrow-in-Target-Icon-1.svg', 'Development Summary\u2122', developmentHtml) +
-        xfwSynthesisCard(xfwSynthesisIconBase + 'Clipboard-Checkmark-Icon-1.svg', 'Commitment Summary\u2122', commitmentHtml) +
+        xfwSynthesisCard('development_summary', xfwSynthesisListBody(synthesis.development_summary, 'No development summary yet.')) +
+        xfwSynthesisCard('commitment_summary', xfwSynthesisCommitmentBody(synthesis.commitment_summary || {})) +
         '</div>' +
         '<div class="xfw-grid-2" style="margin-bottom:1rem">' +
-        xfwSynthesisCard(xfwSynthesisIconBase + 'Warning-Triangle-Icon-2.svg', 'Emerging Risks\u2122', risksHtml) +
-        xfwSynthesisCard(xfwSynthesisIconBase + 'Trending-Up-Arrow-Icon-Green-1.svg', 'Emerging Opportunities\u2122', opportunitiesHtml) +
+        xfwSynthesisCard('emerging_risks', xfwSynthesisListBody(synthesis.emerging_risks, 'No emerging risks identified.')) +
+        xfwSynthesisCard('emerging_opportunities', xfwSynthesisListBody(synthesis.emerging_opportunities, 'No emerging opportunities identified.')) +
         '</div>' +
         '<div class="xfw-card" style="margin-bottom:1rem">' +
         '<div class="xfw-commit-title"><img src="' + xfwSynthesisIconBase + 'Orange-Light-Bulb-Icon.svg" alt="" width="50" height="50"><h3>Suggested Coaching Topics\u2122</h3></div>' +
@@ -197,8 +220,106 @@ var xfwRenderSynthesisPanel = function (synthesis) {
         '</div>' +
         '<div class="xfw-card">' +
         '<div class="xfw-commit-title"><img src="' + xfwSynthesisIconBase + 'Calendar-Icon-Teal.svg" alt="" width="50" height="50"><h3>Recommended Follow-up\u2122</h3></div>' +
-        followHtml +
+        xfwSynthesisFollowupBody(synthesis.recommended_follow_up) +
         '</div>';
+};
+
+var xfwEnsureSynthesisModal = function () {
+    if (root.querySelector('#xfw-synthesis-modal')) {
+        return;
+    }
+    var modal = document.createElement('div');
+    modal.id = 'xfw-synthesis-modal';
+    modal.className = 'xfw-modal xfw-hidden';
+    modal.innerHTML =
+        '<div class="xfw-modal-backdrop" data-close-synthesis-modal="1"></div>' +
+        '<div class="xfw-modal-card xfw-card">' +
+        '<h3 id="xfw-synthesis-modal-title" style="margin-top:0"></h3>' +
+        '<div id="xfw-synthesis-modal-body" class="xfw-brief-modal-body"></div>' +
+        '<div style="margin-top:1rem;text-align:right">' +
+        '<button type="button" class="xfw-btn xfw-btn-outline" data-close-synthesis-modal="1">Close</button>' +
+        '</div></div>';
+    root.appendChild(modal);
+};
+
+var xfwSynthesisDetailsText = function (sectionKey, sectionData) {
+    if (!sectionData || typeof sectionData !== 'object') {
+        return 'No additional detail is available for this section yet.';
+    }
+    var normalized = xfwSynthesisNormalizeSection(sectionData);
+    var parts = [];
+
+    if (sectionKey === 'alignment_summary') {
+        if (sectionData.score != null && !isNaN(parseFloat(sectionData.score))) {
+            parts.push('Alignment score: ' + parseFloat(sectionData.score) + ' / 5');
+        }
+        if (sectionData.label) {
+            parts.push('Label: ' + String(sectionData.label));
+        }
+    }
+
+    if (sectionKey === 'commitment_summary') {
+        if (sectionData.employee_count != null) {
+            parts.push('Employee commitments: ' + sectionData.employee_count);
+        }
+        if (sectionData.leader_count != null) {
+            parts.push('Leader commitments: ' + sectionData.leader_count);
+        }
+        if (sectionData.open_count != null) {
+            parts.push('Open commitments: ' + sectionData.open_count);
+        }
+    }
+
+    if (normalized.items.length) {
+        parts.push(normalized.items.join('\n\n'));
+    }
+
+    if (normalized.details) {
+        parts.push(normalized.details);
+    }
+
+    return parts.join('\n\n') || 'No additional detail is available for this section yet.';
+};
+
+var xfwOpenSynthesisDetails = function (sectionKey) {
+    var synthesis = window.xfwSynthesisCache.data;
+    if (!synthesis) {
+        return;
+    }
+    var meta = xfwSynthesisSectionMeta[sectionKey] || { title: 'Details' };
+    var details = xfwSynthesisDetailsText(sectionKey, synthesis[sectionKey]);
+
+    xfwEnsureSynthesisModal();
+    var modal = root.querySelector('#xfw-synthesis-modal');
+    root.querySelector('#xfw-synthesis-modal-title').textContent = meta.title;
+    var bodyHost = root.querySelector('#xfw-synthesis-modal-body');
+    if (typeof xfwFormatBriefDetailsHtml === 'function') {
+        bodyHost.innerHTML = xfwFormatBriefDetailsHtml(details);
+    } else {
+        bodyHost.innerHTML = '<div class="xfw-brief-details-para xfw-evidence-text">' +
+            xfwEvidenceEsc(details).replace(/\n/g, '<br>') + '</div>';
+    }
+    modal.classList.remove('xfw-hidden');
+};
+
+var xfwCloseSynthesisModal = function () {
+    var modal = root.querySelector('#xfw-synthesis-modal');
+    if (modal) {
+        modal.classList.add('xfw-hidden');
+    }
+};
+
+var xfwBindSynthesisDetailsLinks = function () {
+    var main = root.querySelector('#xfw-main');
+    if (!main) {
+        return;
+    }
+    main.querySelectorAll('.xfw-synthesis-details-link').forEach(function (link) {
+        link.addEventListener('click', function (e) {
+            e.preventDefault();
+            xfwOpenSynthesisDetails(link.getAttribute('data-synthesis-section') || '');
+        });
+    });
 };
 
 var loadWizardSynthesis = function (force) {
@@ -260,11 +381,22 @@ var xfwRenderSynthesisStep = function () {
     host.innerHTML = '<p class="xfw-muted">Loading AI Meeting Synthesis\u2026</p>';
     loadWizardSynthesis(true).then(function (synthesis) {
         host.innerHTML = xfwRenderSynthesisPanel(synthesis);
+        xfwBindSynthesisDetailsLinks();
     });
 };
 
 var initSynthesisStep = function () {
+    xfwEnsureSynthesisModal();
     xfwRenderSynthesisStep();
+
+    if (!root.dataset.synthesisModalBound) {
+        root.dataset.synthesisModalBound = '1';
+        root.addEventListener('click', function (e) {
+            if (e.target && e.target.getAttribute && e.target.getAttribute('data-close-synthesis-modal') === '1') {
+                xfwCloseSynthesisModal();
+            }
+        });
+    }
 };
 
 var xfwCollectSynthesisNotes = function () {
@@ -423,6 +555,10 @@ var generateWizardSynthesis = function () {
         }
         if (json.data.debug_payload) {
             console.log('[XFW Step 5] synthesis payload → LLM (from server)', json.data.debug_payload);
+        }
+
+        if (typeof STEPS !== 'undefined' && STEPS[current] && STEPS[current].key === 'synthesis') {
+            xfwRenderSynthesisStep();
         }
 
         if (statusEl) {
