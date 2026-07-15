@@ -260,14 +260,18 @@ var xfwSynthesisDetailsText = function (sectionKey, sectionData) {
 
     if (sectionKey === 'commitment_summary') {
         if (sectionData.employee_count != null) {
-            parts.push('Employee commitments: ' + sectionData.employee_count);
+            parts.push('Employee Commitments: ' + sectionData.employee_count + ' active');
         }
         if (sectionData.leader_count != null) {
-            parts.push('Leader commitments: ' + sectionData.leader_count);
+            parts.push('Leader Commitments: ' + sectionData.leader_count + ' active');
         }
         if (sectionData.open_count != null) {
-            parts.push('Open commitments: ' + sectionData.open_count);
+            parts.push('Open Commitments: ' + sectionData.open_count + ' total');
         }
+        if (normalized.details) {
+            return parts.join('\n\n') + (parts.length ? '\n\n' : '') + normalized.details;
+        }
+        return parts.join('\n\n') || 'No additional detail is available for this section yet.';
     }
 
     if (normalized.items.length) {
@@ -442,6 +446,7 @@ var xfwCollectSynthesisCommitments = function () {
             description: String(row.description || ''),
             owner_role: String(row.owner_role || 'shared'),
             status: String(row.status || 'open'),
+            id: row.id ? parseInt(row.id, 10) : 0,
         };
     });
 };

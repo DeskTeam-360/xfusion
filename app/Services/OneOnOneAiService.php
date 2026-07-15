@@ -196,6 +196,12 @@ class OneOnOneAiService
                 return null;
             }
 
+            $synthesisPayload['commitment_summary'] = app(SynthesisCommitmentSummaryNormalizer::class)
+                ->fromCommitments(
+                    $commitments,
+                    is_array($synthesisPayload['commitment_summary'] ?? null) ? $synthesisPayload['commitment_summary'] : []
+                );
+
             return OneOnOneAiSynthesis::create([
                 'conversation_id' => $conversation->id,
                 'synthesis' => $synthesisPayload,

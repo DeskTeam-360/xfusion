@@ -20,9 +20,6 @@ class MeetingSynthesisFromContextService
         $leaderPrep = is_array($preparations['leader'] ?? null) ? $preparations['leader'] : [];
         $noteLines = $this->noteLines($notes);
         $commitmentLines = $this->commitmentLines($commitments);
-        $employeeCount = $this->countByRole($commitments, 'employee');
-        $leaderCount = $this->countByRole($commitments, 'leader');
-        $openCount = $this->countOpen($commitments);
 
         $meetingItems = array_values(array_filter(array_merge(
             $noteLines !== [] ? ['Conversation notes captured across '.count($notes).' section(s).'] : [],
@@ -60,15 +57,8 @@ class MeetingSynthesisFromContextService
                 'items' => array_slice($developmentItems, 0, 4),
                 'details' => $this->paragraphs($developmentItems),
             ],
-            'commitment_summary' => [
-                'items' => array_slice($commitmentLines, 0, 8),
-                'details' => $commitmentLines !== []
-                    ? implode("\n\n", $commitmentLines)
-                    : 'No commitments were saved before synthesis generation.',
-                'employee_count' => $employeeCount,
-                'leader_count' => $leaderCount,
-                'open_count' => $openCount,
-            ],
+            'commitment_summary' => app(SynthesisCommitmentSummaryNormalizer::class)
+                ->fromCommitments($commitments),
             'emerging_risks' => [
                 'items' => array_slice($riskItems, 0, 4),
                 'details' => $this->paragraphs($riskItems),
@@ -322,31 +312,6 @@ class MeetingSynthesisFromContextService
         }
 
         return $items;
-    }
-
-    /**
-     * @param  list<array<string, mixed>>  $commitments
-     */
-    private function countByRole(array $commitments, string $role): int
-    {
-        return count(array_filter($commitments, static function ($row) use ($role) {
-            return is_array($row) && ($row['owner_role'] ?? '') === $role;
-        }));
-    }
-
-    /**
-     * @param  list<array<string, mixed>>  $commitments
-     */
-    private function countOpen(array $commitments): int
-    {
-        return count(array_filter($commitments, static function ($row) {
-            if (! is_array($row)) {
-                return false;
-            }
-            $status = (string) ($row['status'] ?? 'open');
-
-            return $status !== 'done';
-        }));
     }
 
     /**
