@@ -19,7 +19,7 @@ evidence: function () {
         [iconBase + 'Dot-and-List-Icon-Purple-1.svg', 'Previous Commitments', 'Open commitments, progress updates, and completion history.', 'commitments', 'live'],
         [iconBase + 'Profile-Avatar-Icon-1.svg', 'Individual Insights\u2122', 'Behavioral Driver trends, AI insights, and development themes.', 'individual_insights', 'live'],
         [iconBase + 'Checkmark-on-Clipboard-Icon-1.svg', 'Activities', 'Recent learning activities and engagement.', 'activities', 'live'],
-        [iconBase + 'Bar-Chart-Icon-1.svg', 'Self-Assessments', 'Recent self-assessments and behavioral metrics.', 'self_assessments', 'dummy'],
+        [iconBase + 'Bar-Chart-Icon-1.svg', 'Self-Assessments', 'Alignment, Accountability, Communication, Leadership, and Execution scores.', 'self_assessments', 'live'],
         [iconBase + 'Wrench-Icon-1.svg', 'Development Tools', 'Tools completed and insights generated.', 'development_tools', 'live'],
         [iconBase + 'Trending-Arrow-Icon-1.svg', 'Behavioral Driver Trends', 'Current trends across the 5 FUSION Behavioral Drivers\u2122.', 'behavioral_drivers', 'live'],
         [iconBase + 'Brain-Icon-1.svg', 'AI Insight Trends', 'AI-generated insights and observed patterns over time.', 'ai_insight', 'live'],

@@ -51,6 +51,18 @@ function xfoo_wizard_behavioral_driver_labels(): array
     ];
 }
 
+/** @return array<string, string> */
+function xfoo_wizard_self_assessment_labels(): array
+{
+    return [
+        'alignment' => 'Alignment',
+        'accountability' => 'Accountability',
+        'communication' => 'Communication',
+        'leadership' => 'Leadership',
+        'execution' => 'Execution',
+    ];
+}
+
 /**
  * Latest unified evaluation metadata for an employee.
  *
@@ -170,19 +182,19 @@ function xfoo_wizard_evidence_recent_submissions(int $userId, bool $tools, int $
 }
 
 /**
- * Behavioral driver scores (numeric only, no gauge).
+ * Course scoring group averages for a fixed label map (behavioral drivers or self-assessments).
  *
+ * @param  array<string, string>  $labels
  * @return list<array{slug: string, title: string, average: float|null}>
  */
-function xfoo_wizard_evidence_behavioral_drivers(int $userId): array
+function xfoo_wizard_evidence_scoring_groups_for_user(int $userId, array $labels): array
 {
     global $wpdb;
 
-    if ($userId < 1 || ! function_exists('xfusion_csg_group_score_stats') || ! function_exists('xfusion_cor_unified_category_key')) {
+    if ($userId < 1 || $labels === [] || ! function_exists('xfusion_csg_group_score_stats') || ! function_exists('xfusion_cor_unified_category_key')) {
         return [];
     }
 
-    $labels = xfoo_wizard_behavioral_driver_labels();
     $groups = $wpdb->get_results(
         "SELECT id, title FROM {$wpdb->prefix}course_scoring_groups ORDER BY id ASC",
         ARRAY_A
@@ -221,6 +233,26 @@ function xfoo_wizard_evidence_behavioral_drivers(int $userId): array
 }
 
 /**
+ * FUSION Behavioral Driver scores (5 drivers).
+ *
+ * @return list<array{slug: string, title: string, average: float|null}>
+ */
+function xfoo_wizard_evidence_behavioral_drivers(int $userId): array
+{
+    return xfoo_wizard_evidence_scoring_groups_for_user($userId, xfoo_wizard_behavioral_driver_labels());
+}
+
+/**
+ * Self-assessment dimension scores (Alignment, Accountability, Communication, Leadership, Execution).
+ *
+ * @return list<array{slug: string, title: string, average: float|null}>
+ */
+function xfoo_wizard_evidence_self_assessments(int $userId): array
+{
+    return xfoo_wizard_evidence_scoring_groups_for_user($userId, xfoo_wizard_self_assessment_labels());
+}
+
+/**
  * Employee-centric evidence blocks (insights, activities, scores, tools).
  *
  * @return array<string, mixed>
@@ -232,6 +264,7 @@ function xfoo_wizard_evidence_employee_blocks(int $employeeId): array
             'individual_insights' => ['recommended_focus_area' => '', 'evaluated_at' => ''],
             'activities' => [],
             'behavioral_drivers' => [],
+            'self_assessments' => [],
             'ai_insight' => ['key_observation' => '', 'evaluated_at' => ''],
             'development_tools' => [],
         ];
@@ -241,6 +274,7 @@ function xfoo_wizard_evidence_employee_blocks(int $employeeId): array
         'individual_insights' => xfoo_wizard_evidence_individual_insights($employeeId),
         'activities' => xfoo_wizard_evidence_recent_submissions($employeeId, false, 3),
         'behavioral_drivers' => xfoo_wizard_evidence_behavioral_drivers($employeeId),
+        'self_assessments' => xfoo_wizard_evidence_self_assessments($employeeId),
         'ai_insight' => xfoo_wizard_evidence_ai_insight($employeeId),
         'development_tools' => xfoo_wizard_evidence_recent_submissions($employeeId, true, 3),
     ];
@@ -526,7 +560,7 @@ function xfoo_wizard_evidence_bundle_for_brief(int $conversationId): array
             ],
             'self_assessments' => [
                 'title' => 'Self-Assessments',
-                'data' => $placeholder('Self-Assessments'),
+                'data' => ['scores' => is_array($data['self_assessments'] ?? null) ? $data['self_assessments'] : []],
             ],
             'development_tools' => [
                 'title' => 'Development Tools',
@@ -690,6 +724,7 @@ var xfwEvidenceEmptyDefaults = function () {
         individual_insights: { recommended_focus_area: '', evaluated_at: '' },
         activities: [],
         behavioral_drivers: [],
+        self_assessments: [],
         ai_insight: { key_observation: '', evaluated_at: '' },
         development_tools: [],
     };
@@ -705,13 +740,13 @@ var xfwEvidenceEmptyMessages = {
     individual_insights: 'No Recommended Focus Area is available yet.',
     activities: 'No recent activity submissions are available yet.',
     behavioral_drivers: 'No behavioral driver scores are available yet.',
+    self_assessments: 'No self-assessment scores are available yet.',
     ai_insight: 'No Overall Insight is available yet.',
     development_tools: 'No development tool submissions are available yet.',
     default: 'No data is available for this section yet.',
 };
 
 var xfwEvidenceDummyMessages = {
-    self_assessments: 'Recent self-assessments and behavioral metrics will appear here once this evidence source is connected.',
     qbr_priorities: 'Current Quarterly Business Review\u2122 priorities and progress will appear here once this evidence source is connected.',
     arp_priorities: 'Annual Readiness Plan\u2122 priorities and strategic context will appear here once this evidence source is connected.',
     previous_360: 'Most recent 360 Review\u2122 feedback themes and insights will appear here once this evidence source is connected.',
@@ -856,9 +891,9 @@ var xfwRenderDevelopmentToolsPanel = function (rows) {
     return xfwRenderSubmissionLinks(rows, xfwEvidenceEmptyMessages.development_tools);
 };
 
-var xfwRenderBehavioralDriversPanel = function (rows) {
+var xfwRenderBehavioralDriversPanel = function (rows, emptyMessage) {
     if (!rows || !rows.length) {
-        return xfwEvidenceNoData(xfwEvidenceEmptyMessages.behavioral_drivers);
+        return xfwEvidenceNoData(emptyMessage || xfwEvidenceEmptyMessages.behavioral_drivers);
     }
     return '<div class="xfw-evidence-driver-grid">' + rows.map(function (row) {
         var score = row.average !== null && row.average !== undefined
@@ -902,7 +937,10 @@ var xfwRenderEvidencePanel = function (key, data) {
         return xfwRenderActivitiesPanel(data.activities || []);
     }
     if (key === 'behavioral_drivers') {
-        return xfwRenderBehavioralDriversPanel(data.behavioral_drivers || []);
+        return xfwRenderBehavioralDriversPanel(data.behavioral_drivers || [], xfwEvidenceEmptyMessages.behavioral_drivers);
+    }
+    if (key === 'self_assessments') {
+        return xfwRenderBehavioralDriversPanel(data.self_assessments || [], xfwEvidenceEmptyMessages.self_assessments);
     }
     if (key === 'ai_insight') {
         return xfwRenderAiInsightPanel(data.ai_insight || {});

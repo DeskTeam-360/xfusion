@@ -110,6 +110,11 @@ class MeetingBriefFromEvidenceService
             $items[] = "{$toolCount} recent development tool submission(s) recorded.";
         }
 
+        $selfScores = is_array($self['scores'] ?? null) ? $self['scores'] : [];
+        if ($selfScores !== []) {
+            $items[] = count($selfScores).' self-assessment dimension score(s) available.';
+        }
+
         if ($items === []) {
             $items[] = 'Development evidence is limited — explore growth themes directly in the conversation.';
         }
@@ -117,9 +122,9 @@ class MeetingBriefFromEvidenceService
         $details = $this->paragraphs([
             $focus !== '' ? "Recommended Focus Area: {$focus}" : null,
             $this->behavioralDriversDetails($drivers),
+            $this->selfAssessmentsDetails($self),
             $this->listSectionDetails('Recent Activities', $activities),
             $this->listSectionDetails('Development Tools', $tools),
-            $this->placeholderNote($self, 'Self-Assessments'),
             $this->placeholderNote($review360, 'Previous 360 Review™'),
         ]);
 
@@ -195,8 +200,8 @@ class MeetingBriefFromEvidenceService
 
         $details = $this->paragraphs([
             $this->behavioralDriversDetails($drivers),
+            $this->selfAssessmentsDetails($self),
             $observation !== '' ? "Overall Insight: {$observation}" : null,
-            $this->placeholderNote($self, 'Self-Assessments'),
         ]);
 
         return ['items' => array_slice($items, 0, 4), 'details' => $details];
@@ -533,6 +538,29 @@ class MeetingBriefFromEvidenceService
         }
 
         $lines = ['Behavioral Driver scores (1–5):'];
+        foreach ($scores as $row) {
+            if (! is_array($row)) {
+                continue;
+            }
+            $title = (string) ($row['title'] ?? '');
+            $avg = $row['average'] ?? null;
+            $lines[] = $avg !== null ? "- {$title}: {$avg}" : "- {$title}: no score";
+        }
+
+        return implode("\n", $lines);
+    }
+
+    /**
+     * @param  array<string, mixed>  $selfAssessments
+     */
+    private function selfAssessmentsDetails(array $selfAssessments): ?string
+    {
+        $scores = is_array($selfAssessments['scores'] ?? null) ? $selfAssessments['scores'] : [];
+        if ($scores === []) {
+            return null;
+        }
+
+        $lines = ['Self-assessment scores (1–5):'];
         foreach ($scores as $row) {
             if (! is_array($row)) {
                 continue;
