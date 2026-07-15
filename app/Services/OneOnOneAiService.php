@@ -6,6 +6,7 @@ use App\Models\OneOnOneAiBrief;
 use App\Models\OneOnOneAiSynthesis;
 use App\Models\OneOnOneConversation;
 use App\Models\OneOnOnePreparation;
+use App\Services\WordPressLlmPromptService;
 use Illuminate\Http\Client\RequestException;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Log;
@@ -65,14 +66,19 @@ class OneOnOneAiService
             ->pluck('synthesis');
 
         try {
+            $briefPrompt = app(WordPressLlmPromptService::class)->getActivePrompt(WordPressLlmPromptService::SLUG_OO_BRIEF);
+
             $response = $this->client()
-                ->post('/api/v1/one-on-one/meeting-brief', [
+                ->post('/api/v1/one-on-one/meeting-brief', array_filter([
                     'conversation_id' => $conversation->id,
                     'leader_user_id' => $pair->leader_user_id,
                     'employee_user_id' => $pair->employee_user_id,
                     'prior_syntheses' => $priorSyntheses->values()->all(),
                     'evidence_context' => $evidenceContext,
-                ])
+                    'system_prompt' => $briefPrompt['content'] ?? null,
+                    'prompt_version_id' => $briefPrompt['id'] ?? null,
+                    'prompt_version_label' => $briefPrompt['label'] ?? null,
+                ], static fn ($v) => $v !== null && $v !== ''))
                 ->throw();
 
             $body = $response->json();
@@ -123,15 +129,20 @@ class OneOnOneAiService
         $commitments = $conversation->commitments()->get(['title', 'description', 'owner_role', 'status']);
 
         try {
+            $synthesisPrompt = app(WordPressLlmPromptService::class)->getActivePrompt(WordPressLlmPromptService::SLUG_OO_SYNTHESIS);
+
             $response = $this->client()
-                ->post('/api/v1/one-on-one/meeting-synthesis', [
+                ->post('/api/v1/one-on-one/meeting-synthesis', array_filter([
                     'conversation_id' => $conversation->id,
                     'leader_user_id' => $pair->leader_user_id,
                     'employee_user_id' => $pair->employee_user_id,
                     'preparations' => $preparations,
                     'notes' => $notes,
                     'commitments' => $commitments,
-                ])
+                    'system_prompt' => $synthesisPrompt['content'] ?? null,
+                    'prompt_version_id' => $synthesisPrompt['id'] ?? null,
+                    'prompt_version_label' => $synthesisPrompt['label'] ?? null,
+                ], static fn ($v) => $v !== null && $v !== ''))
                 ->throw();
 
             $body = $response->json();

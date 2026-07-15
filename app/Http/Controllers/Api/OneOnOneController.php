@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
+use App\Models\CompanyEmployee;
 use App\Models\CourseScoringGroup;
 use App\Models\OneOnOne;
 use App\Models\OneOnOneAiBrief;
@@ -10,10 +11,12 @@ use App\Models\OneOnOneCommitment;
 use App\Models\OneOnOneConversation;
 use App\Models\OneOnOneNote;
 use App\Models\OneOnOnePreparation;
+use App\Models\User;
 use App\Models\WpGfEntry;
 use App\Models\WpGfEntryMeta;
 use App\Services\MeetingBriefFromEvidenceService;
 use App\Services\OneOnOneAiService;
+use App\Services\OneOnOneCompanyGroupSyncService;
 use Illuminate\Http\Request;
 
 /**
@@ -24,6 +27,10 @@ use Illuminate\Http\Request;
  */
 class OneOnOneController extends Controller
 {
+    public function __construct(
+        private readonly OneOnOneCompanyGroupSyncService $companyGroupSync,
+    ) {}
+
     /**
      * Convert empty strings to null so nullable validation rules accept cleared fields.
      *
@@ -89,13 +96,15 @@ class OneOnOneController extends Controller
         return $data;
     }
 
-    /** Pairs where the given user is leader or employee. */
+    /** Pairs derived from Company Group membership (leader ↔ member). */
     public function pairsForUser(Request $request)
     {
         $userId = (int) $request->query('user_id');
         if ($userId < 1) {
             return response()->json(['success' => false, 'message' => 'user_id is required'], 422);
         }
+
+        $this->companyGroupSync->syncAllFromCompanyGroups();
 
         $pairs = OneOnOne::query()
             ->where('status', OneOnOne::STATUS_ACTIVE)
@@ -114,6 +123,164 @@ class OneOnOneController extends Controller
                 'employee' => $p->employee ? ['id' => $p->employee->ID, 'name' => $p->employee->display_name ?: $p->employee->user_nicename] : null,
             ]),
         ]);
+    }
+
+    /**
+     * @return list<int>
+     */
+    private function teamMemberUserIdsForLeader(int $leaderUserId): array
+    {
+        return $this->companyGroupSync->teamMemberUserIdsForLeader($leaderUserId);
+    }
+
+    private function canLeaderScheduleFor(int $leaderUserId, int $employeeUserId): bool
+    {
+        if ($leaderUserId < 1 || $employeeUserId < 1 || $leaderUserId === $employeeUserId) {
+            return false;
+        }
+
+        return in_array($employeeUserId, $this->teamMemberUserIdsForLeader($leaderUserId), true);
+    }
+
+    private function resolveCompanyIdForPair(int $leaderUserId, int $employeeUserId): int
+    {
+        $existing = OneOnOne::query()
+            ->where('leader_user_id', $leaderUserId)
+            ->where('employee_user_id', $employeeUserId)
+            ->value('company_id');
+
+        if ($existing) {
+            return (int) $existing;
+        }
+
+        $leaderCompanies = CompanyEmployee::query()
+            ->where('user_id', $leaderUserId)
+            ->pluck('company_id')
+            ->map(fn ($id) => (int) $id);
+
+        if ($leaderCompanies->isNotEmpty()) {
+            $shared = CompanyEmployee::query()
+                ->where('user_id', $employeeUserId)
+                ->whereIn('company_id', $leaderCompanies)
+                ->value('company_id');
+
+            if ($shared) {
+                return (int) $shared;
+            }
+
+            return (int) $leaderCompanies->first();
+        }
+
+        return 0;
+    }
+
+    /** Leader roster from Company Groups — members with synced pair ids. */
+    public function leaderTeam(Request $request)
+    {
+        $leaderUserId = (int) $request->query('user_id');
+        if ($leaderUserId < 1) {
+            return response()->json(['success' => false, 'message' => 'user_id is required'], 422);
+        }
+
+        $this->companyGroupSync->syncAllFromCompanyGroups();
+
+        $memberIds = $this->teamMemberUserIdsForLeader($leaderUserId);
+        if ($memberIds === []) {
+            return response()->json(['success' => true, 'data' => ['is_leader' => false, 'leader' => null, 'members' => []]]);
+        }
+
+        $leader = User::query()->find($leaderUserId, ['ID', 'display_name', 'user_nicename']);
+        $employees = User::query()
+            ->whereIn('ID', $memberIds)
+            ->orderBy('display_name')
+            ->get(['ID', 'display_name', 'user_nicename']);
+
+        $pairs = OneOnOne::query()
+            ->where('leader_user_id', $leaderUserId)
+            ->whereIn('employee_user_id', $memberIds)
+            ->where('status', OneOnOne::STATUS_ACTIVE)
+            ->get(['id', 'employee_user_id'])
+            ->keyBy('employee_user_id');
+
+        return response()->json([
+            'success' => true,
+            'data' => [
+                'is_leader' => true,
+                'leader' => $leader ? [
+                    'id' => (int) $leader->ID,
+                    'name' => $leader->display_name ?: $leader->user_nicename,
+                ] : null,
+                'members' => $employees->map(fn (User $u) => [
+                    'employee' => [
+                        'id' => (int) $u->ID,
+                        'name' => $u->display_name ?: $u->user_nicename,
+                    ],
+                    'pair_id' => isset($pairs[$u->ID]) ? (int) $pairs[$u->ID]->id : null,
+                ])->values(),
+            ],
+        ]);
+    }
+
+    /** Schedule a meeting for a team member — creates the pair automatically when missing. */
+    public function scheduleForEmployee(Request $request)
+    {
+        $data = $request->validate([
+            'leader_user_id' => 'required|integer|min:1',
+            'employee_user_id' => 'required|integer|min:1|different:leader_user_id',
+            'scheduled_at' => 'required|date',
+            'meeting_link' => 'nullable|url|max:500',
+        ]);
+
+        $leaderUserId = (int) $data['leader_user_id'];
+        $employeeUserId = (int) $data['employee_user_id'];
+
+        if (! $this->canLeaderScheduleFor($leaderUserId, $employeeUserId)) {
+            return response()->json(['success' => false, 'message' => 'Not allowed to schedule for this team member.'], 403);
+        }
+
+        $this->companyGroupSync->syncAllFromCompanyGroups();
+
+        $companyId = $this->resolveCompanyIdForPair($leaderUserId, $employeeUserId);
+        if ($companyId < 1) {
+            return response()->json(['success' => false, 'message' => 'Could not resolve company for this pairing.'], 422);
+        }
+
+        $pair = OneOnOne::query()->firstOrCreate(
+            [
+                'leader_user_id' => $leaderUserId,
+                'employee_user_id' => $employeeUserId,
+            ],
+            [
+                'company_id' => $companyId,
+                'status' => OneOnOne::STATUS_ACTIVE,
+            ]
+        );
+
+        if ($pair->status !== OneOnOne::STATUS_ACTIVE) {
+            $pair->update(['status' => OneOnOne::STATUS_ACTIVE, 'company_id' => $companyId]);
+        }
+
+        $conversation = $pair->conversations()->create([
+            'scheduled_at' => $data['scheduled_at'],
+            'meeting_link' => $data['meeting_link'] ?? null,
+            'status' => OneOnOneConversation::STATUS_SCHEDULED,
+        ]);
+
+        $leader = User::query()->find($leaderUserId, ['ID', 'display_name', 'user_nicename']);
+        $employee = User::query()->find($employeeUserId, ['ID', 'display_name', 'user_nicename']);
+
+        return response()->json([
+            'success' => true,
+            'data' => [
+                'id' => $conversation->id,
+                'pair_id' => $pair->id,
+                'scheduled_at' => $conversation->scheduled_at,
+                'meeting_link' => $conversation->meeting_link,
+                'status' => $conversation->status,
+                'leader' => $leader ? ['id' => (int) $leader->ID, 'name' => $leader->display_name ?: $leader->user_nicename] : null,
+                'employee' => $employee ? ['id' => (int) $employee->ID, 'name' => $employee->display_name ?: $employee->user_nicename] : null,
+            ],
+        ], 201);
     }
 
     /**

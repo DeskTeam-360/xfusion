@@ -186,33 +186,54 @@ function xfusion_llm_insight_cooldown_enabled(): bool
  */
 function xfusion_llm_prompt_versions(): array
 {
-    $raw = get_option(XFUSION_LLM_PROMPT_VERSIONS_OPTION, []);
-    if (! is_array($raw)) {
+    if (! function_exists('xfusion_llm_get_active_cor_unified_prompt')) {
         return [];
     }
 
-    $defaultUser = xfusion_llm_default_user_prompt_template();
-    $out = [];
-    foreach ($raw as $row) {
-        if (! is_array($row)) {
-            continue;
-        }
-        $id = trim((string) ($row['id'] ?? ''));
-        $content = trim((string) ($row['content'] ?? ''));
-        if ($id === '' || $content === '') {
-            continue;
-        }
-        $userTemplate = trim((string) ($row['user_template'] ?? ''));
-        $out[] = [
-            'id' => $id,
-            'label' => trim((string) ($row['label'] ?? $id)),
-            'content' => $content,
-            'user_template' => $userTemplate !== '' ? $userTemplate : $defaultUser,
-            'created_at' => (string) ($row['created_at'] ?? ''),
-        ];
+    $active = xfusion_llm_get_active_cor_unified_prompt();
+    if ($active === null) {
+        return [];
     }
 
-    return $out;
+    return [[
+        'id' => (string) ($active['id'] ?? ''),
+        'label' => (string) ($active['label'] ?? ''),
+        'content' => (string) ($active['content'] ?? ''),
+        'user_template' => (string) ($active['user_template'] ?? xfusion_llm_default_user_prompt_template()),
+        'created_at' => (string) ($active['created_at'] ?? ''),
+    ]];
+}
+
+/**
+ * @return array{id: string, label: string, content: string, user_template: string, created_at: string}|null
+ */
+function xfusion_llm_get_prompt_version(string $id): ?array
+{
+    foreach (['coach' => XFUSION_LLM_PROMPT_SLUG_COR_COACH, 'user' => XFUSION_LLM_PROMPT_SLUG_COR_USER] as $suffix => $slug) {
+        foreach (xfusion_llm_prompt_versions_for_slug($slug) as $version) {
+            if ($version['id'] === $id || $version['id'] === $id . '_' . $suffix) {
+                return xfusion_llm_get_active_cor_unified_prompt();
+            }
+        }
+    }
+
+    return null;
+}
+
+/**
+ * Active coaching prompt for unified insight generation.
+ *
+ * @return array{id: string, label: string, content: string, user_template: string, created_at: string}|null
+ */
+function xfusion_llm_get_active_prompt(): ?array
+{
+    if (function_exists('xfusion_llm_prompt_maybe_seed_cor_unified')) {
+        xfusion_llm_prompt_maybe_seed_cor_unified();
+    }
+
+    return function_exists('xfusion_llm_get_active_cor_unified_prompt')
+        ? xfusion_llm_get_active_cor_unified_prompt()
+        : null;
 }
 
 function xfusion_llm_default_user_prompt_template(): string
@@ -249,72 +270,6 @@ Return ONLY raw JSON with keys cor_organization_capabilities, performance ({cate
 PROMPT;
 }
 
-function xfusion_llm_maybe_seed_prompt_versions(): void
-{
-    if (xfusion_llm_prompt_versions() !== []) {
-        return;
-    }
-
-    $defaultPath = defined('XFUSION_PLUGIN_DIR')
-        ? dirname(XFUSION_PLUGIN_DIR, 4) . '/AI-PROMPT.md'
-        : dirname(__DIR__, 5) . '/AI-PROMPT.md';
-    $content = '';
-    if (is_readable($defaultPath)) {
-        $content = trim((string) file_get_contents($defaultPath));
-    }
-    if ($content === '') {
-        $content = 'You are a Human Performance Coach operating within the FUSION framework.';
-    }
-
-    $id = 'pv_seed_' . gmdate('Ymd');
-    $versions = [[
-        'id' => $id,
-        'label' => __('Seed (AI-PROMPT.md)', 'xfusion'),
-        'content' => $content,
-        'user_template' => xfusion_llm_default_user_prompt_template(),
-        'created_at' => gmdate('c'),
-    ]];
-
-    update_option(XFUSION_LLM_PROMPT_VERSIONS_OPTION, $versions, false);
-    update_option(XFUSION_LLM_ACTIVE_PROMPT_ID_OPTION, $id, false);
-}
-
-/**
- * @return array{id: string, label: string, content: string, user_template: string, created_at: string}|null
- */
-function xfusion_llm_get_prompt_version(string $id): ?array
-{
-    foreach (xfusion_llm_prompt_versions() as $version) {
-        if ($version['id'] === $id) {
-            return $version;
-        }
-    }
-
-    return null;
-}
-
-/**
- * Active coaching prompt for unified insight generation.
- *
- * @return array{id: string, label: string, content: string, user_template: string, created_at: string}|null
- */
-function xfusion_llm_get_active_prompt(): ?array
-{
-    xfusion_llm_maybe_seed_prompt_versions();
-
-    $activeId = (string) get_option(XFUSION_LLM_ACTIVE_PROMPT_ID_OPTION, '');
-    if ($activeId !== '') {
-        $found = xfusion_llm_get_prompt_version($activeId);
-        if ($found !== null) {
-            return $found;
-        }
-    }
-
-    $versions = xfusion_llm_prompt_versions();
-
-    return $versions[0] ?? null;
-}
-
 /**
  * Generation config sent to evaluate-unified.
  *
@@ -322,19 +277,18 @@ function xfusion_llm_get_active_prompt(): ?array
  */
 function xfusion_llm_insight_generation_config(): array
 {
-    $prompt = xfusion_llm_get_active_prompt();
+    $prompt = xfusion_llm_get_active_prompt() ?? [];
 
     return [
         'model' => xfusion_llm_insight_model(),
-        'coach_prompt' => $prompt['content'] ?? '',
-        'user_prompt_template' => $prompt['user_template'] ?? xfusion_llm_default_user_prompt_template(),
-        'prompt_version_id' => $prompt['id'] ?? '',
-        'prompt_version_label' => $prompt['label'] ?? '',
+        'coach_prompt' => (string) ($prompt['content'] ?? ''),
+        'user_prompt_template' => (string) ($prompt['user_template'] ?? xfusion_llm_default_user_prompt_template()),
+        'prompt_version_id' => (string) ($prompt['id'] ?? ''),
+        'prompt_version_label' => (string) ($prompt['label'] ?? ''),
     ];
 }
 
 add_action('admin_init', 'xfusion_llm_insights_register_settings');
-add_action('admin_init', 'xfusion_llm_insights_handle_prompt_actions');
 
 function xfusion_llm_insights_register_settings(): void
 {
@@ -367,49 +321,23 @@ function xfusion_llm_insights_register_settings(): void
     ]);
 }
 
-function xfusion_llm_insights_handle_prompt_actions(): void
+function xfusion_llm_insights_render_settings_sections(): void
 {
     if (! current_user_can('manage_options')) {
         return;
     }
 
-    if (isset($_POST['xfusion_llm_set_active_prompt'], $_POST['xfusion_llm_active_prompt_choice'])
-        && check_admin_referer('xfusion_llm_prompt_versions')) {
-        $choice = sanitize_text_field(wp_unslash((string) $_POST['xfusion_llm_active_prompt_choice']));
-        if (xfusion_llm_get_prompt_version($choice) !== null) {
-            update_option(XFUSION_LLM_ACTIVE_PROMPT_ID_OPTION, $choice, false);
-        }
-        wp_safe_redirect(add_query_arg(['page' => 'xfusion-llm-settings', 'prompt_updated' => '1'], admin_url('options-general.php')));
-        exit;
-    }
-
-    if (isset($_POST['xfusion_llm_save_prompt_version']) && check_admin_referer('xfusion_llm_prompt_versions')) {
-        $label = sanitize_text_field(wp_unslash((string) ($_POST['xfusion_llm_prompt_label'] ?? '')));
-        $content = wp_unslash((string) ($_POST['xfusion_llm_prompt_content'] ?? ''));
-        $content = is_string($content) ? trim($content) : '';
-        $userTemplate = wp_unslash((string) ($_POST['xfusion_llm_user_prompt_template'] ?? ''));
-        $userTemplate = is_string($userTemplate) ? trim($userTemplate) : '';
-        $makeActive = ! empty($_POST['xfusion_llm_prompt_make_active']);
-
-        if ($content !== '') {
-            $id = 'pv_' . gmdate('Ymd_His');
-            $versions = xfusion_llm_prompt_versions();
-            $versions[] = [
-                'id' => $id,
-                'label' => $label !== '' ? $label : sprintf(__('Version %s', 'xfusion'), gmdate('Y-m-d H:i')),
-                'content' => $content,
-                'user_template' => $userTemplate !== '' ? $userTemplate : xfusion_llm_default_user_prompt_template(),
-                'created_at' => gmdate('c'),
-            ];
-            update_option(XFUSION_LLM_PROMPT_VERSIONS_OPTION, $versions, false);
-            if ($makeActive) {
-                update_option(XFUSION_LLM_ACTIVE_PROMPT_ID_OPTION, $id, false);
-            }
-        }
-
-        wp_safe_redirect(add_query_arg(['page' => 'xfusion-llm-settings', 'prompt_saved' => '1'], admin_url('options-general.php')));
-        exit;
-    }
+    $promptsUrl = function_exists('xfusion_llm_prompts_admin_url')
+        ? xfusion_llm_prompts_admin_url()
+        : admin_url('admin.php?page=xfusion-llm-prompts');
+    ?>
+    <hr/>
+    <h2><?php esc_html_e('Prompt versions', 'xfusion'); ?></h2>
+    <p class="description">
+        <?php esc_html_e('COR coach system, COR user template, and 1-on-1 prompts are managed in the dedicated LLM Prompts menu (versioning per prompt).', 'xfusion'); ?>
+        <a href="<?php echo esc_url($promptsUrl); ?>"><?php esc_html_e('Open LLM Prompts', 'xfusion'); ?></a>
+    </p>
+    <?php
 }
 
 function xfusion_llm_insights_render_option_fields(): void
@@ -524,86 +452,6 @@ function xfusion_llm_insights_render_option_fields(): void
             </td>
         </tr>
     </table>
-    <?php
-}
-
-function xfusion_llm_insights_render_settings_sections(): void
-{
-    if (! current_user_can('manage_options')) {
-        return;
-    }
-
-    xfusion_llm_maybe_seed_prompt_versions();
-
-    $versions = xfusion_llm_prompt_versions();
-    $activeId = (string) get_option(XFUSION_LLM_ACTIVE_PROMPT_ID_OPTION, '');
-    $activePrompt = xfusion_llm_get_active_prompt();
-    ?>
-    <h3><?php esc_html_e('Active coaching prompt', 'xfusion'); ?></h3>
-    <?php if ($activePrompt !== null) : ?>
-        <p><strong><?php echo esc_html($activePrompt['label']); ?></strong>
-            <code><?php echo esc_html($activePrompt['id']); ?></code>
-            <?php if ($activePrompt['created_at'] !== '') : ?>
-                — <?php echo esc_html($activePrompt['created_at']); ?>
-            <?php endif; ?>
-        </p>
-    <?php endif; ?>
-
-    <?php if ($versions !== []) : ?>
-        <form method="post" action="">
-            <?php wp_nonce_field('xfusion_llm_prompt_versions'); ?>
-            <table class="widefat striped" style="max-width:960px;">
-                <thead>
-                <tr>
-                    <th><?php esc_html_e('Active', 'xfusion'); ?></th>
-                    <th><?php esc_html_e('Label', 'xfusion'); ?></th>
-                    <th><?php esc_html_e('Version ID', 'xfusion'); ?></th>
-                    <th><?php esc_html_e('Created', 'xfusion'); ?></th>
-                </tr>
-                </thead>
-                <tbody>
-                <?php foreach ($versions as $version) : ?>
-                    <tr>
-                        <td><input type="radio" name="xfusion_llm_active_prompt_choice" value="<?php echo esc_attr($version['id']); ?>" <?php checked($activeId, $version['id']); ?>/></td>
-                        <td><?php echo esc_html($version['label']); ?></td>
-                        <td><code><?php echo esc_html($version['id']); ?></code></td>
-                        <td><?php echo esc_html($version['created_at']); ?></td>
-                    </tr>
-                <?php endforeach; ?>
-                </tbody>
-            </table>
-            <p><button type="submit" name="xfusion_llm_set_active_prompt" class="button"><?php esc_html_e('Set active prompt', 'xfusion'); ?></button></p>
-        </form>
-    <?php endif; ?>
-
-    <h3><?php esc_html_e('Save new prompt version', 'xfusion'); ?></h3>
-    <p class="description"><?php esc_html_e('Each version includes a system prompt (coach rules) and a user instruction template. Use placeholders in the user template: {cor_perf_context}, {caps}, {performance}, {category_hint}. For literal JSON braces use double braces, e.g. {{ and }}.', 'xfusion'); ?></p>
-    <form method="post" action="">
-        <?php wp_nonce_field('xfusion_llm_prompt_versions'); ?>
-        <p>
-            <label for="xfusion_llm_prompt_label"><strong><?php esc_html_e('Version label', 'xfusion'); ?></strong></label><br/>
-            <input type="text" class="regular-text" id="xfusion_llm_prompt_label" name="xfusion_llm_prompt_label" placeholder="<?php esc_attr_e('e.g. June 2026 coaching rules', 'xfusion'); ?>"/>
-        </p>
-        <p>
-            <label for="xfusion_llm_prompt_content"><strong><?php esc_html_e('System prompt (coach rules)', 'xfusion'); ?></strong></label><br/>
-            <textarea id="xfusion_llm_prompt_content" name="xfusion_llm_prompt_content" rows="12" class="large-text code" placeholder="<?php esc_attr_e('FUSION coaching system prompt…', 'xfusion'); ?>"><?php
-                echo esc_textarea($activePrompt['content'] ?? '');
-            ?></textarea>
-        </p>
-        <p>
-            <label for="xfusion_llm_user_prompt_template"><strong><?php esc_html_e('User instruction template', 'xfusion'); ?></strong></label><br/>
-            <textarea id="xfusion_llm_user_prompt_template" name="xfusion_llm_user_prompt_template" rows="18" class="large-text code" placeholder="<?php esc_attr_e('Unified insight user prompt with placeholders…', 'xfusion'); ?>"><?php
-                echo esc_textarea($activePrompt['user_template'] ?? xfusion_llm_default_user_prompt_template());
-            ?></textarea>
-        </p>
-        <p>
-            <label>
-                <input type="checkbox" name="xfusion_llm_prompt_make_active" value="1" checked="checked"/>
-                <?php esc_html_e('Set as active prompt after save', 'xfusion'); ?>
-            </label>
-        </p>
-        <p><button type="submit" name="xfusion_llm_save_prompt_version" class="button button-primary"><?php esc_html_e('Save prompt version', 'xfusion'); ?></button></p>
-    </form>
     <?php
 }
 

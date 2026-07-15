@@ -74,7 +74,7 @@
 
                 <div class="mt-8">
                     <h3 class="mb-2 text-lg font-semibold text-dark dark:text-white">Members</h3>
-                    <p class="mb-4 text-xs text-dark/60 dark:text-darklink">Add employees from this company. Status: <strong>member</strong> or <strong>leader</strong> (max one leader).</p>
+                    <p class="mb-4 text-xs text-dark/60 dark:text-darklink">Add employees from this company. Status: <strong>member</strong> or <strong>leader</strong> (max one leader). Saving members automatically creates 1-on-1 Alignment Capture pairings (leader → each member).</p>
                     @error('members') <p class="text-error mb-3 text-sm">{{ $message }}</p> @enderror
 
                     <div class="mb-6 rounded-lg border border-border bg-gray-50/40 p-4 dark:border-darkborder dark:bg-transparent">

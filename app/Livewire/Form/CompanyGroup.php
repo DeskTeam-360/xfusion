@@ -2,11 +2,12 @@
 
 namespace App\Livewire\Form;
 
-use App\Models\Company;
-use App\Models\CompanyEmployee;
 use App\Models\CompanyGroup as CompanyGroupModel;
 use App\Models\CompanyGroupDetail;
+use App\Models\CompanyEmployee;
+use App\Models\Company;
 use App\Models\User;
+use App\Services\OneOnOneCompanyGroupSyncService;
 use Livewire\Component;
 
 class CompanyGroup extends Component
@@ -282,6 +283,8 @@ class CompanyGroup extends Component
 
         $group->load('details.user');
         $this->hydrateMembersFromGroup($group);
+
+        app(OneOnOneCompanyGroupSyncService::class)->syncAllFromCompanyGroups();
 
         $this->dispatch('swal:alert', data: [
             'icon' => 'success',

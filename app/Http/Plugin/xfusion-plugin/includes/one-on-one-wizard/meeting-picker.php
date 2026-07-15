@@ -54,6 +54,20 @@ var xfwStatusBadgeClass = function (status) {
     return 'amber';
 };
 
+var xfwFormatStatusLabel = function (status) {
+    var key = String(status || 'scheduled').toLowerCase();
+    var labels = {
+        scheduled: 'Scheduled',
+        in_progress: 'In Progress',
+        completed: 'Completed',
+        cancelled: 'Cancelled',
+    };
+    if (labels[key]) {
+        return labels[key];
+    }
+    return key.replace(/_/g, ' ').replace(/\b\w/g, function (ch) { return ch.toUpperCase(); });
+};
+
 var xfwReadUrlConversationId = function () {
     try {
         var params = new URLSearchParams(window.location.search);
@@ -106,7 +120,7 @@ var xfwUpdateSidebarMeeting = function (ctx) {
     set('#xfw-si-time', fmt.time);
     var statusEl = root.querySelector('#xfw-si-status');
     if (statusEl) {
-        statusEl.innerHTML = '<span class="xfw-badge ' + xfwStatusBadgeClass(ctx.status) + '">' + xfwEsc(ctx.status || 'scheduled') + '</span>';
+        statusEl.innerHTML = '<span class="xfw-badge ' + xfwStatusBadgeClass(ctx.status) + '">' + xfwEsc(xfwFormatStatusLabel(ctx.status)) + '</span>';
     }
     var linkRow = root.querySelector('#xfw-si-link-row');
     var linkEl = root.querySelector('#xfw-si-link');
@@ -202,7 +216,102 @@ var xfwShowMeetingGate = function () {
     }
 };
 
-var xfwPickerState = { pairsMap: {}, pairId: 0, userRole: '' };
+var xfwPickerState = { pairsMap: {}, pairId: 0, userRole: '', teamMembers: [], pendingEmployeeId: 0, leaderInfo: null };
+
+var xfwScheduleMeeting = function (dt, link) {
+    if (xfwPickerState.pairId > 0) {
+        return xfwOoCall('xfusion_oo_schedule', {
+            pair_id: xfwPickerState.pairId,
+            scheduled_at: dt,
+            meeting_link: link,
+        });
+    }
+    if (xfwPickerState.pendingEmployeeId > 0) {
+        return xfwOoCall('xfusion_oo_schedule_for_employee', {
+            employee_user_id: xfwPickerState.pendingEmployeeId,
+            scheduled_at: dt,
+            meeting_link: link,
+        });
+    }
+    return Promise.resolve(null);
+};
+
+var xfwSelectTeamMember = function (member) {
+    if (!member || !member.employee) {
+        return;
+    }
+    xfwPickerState.pendingEmployeeId = member.employee.id;
+    xfwPickerState.pairId = member.pair_id || 0;
+
+    var pair = {
+        employee: member.employee,
+        leader: xfwPickerState.leaderInfo || { name: '—' },
+    };
+    if (member.pair_id) {
+        xfwPickerState.pairsMap[member.pair_id] = pair;
+    }
+
+    if (member.pair_id) {
+        xfwLoadGateConversations();
+        return;
+    }
+
+    xfwRenderConversationList(pair, 'leader', []);
+};
+
+var xfwRenderLeaderTeamGate = function (data) {
+    var pairsEl = root.querySelector('#xfw-gate-pairs');
+    var convEl = root.querySelector('#xfw-gate-conversations');
+    if (!pairsEl) {
+        return;
+    }
+    if (convEl) {
+        convEl.classList.add('xfw-hidden');
+        convEl.innerHTML = '';
+    }
+
+    var members = data.members || [];
+    xfwPickerState.userRole = 'leader';
+    xfwPickerState.teamMembers = members;
+    xfwPickerState.leaderInfo = data.leader || null;
+    xfwPickerState.pairsMap = {};
+
+    if (!members.length) {
+        pairsEl.innerHTML = '<p class="xfw-muted">No team members found.</p>';
+        return;
+    }
+
+    if (members.length === 1) {
+        pairsEl.innerHTML = '<p class="xfw-muted"><strong>Team member:</strong> ' + xfwEsc(members[0].employee.name) + '</p>';
+        xfwSelectTeamMember(members[0]);
+        return;
+    }
+
+    var html = '<label class="xfw-label" for="xfw-gate-member-select">Team member</label>' +
+        '<select class="xfw-input" id="xfw-gate-member-select">' +
+        '<option value="">— Select team member —</option>';
+    members.forEach(function (m) {
+        html += '<option value="' + m.employee.id + '">' + xfwEsc(m.employee.name) + '</option>';
+    });
+    html += '</select>';
+    pairsEl.innerHTML = html;
+
+    var sel = pairsEl.querySelector('#xfw-gate-member-select');
+    sel.addEventListener('change', function () {
+        var id = parseInt(sel.value, 10);
+        if (!id) {
+            if (convEl) {
+                convEl.classList.add('xfw-hidden');
+                convEl.innerHTML = '';
+            }
+            return;
+        }
+        var member = members.find(function (m) { return m.employee.id === id; });
+        if (member) {
+            xfwSelectTeamMember(member);
+        }
+    });
+};
 
 var xfwRenderConversationList = function (pair, role, rows) {
     var el = root.querySelector('#xfw-gate-conversations');
@@ -233,14 +342,14 @@ var xfwRenderConversationList = function (pair, role, rows) {
 
     var html = '<h3 style="margin:0 0 .5rem">Meetings with ' + xfwEsc(otherName) + '</h3>';
     if (!rows.length) {
-        html += '<p class="xfw-muted">No meetings scheduled yet.</p>';
+        html += '<p class="xfw-muted">No meetings yet — schedule your first 1-on-1 below.</p>';
     } else {
         html += '<table class="xfw-table"><thead><tr><th>Scheduled</th><th>Status</th><th></th></tr></thead><tbody>';
         rows.forEach(function (c) {
             var fmt = xfwFormatMeetingDate(c.scheduled_at);
             var btnLabel = c.status === 'in_progress' ? 'Resume' : (c.status === 'completed' ? 'View' : 'Open');
             html += '<tr><td>' + xfwEsc(fmt.date) + ' ' + xfwEsc(fmt.time) + '</td>' +
-                '<td><span class="xfw-badge ' + xfwStatusBadgeClass(c.status) + '">' + xfwEsc(c.status) + '</span></td>' +
+                '<td><span class="xfw-badge ' + xfwStatusBadgeClass(c.status) + '">' + xfwEsc(xfwFormatStatusLabel(c.status)) + '</span></td>' +
                 '<td><button type="button" class="xfw-btn xfw-btn-outline xfw-btn-sm" data-open-conversation="' + c.id + '"' +
                 ' data-scheduled="' + xfwEsc(c.scheduled_at || '') + '"' +
                 ' data-status="' + xfwEsc(c.status || '') + '"' +
@@ -286,23 +395,22 @@ var xfwRenderConversationList = function (pair, role, rows) {
             }
             schedBtn.disabled = true;
             schedBtn.textContent = 'Scheduling…';
-            xfwOoCall('xfusion_oo_schedule', {
-                pair_id: xfwPickerState.pairId,
-                scheduled_at: dt,
-                meeting_link: link,
-            }).then(function (res) {
+            xfwScheduleMeeting(dt, link).then(function (res) {
                 schedBtn.disabled = false;
                 schedBtn.textContent = 'Schedule & Open';
                 if (!res || !res.success || !res.data) {
                     return;
                 }
                 var created = res.data;
+                if (created.pair_id) {
+                    xfwPickerState.pairId = created.pair_id;
+                }
                 xfwApplyMeetingContext({
                     conversationId: created.id,
-                    pairId: xfwPickerState.pairId,
+                    pairId: created.pair_id || xfwPickerState.pairId,
                     userRole: role,
-                    employeeName: pair.employee ? pair.employee.name : '—',
-                    leaderName: pair.leader ? pair.leader.name : '—',
+                    employeeName: pair.employee ? pair.employee.name : (created.employee ? created.employee.name : '—'),
+                    leaderName: pair.leader ? pair.leader.name : (created.leader ? created.leader.name : '—'),
                     scheduledAt: created.scheduled_at || dt,
                     status: created.status || 'scheduled',
                     meetingLink: created.meeting_link || link,
@@ -346,6 +454,29 @@ window.xfwInitMeetingPicker = function () {
         convEl.classList.add('xfw-hidden');
         convEl.innerHTML = '';
     }
+    pairsEl.innerHTML = '<p class="xfw-muted">Loading…</p>';
+
+    xfwOoCall('xfusion_oo_leader_team').then(function (teamRes) {
+        if (teamRes && teamRes.success && teamRes.data && teamRes.data.is_leader && (teamRes.data.members || []).length) {
+            xfwRenderLeaderTeamGate(teamRes.data);
+            return;
+        }
+        xfwInitMeetingPickerEmployeeFlow();
+    }).catch(function () {
+        xfwInitMeetingPickerEmployeeFlow();
+    });
+};
+
+var xfwInitMeetingPickerEmployeeFlow = function () {
+    var pairsEl = root.querySelector('#xfw-gate-pairs');
+    var convEl = root.querySelector('#xfw-gate-conversations');
+    if (!pairsEl) {
+        return;
+    }
+    if (convEl) {
+        convEl.classList.add('xfw-hidden');
+        convEl.innerHTML = '';
+    }
     pairsEl.innerHTML = '<p class="xfw-muted">Loading pairings…</p>';
 
     xfwOoCall('xfusion_oo_pairs').then(function (res) {
@@ -355,7 +486,7 @@ window.xfwInitMeetingPicker = function () {
         }
         var pairs = res.data || [];
         if (!pairs.length) {
-            pairsEl.innerHTML = '<p class="xfw-muted">No 1-on-1 pairings found for your account.</p>';
+            pairsEl.innerHTML = '<p class="xfw-muted">No 1-on-1 access found. Ask your admin to add you to a Company Group (leader or member).</p>';
             return;
         }
         xfwPickerState.pairsMap = {};
@@ -365,14 +496,14 @@ window.xfwInitMeetingPicker = function () {
             var p = pairs[0];
             xfwPickerState.pairId = p.id;
             xfwPickerState.userRole = p.role;
-            pairsEl.innerHTML = '<p class="xfw-muted"><strong>Pairing:</strong> ' +
+            pairsEl.innerHTML = '<p class="xfw-muted"><strong>Your leader:</strong> ' +
                 xfwEsc(p.role === 'leader' ? (p.employee ? p.employee.name : '—') : (p.leader ? p.leader.name : '—')) +
                 ' <span class="xfw-badge amber">' + xfwEsc(p.role) + '</span></p>';
             xfwLoadGateConversations();
             return;
         }
 
-        var html = '<label class="xfw-label" for="xfw-gate-pair-select">Select pairing</label>' +
+        var html = '<label class="xfw-label" for="xfw-gate-pair-select">Your leader</label>' +
             '<select class="xfw-input" id="xfw-gate-pair-select">';
         pairs.forEach(function (p) {
             var other = p.role === 'leader' ? p.employee : p.leader;

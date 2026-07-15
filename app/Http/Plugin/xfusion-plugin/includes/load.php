@@ -28,6 +28,8 @@ $xfusion_include_files = [
     'gravity-forms-course-list-mark-complete.php',
     'search-index-maintenance.php',
     'xfusion-knowledge-cpt.php',
+    'xfusion-llm-prompts-registry.php',
+    'xfusion-llm-prompts-admin.php',
     'xfusion-ai-insights-settings.php',
     'result-evaluation.php',
     'once-popup.php',

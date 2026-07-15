@@ -103,7 +103,7 @@ function xfusion_one_on_one_wizard_shortcode($atts = []): string
     <div id="xfw-meeting-gate" class="xfw-meeting-gate<?php echo $conversationId > 0 ? ' xfw-hidden' : ''; ?>">
         <div class="xfw-card xfw-gate-card">
             <h2 class="xfw-section-title" style="margin-top:0">Select your 1-on-1 meeting</h2>
-            <p class="xfw-section-desc">Choose your pairing and meeting before starting the alignment wizard.</p>
+            <p class="xfw-section-desc">Choose your leader or team member, then open or schedule a 1-on-1 meeting. Access is based on your Company Group membership.</p>
             <div id="xfw-gate-pairs"><p class="xfw-muted">Loading pairings&hellip;</p></div>
             <div id="xfw-gate-conversations" class="xfw-hidden"></div>
         </div>
