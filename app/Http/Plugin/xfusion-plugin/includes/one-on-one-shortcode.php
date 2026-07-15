@@ -94,11 +94,17 @@ add_action('wp_ajax_xfusion_oo_leader_team', function (): void {
     xfusion_oo_send(xfusion_oo_api_request('GET', '/leader-team', ['user_id' => get_current_user_id()]));
 });
 
+add_action('wp_ajax_xfusion_oo_meeting_dashboard', function (): void {
+    xfusion_oo_require_login();
+    xfusion_oo_send(xfusion_oo_api_request('GET', '/meeting-dashboard', ['user_id' => get_current_user_id()]));
+});
+
 add_action('wp_ajax_xfusion_oo_schedule_for_employee', function (): void {
     xfusion_oo_require_login();
     $employeeUserId = (int) ($_POST['employee_user_id'] ?? 0);
     $scheduledAt = sanitize_text_field($_POST['scheduled_at'] ?? '');
     $meetingLink = esc_url_raw(wp_unslash($_POST['meeting_link'] ?? ''));
+    $groupId = (int) ($_POST['group_id'] ?? 0);
     $body = [
         'leader_user_id' => get_current_user_id(),
         'employee_user_id' => $employeeUserId,
@@ -106,6 +112,9 @@ add_action('wp_ajax_xfusion_oo_schedule_for_employee', function (): void {
     ];
     if ($meetingLink !== '') {
         $body['meeting_link'] = $meetingLink;
+    }
+    if ($groupId > 0) {
+        $body['group_id'] = $groupId;
     }
     xfusion_oo_send(xfusion_oo_api_request('POST', '/schedule-for-employee', [], $body));
 });

@@ -229,12 +229,18 @@ class OneOnOneController extends Controller
             'employee_user_id' => 'required|integer|min:1|different:leader_user_id',
             'scheduled_at' => 'required|date',
             'meeting_link' => 'nullable|url|max:500',
+            'group_id' => 'nullable|integer|min:1',
         ]);
 
         $leaderUserId = (int) $data['leader_user_id'];
         $employeeUserId = (int) $data['employee_user_id'];
+        $groupId = isset($data['group_id']) ? (int) $data['group_id'] : 0;
 
-        if (! $this->canLeaderScheduleFor($leaderUserId, $employeeUserId)) {
+        if ($groupId > 0) {
+            if (! $this->companyGroupSync->isMemberOfLeaderGroup($leaderUserId, $employeeUserId, $groupId)) {
+                return response()->json(['success' => false, 'message' => 'Employee is not a member of this group.'], 403);
+            }
+        } elseif (! $this->canLeaderScheduleFor($leaderUserId, $employeeUserId)) {
             return response()->json(['success' => false, 'message' => 'Not allowed to schedule for this team member.'], 403);
         }
 
@@ -281,6 +287,31 @@ class OneOnOneController extends Controller
                 'employee' => $employee ? ['id' => (int) $employee->ID, 'name' => $employee->display_name ?: $employee->user_nicename] : null,
             ],
         ], 201);
+    }
+
+    /** Groups + all meetings for the meeting picker gate (supports leader and member in multiple groups). */
+    public function meetingDashboard(Request $request)
+    {
+        $userId = (int) $request->query('user_id');
+        if ($userId < 1) {
+            return response()->json(['success' => false, 'message' => 'user_id is required'], 422);
+        }
+
+        $this->companyGroupSync->syncAllFromCompanyGroups();
+
+        $user = User::query()->find($userId, ['ID', 'display_name', 'user_nicename']);
+
+        return response()->json([
+            'success' => true,
+            'data' => [
+                'user' => $user ? [
+                    'id' => (int) $user->ID,
+                    'name' => $user->display_name ?: $user->user_nicename,
+                ] : null,
+                'groups' => $this->companyGroupSync->groupsForUser($userId),
+                'meetings' => $this->companyGroupSync->meetingsForUser($userId),
+            ],
+        ]);
     }
 
     /**

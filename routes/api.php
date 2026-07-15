@@ -417,6 +417,7 @@ Route::prefix('v1')->middleware('fusion.api')->group(function () {
     Route::prefix('one-on-one')->group(function () {
         Route::get('/pairs', [OneOnOneController::class, 'pairsForUser']);
         Route::get('/leader-team', [OneOnOneController::class, 'leaderTeam']);
+        Route::get('/meeting-dashboard', [OneOnOneController::class, 'meetingDashboard']);
         Route::post('/schedule-for-employee', [OneOnOneController::class, 'scheduleForEmployee']);
         Route::get('/{oneOnOne}/employee-scoring', [OneOnOneController::class, 'employeeScoring']);
         Route::get('/{oneOnOne}/conversations', [OneOnOneController::class, 'conversations']);

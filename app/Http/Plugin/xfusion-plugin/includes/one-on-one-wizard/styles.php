@@ -100,7 +100,9 @@ function xfoo_wizard_styles_css(): string
 
 /* Meeting picker gate (step 0) */
 .xfw-meeting-gate{padding:1.5rem 1.75rem 2rem}
-.xfw-gate-card{max-width:720px;margin:0 auto}
+.xfw-gate-card{max-width:960px;margin:0 auto}
+.xfw-gate-section{margin-top:1.25rem;padding-top:1.25rem;border-top:1px solid var(--border)}
+.xfw-gate-section:first-child{margin-top:0;padding-top:0;border-top:none}
 .xfw-label{display:block;font-weight:700;font-size:.85rem;margin-bottom:.35rem;color:var(--navy)}
 .xfw-input{width:100%;border:1px solid var(--border);border-radius:.375rem;padding:.55rem .65rem;font-size:.85rem;box-sizing:border-box;font-family:inherit}
 .xfw-btn-sm{padding:.35rem .75rem;font-size:.75rem}
