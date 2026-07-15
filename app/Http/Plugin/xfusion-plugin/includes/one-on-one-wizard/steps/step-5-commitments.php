@@ -33,6 +33,12 @@ commitments: function () {
         '<div class="xfw-banner">ℹ️ <span>Commitments should be specific, measurable, and meaningful. Choose a Behavioral Driver™ to connect your commitment to what matters most.</span></div>' +
         tableShell('employee', 'Employee Commitments', 'Commitments you will take action on before our next meeting.', 'Behavioral Driver™', '+ Add Commitment') +
         tableShell('leader', 'Leader Commitments', 'Commitments you will take action on to support your employee.', 'Related Employee', '+ Add Commitment') +
+        '<div class="xfw-card" style="margin-top:1rem;border:1px solid var(--border)">' +
+        '<h3 style="margin:0 0 .5rem">AI Meeting Synthesis\u2122</h3>' +
+        '<p class="xfw-muted" style="margin:0 0 .75rem">Generate the post-meeting synthesis from preparation, conversation notes, and commitments saved above.</p>' +
+        '<button type="button" class="xfw-btn xfw-btn-accent" id="xfw-generate-synthesis">Generate AI Meeting Synthesis\u2122</button>' +
+        '<p class="xfw-muted" id="xfw-generate-synthesis-status" style="margin-top:.5rem"></p>' +
+        '</div>' +
         '<div class="xfw-card" style="margin-top:1rem;background:#fbfaf5">' +
         '<div class="xfw-commit-title"><img src="' + iconBase + 'Green-Light-Bulb-Icon.svg" alt="" width="50" height="50"><h3 style="margin:0">Commitment Tips</h3></div>' +
         '<ul class="xfw-numbered" style="list-style:disc;padding-left:1.2rem"><li>Be specific about what will be done.</li><li>Set a realistic target date.</li><li>Define how success will be measured.</li><li>Align commitments to Behavioral Drivers™ for stronger impact.</li></ul>' +

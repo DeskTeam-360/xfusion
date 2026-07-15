@@ -113,10 +113,19 @@ class OneOnOneAiService
      * Uses preparation content (current conversation only) + notes — never
      * forwarded to QBR/ARR/360, which only ever read the synthesis JSON.
      */
-    public function meetingSynthesis(OneOnOneConversation $conversation): ?OneOnOneAiSynthesis
+    public function meetingSynthesis(OneOnOneConversation $conversation, bool $forceRefresh = false): ?OneOnOneAiSynthesis
     {
         if (! $this->isConfigured()) {
             return null;
+        }
+
+        if (! $forceRefresh) {
+            $existing = $conversation->synthesis;
+            if ($existing !== null) {
+                return $existing;
+            }
+        } else {
+            OneOnOneAiSynthesis::query()->where('conversation_id', $conversation->id)->delete();
         }
 
         $pair = $conversation->oneOnOne;

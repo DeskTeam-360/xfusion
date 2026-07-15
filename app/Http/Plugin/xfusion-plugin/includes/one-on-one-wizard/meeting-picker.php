@@ -68,6 +68,136 @@ var xfwFormatStatusLabel = function (status) {
     return key.replace(/_/g, ' ').replace(/\b\w/g, function (ch) { return ch.toUpperCase(); });
 };
 
+var xfwStatusSelectOptions = [
+    { value: 'scheduled', label: 'Scheduled' },
+    { value: 'in_progress', label: 'In Progress' },
+    { value: 'completed', label: 'Completed' },
+    { value: 'cancelled', label: 'Cancelled' },
+];
+
+var xfwWireStatusSelect = function () {
+    var statusEl = root.querySelector('#xfw-si-status');
+    if (!statusEl || statusEl.dataset.wired) {
+        return;
+    }
+    statusEl.dataset.wired = '1';
+    statusEl.addEventListener('change', function (e) {
+        if (!e.target || e.target.id !== 'xfw-si-status-select') {
+            return;
+        }
+        xfwUpdateMeetingStatus(e.target.value, e.target);
+    });
+};
+
+var xfwRenderSidebarStatus = function (status) {
+    var statusEl = root.querySelector('#xfw-si-status');
+    if (!statusEl) {
+        return;
+    }
+    xfwWireStatusSelect();
+    var key = String(status || 'scheduled').toLowerCase();
+    var sel = statusEl.querySelector('#xfw-si-status-select');
+    if (!sel) {
+        var html = '<select class="xfw-input xfw-status-select" id="xfw-si-status-select">';
+        xfwStatusSelectOptions.forEach(function (opt) {
+            html += '<option value="' + opt.value + '">' + xfwEsc(opt.label) + '</option>';
+        });
+        html += '</select>';
+        statusEl.innerHTML = html;
+        sel = statusEl.querySelector('#xfw-si-status-select');
+    }
+    if (sel) {
+        sel.value = key;
+        sel.dataset.prev = key;
+    }
+};
+
+var xfwUpdateMeetingStatus = function (newStatus, selEl) {
+    var conversationId = parseInt(window.XFW_WIZARD.conversationId, 10);
+    if (conversationId < 1 || !selEl) {
+        return;
+    }
+    var prevStatus = selEl.dataset.prev || selEl.value;
+    if (newStatus === prevStatus) {
+        return;
+    }
+    selEl.disabled = true;
+    xfwOoCall('xfusion_oo_update_status', {
+        conversation_id: conversationId,
+        status: newStatus,
+    }).then(function (res) {
+        selEl.disabled = false;
+        if (!res || !res.success) {
+            selEl.value = prevStatus;
+            return;
+        }
+        var updated = (res.data && res.data.status) ? res.data.status : newStatus;
+        selEl.value = updated;
+        selEl.dataset.prev = updated;
+        var stored = xfwLoadStoredContext();
+        if (stored && parseInt(stored.conversationId, 10) === conversationId) {
+            stored.status = updated;
+            xfwSaveStoredContext(stored);
+        }
+    }).catch(function () {
+        selEl.disabled = false;
+        selEl.value = prevStatus;
+    });
+};
+
+var xfwMeetingTiming = function (meeting) {
+    var status = String(meeting.status || 'scheduled').toLowerCase();
+    if (status === 'completed') {
+        return { key: 'completed', label: 'Completed', badge: 'green' };
+    }
+    if (status === 'cancelled') {
+        return { key: 'cancelled', label: 'Cancelled', badge: 'gray' };
+    }
+    if (status === 'in_progress') {
+        return { key: 'in_progress', label: 'In session', badge: 'blue' };
+    }
+
+    var scheduled = meeting.scheduled_at ? new Date(meeting.scheduled_at) : null;
+    if (!scheduled || isNaN(scheduled.getTime())) {
+        return { key: 'scheduled', label: 'Scheduled', badge: 'amber' };
+    }
+
+    var now = new Date();
+    if (scheduled.getTime() < now.getTime()) {
+        return { key: 'overdue', label: 'Overdue', badge: 'red' };
+    }
+
+    var startOfToday = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+    var endOfToday = new Date(startOfToday.getTime() + 86400000 - 1);
+    if (scheduled >= startOfToday && scheduled <= endOfToday) {
+        return { key: 'today', label: 'Today', badge: 'amber' };
+    }
+
+    var inSevenDays = new Date(now.getTime() + 7 * 86400000);
+    if (scheduled <= inSevenDays) {
+        return { key: 'upcoming', label: 'Upcoming', badge: 'blue' };
+    }
+
+    return { key: 'later', label: 'Later', badge: 'gray' };
+};
+
+var xfwMeetingTimingSort = function (a, b) {
+    var order = { overdue: 0, in_progress: 1, today: 2, upcoming: 3, scheduled: 4, later: 5, completed: 6, cancelled: 7 };
+    var ta = xfwMeetingTiming(a);
+    var tb = xfwMeetingTiming(b);
+    var oa = order[ta.key] !== undefined ? order[ta.key] : 99;
+    var ob = order[tb.key] !== undefined ? order[tb.key] : 99;
+    if (oa !== ob) {
+        return oa - ob;
+    }
+    var da = a.scheduled_at ? new Date(a.scheduled_at).getTime() : 0;
+    var db = b.scheduled_at ? new Date(b.scheduled_at).getTime() : 0;
+    if (ta.key === 'completed' || ta.key === 'cancelled') {
+        return db - da;
+    }
+    return da - db;
+};
+
 var xfwReadUrlConversationId = function () {
     try {
         var params = new URLSearchParams(window.location.search);
@@ -120,7 +250,7 @@ var xfwUpdateSidebarMeeting = function (ctx) {
     set('#xfw-si-time', fmt.time);
     var statusEl = root.querySelector('#xfw-si-status');
     if (statusEl) {
-        statusEl.innerHTML = '<span class="xfw-badge ' + xfwStatusBadgeClass(ctx.status) + '">' + xfwEsc(xfwFormatStatusLabel(ctx.status)) + '</span>';
+        xfwRenderSidebarStatus(ctx.status);
     }
     var linkRow = root.querySelector('#xfw-si-link-row');
     var linkEl = root.querySelector('#xfw-si-link');
@@ -173,6 +303,9 @@ var xfwApplyMeetingContext = function (ctx, options) {
     }
     if (prevId !== ctx.conversationId && typeof xfwResetBriefCache === 'function') {
         xfwResetBriefCache();
+    }
+    if (prevId !== ctx.conversationId && typeof xfwResetSynthesisCache === 'function') {
+        xfwResetSynthesisCache();
     }
     window.XFW_WIZARD.conversationId = ctx.conversationId;
     window.XFW_WIZARD.userRole = ctx.userRole || '';
@@ -256,39 +389,40 @@ var xfwRenderAllMeetings = function (meetings) {
         return;
     }
 
-    var html = '<div class="xfw-gate-section">' +
-        '<h3 style="margin:0 0 .5rem">Your meetings</h3>';
+    var html = '';
 
     if (!meetings.length) {
-        html += '<p class="xfw-muted">No meetings yet. Choose a company group below to schedule your first 1-on-1.</p></div>';
+        html += '<p class="xfw-muted">No meetings yet. Use the form on the left to schedule your first 1-on-1.</p>';
         el.innerHTML = html;
         return;
     }
 
-    html += '<p class="xfw-muted" style="margin:0 0 .75rem">All scheduled and past meetings across your company groups.</p>' +
-        '<div style="overflow-x:auto"><table class="xfw-table"><thead><tr>' +
-        '<th>Group</th><th>With</th><th>Your role</th><th>Scheduled</th><th>Status</th><th></th>' +
+    html += '<div style="overflow-x:auto"><table class="xfw-table"><thead><tr>' +
+        '<th>Timing</th><th>Group</th><th>With</th><th>Your role</th><th>Scheduled</th><th></th>' +
         '</tr></thead><tbody>';
 
-    meetings.forEach(function (m, idx) {
+    var sorted = meetings.slice().sort(xfwMeetingTimingSort);
+
+    sorted.forEach(function (m, idx) {
         var fmt = xfwFormatMeetingDate(m.scheduled_at);
+        var timing = xfwMeetingTiming(m);
         var btnLabel = m.status === 'in_progress' ? 'Resume' : (m.status === 'completed' ? 'View' : 'Open');
-        html += '<tr><td>' + xfwEsc(m.group ? m.group.title : '—') + '</td>' +
+        html += '<tr><td><span class="xfw-badge ' + timing.badge + '">' + xfwEsc(timing.label) + '</span></td>' +
+            '<td>' + xfwEsc(m.group ? m.group.title : '—') + '</td>' +
             '<td>' + xfwEsc(m.counterpart_name || '—') + '</td>' +
             '<td><span class="xfw-badge amber">' + xfwEsc(m.user_role || '') + '</span></td>' +
             '<td>' + xfwEsc(fmt.date) + ' ' + xfwEsc(fmt.time) + '</td>' +
-            '<td><span class="xfw-badge ' + xfwStatusBadgeClass(m.status) + '">' + xfwEsc(xfwFormatStatusLabel(m.status)) + '</span></td>' +
             '<td><button type="button" class="xfw-btn xfw-btn-outline xfw-btn-sm" data-open-meeting-idx="' + idx + '">' + btnLabel + '</button></td></tr>';
     });
 
-    html += '</tbody></table></div></div>';
+    html += '</tbody></table></div>';
     el.innerHTML = html;
 
     el.querySelectorAll('[data-open-meeting-idx]').forEach(function (btn) {
         btn.addEventListener('click', function () {
             var idx = parseInt(btn.getAttribute('data-open-meeting-idx'), 10);
-            if (!isNaN(idx) && meetings[idx]) {
-                xfwOpenMeetingRow(meetings[idx]);
+            if (!isNaN(idx) && sorted[idx]) {
+                xfwOpenMeetingRow(sorted[idx]);
             }
         });
     });
@@ -455,21 +589,18 @@ var xfwRenderGroupPicker = function (groups) {
     }
 
     if (!groups.length) {
-        pairsEl.innerHTML = '<div class="xfw-gate-section"><p class="xfw-muted">No company groups found. Ask your admin to add you to a Company Group.</p></div>';
+        pairsEl.innerHTML = '<p class="xfw-muted">No company groups found. Ask your admin to add you to a Company Group.</p>';
         return;
     }
 
-    var html = '<div class="xfw-gate-section">' +
-        '<h3 style="margin:0 0 .5rem">Schedule a new meeting</h3>' +
-        '<p class="xfw-muted" style="margin:0 0 .75rem">Select the company group context, then pick a team member (if you are the leader).</p>' +
-        '<label class="xfw-label" for="xfw-gate-group-select">Company group</label>' +
+    var html = '<label class="xfw-label" for="xfw-gate-group-select">Company group</label>' +
         '<select class="xfw-input" id="xfw-gate-group-select">' +
         '<option value="">— Select company group —</option>';
 
     groups.forEach(function (g) {
         html += '<option value="' + g.id + '">' + xfwEsc(xfwGroupLabel(g)) + '</option>';
     });
-    html += '</select><div id="xfw-gate-member-wrap" style="margin-top:.75rem"></div></div>';
+    html += '</select><div id="xfw-gate-member-wrap" style="margin-top:.75rem"></div>';
 
     pairsEl.innerHTML = html;
 
@@ -743,6 +874,7 @@ var xfwResolveInitialContext = function () {
 };
 
 var xfwInitMeetingGate = function () {
+    xfwWireStatusSelect();
     var changeBtn = root.querySelector('#xfw-change-meeting');
     if (changeBtn && !changeBtn.dataset.wired) {
         changeBtn.dataset.wired = '1';

@@ -217,3 +217,13 @@ add_action('wp_ajax_xfusion_oo_complete', function (): void {
     $conversationId = (int) ($_POST['conversation_id'] ?? 0);
     xfusion_oo_send(xfusion_oo_api_request('POST', "/conversations/{$conversationId}/complete"));
 });
+
+add_action('wp_ajax_xfusion_oo_update_status', function (): void {
+    xfusion_oo_require_login();
+    $conversationId = (int) ($_POST['conversation_id'] ?? 0);
+    $status = sanitize_text_field($_POST['status'] ?? '');
+    xfusion_oo_send(xfusion_oo_api_request('POST', "/conversations/{$conversationId}/status", [], [
+        'user_id' => get_current_user_id(),
+        'status' => $status,
+    ]));
+});

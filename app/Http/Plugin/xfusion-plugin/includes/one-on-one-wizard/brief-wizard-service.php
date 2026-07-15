@@ -106,11 +106,224 @@ var xfwEnsureBriefModal = function () {
         '<div class="xfw-modal-backdrop" data-close-brief-modal="1"></div>' +
         '<div class="xfw-modal-card xfw-card">' +
         '<h3 id="xfw-brief-modal-title" style="margin-top:0"></h3>' +
-        '<div id="xfw-brief-modal-body" class="xfw-evidence-text" style="white-space:pre-wrap"></div>' +
+        '<div id="xfw-brief-modal-body" class="xfw-brief-modal-body"></div>' +
         '<div style="margin-top:1rem;text-align:right">' +
         '<button type="button" class="xfw-btn xfw-btn-outline" data-close-brief-modal="1">Close</button>' +
         '</div></div>';
     root.appendChild(modal);
+};
+
+var xfwBriefIsoInText = function (text) {
+    if (typeof xfwFormatEvidenceDateTime === 'function') {
+        return String(text || '').replace(/\d{4}-\d{2}-\d{2}T[\d:.+-Z]+/g, function (iso) {
+            return xfwFormatEvidenceDateTime(iso);
+        });
+    }
+    return String(text || '');
+};
+
+var xfwBriefStatusBadge = function (status) {
+    if (typeof xfwStatusBadgeForEvidence === 'function') {
+        return xfwStatusBadgeForEvidence(status);
+    }
+    return 'amber';
+};
+
+var xfwBriefFormatStatus = function (status) {
+    if (typeof xfwFormatEvidenceStatus === 'function') {
+        return xfwFormatEvidenceStatus(status);
+    }
+    return String(status || '');
+};
+
+var xfwBriefParseCommitmentLine = function (line) {
+    var raw = String(line || '').trim();
+    if (!raw) {
+        return null;
+    }
+    var lines = raw.split('\n').map(function (l) { return l.trim(); }).filter(Boolean);
+    var first = lines[0].replace(/^[-•]\s*/, '');
+    var metaLine = lines.slice(1).join(' ').trim();
+
+    if (metaLine) {
+        return { title: first, meta: metaLine };
+    }
+
+    var bracket = first.match(/^(.+?)\s*\[([^,\]]+),\s*([^\]]+)\]\s*$/);
+    if (bracket) {
+        return {
+            title: bracket[1].trim(),
+            status: bracket[2].trim(),
+            priority: bracket[3].replace(/\s*priority\s*$/i, '').trim(),
+        };
+    }
+
+    return { title: first, meta: '' };
+};
+
+var xfwBriefGroupCommitmentBlocks = function (lines) {
+    var blocks = [];
+    var current = [];
+    lines.forEach(function (line) {
+        var trimmed = String(line || '').trim();
+        if (trimmed === '') {
+            if (current.length) {
+                blocks.push(current.join('\n'));
+                current = [];
+            }
+            return;
+        }
+        if (/^[-•]/.test(trimmed) && current.length) {
+            blocks.push(current.join('\n'));
+            current = [line];
+            return;
+        }
+        current.push(line);
+    });
+    if (current.length) {
+        blocks.push(current.join('\n'));
+    }
+    return blocks;
+};
+
+var xfwBriefRenderCommitmentCards = function (lines) {
+    var cards = [];
+    xfwBriefGroupCommitmentBlocks(lines).forEach(function (block) {
+        var parsed = xfwBriefParseCommitmentLine(block);
+        if (!parsed || !parsed.title) {
+            return;
+        }
+        if (parsed.meta && !parsed.status) {
+            cards.push(
+                '<div class="xfw-evidence-commitment">' +
+                '<div class="xfw-evidence-commitment-title">' + xfwEvidenceEsc(parsed.title) + '</div>' +
+                '<div class="xfw-evidence-commitment-meta">' + xfwEvidenceEsc(xfwBriefIsoInText(parsed.meta)) + '</div>' +
+                '</div>'
+            );
+            return;
+        }
+        cards.push(
+            '<div class="xfw-evidence-commitment">' +
+            '<div class="xfw-evidence-commitment-title">' + xfwEvidenceEsc(parsed.title) + '</div>' +
+            '<div class="xfw-evidence-commitment-meta">' +
+            '<span class="xfw-badge ' + xfwBriefStatusBadge(parsed.status) + '">' + xfwEvidenceEsc(xfwBriefFormatStatus(parsed.status)) + '</span>' +
+            (parsed.priority ? '<span class="xfw-muted"> · ' + xfwEvidenceEsc(parsed.priority.charAt(0).toUpperCase() + parsed.priority.slice(1)) + ' priority</span>' : '') +
+            '</div></div>'
+        );
+    });
+    if (!cards.length) {
+        return '';
+    }
+    return '<div class="xfw-evidence-commitments">' + cards.join('') + '</div>';
+};
+
+var xfwBriefRenderMeetingsTable = function (lines) {
+    var rows = [];
+    lines.forEach(function (line) {
+        var trimmed = String(line || '').trim();
+        if (!trimmed) {
+            return;
+        }
+        var content = trimmed.replace(/^[-•]\s*/, '');
+        var withMatch = content.match(/^(.+?)\s+with\s+(.+?)(?:\s*[·(]\s*([^)]+)\)?)?\s*$/i);
+        if (withMatch) {
+            rows.push({
+                date: xfwBriefIsoInText(withMatch[1].trim()),
+                with: withMatch[2].trim(),
+                status: (withMatch[3] || '').trim(),
+            });
+        }
+    });
+    if (!rows.length) {
+        return '';
+    }
+    return '<div style="overflow-x:auto"><table class="xfw-table"><thead><tr><th>Date</th><th>With</th><th>Status</th></tr></thead><tbody>' +
+        rows.map(function (row) {
+            return '<tr><td>' + xfwEvidenceEsc(row.date) + '</td><td>' + xfwEvidenceEsc(row.with) + '</td><td>' +
+                (row.status
+                    ? '<span class="xfw-badge ' + xfwBriefStatusBadge(row.status) + '">' + xfwEvidenceEsc(xfwBriefFormatStatus(row.status)) + '</span>'
+                    : '—') +
+                '</td></tr>';
+        }).join('') + '</tbody></table></div>';
+};
+
+var xfwFormatBriefDetailsHtml = function (details) {
+    var text = String(details || '').trim();
+    if (!text) {
+        return '<p class="xfw-muted">No additional detail is available for this section yet.</p>';
+    }
+
+    var lines = text.split('\n');
+    var html = '';
+    var i = 0;
+
+    while (i < lines.length) {
+        var line = lines[i];
+        var trimmed = line.trim();
+
+        if (/^Commitments on record:/i.test(trimmed)) {
+            html += '<h4 class="xfw-brief-details-heading">Commitments</h4>';
+            i++;
+            var commitLines = [];
+            while (i < lines.length) {
+                if (lines[i].trim() === '') {
+                    if (commitLines.length) {
+                        i++;
+                        break;
+                    }
+                    i++;
+                    continue;
+                }
+                if (/^Previous 1-on-1 meetings/i.test(lines[i])) {
+                    break;
+                }
+                commitLines.push(lines[i]);
+                i++;
+            }
+            html += xfwBriefRenderCommitmentCards(commitLines);
+            continue;
+        }
+
+        if (/^Previous 1-on-1 meetings/i.test(trimmed)) {
+            html += '<h4 class="xfw-brief-details-heading">' + xfwEvidenceEsc(trimmed.replace(/:$/, '')) + '</h4>';
+            i++;
+            var meetingLines = [];
+            while (i < lines.length && lines[i].trim() !== '') {
+                meetingLines.push(lines[i]);
+                i++;
+            }
+            html += xfwBriefRenderMeetingsTable(meetingLines);
+            continue;
+        }
+
+        if (/^[-•]\s/.test(trimmed) && /\[[^,\]]+,.+\]/i.test(trimmed)) {
+            var legacyCommits = [];
+            while (i < lines.length && /^[-•]\s/.test(lines[i].trim()) && lines[i].trim() !== '') {
+                legacyCommits.push(lines[i]);
+                i++;
+            }
+            html += '<h4 class="xfw-brief-details-heading">Commitments</h4>' + xfwBriefRenderCommitmentCards(legacyCommits);
+            continue;
+        }
+
+        var para = [line];
+        i++;
+        while (i < lines.length && lines[i].trim() !== '' &&
+            !/^Commitments on record:/i.test(lines[i]) &&
+            !/^Previous 1-on-1 meetings/i.test(lines[i]) &&
+            !( /^[-•]\s/.test(lines[i].trim()) && /\[[^,\]]+,.+\]/i.test(lines[i].trim()) )) {
+            para.push(lines[i]);
+            i++;
+        }
+        var block = para.join('\n').trim();
+        if (block) {
+            html += '<div class="xfw-brief-details-para xfw-evidence-text">' +
+                xfwEvidenceEsc(xfwBriefIsoInText(block)).replace(/\n/g, '<br>') + '</div>';
+        }
+    }
+
+    return html || ('<div class="xfw-brief-details-para xfw-evidence-text">' +
+        xfwEvidenceEsc(xfwBriefIsoInText(text)).replace(/\n/g, '<br>') + '</div>');
 };
 
 var xfwOpenBriefDetails = function (sectionKey) {
@@ -125,7 +338,7 @@ var xfwOpenBriefDetails = function (sectionKey) {
     xfwEnsureBriefModal();
     var modal = root.querySelector('#xfw-brief-modal');
     root.querySelector('#xfw-brief-modal-title').textContent = meta.title;
-    root.querySelector('#xfw-brief-modal-body').textContent = details;
+    root.querySelector('#xfw-brief-modal-body').innerHTML = xfwFormatBriefDetailsHtml(details);
     modal.classList.remove('xfw-hidden');
 };
 
@@ -231,6 +444,23 @@ var initBriefStep = function () {
     }
 };
 
+var xfwFetchBriefBundlePreview = function (conversationId) {
+    var url = window.XFW_WIZARD.ajaxUrl + '?action=xfoo_wizard_preview_brief_bundle&nonce=' +
+        encodeURIComponent(window.XFW_WIZARD.nonce) + '&conversation_id=' + conversationId;
+    return fetch(url, { credentials: 'same-origin' })
+        .then(function (res) { return res.json(); })
+        .then(function (json) {
+            if (json && json.success && json.data) {
+                console.log('[XFW Step 1] evidence_context → LLM (brief bundle)', json.data);
+                return json.data;
+            }
+            return null;
+        })
+        .catch(function () {
+            return null;
+        });
+};
+
 var generateWizardBrief = function () {
     var cid = typeof xfwGetActiveConversationId === 'function' ? xfwGetActiveConversationId() : 0;
     var statusEl = root.querySelector('#xfw-generate-brief-status');
@@ -245,19 +475,19 @@ var generateWizardBrief = function () {
         statusEl.style.color = '';
     }
 
-    var body = new URLSearchParams({
-        action: 'xfoo_wizard_generate_brief',
-        nonce: window.XFW_WIZARD.nonce,
-        conversation_id: String(cid),
-    });
+    return xfwFetchBriefBundlePreview(cid).then(function () {
+        var body = new URLSearchParams({
+            action: 'xfoo_wizard_generate_brief',
+            nonce: window.XFW_WIZARD.nonce,
+            conversation_id: String(cid),
+        });
 
-    return fetch(window.XFW_WIZARD.ajaxUrl, {
-        method: 'POST',
-        credentials: 'same-origin',
-        body: body,
-    })
-        .then(function (res) { return res.json(); })
-        .then(function (json) {
+        return fetch(window.XFW_WIZARD.ajaxUrl, {
+            method: 'POST',
+            credentials: 'same-origin',
+            body: body,
+        }).then(function (res) { return res.json(); });
+    }).then(function (json) {
             btn.disabled = false;
             if (!json || !json.success || !json.data || !json.data.brief) {
                 var errMsg = 'Unable to generate the brief. Please try again.';
@@ -275,6 +505,10 @@ var generateWizardBrief = function () {
             window.xfwBriefCache.data = json.data.brief;
             window.xfwBriefCache.loaded = true;
             window.xfwBriefCache.conversationId = cid;
+            if (json.data.evidence_context) {
+                console.log('[XFW Step 1] evidence_context (sent with generate)', json.data.evidence_context);
+            }
+            console.log('[XFW Step 1] AI Meeting Brief response', json.data.brief, json.data.meta || {});
             if (statusEl) {
                 statusEl.textContent = '\u2713 AI Meeting Brief generated. Continue to Step 2 to review.';
                 statusEl.style.color = '#16a34a';

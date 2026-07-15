@@ -428,6 +428,7 @@ Route::prefix('v1')->middleware('fusion.api')->group(function () {
         Route::post('/conversations/{conversation}/reveal', [OneOnOneController::class, 'reveal']);
         Route::get('/conversations/{conversation}/brief', [OneOnOneController::class, 'brief']);
         Route::post('/conversations/{conversation}/generate-brief', [OneOnOneController::class, 'generateBrief']);
+        Route::post('/conversations/{conversation}/generate-synthesis', [OneOnOneController::class, 'generateSynthesis']);
         Route::get('/conversations/{conversation}/notes', [OneOnOneController::class, 'getNotes']);
         Route::post('/conversations/{conversation}/notes', [OneOnOneController::class, 'storeNote']);
         Route::get('/conversations/{conversation}/evidence', [OneOnOneController::class, 'evidence']);
@@ -436,6 +437,7 @@ Route::prefix('v1')->middleware('fusion.api')->group(function () {
         Route::patch('/commitments/{commitment}', [OneOnOneController::class, 'updateCommitment']);
         Route::post('/commitments/{commitment}', [OneOnOneController::class, 'updateCommitment']);
         Route::post('/conversations/{conversation}/complete', [OneOnOneController::class, 'complete']);
+        Route::post('/conversations/{conversation}/status', [OneOnOneController::class, 'updateConversationStatus']);
     });
 });
 

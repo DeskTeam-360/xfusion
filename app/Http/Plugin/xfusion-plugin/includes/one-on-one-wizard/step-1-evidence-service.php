@@ -9,6 +9,36 @@ if (! defined('ABSPATH')) {
     exit;
 }
 
+function xfoo_wizard_format_evidence_datetime(?string $value): string
+{
+    if ($value === null || trim($value) === '') {
+        return '';
+    }
+
+    try {
+        $dt = new DateTimeImmutable($value);
+
+        return $dt->format('M j, Y · g:i A');
+    } catch (Throwable) {
+        return $value;
+    }
+}
+
+function xfoo_wizard_format_evidence_status_label(string $status): string
+{
+    $key = strtolower(str_replace(' ', '_', trim($status)));
+
+    return match ($key) {
+        'scheduled' => 'Scheduled',
+        'in_progress' => 'In Progress',
+        'completed' => 'Completed',
+        'cancelled' => 'Cancelled',
+        'done' => 'Done',
+        'open' => 'Open',
+        default => ucwords(str_replace('_', ' ', $key)),
+    };
+}
+
 /** @return array<string, string> */
 function xfoo_wizard_behavioral_driver_labels(): array
 {
@@ -391,7 +421,9 @@ function xfoo_wizard_load_evidence_summary(int $conversationId): array
                 'success_indicator' => (string) ($row['success_indicator'] ?? ''),
                 'owner_role' => (string) ($row['owner_role'] ?? 'shared'),
                 'status' => (string) ($row['status'] ?? 'open'),
+                'status_label' => xfoo_wizard_format_evidence_status_label((string) ($row['status'] ?? 'open')),
                 'due_date' => (string) ($row['due_date'] ?? ''),
+                'due_date_label' => xfoo_wizard_format_evidence_datetime((string) ($row['due_date'] ?? '')) ?: (string) ($row['due_date'] ?? ''),
                 'meeting' => is_array($row['meeting'] ?? null) ? $row['meeting'] : [],
             ];
         }
@@ -456,8 +488,10 @@ function xfoo_wizard_evidence_bundle_for_brief(int $conversationId): array
         $leader = is_array($meeting['leader'] ?? null) ? $meeting['leader'] : [];
         $meetings[] = [
             'id' => (int) ($meeting['id'] ?? 0),
-            'date' => (string) ($meeting['held_at'] ?? $meeting['scheduled_at'] ?? ''),
-            'status' => (string) ($meeting['status'] ?? ''),
+            'date' => xfoo_wizard_format_evidence_datetime((string) ($meeting['held_at'] ?? $meeting['scheduled_at'] ?? '')),
+            'date_raw' => (string) ($meeting['held_at'] ?? $meeting['scheduled_at'] ?? ''),
+            'status' => xfoo_wizard_format_evidence_status_label((string) ($meeting['status'] ?? '')),
+            'status_raw' => (string) ($meeting['status'] ?? ''),
             'leader_name' => (string) ($leader['name'] ?? ''),
             'detail' => is_array($meeting['detail'] ?? null) ? $meeting['detail'] : [],
         ];
@@ -528,6 +562,24 @@ function xfoo_wizard_evidence_bundle_for_brief(int $conversationId): array
 
 add_action('wp_ajax_xfoo_wizard_generate_brief', 'xfoo_wizard_ajax_generate_brief');
 
+add_action('wp_ajax_xfoo_wizard_preview_brief_bundle', 'xfoo_wizard_ajax_preview_brief_bundle');
+
+function xfoo_wizard_ajax_preview_brief_bundle(): void
+{
+    check_ajax_referer('xfoo_wizard_save_draft', 'nonce');
+
+    if (! is_user_logged_in()) {
+        wp_send_json_error(['message' => 'Unauthorized.'], 401);
+    }
+
+    $conversationId = isset($_REQUEST['conversation_id']) ? absint($_REQUEST['conversation_id']) : 0;
+    if ($conversationId < 1) {
+        wp_send_json_error(['message' => 'conversation_id is required.'], 422);
+    }
+
+    wp_send_json_success(xfoo_wizard_evidence_bundle_for_brief($conversationId));
+}
+
 function xfoo_wizard_ajax_generate_brief(): void
 {
     check_ajax_referer('xfoo_wizard_save_draft', 'nonce');
@@ -556,6 +608,7 @@ function xfoo_wizard_ajax_generate_brief(): void
     wp_send_json_success([
         'brief' => $body['data'] ?? null,
         'meta' => $body['meta'] ?? [],
+        'evidence_context' => $bundle,
     ]);
 }
 
@@ -580,6 +633,46 @@ var xfwFormatEvidenceDate = function (iso) {
         return String(iso);
     }
     return d.toLocaleDateString(undefined, { year: 'numeric', month: 'short', day: 'numeric' });
+};
+
+var xfwFormatEvidenceDateTime = function (iso) {
+    if (!iso) {
+        return '—';
+    }
+    var d = new Date(iso);
+    if (isNaN(d.getTime())) {
+        return String(iso);
+    }
+    var date = d.toLocaleDateString(undefined, { year: 'numeric', month: 'short', day: 'numeric' });
+    var time = d.toLocaleTimeString(undefined, { hour: 'numeric', minute: '2-digit' });
+    return date + ' · ' + time;
+};
+
+var xfwFormatEvidenceStatus = function (status) {
+    var key = String(status || '').toLowerCase().replace(/\s+/g, '_');
+    var labels = {
+        scheduled: 'Scheduled',
+        in_progress: 'In Progress',
+        completed: 'Completed',
+        cancelled: 'Cancelled',
+        done: 'Done',
+        open: 'Open',
+    };
+    return labels[key] || String(status || '—').replace(/_/g, ' ').replace(/\b\w/g, function (ch) { return ch.toUpperCase(); });
+};
+
+var xfwStatusBadgeForEvidence = function (status) {
+    var key = String(status || '').toLowerCase().replace(/\s+/g, '_');
+    if (key === 'completed' || key === 'done') {
+        return 'green';
+    }
+    if (key === 'in_progress') {
+        return 'blue';
+    }
+    if (key === 'cancelled') {
+        return 'gray';
+    }
+    return 'amber';
 };
 
 var xfwEvidenceEsc = function (s) {
@@ -646,13 +739,13 @@ var xfwRenderMeetingDetail = function (meeting) {
     var detail = meeting.detail || {};
     var prep = detail.preparation || {};
     var leaderName = meeting.leader && meeting.leader.name ? meeting.leader.name : 'Leader';
-    var dateLabel = xfwFormatEvidenceDate(meeting.held_at || meeting.scheduled_at);
+    var dateLabel = xfwFormatEvidenceDateTime(meeting.held_at || meeting.scheduled_at);
 
     return '<div class="xfw-evidence-meeting">' +
         '<div class="xfw-evidence-meeting-head">' +
         '<strong>' + xfwEvidenceEsc(dateLabel) + '</strong>' +
         '<span class="xfw-muted">with ' + xfwEvidenceEsc(leaderName) + '</span>' +
-        '<span class="xfw-badge ' + (meeting.status === 'completed' ? 'green' : 'amber') + '">' + xfwEvidenceEsc(meeting.status || 'scheduled') + '</span>' +
+        '<span class="xfw-badge ' + xfwStatusBadgeForEvidence(meeting.status) + '">' + xfwEvidenceEsc(xfwFormatEvidenceStatus(meeting.status)) + '</span>' +
         '</div>' +
         '<div class="xfw-evidence-section">' +
         '<h5>Step 3 — Employee Preparation</h5>' + xfwRenderEvidenceFields(prep.employee || []) +
@@ -683,19 +776,24 @@ var xfwRenderEvidenceCommitments = function (rows) {
             meta.push(driver);
         }
         if (row.status) {
-            meta.push('Status: ' + row.status);
+            meta.push('Status: ' + xfwFormatEvidenceStatus(row.status));
         }
         if (row.due_date) {
-            meta.push('Due: ' + row.due_date);
+            meta.push('Due: ' + (row.due_date_label || xfwFormatEvidenceDate(row.due_date)));
+        }
+        if (row.owner_role) {
+            meta.push('Owner: ' + row.owner_role);
         }
         var meeting = row.meeting || {};
         if (meeting.leader_name || meeting.meeting_at) {
-            meta.push('Meeting: ' + xfwFormatEvidenceDate(meeting.meeting_at || meeting.held_at || meeting.scheduled_at) +
+            meta.push('Meeting: ' + xfwFormatEvidenceDateTime(meeting.meeting_at || meeting.held_at || meeting.scheduled_at) +
                 (meeting.leader_name ? ' (' + meeting.leader_name + ')' : ''));
         }
         return '<div class="xfw-evidence-commitment">' +
             '<div class="xfw-evidence-commitment-title">' + xfwEvidenceEsc(row.title || 'Untitled') + '</div>' +
-            (meta.length ? '<div class="xfw-evidence-commitment-meta">' + xfwEvidenceEsc(meta.join(' · ')) + '</div>' : '') +
+            (meta.length ? '<div class="xfw-evidence-commitment-meta">' + meta.map(function (part) {
+                return '<span>' + xfwEvidenceEsc(part) + '</span>';
+            }).join('<span class="xfw-muted"> · </span>') + '</div>' : '') +
             (row.success_indicator ? '<div class="xfw-evidence-commitment-indicator">' + xfwEvidenceEsc(row.success_indicator) + '</div>' : '') +
             '</div>';
     }).join('') + '</div>';
@@ -899,6 +997,7 @@ var loadWizardEvidence = function (force) {
         .then(function (json) {
             if (json && json.success && json.data) {
                 window.xfwEvidenceCache.data = json.data;
+                console.log('[XFW Step 1] evidence summary (UI / accordion)', json.data);
             } else {
                 window.xfwEvidenceCache.data = xfwEvidenceEmptyDefaults();
             }

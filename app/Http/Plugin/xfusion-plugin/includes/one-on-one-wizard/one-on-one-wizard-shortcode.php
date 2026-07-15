@@ -22,6 +22,7 @@ require_once __DIR__ . '/gf-entry-service.php';
 require_once __DIR__ . '/commitments-fusion-service.php';
 require_once __DIR__ . '/step-1-evidence-service.php';
 require_once __DIR__ . '/brief-wizard-service.php';
+require_once __DIR__ . '/synthesis-wizard-service.php';
 require_once __DIR__ . '/save-draft.php';
 require_once __DIR__ . '/load-draft.php';
 require_once __DIR__ . '/meeting-picker.php';
@@ -65,6 +66,7 @@ function xfusion_one_on_one_wizard_shortcode($atts = []): string
     $commitJs   = xfoo_wizard_commitments_js();
     $evidenceJs = xfoo_wizard_evidence_js();
     $briefJs    = xfoo_wizard_brief_js();
+    $synthesisJs = xfoo_wizard_synthesis_js();
     $saveJs     = xfoo_wizard_save_draft_js();
     $loadJs     = xfoo_wizard_load_draft_js();
     $css        = xfoo_wizard_styles_css();
@@ -104,9 +106,19 @@ function xfusion_one_on_one_wizard_shortcode($atts = []): string
         <div class="xfw-card xfw-gate-card">
             <h2 class="xfw-section-title" style="margin-top:0">Select your 1-on-1 meeting</h2>
             <p class="xfw-section-desc">Open an existing meeting or pick a company group to schedule a new one. You may be a leader in one group and a member in another.</p>
-            <div id="xfw-gate-all-meetings"></div>
-            <div id="xfw-gate-pairs"></div>
-            <div id="xfw-gate-conversations" class="xfw-hidden"></div>
+            <div class="xfw-gate-columns">
+                <div class="xfw-gate-col xfw-gate-col-schedule">
+                    <h3 class="xfw-gate-col-title">Schedule a new meeting</h3>
+                    <p class="xfw-muted xfw-gate-col-desc">Select the company group context, then pick a team member if you are the leader.</p>
+                    <div id="xfw-gate-pairs"></div>
+                    <div id="xfw-gate-conversations" class="xfw-hidden"></div>
+                </div>
+                <div class="xfw-gate-col xfw-gate-col-meetings">
+                    <h3 class="xfw-gate-col-title">Your meetings</h3>
+                    <p class="xfw-muted xfw-gate-col-desc">All scheduled and past meetings across your company groups.</p>
+                    <div id="xfw-gate-all-meetings"></div>
+                </div>
+            </div>
         </div>
     </div>
 
@@ -156,7 +168,7 @@ function xfusion_one_on_one_wizard_shortcode($atts = []): string
 <script>
 (function () {
 window.XFW_WIZARD = <?php echo wp_json_encode($wizardConfig); ?>;
-<?php echo $panelsJs . "\n\n" . $coreJs . "\n\n" . $pickerJs . "\n\n" . $commitJs . "\n\n" . $evidenceJs . "\n\n" . $briefJs . "\n\n" . $loadJs . "\n\n" . $saveJs; ?>
+<?php echo $panelsJs . "\n\n" . $coreJs . "\n\n" . $pickerJs . "\n\n" . $commitJs . "\n\n" . $evidenceJs . "\n\n" . $briefJs . "\n\n" . $synthesisJs . "\n\n" . $loadJs . "\n\n" . $saveJs; ?>
 })();
 </script>
     <?php

@@ -568,6 +568,47 @@ class OneOnOneController extends Controller
         ]);
     }
 
+    /** Generate AI Meeting Synthesis from prep, notes, and commitments for this conversation. */
+    public function generateSynthesis(Request $request, OneOnOneConversation $conversation, OneOnOneAiService $ai)
+    {
+        $this->mergeJsonPayload($request);
+
+        $forceRefresh = $request->boolean('force_refresh', true);
+        $synthesis = $ai->meetingSynthesis($conversation, $forceRefresh);
+
+        if ($synthesis === null) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Unable to generate AI Meeting Synthesis. Check LLM configuration and try again.',
+            ], 502);
+        }
+
+        $debugPayload = null;
+        if ($request->boolean('debug', false)) {
+            $pair = $conversation->oneOnOne;
+            $debugPayload = [
+                'conversation_id' => $conversation->id,
+                'leader_user_id' => $pair?->leader_user_id,
+                'employee_user_id' => $pair?->employee_user_id,
+                'preparations' => $conversation->preparations()->get(['author_role', 'content'])->mapWithKeys(
+                    fn ($p) => [$p->author_role => $p->content]
+                ),
+                'notes' => $conversation->notes()->get(['section', 'note']),
+                'commitments' => $conversation->commitments()->get(['title', 'description', 'owner_role', 'status']),
+            ];
+        }
+
+        return response()->json([
+            'success' => true,
+            'data' => $synthesis->synthesis,
+            'meta' => [
+                'insight_model' => $synthesis->insight_model,
+                'generated_at' => $synthesis->created_at?->toIso8601String(),
+            ],
+            'debug_payload' => $debugPayload,
+        ]);
+    }
+
     /** Fetch the calling user's own preparation (never the other party's). */
     public function myPreparation(Request $request, OneOnOneConversation $conversation)
     {
@@ -771,6 +812,52 @@ class OneOnOneController extends Controller
                 'conversation' => $conversation->fresh(),
                 'synthesis' => $synthesis?->synthesis,
                 'synthesis_available' => $synthesis !== null,
+            ],
+        ]);
+    }
+
+    /** Update meeting workflow status (leader or employee on the pair). */
+    public function updateConversationStatus(Request $request, OneOnOneConversation $conversation)
+    {
+        $this->mergeJsonPayload($request);
+
+        $data = $request->validate([
+            'user_id' => 'required|integer|min:1',
+            'status' => 'required|in:scheduled,in_progress,completed,cancelled',
+        ]);
+
+        $userId = (int) $data['user_id'];
+        $pair = $conversation->oneOnOne;
+        if ($pair === null) {
+            return response()->json(['success' => false, 'message' => 'Pairing not found.'], 404);
+        }
+
+        if ($pair->leader_user_id !== $userId && $pair->employee_user_id !== $userId) {
+            return response()->json(['success' => false, 'message' => 'Not authorized to update this meeting.'], 403);
+        }
+
+        $status = $data['status'];
+        $updates = ['status' => $status];
+
+        if ($status === OneOnOneConversation::STATUS_COMPLETED && $conversation->held_at === null) {
+            $updates['held_at'] = now();
+        }
+
+        if ($status === OneOnOneConversation::STATUS_IN_PROGRESS) {
+            $conversation->preparations()->update([
+                'is_revealed' => true,
+                'revealed_at' => now(),
+            ]);
+        }
+
+        $conversation->update($updates);
+
+        return response()->json([
+            'success' => true,
+            'data' => [
+                'id' => (int) $conversation->id,
+                'status' => (string) $conversation->status,
+                'held_at' => $conversation->held_at?->toIso8601String(),
             ],
         ]);
     }

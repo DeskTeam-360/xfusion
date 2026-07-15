@@ -450,22 +450,48 @@ class MeetingBriefFromEvidenceService
             return 'No commitment records are available yet.';
         }
 
-        $lines = [];
+        $blocks = [];
         foreach ($rows as $row) {
             if (! is_array($row)) {
                 continue;
             }
             $title = trim((string) ($row['title'] ?? 'Untitled'));
-            $status = (string) ($row['status'] ?? 'open');
-            $priority = (string) ($row['priority'] ?? 'medium');
-            $lines[] = "- {$title} [{$status}, {$priority} priority]";
-            if (! $listAll && count($lines) >= 8) {
-                $lines[] = '- …';
+            $status = (string) ($row['status_label'] ?? $row['status'] ?? 'open');
+            $priority = $this->formatPriority((string) ($row['priority'] ?? 'medium'));
+            $meta = [
+                'Status: '.$this->formatCommitmentStatus($status),
+                'Priority: '.$priority,
+            ];
+
+            $driver = trim((string) ($row['behavioral_driver_label'] ?? $row['behavioral_driver'] ?? ''));
+            if ($driver !== '') {
+                $meta[] = $driver;
+            }
+
+            $due = trim((string) ($row['due_date_label'] ?? $row['due_date'] ?? ''));
+            if ($due !== '') {
+                $meta[] = 'Due: '.$this->formatMeetingDate($due);
+            }
+
+            $owner = trim((string) ($row['owner_role'] ?? ''));
+            if ($owner !== '' && $owner !== 'shared') {
+                $meta[] = 'Owner: '.ucfirst($owner);
+            }
+
+            $block = "• {$title}\n  ".implode(' · ', $meta);
+            $success = trim((string) ($row['success_indicator'] ?? ''));
+            if ($success !== '') {
+                $block .= "\n  Success indicator: {$success}";
+            }
+
+            $blocks[] = $block;
+            if (! $listAll && count($blocks) >= 8) {
+                $blocks[] = '• …';
                 break;
             }
         }
 
-        return implode("\n", $lines);
+        return "Commitments on record:\n\n".implode("\n\n", $blocks);
     }
 
     /**
@@ -483,10 +509,14 @@ class MeetingBriefFromEvidenceService
             if (! is_array($meeting)) {
                 continue;
             }
-            $date = (string) ($meeting['date'] ?? 'Unknown date');
+            $date = $this->formatMeetingDate(
+                (string) ($meeting['date'] ?? $meeting['date_raw'] ?? '')
+            );
             $leader = (string) ($meeting['leader_name'] ?? 'Leader');
-            $status = (string) ($meeting['status'] ?? '');
-            $lines[] = "- {$date} with {$leader}".($status !== '' ? " ({$status})" : '');
+            $status = $this->formatMeetingStatus(
+                (string) ($meeting['status'] ?? $meeting['status_raw'] ?? '')
+            );
+            $lines[] = "• {$date} with {$leader}".($status !== '' ? " · {$status}" : '');
         }
 
         return implode("\n", $lines);
@@ -532,7 +562,7 @@ class MeetingBriefFromEvidenceService
             }
             $title = trim((string) ($item['title'] ?? 'Untitled'));
             $date = trim((string) ($item['submitted_at'] ?? ''));
-            $lines[] = $date !== '' ? "- {$title} ({$date})" : "- {$title}";
+            $lines[] = $date !== '' ? "- {$title} ({$this->formatMeetingDate($date)})" : "- {$title}";
         }
 
         return implode("\n", $lines);
@@ -567,5 +597,55 @@ class MeetingBriefFromEvidenceService
         }
 
         return rtrim(substr($text, 0, $max - 1)).'…';
+    }
+
+    private function formatMeetingDate(string $value): string
+    {
+        $value = trim($value);
+        if ($value === '') {
+            return 'Date not set';
+        }
+
+        if (! preg_match('/^\d{4}-\d{2}-\d{2}/', $value)) {
+            return $value;
+        }
+
+        try {
+            return \Carbon\Carbon::parse($value)->format('M j, Y · g:i A');
+        } catch (\Throwable) {
+            return $value;
+        }
+    }
+
+    private function formatMeetingStatus(string $status): string
+    {
+        $key = strtolower(str_replace(' ', '_', trim($status)));
+
+        return match ($key) {
+            'scheduled' => 'Scheduled',
+            'in_progress' => 'In Progress',
+            'completed' => 'Completed',
+            'cancelled' => 'Cancelled',
+            default => $status !== '' ? ucwords(str_replace('_', ' ', $key)) : '',
+        };
+    }
+
+    private function formatCommitmentStatus(string $status): string
+    {
+        $key = strtolower(str_replace(' ', '_', trim($status)));
+
+        return match ($key) {
+            'done' => 'Done',
+            'in_progress' => 'In Progress',
+            'open' => 'Open',
+            'completed' => 'Completed',
+            'cancelled' => 'Cancelled',
+            default => ucwords(str_replace('_', ' ', $key)),
+        };
+    }
+
+    private function formatPriority(string $priority): string
+    {
+        return ucfirst(strtolower(trim($priority) ?: 'medium')).' priority';
     }
 }

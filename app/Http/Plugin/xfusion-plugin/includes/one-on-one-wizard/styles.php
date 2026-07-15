@@ -92,17 +92,33 @@ function xfoo_wizard_styles_css(): string
 .xfw-dl dt:first-child{margin-top:0}
 .xfw-dl dd{margin:.15rem 0 0;font-weight:600;color:var(--ink);font-size:16px}
 .xfw-dl .xfw-badge{font-size:16px}
+.xfw-dl .xfw-status-select{font-weight:500;margin:0;max-width:100%}
 
 .xfw-badge{display:inline-block;padding:.15rem .55rem;border-radius:999px;font-size:16px;font-weight:600}
 .xfw-badge.amber{background:#fef3c7;color:#92400e}
 .xfw-badge.green{background:#dcfce7;color:#166534}
 .xfw-badge.blue{background:#dbeafe;color:#1e40af}
+.xfw-badge.red{background:#fee2e2;color:#991b1b}
+.xfw-badge.gray{background:#f3f4f6;color:#4b5563}
 
 /* Meeting picker gate (step 0) */
 .xfw-meeting-gate{padding:1.5rem 1.75rem 2rem}
-.xfw-gate-card{max-width:960px;margin:0 auto}
-.xfw-gate-section{margin-top:1.25rem;padding-top:1.25rem;border-top:1px solid var(--border)}
+.xfw-gate-card{width:100%;margin:0 auto;box-sizing:border-box}
+.xfw-gate-columns{display:grid;grid-template-columns:minmax(0,3fr) minmax(0,7fr);gap:0;align-items:start;margin-top:1.25rem;border:1px solid var(--border);border-radius:.5rem;overflow:hidden}
+.xfw-gate-col{min-width:0;padding:1.25rem 1.35rem}
+.xfw-gate-col-schedule{background:#fff;border-right:1px solid var(--border)}
+.xfw-gate-col-meetings{background:#fafbfc}
+.xfw-gate-col-title{margin:0 0 .35rem;font-size:1.05rem;color:var(--navy)}
+.xfw-gate-col-desc{margin:0 0 1rem;font-size:.85rem;line-height:1.45}
+.xfw-gate-col-meetings .xfw-table{font-size:.8rem}
+.xfw-gate-col-meetings .xfw-table th,.xfw-gate-col-meetings .xfw-table td{padding:.45rem .5rem;white-space:nowrap}
+.xfw-gate-col-meetings .xfw-table td:first-child,.xfw-gate-col-meetings .xfw-table th:first-child{white-space:normal;min-width:4.5rem}
+.xfw-gate-section{margin-top:1rem;padding-top:1rem;border-top:1px solid var(--border)}
 .xfw-gate-section:first-child{margin-top:0;padding-top:0;border-top:none}
+@media (max-width:820px){
+.xfw-gate-columns{grid-template-columns:1fr}
+.xfw-gate-col-schedule{border-right:none;border-bottom:1px solid var(--border)}
+}
 .xfw-label{display:block;font-weight:700;font-size:.85rem;margin-bottom:.35rem;color:var(--navy)}
 .xfw-input{width:100%;border:1px solid var(--border);border-radius:.375rem;padding:.55rem .65rem;font-size:.85rem;box-sizing:border-box;font-family:inherit}
 .xfw-btn-sm{padding:.35rem .75rem;font-size:.75rem}
@@ -162,6 +178,13 @@ function xfoo_wizard_styles_css(): string
 .xfw-evidence-driver{border:1px solid var(--border);border-radius:.5rem;padding:.85rem 1rem;background:#fff;text-align:center}
 .xfw-evidence-driver-title{font-size:.85rem;font-weight:700;color:var(--navy);margin-bottom:.35rem;line-height:1.3}
 .xfw-evidence-driver-score{font-size:1.75rem;font-weight:700;color:var(--green)}
+
+/* Step 2 brief details modal */
+.xfw-brief-modal-body{max-height:60vh;overflow:auto}
+.xfw-brief-details-heading{margin:1.25rem 0 .65rem;font-size:1rem;color:var(--navy)}
+.xfw-brief-details-heading:first-child{margin-top:0}
+.xfw-brief-details-para{margin-bottom:1rem;line-height:1.55;font-size:.95rem}
+.xfw-brief-details-para:last-child{margin-bottom:0}
 
 /* Insight grid (step 2 / step 6) */
 .xfw-grid-2{display:grid;grid-template-columns:1fr 1fr;gap:1rem}
