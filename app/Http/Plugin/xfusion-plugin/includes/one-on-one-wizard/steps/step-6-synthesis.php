@@ -40,14 +40,18 @@ synthesis: function () {
         card(iconBase + 'Trending-Up-Arrow-Icon-Green-1.svg', 'Emerging Opportunities™', '<ul><li>Expand stakeholder communication plan</li><li>Implement micro-learning strategy</li><li>Leverage cross-functional planning session</li></ul>') +
         '</div>' +
         '<div class="xfw-card" style="margin-bottom:1rem">' +
-        '<div class="xfw-commit-title"><img src="' + iconBase + 'Orange-Light-Bulb-Icon.svg" alt="" width="40" height="40"><h3>Suggested Coaching Topics™</h3></div>' +
+        '<div class="xfw-commit-title"><img src="' + iconBase + 'Orange-Light-Bulb-Icon.svg" alt="" width="50" height="50"><h3>Suggested Coaching Topics™</h3></div>' +
         '<div class="xfw-row">' + ['Strategic Communication', 'Stakeholder Management', 'Data-Driven Decisions', 'Career Growth Planning'].map(function (t) {
             return '<span class="xfw-badge" style="background:#eef2ff;color:#4338ca">' + t + '</span>';
         }).join('') + '</div>' +
         '</div>' +
         '<div class="xfw-card">' +
-        '<div class="xfw-commit-title"><img src="' + iconBase + 'Calendar-Icon-Teal.svg" alt="" width="40" height="40"><h3>Recommended Follow-up™</h3></div>' +
-        '<ul class="xfw-numbered" style="list-style:none"><li>&#9989; Check-in on data access resolution by May 28</li><li>&#128101; Schedule cross-departmental planning session by June 4</li><li>&#128196; Review communication strategy progress in next 1-on-1</li></ul>' +
+        '<div class="xfw-commit-title"><img src="' + iconBase + 'Calendar-Icon-Teal.svg" alt="" width="50" height="50"><h3>Recommended Follow-up™</h3></div>' +
+        '<div class="xfw-followup">' +
+        '<div class="xfw-followup-item"><img src="' + iconBase + 'Checkmark-Circle-Green-Icon_SVG.svg" alt="" width="50" height="50"> Check-in on data access resolution by May 28</div>' +
+        '<div class="xfw-followup-item"><img src="' + iconBase + 'Two-People-Dark-Blue-Icon_SVG.svg" alt="" width="50" height="50"> Schedule cross-departmental planning session by June 4</div>' +
+        '<div class="xfw-followup-item"><img src="' + iconBase + 'Document-File-Icon_SVG.svg" alt="" width="50" height="50"> Review communication strategy progress in next 1-on-1</div>' +
+        '</div>' +
         '</div>';
 }
 JS;

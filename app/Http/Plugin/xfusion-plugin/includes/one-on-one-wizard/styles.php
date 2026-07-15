@@ -213,7 +213,7 @@ function xfoo_wizard_styles_css(): string
 .xfw-commit-card-leader{margin-top:1rem}
 .xfw-commit-head{display:flex;justify-content:space-between;align-items:center;margin-bottom:.6rem;gap:.75rem;flex-wrap:wrap}
 .xfw-commit-title{display:flex;align-items:center;gap:.75rem;min-width:0}
-.xfw-commit-title img{width:40px;height:40px;flex-shrink:0;display:block;object-fit:contain}
+.xfw-commit-title img{width:50px;height:50px;flex-shrink:0;display:block;object-fit:contain}
 .xfw-commit-title h3{margin:0}
 .xfw-card>.xfw-commit-title{margin-bottom:.6rem}
 table.xfw-table{width:100%;border-collapse:collapse;font-size:.8rem;min-width:640px}
@@ -226,6 +226,11 @@ table.xfw-table select.xfw-input{padding:.35rem .4rem}
 .xfw-dot.high{background:#ea580c}
 .xfw-dot.medium{background:#ca8a04}
 .xfw-dot.low{background:#2563eb}
+
+/* Follow-up items (step 6) */
+.xfw-followup{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:1rem}
+.xfw-followup-item{display:flex;align-items:flex-start;gap:.5rem;font-size:18px;line-height:1.45;color:var(--ink)}
+.xfw-followup-item img{flex-shrink:0;margin-top:.15rem}
 
 /* Footer nav */
 .xfw-footer{display:flex;align-items:center;justify-content:space-between;padding:1rem 1.75rem;border-top:1px solid var(--border);background:#fff;flex-wrap:wrap;gap:.75rem}
@@ -256,6 +261,7 @@ table.xfw-table select.xfw-input{padding:.35rem .4rem}
 .xfw-step-underline{width:100%!important;margin-top:.5rem}
 .xfw-guide-notes-toggle{white-space:normal}
 .xfw-guide-notes-panel{padding-left:0}
+.xfw-followup{grid-template-columns:repeat(2,minmax(0,1fr))}
 }
 
 /* ── Mobile (≤768px) ── */
@@ -298,6 +304,8 @@ table.xfw-table select.xfw-input{padding:.35rem .4rem}
 .xfw-dl,.xfw-dl dt,.xfw-dl dd,.xfw-dl .xfw-badge{font-size:15px}
 .xfw-link{font-size:16px}
 .xfw-numbered li,.xfw-insight-card li{font-size:16px}
+.xfw-followup{grid-template-columns:1fr}
+.xfw-followup-item{font-size:16px}
 .xfw-guide-title{font-size:16px}
 .xfw-guide-desc,.xfw-scale-q label,.xfw-scale-q .q-desc,.xfw-textarea-field label{font-size:15px}
 .xfw-textarea-field textarea{font-size:15px}
