@@ -316,6 +316,10 @@ if (root) {
             initBriefStep();
         }
 
+        if (STEPS[current].key === 'synthesis' && typeof initSynthesisStep === 'function') {
+            initSynthesisStep();
+        }
+
         if ((STEPS[current].key === 'preparation' || STEPS[current].key === 'conversation') && typeof applyDraftForCurrentStep === 'function') {
             if (window.xfwDraftCache && window.xfwDraftCache.loaded) {
                 applyDraftForCurrentStep();

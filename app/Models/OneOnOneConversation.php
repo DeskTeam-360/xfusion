@@ -36,6 +36,11 @@ class OneOnOneConversation extends Model
         return $this->hasOne(OneOnOneAiBrief::class, 'conversation_id')->latestOfMany();
     }
 
+    public function briefs()
+    {
+        return $this->hasMany(OneOnOneAiBrief::class, 'conversation_id')->orderByDesc('id');
+    }
+
     public function preparations()
     {
         return $this->hasMany(OneOnOnePreparation::class, 'conversation_id');
@@ -54,6 +59,11 @@ class OneOnOneConversation extends Model
     public function synthesis()
     {
         return $this->hasOne(OneOnOneAiSynthesis::class, 'conversation_id')->latestOfMany();
+    }
+
+    public function syntheses()
+    {
+        return $this->hasMany(OneOnOneAiSynthesis::class, 'conversation_id')->orderByDesc('id');
     }
 
     /** Preparation for one role, regardless of reveal state — used server-side for AI calls. */

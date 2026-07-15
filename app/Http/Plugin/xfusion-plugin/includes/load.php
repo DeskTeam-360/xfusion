@@ -30,6 +30,8 @@ $xfusion_include_files = [
     'xfusion-knowledge-cpt.php',
     'xfusion-llm-prompts-registry.php',
     'xfusion-llm-prompts-admin.php',
+    'xfusion-one-on-one-briefs-admin.php',
+    'xfusion-one-on-one-synthesis-admin.php',
     'xfusion-ai-insights-settings.php',
     'result-evaluation.php',
     'once-popup.php',

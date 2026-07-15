@@ -427,8 +427,13 @@ Route::prefix('v1')->middleware('fusion.api')->group(function () {
         Route::get('/conversations/{conversation}/preparation-status', [OneOnOneController::class, 'preparationStatus']);
         Route::post('/conversations/{conversation}/reveal', [OneOnOneController::class, 'reveal']);
         Route::get('/conversations/{conversation}/brief', [OneOnOneController::class, 'brief']);
+        Route::get('/conversations/{conversation}/brief-history', [OneOnOneController::class, 'briefHistory']);
+        Route::get('/conversations/{conversation}/briefs/{brief}', [OneOnOneController::class, 'showBriefVersion'])->whereNumber('brief');
         Route::post('/conversations/{conversation}/generate-brief', [OneOnOneController::class, 'generateBrief']);
         Route::post('/conversations/{conversation}/generate-synthesis', [OneOnOneController::class, 'generateSynthesis']);
+        Route::get('/conversations/{conversation}/synthesis', [OneOnOneController::class, 'synthesis']);
+        Route::get('/conversations/{conversation}/synthesis-history', [OneOnOneController::class, 'synthesisHistory']);
+        Route::get('/conversations/{conversation}/syntheses/{synthesis}', [OneOnOneController::class, 'showSynthesisVersion'])->whereNumber('synthesis');
         Route::get('/conversations/{conversation}/notes', [OneOnOneController::class, 'getNotes']);
         Route::post('/conversations/{conversation}/notes', [OneOnOneController::class, 'storeNote']);
         Route::get('/conversations/{conversation}/evidence', [OneOnOneController::class, 'evidence']);

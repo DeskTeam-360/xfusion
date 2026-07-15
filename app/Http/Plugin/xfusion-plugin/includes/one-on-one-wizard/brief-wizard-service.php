@@ -418,13 +418,8 @@ var xfwRenderBriefStep = function () {
     if (!host) {
         return;
     }
-    if (window.xfwBriefCache.data) {
-        host.innerHTML = xfwRenderBriefPanel(window.xfwBriefCache.data);
-        xfwBindBriefDetailsLinks();
-        return;
-    }
     host.innerHTML = '<p class="xfw-muted">Loading AI Meeting Brief\u2026</p>';
-    loadWizardBrief(false).then(function (brief) {
+    loadWizardBrief(true).then(function (brief) {
         host.innerHTML = xfwRenderBriefPanel(brief);
         xfwBindBriefDetailsLinks();
     });

@@ -50,8 +50,6 @@ class OneOnOneAiService
             if ($existing !== null) {
                 return $existing;
             }
-        } else {
-            OneOnOneAiBrief::query()->where('conversation_id', $conversation->id)->delete();
         }
 
         if (! $this->isConfigured()) {
@@ -124,8 +122,6 @@ class OneOnOneAiService
             if ($existing !== null) {
                 return $existing;
             }
-        } else {
-            OneOnOneAiSynthesis::query()->where('conversation_id', $conversation->id)->delete();
         }
 
         $pair = $conversation->oneOnOne;

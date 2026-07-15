@@ -7,6 +7,7 @@ use App\Models\CompanyEmployee;
 use App\Models\CourseScoringGroup;
 use App\Models\OneOnOne;
 use App\Models\OneOnOneAiBrief;
+use App\Models\OneOnOneAiSynthesis;
 use App\Models\OneOnOneCommitment;
 use App\Models\OneOnOneConversation;
 use App\Models\OneOnOneNote;
@@ -526,6 +527,62 @@ class OneOnOneController extends Controller
         return response()->json(['success' => true, 'data' => $brief->brief]);
     }
 
+    /** List all generated brief versions for a conversation (newest first). */
+    public function briefHistory(OneOnOneConversation $conversation)
+    {
+        $rows = OneOnOneAiBrief::query()
+            ->where('conversation_id', $conversation->id)
+            ->orderByDesc('id')
+            ->get(['id', 'insight_model', 'tokens_used', 'cost_usd', 'created_at']);
+
+        $latestId = $rows->first()?->id;
+
+        return response()->json([
+            'success' => true,
+            'data' => $rows->map(fn (OneOnOneAiBrief $row) => [
+                'id' => (int) $row->id,
+                'insight_model' => $row->insight_model,
+                'tokens_used' => (int) $row->tokens_used,
+                'cost_usd' => (float) $row->cost_usd,
+                'created_at' => $row->created_at?->toIso8601String(),
+                'is_current' => (int) $row->id === (int) $latestId,
+            ])->values(),
+        ]);
+    }
+
+    /** Fetch one archived brief version by id (must belong to this conversation). */
+    public function showBriefVersion(OneOnOneConversation $conversation, int $brief)
+    {
+        $row = OneOnOneAiBrief::query()
+            ->where('conversation_id', $conversation->id)
+            ->where('id', $brief)
+            ->first();
+
+        if ($row === null) {
+            return response()->json(['success' => false, 'message' => 'Brief version not found.'], 404);
+        }
+
+        $latestId = (int) OneOnOneAiBrief::query()
+            ->where('conversation_id', $conversation->id)
+            ->orderByDesc('id')
+            ->value('id');
+
+        return response()->json([
+            'success' => true,
+            'data' => [
+                'id' => (int) $row->id,
+                'brief' => $row->brief,
+                'is_current' => (int) $row->id === $latestId,
+                'meta' => [
+                    'insight_model' => $row->insight_model,
+                    'tokens_used' => (int) $row->tokens_used,
+                    'cost_usd' => (float) $row->cost_usd,
+                    'generated_at' => $row->created_at?->toIso8601String(),
+                ],
+            ],
+        ]);
+    }
+
     /**
      * Generate AI Meeting Brief from Step 1 continuous evidence (all 12 sections).
      */
@@ -548,7 +605,6 @@ class OneOnOneController extends Controller
 
         if ($briefModel === null) {
             $composed = $composer->compose($evidenceContext);
-            OneOnOneAiBrief::query()->where('conversation_id', $conversation->id)->delete();
             $briefModel = OneOnOneAiBrief::create([
                 'conversation_id' => $conversation->id,
                 'brief' => $composed,
@@ -606,6 +662,73 @@ class OneOnOneController extends Controller
                 'generated_at' => $synthesis->created_at?->toIso8601String(),
             ],
             'debug_payload' => $debugPayload,
+        ]);
+    }
+
+    public function synthesis(OneOnOneConversation $conversation)
+    {
+        $synthesis = $conversation->synthesis;
+
+        if ($synthesis === null) {
+            return response()->json(['success' => false, 'message' => 'AI Meeting Synthesis has not been generated yet.'], 404);
+        }
+
+        return response()->json(['success' => true, 'data' => $synthesis->synthesis]);
+    }
+
+    /** List all generated synthesis versions for a conversation (newest first). */
+    public function synthesisHistory(OneOnOneConversation $conversation)
+    {
+        $rows = OneOnOneAiSynthesis::query()
+            ->where('conversation_id', $conversation->id)
+            ->orderByDesc('id')
+            ->get(['id', 'insight_model', 'tokens_used', 'cost_usd', 'created_at']);
+
+        $latestId = $rows->first()?->id;
+
+        return response()->json([
+            'success' => true,
+            'data' => $rows->map(fn (OneOnOneAiSynthesis $row) => [
+                'id' => (int) $row->id,
+                'insight_model' => $row->insight_model,
+                'tokens_used' => (int) $row->tokens_used,
+                'cost_usd' => (float) $row->cost_usd,
+                'created_at' => $row->created_at?->toIso8601String(),
+                'is_current' => (int) $row->id === (int) $latestId,
+            ])->values(),
+        ]);
+    }
+
+    /** Fetch one archived synthesis version by id (must belong to this conversation). */
+    public function showSynthesisVersion(OneOnOneConversation $conversation, int $synthesis)
+    {
+        $row = OneOnOneAiSynthesis::query()
+            ->where('conversation_id', $conversation->id)
+            ->where('id', $synthesis)
+            ->first();
+
+        if ($row === null) {
+            return response()->json(['success' => false, 'message' => 'Synthesis version not found.'], 404);
+        }
+
+        $latestId = (int) OneOnOneAiSynthesis::query()
+            ->where('conversation_id', $conversation->id)
+            ->orderByDesc('id')
+            ->value('id');
+
+        return response()->json([
+            'success' => true,
+            'data' => [
+                'id' => (int) $row->id,
+                'synthesis' => $row->synthesis,
+                'is_current' => (int) $row->id === $latestId,
+                'meta' => [
+                    'insight_model' => $row->insight_model,
+                    'tokens_used' => (int) $row->tokens_used,
+                    'cost_usd' => (float) $row->cost_usd,
+                    'generated_at' => $row->created_at?->toIso8601String(),
+                ],
+            ],
         ]);
     }
 

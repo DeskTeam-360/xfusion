@@ -179,6 +179,12 @@ add_action('wp_ajax_xfusion_oo_brief', function (): void {
     xfusion_oo_send(xfusion_oo_api_request('GET', "/conversations/{$conversationId}/brief"));
 });
 
+add_action('wp_ajax_xfusion_oo_synthesis', function (): void {
+    xfusion_oo_require_login();
+    $conversationId = (int) ($_POST['conversation_id'] ?? 0);
+    xfusion_oo_send(xfusion_oo_api_request('GET', "/conversations/{$conversationId}/synthesis"));
+});
+
 add_action('wp_ajax_xfusion_oo_get_notes', function (): void {
     xfusion_oo_require_login();
     $conversationId = (int) ($_POST['conversation_id'] ?? 0);
