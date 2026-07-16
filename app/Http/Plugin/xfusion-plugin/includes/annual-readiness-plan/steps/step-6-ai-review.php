@@ -18,6 +18,7 @@ ai_review: function () {
 
     function donut(score, label, color) {
         return '<div class="xar-donut-wrap">' +
+            '<div class="xar-donut-chart">' +
             '<svg class="xar-donut" viewBox="0 0 36 36" aria-hidden="true">' +
             '<circle class="xar-donut-track" cx="18" cy="18" r="15.9155"></circle>' +
             '<circle class="xar-donut-value" cx="18" cy="18" r="15.9155" stroke="' + color + '" ' +
@@ -25,8 +26,9 @@ ai_review: function () {
             '</svg>' +
             '<div class="xar-donut-center">' +
             '<div class="xar-donut-score">' + score + ' <span>of 100</span></div>' +
+            '</div></div>' +
             '<div class="xar-donut-label">' + label + '</div>' +
-            '</div></div>';
+            '</div>';
     }
 
     function checkItem(text) {
@@ -37,16 +39,18 @@ ai_review: function () {
         var impactCls = impact === 'High' ? 'high' : (impact === 'Low' ? 'low' : 'medium');
         var prioCls = priority === 'High' ? 'high' : (priority === 'Low' ? 'low' : 'medium');
         return '<tr>' +
-            '<td><strong>' + area + '</strong><div class="xar-muted xar-gap-desc">' + desc + '</div></td>' +
-            '<td><span class="xar-impact ' + impactCls + '"><span class="xar-dot"></span>' + impact + '</span></td>' +
-            '<td><span class="xar-badge-pill ' + prioCls + '">' + priority + '</span></td>' +
+            '<td class="xar-gap-area"><strong>' + area + '</strong></td>' +
+            '<td class="xar-gap-desc">' + desc + '</td>' +
+            '<td class="xar-gap-impact"><span class="xar-impact ' + impactCls + '"><span class="xar-dot"></span>' + impact + '</span></td>' +
+            '<td class="xar-gap-priority"><span class="xar-badge-pill ' + prioCls + '">' + priority + '</span></td>' +
             '</tr>';
     }
 
     function alignBar(label, pct) {
-        return '<div class="xar-align-row">' +
-            '<div class="xar-align-meta"><span>' + label + '</span><strong>' + pct + '%</strong></div>' +
+        return '<div class="xar-align-row xar-progress-row">' +
+            '<span class="xar-align-label">' + label + '</span>' +
             '<div class="xar-progress-track"><div class="xar-progress-fill" style="width:' + pct + '%"></div></div>' +
+            '<strong class="xar-progress-pct">' + pct + '%</strong>' +
             '</div>';
     }
 
@@ -69,10 +73,10 @@ ai_review: function () {
     var check = '<svg viewBox="0 0 24 24" width="28" height="28" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="9"/><path d="M8 12l3 3 5-6"/></svg>';
 
     return '<h2 class="xar-section-title">Step 6. AI Readiness Review™</h2>' +
-        '<p class="xar-section-desc">FUSION AI has analyzed your Annual Readiness Plan for strategic alignment, organizational readiness, gaps, and recommended focus areas.</p>' +
+        '<p class="xar-section-desc">FUSION AI has analyzed your plan to evaluate strategic alignment, identify potential gaps, and highlight key areas of focus to strengthen organizational readiness.</p>' +
         '<div class="xar-banner">' +
         '<span class="xar-banner-icon" aria-hidden="true">ℹ️</span>' +
-        '<span>This analysis is AI-generated based on Steps 1–5. It is intended to inform leadership judgment, not replace it. You cannot edit the AI-generated sections below — add leadership context at the end of this step.</span>' +
+        '<span>This is AI-generated analysis based on the information you have provided in Steps 1-5. These insights are for consideration only. Leadership adds context in the section below.</span>' +
         '</div>' +
 
         '<div class="xar-card xar-ai-block">' +
@@ -80,12 +84,12 @@ ai_review: function () {
         '<div class="xar-ai-split">' +
         donut(84, 'Strong Alignment', '#5f9a3f') +
         '<div class="xar-ai-copy">' +
-        '<p>Your plan demonstrates strong strategic alignment between your future state, readiness priorities, and execution initiatives. Leadership intent is clear and translated into actionable organizational focus.</p>' +
+        '<p>Your Annual Readiness Plan demonstrates strong alignment across mission, future state, readiness priorities, and strategic priorities. The plan clearly connects organizational capabilities with measurable outcomes and success indicators.</p>' +
         '<ul class="xar-check-list">' +
         checkItem('Clear connection between future state and strategic priorities') +
-        checkItem('Well-defined readiness capabilities linked to COR dimensions') +
-        checkItem('Executive ownership assigned across critical initiatives') +
-        checkItem('Learning agenda identified to guide yearly adaptation') +
+        checkItem('Well-defined readiness capabilities aligned to COR and Behavioral Drivers') +
+        checkItem('Measurable success indicators identified for majority of priorities') +
+        checkItem('Strong focus on leadership development and operational excellence') +
         '</ul></div></div></div>' +
 
         '<div class="xar-card xar-ai-block">' +
@@ -93,7 +97,7 @@ ai_review: function () {
         '<div class="xar-ai-split">' +
         donut(76, 'Readiness Score', '#c4a035') +
         '<div class="xar-ai-copy">' +
-        '<p>Overall readiness is solid with clear strengths and a focused set of development needs. One critical gap requires leadership attention before full execution momentum.</p>' +
+        '<p>The organization shows solid readiness to execute the strategic plan with some areas requiring additional attention and capability strengthening.</p>' +
         '<div class="xar-stat-list">' +
         '<div class="xar-stat-row"><span class="xar-dot green"></span><span>Strengths</span><strong>7 identified</strong></div>' +
         '<div class="xar-stat-row"><span class="xar-dot amber"></span><span>Areas for Development</span><strong>4 identified</strong></div>' +
@@ -102,12 +106,12 @@ ai_review: function () {
 
         '<div class="xar-card xar-ai-block">' +
         '<h3 class="xar-ai-heading">6.3 Potential Gaps™</h3>' +
-        '<div class="xar-table-scroll"><table class="xar-table">' +
-        '<thead><tr><th>Gap Area</th><th>Impact</th><th>Priority</th></tr></thead><tbody>' +
-        gapRow('Data Analytics Capability', 'Limited analytic depth may slow evidence-based decisions.', 'Medium', 'Medium') +
-        gapRow('Change Management Capacity', 'Transformation pace may outstrip change support capacity.', 'Medium', 'Medium') +
-        gapRow('Cross-Functional Collaboration', 'Handoffs between teams create friction and delay.', 'High', 'High') +
-        gapRow('Innovation Culture', 'Experimentation habits are uneven across functions.', 'Medium', 'Medium') +
+        '<div class="xar-table-scroll"><table class="xar-table xar-table-gaps">' +
+        '<thead><tr><th>Gap Area</th><th class="xar-gap-desc-col" aria-hidden="true"></th><th>Impact</th><th>Priority</th></tr></thead><tbody>' +
+        gapRow('Data Analytics Capability', 'Limited data analytics capability may impact ability to measure and adjust strategic initiatives effectively.', 'Medium', 'Medium') +
+        gapRow('Change Management Capacity', 'Current change management resources may be insufficient for planned transformation initiatives.', 'Medium', 'Medium') +
+        gapRow('Cross-Functional Collaboration', 'Siloed operations could hinder execution of organization-wide strategic priorities.', 'High', 'High') +
+        gapRow('Innovation Culture', 'Need stronger culture of innovation to drive future state objectives.', 'Medium', 'Medium') +
         '</tbody></table></div></div>' +
 
         '<div class="xar-card xar-ai-block">' +
@@ -115,11 +119,13 @@ ai_review: function () {
         '<div class="xar-ai-split">' +
         donut(82, 'Alignment Score', '#5f9a3f') +
         '<div class="xar-ai-copy">' +
+        '<p>Strategic priorities are well-aligned with readiness priorities and future state objectives.</p>' +
+        '<div class="xar-align-list">' +
         alignBar('Future State Alignment', 88) +
         alignBar('Readiness Priority Alignment', 84) +
         alignBar('Resource Alignment', 78) +
         alignBar('Timeline Alignment', 76) +
-        '</div></div></div>' +
+        '</div></div></div></div>' +
 
         '<div class="xar-card xar-ai-block">' +
         '<h3 class="xar-ai-heading">6.5 Risk Summary™</h3>' +
