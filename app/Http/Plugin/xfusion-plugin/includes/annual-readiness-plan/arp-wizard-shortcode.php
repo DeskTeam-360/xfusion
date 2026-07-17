@@ -20,6 +20,7 @@ require_once __DIR__ . '/arp-gf-mapping.php';
 require_once __DIR__ . '/arp-gf-entry-service.php';
 require_once __DIR__ . '/arp-save-draft.php';
 require_once __DIR__ . '/arp-load-draft.php';
+require_once __DIR__ . '/arp-readiness-service.php';
 require_once __DIR__ . '/core.php';
 require_once __DIR__ . '/steps/step-1-foundation.php';
 require_once __DIR__ . '/steps/step-2-future-state.php';
@@ -114,8 +115,9 @@ function xfusion_arp_wizard_shortcode($atts = []): string
         'gfConfigured' => $gfConfigured,
     ];
 
-    $saveJs = xfarp_wizard_save_draft_js();
-    $loadJs = xfarp_wizard_load_draft_js();
+    $saveJs      = xfarp_wizard_save_draft_js();
+    $loadJs      = xfarp_wizard_load_draft_js();
+    $readinessSvcJs = xfarp_wizard_readiness_service_js();
 
     ob_start();
     ?>
@@ -176,7 +178,7 @@ function xfusion_arp_wizard_shortcode($atts = []): string
 <script>
 (function () {
 window.XFARP_WIZARD = <?php echo wp_json_encode($wizardConfig); ?>;
-<?php echo $panelsJs . "\n\n" . $readinessJs . "\n\n" . $strategicJs . "\n\n" . $learningJs . "\n\n" . $aiReviewJs . "\n\n" . $publishJs . "\n\n" . $coreJs . "\n\n" . $saveJs . "\n\n" . $loadJs; ?>
+<?php echo $panelsJs . "\n\n" . $readinessJs . "\n\n" . $strategicJs . "\n\n" . $learningJs . "\n\n" . $aiReviewJs . "\n\n" . $publishJs . "\n\n" . $coreJs . "\n\n" . $saveJs . "\n\n" . $loadJs . "\n\n" . $readinessSvcJs; ?>
 })();
 </script>
     <?php

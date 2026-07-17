@@ -138,6 +138,35 @@ var xarSaveDraft = function () {
     }
 
     var stepKey = STEPS[current] ? STEPS[current].key : '';
+
+    if (stepKey === 'readiness') {
+        if (!window.XFARP_WIZARD.arpId) {
+            xarUpdateAutosaveLabel('No ARP selected — cannot save.', true);
+            return;
+        }
+        xarSaveDraftBusy = true;
+        xarUpdateAutosaveLabel('Saving draft...', false);
+        window.xarSaveReadinessDraft()
+            .then(function (json) {
+                if (!json || !json.success) {
+                    xarUpdateAutosaveLabel((json && json.message) ? json.message : 'Save failed.', true);
+                    return;
+                }
+                xarUpdateAutosaveLabel('Draft saved' + (json.saved_at ? ' ' + json.saved_at : ''), false);
+                var savedEl = root.querySelector('#xar-si-saved');
+                if (savedEl && json.saved_at) {
+                    savedEl.textContent = json.saved_at;
+                }
+            })
+            .catch(function () {
+                xarUpdateAutosaveLabel('Save failed — network error', true);
+            })
+            .finally(function () {
+                xarSaveDraftBusy = false;
+            });
+        return;
+    }
+
     if (['foundation', 'future_state', 'learning'].indexOf(stepKey) === -1) {
         xarUpdateAutosaveLabel('Draft save for this step will use Laravel API (coming soon).', false);
         return;

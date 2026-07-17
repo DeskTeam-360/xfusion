@@ -4,10 +4,12 @@ namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
 use App\Models\Arp;
+use App\Models\ArpReadinessPriority;
 use App\Models\Company;
 use App\Models\CompanyGroup;
 use App\Models\CompanyGroupDetail;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
 
 /**
  * ARP picker bridge for the WordPress [fusion_arp_wizard] shortcode.
@@ -140,6 +142,69 @@ class ArpController extends Controller
         ]);
 
         return response()->json(['success' => true, 'data' => $arp, 'already_existed' => false], 201);
+    }
+
+    /** Step 3 — Organizational Readiness™: list priorities for an ARP. */
+    public function getReadinessPriorities(Arp $arp)
+    {
+        $items = ArpReadinessPriority::where('arp_id', $arp->id)
+            ->orderBy('priority_rank')
+            ->get();
+
+        return response()->json(['success' => true, 'data' => $items]);
+    }
+
+    /**
+     * Step 3 — replace-all save: the UI edits the whole repeatable list at
+     * once, so the simplest correct semantics is delete-then-insert rather
+     * than diffing individual rows.
+     */
+    public function saveReadinessPriorities(Request $request, Arp $arp)
+    {
+        $userId = (int) $request->input('user_id');
+        if ($userId < 1 || ! $this->leadableCompanyIds($userId)->contains($arp->company_id)) {
+            return response()->json(['success' => false, 'message' => 'You do not lead this ARP\'s company group(s).'], 403);
+        }
+
+        $data = $request->validate([
+            'items' => 'present|array',
+            'items.*.name' => 'nullable|string|max:255',
+            'items.*.cor_capability' => 'nullable|string|max:40',
+            'items.*.primary_driver' => 'nullable|string|max:40',
+            'items.*.secondary_driver' => 'nullable|string|max:40',
+            'items.*.priority_level' => 'nullable|string|max:20',
+            'items.*.description' => 'nullable|string',
+            'items.*.business_rationale' => 'nullable|string',
+            'items.*.executive_owner_user_id' => 'nullable',
+            'items.*.expected_impact' => 'nullable|string',
+        ]);
+
+        DB::transaction(function () use ($arp, $data) {
+            ArpReadinessPriority::where('arp_id', $arp->id)->delete();
+
+            foreach (array_values($data['items']) as $index => $item) {
+                // executive_owner_user_id must be a real wp_users.ID — the UI
+                // still ships a dummy name list (see step-3-readiness.php),
+                // so anything non-numeric is dropped rather than stored.
+                $ownerId = filter_var($item['executive_owner_user_id'] ?? null, FILTER_VALIDATE_INT);
+
+                ArpReadinessPriority::create([
+                    'arp_id' => $arp->id,
+                    'name' => $item['name'] ?? '',
+                    'cor_capability' => $item['cor_capability'] ?? 'leadership',
+                    'primary_driver' => $item['primary_driver'] ?? 'be_intentional',
+                    'secondary_driver' => $item['secondary_driver'] ?? null,
+                    'priority_level' => $item['priority_level'] ?? 'medium',
+                    'description' => $item['description'] ?? null,
+                    'business_rationale' => $item['business_rationale'] ?? null,
+                    'executive_owner_user_id' => $ownerId !== false ? $ownerId : null,
+                    'expected_impact' => $item['expected_impact'] ?? null,
+                    'priority_rank' => $index,
+                ]);
+            }
+        });
+
+        return response()->json(['success' => true, 'saved_at' => now()->format('g:i A')]);
     }
 
     private function leadableCompanyIds(int $userId)

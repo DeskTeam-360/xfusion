@@ -452,6 +452,8 @@ Route::prefix('v1')->middleware('fusion.api')->group(function () {
         Route::get('/leadable-companies', [ArpController::class, 'leadableCompanies']);
         Route::get('/list', [ArpController::class, 'index']);
         Route::post('/', [ArpController::class, 'store']);
+        Route::get('/{arp}/readiness-priorities', [ArpController::class, 'getReadinessPriorities']);
+        Route::post('/{arp}/readiness-priorities', [ArpController::class, 'saveReadinessPriorities']);
         Route::get('/{arp}', [ArpController::class, 'show']);
     });
 });
