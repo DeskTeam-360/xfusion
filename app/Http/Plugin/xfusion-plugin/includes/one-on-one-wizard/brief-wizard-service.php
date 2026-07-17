@@ -264,20 +264,16 @@ var xfwFormatBriefDetailsHtml = function (details) {
         if (/^Commitments on record:/i.test(trimmed)) {
             html += '<h4 class="xfw-brief-details-heading">Commitments</h4>';
             i++;
+            while (i < lines.length && lines[i].trim() === '') {
+                i++;
+            }
             var commitLines = [];
             while (i < lines.length) {
-                if (lines[i].trim() === '') {
-                    if (commitLines.length) {
-                        i++;
-                        break;
-                    }
-                    i++;
-                    continue;
-                }
-                if (/^Previous 1-on-1 meetings/i.test(lines[i])) {
+                var currentLine = lines[i];
+                if (/^Previous 1-on-1 meetings/i.test(currentLine.trim())) {
                     break;
                 }
-                commitLines.push(lines[i]);
+                commitLines.push(currentLine);
                 i++;
             }
             html += xfwBriefRenderCommitmentCards(commitLines);

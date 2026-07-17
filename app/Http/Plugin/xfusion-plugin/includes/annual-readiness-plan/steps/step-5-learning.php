@@ -1,6 +1,8 @@
 <?php
 /**
- * Step 5 — Organizational Learning™ (assumptions, risks, opportunities, learning).
+ * Step 5 — Organizational Learning™ (custom UI → Gravity Forms).
+ *
+ * Field slugs match keys in arp-gf-mapping.php → learning.fields.
  *
  * @package XFusion
  */

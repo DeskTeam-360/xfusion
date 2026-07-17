@@ -45,13 +45,18 @@ CREATE TABLE IF NOT EXISTS `wp_fusion_evidence_log` (
 -- -----------------------------------------------------------------------------
 -- ARP — Annual Readiness Plan™ (strategic anchor, annual)
 -- -----------------------------------------------------------------------------
+-- Full ARP schema (v1.0): see database/sql/wp_fusion_arp_wizard.sql for phpMyAdmin + ALTER patches.
 CREATE TABLE IF NOT EXISTS `wp_fusion_arps` (
     `id` BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
     `company_id` BIGINT UNSIGNED NOT NULL COMMENT 'wp_companies.id',
     `year` SMALLINT UNSIGNED NOT NULL,
-    `title` VARCHAR(255) NOT NULL,
+    `title` VARCHAR(255) NOT NULL DEFAULT '',
     `mission` TEXT NULL,
     `vision` TEXT NULL,
+    `core_values` TEXT NULL,
+    `organizational_description` TEXT NULL,
+    `business_environment` TEXT NULL,
+    `executive_narrative` TEXT NULL,
     `status` VARCHAR(20) NOT NULL DEFAULT 'draft' COMMENT 'draft | active | archived',
     `created_by` BIGINT UNSIGNED NULL COMMENT 'wp_users.id, executive who created it',
     `created_at` TIMESTAMP NULL,
@@ -64,7 +69,12 @@ CREATE TABLE IF NOT EXISTS `wp_fusion_arps` (
 CREATE TABLE IF NOT EXISTS `wp_fusion_arp_future_states` (
     `id` BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
     `arp_id` BIGINT UNSIGNED NOT NULL,
-    `narrative` TEXT NOT NULL COMMENT '"What kind of organization do we need to become?"',
+    `narrative` TEXT NOT NULL COMMENT 'Future State Narrative',
+    `future_characteristics` TEXT NULL,
+    `desired_culture` TEXT NULL,
+    `desired_customer_experience` TEXT NULL,
+    `desired_employee_experience` TEXT NULL,
+    `desired_leadership_environment` TEXT NULL,
     `created_at` TIMESTAMP NULL,
     `updated_at` TIMESTAMP NULL,
     PRIMARY KEY (`id`),
@@ -74,34 +84,51 @@ CREATE TABLE IF NOT EXISTS `wp_fusion_arp_future_states` (
 CREATE TABLE IF NOT EXISTS `wp_fusion_arp_readiness_priorities` (
     `id` BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
     `arp_id` BIGINT UNSIGNED NOT NULL,
-    `cor_capability` VARCHAR(40) NOT NULL COMMENT 'alignment | accountability | communication | leadership | execution',
-    `description` TEXT NOT NULL,
+    `name` VARCHAR(255) NOT NULL DEFAULT '',
+    `cor_capability` VARCHAR(40) NOT NULL DEFAULT 'leadership' COMMENT 'alignment | accountability | communication | leadership | execution',
+    `primary_driver` VARCHAR(40) NOT NULL DEFAULT 'be_intentional' COMMENT 'get_real | fill_buckets | be_intentional | foster_grit | drive_growth',
+    `secondary_driver` VARCHAR(40) NULL,
+    `priority_level` VARCHAR(20) NOT NULL DEFAULT 'medium' COMMENT 'high | medium | low',
+    `description` TEXT NULL,
+    `business_rationale` TEXT NULL,
+    `executive_owner_user_id` BIGINT UNSIGNED NULL COMMENT 'wp_users.id',
+    `expected_impact` TEXT NULL,
     `priority_rank` SMALLINT UNSIGNED NOT NULL DEFAULT 0,
     `created_at` TIMESTAMP NULL,
     `updated_at` TIMESTAMP NULL,
     PRIMARY KEY (`id`),
-    KEY `arprp_arp_idx` (`arp_id`)
+    KEY `arprp_arp_idx` (`arp_id`),
+    KEY `arprp_rank_idx` (`arp_id`, `priority_rank`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 CREATE TABLE IF NOT EXISTS `wp_fusion_arp_strategic_priorities` (
     `id` BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
     `arp_id` BIGINT UNSIGNED NOT NULL,
-    `title` VARCHAR(255) NOT NULL,
+    `readiness_priority_id` BIGINT UNSIGNED NULL COMMENT 'wp_fusion_arp_readiness_priorities.id',
+    `title` VARCHAR(255) NOT NULL DEFAULT '',
     `description` TEXT NULL,
     `owner_user_id` BIGINT UNSIGNED NULL COMMENT 'wp_users.id',
+    `target_date` DATE NULL,
+    `success_measures` TEXT NULL,
+    `org_kpi` VARCHAR(80) NULL,
+    `readiness_indicator` VARCHAR(80) NULL,
+    `related_groups` VARCHAR(80) NULL,
     `kpi` TEXT NULL,
     `status` VARCHAR(20) NOT NULL DEFAULT 'not_started' COMMENT 'not_started | in_progress | done | at_risk',
+    `priority_rank` SMALLINT UNSIGNED NOT NULL DEFAULT 0,
     `created_at` TIMESTAMP NULL,
     `updated_at` TIMESTAMP NULL,
     PRIMARY KEY (`id`),
     KEY `arpsp_arp_idx` (`arp_id`),
-    KEY `arpsp_owner_idx` (`owner_user_id`)
+    KEY `arpsp_owner_idx` (`owner_user_id`),
+    KEY `arpsp_readiness_idx` (`readiness_priority_id`),
+    KEY `arpsp_rank_idx` (`arp_id`, `priority_rank`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 CREATE TABLE IF NOT EXISTS `wp_fusion_arp_learnings` (
     `id` BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
     `arp_id` BIGINT UNSIGNED NOT NULL,
-    `type` VARCHAR(30) NOT NULL COMMENT 'assumption | risk | learning_objective',
+    `type` VARCHAR(30) NOT NULL DEFAULT 'assumption' COMMENT 'assumption | risk | opportunity | learning_objective | leadership_question',
     `description` TEXT NOT NULL,
     `created_at` TIMESTAMP NULL,
     `updated_at` TIMESTAMP NULL,
@@ -114,6 +141,7 @@ CREATE TABLE IF NOT EXISTS `wp_fusion_arp_ai_assessments` (
     `id` BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
     `arp_id` BIGINT UNSIGNED NOT NULL,
     `assessment` LONGTEXT NOT NULL COMMENT 'JSON: AI Readiness Review output',
+    `leadership_context` TEXT NULL,
     `insight_model` VARCHAR(60) NULL,
     `tokens_used` INT UNSIGNED NOT NULL DEFAULT 0,
     `cost_usd` DECIMAL(10,4) NOT NULL DEFAULT 0,

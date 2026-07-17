@@ -198,6 +198,10 @@ if (root) {
         if (STEPS[current].key === 'priorities' && typeof initStrategicStep === 'function') {
             initStrategicStep();
         }
+        if (['foundation', 'future_state', 'learning'].indexOf(STEPS[current].key) !== -1 &&
+            typeof xarApplyDraftForCurrentStep === 'function') {
+            xarApplyDraftForCurrentStep();
+        }
         if (STEPS[current].key === 'learning' && typeof initLearningStep === 'function') {
             initLearningStep();
         }
@@ -248,20 +252,7 @@ if (root) {
             }
             goTo(current - 1);
         });
-        ['#xar-save-draft', '#xar-save-draft-2'].forEach(function (sel) {
-            var btn = root.querySelector(sel);
-            if (!btn) {
-                return;
-            }
-            btn.addEventListener('click', function () {
-                var status = root.querySelector('#xar-autosave-status');
-                if (status) {
-                    var now = new Date();
-                    var time = now.toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' });
-                    status.innerHTML = '<span class="xar-autosave-check" aria-hidden="true">&#10003;</span> Draft autosaved ' + time;
-                }
-            });
-        });
+        /* Save Draft wired in arp-save-draft.php */
     };
 
     window.xarBootWizard = function (resetStep) {

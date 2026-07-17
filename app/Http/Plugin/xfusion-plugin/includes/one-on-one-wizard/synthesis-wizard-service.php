@@ -77,12 +77,46 @@ var xfwSynthesisFollowupIcons = [
 ];
 
 var xfwSynthesisSectionMeta = {
-    meeting_summary: { icon: xfwSynthesisIconBase + 'Clipboard-Checkmark-Blue-Icon.svg', title: 'Meeting Summary\u2122' },
-    alignment_summary: { icon: xfwSynthesisIconBase + 'Arrow-in-Target-Icon-1.svg', title: 'Alignment Summary\u2122' },
-    development_summary: { icon: xfwSynthesisIconBase + 'Arrow-in-Target-Icon-1.svg', title: 'Development Summary\u2122' },
-    commitment_summary: { icon: xfwSynthesisIconBase + 'Clipboard-Checkmark-Icon-1.svg', title: 'Commitment Summary\u2122' },
-    emerging_risks: { icon: xfwSynthesisIconBase + 'Warning-Triangle-Icon-2.svg', title: 'Emerging Risks\u2122' },
-    emerging_opportunities: { icon: xfwSynthesisIconBase + 'Trending-Up-Arrow-Icon-Green-1.svg', title: 'Emerging Opportunities\u2122' },
+    meeting_summary: {
+        icon: xfwSynthesisIconBase + 'Clipboard-Checkmark-Blue-Icon.svg',
+        title: 'Meeting Summary\u2122',
+        description: 'Overall recap of the conversation, key topics discussed, and main takeaways.',
+    },
+    alignment_summary: {
+        icon: xfwSynthesisIconBase + 'Arrow-in-Target-Icon-1.svg',
+        title: 'Alignment Summary\u2122',
+        description: 'How aligned both participants are on priorities, goals, and expectations.',
+    },
+    development_summary: {
+        icon: xfwSynthesisIconBase + 'Person-Growth-Icon.svg',
+        title: 'Development Summary\u2122',
+        description: 'Key growth areas, strengths, and development opportunities identified.',
+    },
+    commitment_summary: {
+        icon: xfwSynthesisIconBase + 'Clipboard-Checkmark-Icon-1.svg',
+        title: 'Commitment Summary\u2122',
+        description: 'Overview of commitments created and their status.',
+    },
+    emerging_risks: {
+        icon: xfwSynthesisIconBase + 'Warning-Triangle-Icon-2.svg',
+        title: 'Emerging Risks\u2122',
+        description: 'Potential issues or risks that may impact success if not addressed.',
+    },
+    emerging_opportunities: {
+        icon: xfwSynthesisIconBase + 'Trending-Up-Arrow-Icon-Green-1.svg',
+        title: 'Emerging Opportunities\u2122',
+        description: 'Opportunities identified to drive growth and improve outcomes.',
+    },
+    suggested_coaching_topics: {
+        icon: xfwSynthesisIconBase + 'Orange-Light-Bulb-Icon.svg',
+        title: 'Suggested Coaching Topics\u2122',
+        description: 'Recommended topics for future coaching conversations.',
+    },
+    recommended_follow_up: {
+        icon: xfwSynthesisIconBase + 'Calendar-Icon-Teal.svg',
+        title: 'Recommended Follow-up\u2122',
+        description: 'Next steps to maintain momentum and ensure accountability.',
+    },
 };
 
 var xfwSynthesisNormalizeSection = function (raw) {
@@ -98,16 +132,32 @@ var xfwSynthesisNormalizeSection = function (raw) {
     };
 };
 
-var xfwSynthesisCard = function (sectionKey, bodyHtml) {
-    var meta = xfwSynthesisSectionMeta[sectionKey] || { icon: '', title: sectionKey };
+var xfwSynthesisCardHead = function (sectionKey) {
+    var meta = xfwSynthesisSectionMeta[sectionKey] || { icon: '', title: sectionKey, description: '' };
     var iconHtml = meta.icon
         ? '<div class="icon"><img src="' + meta.icon + '" alt="" width="50" height="50"></div>'
         : '';
-    return '<div class="xfw-insight-card" data-synthesis-section="' + sectionKey + '">' +
+    var descHtml = meta.description
+        ? '<p class="xfw-insight-desc">' + meta.description + '</p>'
+        : '';
+    return '<div class="xfw-insight-head">' +
         iconHtml +
-        '<h3>' + meta.title + '</h3>' +
-        bodyHtml +
-        '<a href="#" class="xfw-link xfw-synthesis-details-link" data-synthesis-section="' + sectionKey + '">View Details &rarr;</a>' +
+        '<div class="xfw-insight-head-text"><h3>' + meta.title + '</h3>' + descHtml + '</div>' +
+        '</div>';
+};
+
+var xfwSynthesisCard = function (sectionKey, bodyHtml) {
+    return '<div class="xfw-insight-card" data-synthesis-section="' + sectionKey + '">' +
+        xfwSynthesisCardHead(sectionKey) +
+        '<div class="xfw-insight-body">' + bodyHtml + '</div>' +
+        '<a href="#" class="xfw-link xfw-synthesis-details-link" data-synthesis-section="' + sectionKey + '">View Full Summary &rarr;</a>' +
+        '</div>';
+};
+
+var xfwSynthesisWideCard = function (sectionKey, bodyHtml) {
+    return '<div class="xfw-card xfw-synthesis-wide-card" data-synthesis-section="' + sectionKey + '">' +
+        xfwSynthesisCardHead(sectionKey) +
+        '<div class="xfw-insight-body">' + bodyHtml + '</div>' +
         '</div>';
 };
 
@@ -118,10 +168,11 @@ var xfwSynthesisAlignmentBody = function (alignment) {
         : null;
     var alignLabel = alignment && alignment.label ? String(alignment.label) : '';
     var alignPct = alignScore != null ? Math.min(100, Math.max(0, (alignScore / 5) * 100)) : 0;
-    var html = '<p class="xfw-muted">How aligned both participants are on priorities, goals, and expectations.</p>';
+    var html = '';
 
     if (alignScore != null) {
         var scoreText = (Math.round(alignScore * 10) / 10).toFixed(alignScore % 1 === 0 ? 0 : 1);
+        html += '<div class="xfw-alignment-rating-label xfw-muted">Alignment Rating</div>';
         html += '<div style="font-size:1.6rem;font-weight:800;color:var(--green)">' + scoreText +
             '<span style="font-size:1rem;color:var(--muted);font-weight:400"> / 5</span></div>';
     }
@@ -214,14 +265,8 @@ var xfwRenderSynthesisPanel = function (synthesis) {
         xfwSynthesisCard('emerging_risks', xfwSynthesisListBody(synthesis.emerging_risks, 'No emerging risks identified.')) +
         xfwSynthesisCard('emerging_opportunities', xfwSynthesisListBody(synthesis.emerging_opportunities, 'No emerging opportunities identified.')) +
         '</div>' +
-        '<div class="xfw-card" style="margin-bottom:1rem">' +
-        '<div class="xfw-commit-title"><img src="' + xfwSynthesisIconBase + 'Orange-Light-Bulb-Icon.svg" alt="" width="50" height="50"><h3>Suggested Coaching Topics\u2122</h3></div>' +
-        coachingHtml +
-        '</div>' +
-        '<div class="xfw-card">' +
-        '<div class="xfw-commit-title"><img src="' + xfwSynthesisIconBase + 'Calendar-Icon-Teal.svg" alt="" width="50" height="50"><h3>Recommended Follow-up\u2122</h3></div>' +
-        xfwSynthesisFollowupBody(synthesis.recommended_follow_up) +
-        '</div>';
+        xfwSynthesisWideCard('suggested_coaching_topics', coachingHtml) +
+        xfwSynthesisWideCard('recommended_follow_up', xfwSynthesisFollowupBody(synthesis.recommended_follow_up));
 };
 
 var xfwEnsureSynthesisModal = function () {
@@ -259,6 +304,9 @@ var xfwSynthesisDetailsText = function (sectionKey, sectionData) {
     }
 
     if (sectionKey === 'commitment_summary') {
+        if (normalized.details) {
+            return normalized.details;
+        }
         if (sectionData.employee_count != null) {
             parts.push('Employee Commitments: ' + sectionData.employee_count + ' active');
         }
@@ -267,9 +315,6 @@ var xfwSynthesisDetailsText = function (sectionKey, sectionData) {
         }
         if (sectionData.open_count != null) {
             parts.push('Open Commitments: ' + sectionData.open_count + ' total');
-        }
-        if (normalized.details) {
-            return parts.join('\n\n') + (parts.length ? '\n\n' : '') + normalized.details;
         }
         return parts.join('\n\n') || 'No additional detail is available for this section yet.';
     }

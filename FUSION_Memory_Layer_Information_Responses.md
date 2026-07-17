@@ -5,7 +5,7 @@
 **Source repo:** `xfusion` (Laravel + WordPress plugin)  
 **Date:** July 2026
 
-> **Scope note:** This document is based on the Laravel/WordPress repository available to the development team. The Python FastAPI service (`Xfusion-llm`) is referenced throughout but **is not included in this repo**. Details about ChromaDB internals, embedding logic, and some AI endpoint implementations are noted where they cannot be confirmed from this codebase alone.
+> **Scope note:** This document is based on the Laravel/WordPress repository (`xfusion`) and cross-references the separate Python FastAPI service (`Xfusion-llm` at `DeskTeam-360/xfusion-llm`). ChromaDB internals, embedding logic, and some AI endpoint implementations are confirmed from `Xfusion-llm` where noted; items marked "not confirmed" still require infrastructure team input.
 
 ---
 
@@ -137,26 +137,26 @@ Model: `App\Models\XfusionKnowledge`. Vectors stored in ChromaDB (not MySQL).
 |-------|-------------|--------|
 | `wp_fusion_one_on_ones` | `company_id`, `leader_user_id`, `employee_user_id`, `status` | Active |
 | `wp_fusion_one_on_one_conversations` | `one_on_one_id`, `scheduled_at`, `held_at`, `meeting_link`, `status` | Active |
-| `wp_fusion_one_on_one_ai_briefs` | `conversation_id`, `brief` (JSON), `insight_model`, `prompt_version_id` | Active |
+| `wp_fusion_one_on_one_ai_briefs` | `conversation_id`, `brief` (JSON), `insight_model`, `prompt_version_id` | Active — **multiple rows per conversation** (regenerate appends; `brief()` = latest) |
 | `wp_fusion_one_on_one_preparations` | `conversation_id`, `author_role`, `content`, `is_revealed` | Active |
 | `wp_fusion_one_on_one_notes` | `conversation_id`, `section`, `note`, `created_by` | Active |
 | `wp_fusion_one_on_one_commitments` | `conversation_id`, `title`, `priority`, `behavioral_driver`, `owner_role`, `status`, `due_date` | Active |
-| `wp_fusion_one_on_one_ai_syntheses` | `conversation_id`, `synthesis` (JSON), `insight_model`, `prompt_version_id` | Active |
+| `wp_fusion_one_on_one_ai_syntheses` | `conversation_id`, `synthesis` (JSON), `insight_model`, `prompt_version_id` | Active — **multiple rows per conversation** (regenerate appends; `synthesis()` = latest) |
 
-8 Eloquent models in `app/Models/`. Schema: `database/sql/wp_fusion_one_on_one_wizard.sql`.
+7 Eloquent models in `app/Models/`: `OneOnOne`, `OneOnOneConversation`, `OneOnOneAiBrief`, `OneOnOnePreparation`, `OneOnOneNote`, `OneOnOneCommitment`, `OneOnOneAiSynthesis`. Schema: `database/sql/wp_fusion_one_on_one_wizard.sql`.
 
 ---
 
-#### Operating Objects — ARP, QBR, 360, ARR (SCHEMA ONLY)
+#### Operating Objects — ARP, QBR, 360, ARR
 
-Defined in `database/sql/wp_fusion_core.sql`. **No models, controllers, or API routes exist yet.**
+Defined in `database/sql/wp_fusion_core.sql`. **No Eloquent models, Laravel controllers, or `/api/v1` routes exist yet** for these operating objects.
 
-| Component | Tables | Count |
-|-----------|--------|-------|
-| ARP | `wp_fusion_arps`, `_future_states`, `_readiness_priorities`, `_strategic_priorities`, `_learnings`, `_ai_assessments` | 6 |
-| QBR | `wp_fusion_qbrs`, `_evidence_snapshots`, `_ai_assessments`, `_commitments`, `_ai_syntheses` | 5 |
-| 360 Review | `wp_fusion_360_reviews`, `_evidence_snapshots`, `_ai_assessments`, `_reflections`, `_commitments`, `_ai_syntheses` | 6 |
-| ARR | `wp_fusion_arrs`, `_evidence_snapshots`, `_ai_assessments`, `_renewal_recommendations`, `_ai_syntheses` | 5 |
+| Component | Tables | DB / API Status | WordPress UI |
+|-----------|--------|-----------------|--------------|
+| ARP | `wp_fusion_arps`, `_future_states`, `_readiness_priorities`, `_strategic_priorities`, `_learnings`, `_ai_assessments` | Schema only | `[fusion_arp_wizard]` — 7-step wizard shell (frontend; not yet persisting to `wp_fusion_arp_*`) |
+| QBR | `wp_fusion_qbrs`, `_evidence_snapshots`, `_ai_assessments`, `_commitments`, `_ai_syntheses` | Schema only | Not started |
+| 360 Review | `wp_fusion_360_reviews`, `_evidence_snapshots`, `_ai_assessments`, `_reflections`, `_commitments`, `_ai_syntheses` | Schema only | Not started |
+| ARR | `wp_fusion_arrs`, `_evidence_snapshots`, `_ai_assessments`, `_renewal_recommendations`, `_ai_syntheses` | Schema only | Not started |
 
 ---
 
@@ -180,12 +180,15 @@ Evidence snapshots (`wp_fusion_qbr_evidence_snapshots`, `wp_fusion_360_evidence_
 | Organizations, Groups, Users | Active |
 | Activities, Assessments (GF + LearnDash) | Active |
 | AI Insights (COR Unified) | Active |
-| 1-on-1 Operating Object | Active (8 tables + API) |
-| ARP, QBR, 360, ARR | Schema only |
+| 1-on-1 Operating Object | Active (7 tables + API) |
+| ARP | Schema only; WP wizard UI shell (`annual-readiness-plan/`) |
+| QBR, 360, ARR | Schema only |
 | `wp_fusion_evidence_log` | Schema only |
 | Evidence snapshots | Schema only |
 
 **Current memory behavior:** Evidence for 1-on-1 is aggregated on-the-fly in `app/Http/Plugin/xfusion-plugin/includes/one-on-one-wizard/step-1-evidence-service.php`. It reads from `wp_xfusion_result_evaluations`, `wp_gf_entry`, `wp_course_scoring_groups`, and `wp_fusion_one_on_one_*` tables. Nothing is written to `wp_fusion_evidence_log` yet.
+
+**Wizard draft gap (important):** Steps 3–4 preparation and conversation notes are still saved to Gravity Forms draft via `save-draft.php` with TODO comments — they are **not always synced** to `wp_fusion_one_on_one_preparations` / `wp_fusion_one_on_one_notes` yet. `generate-synthesis` can accept `preparations`, `notes`, and `commitments` in the request body from the wizard so AI generation uses in-session draft data when DB rows are missing.
 
 ---
 
@@ -274,14 +277,20 @@ Controller: `app/Http/Controllers/Api/OneOnOneController.php`
 
 ### WordPress Plugin → Laravel Bridge
 
-**File:** `app/Http/Plugin/xfusion-plugin/includes/one-on-one-shortcode.php`
+**Files:**
+- `app/Http/Plugin/xfusion-plugin/includes/one-on-one-shortcode.php` — AJAX bridge to Laravel
+- `app/Http/Plugin/xfusion-plugin/includes/one-on-one-wizard/one-on-one-wizard-shortcode.php` — shortcode `[fusion_one_on_one_wizard]`
 
 WordPress AJAX actions map 1:1 to Laravel v1 endpoints above (e.g. `xfusion_oo_pairs` → `GET /pairs`, `xfusion_oo_generate_brief` → `POST /generate-brief`).
 
 **Wizard-specific AJAX** (in `one-on-one-wizard/`):
 - `xfoo_wizard_load_evidence` → `GET /conversations/{id}/evidence`
 - `xfoo_wizard_generate_brief` → `POST /conversations/{id}/generate-brief`
-- `xfoo_wizard_generate_synthesis` → `POST /conversations/{id}/generate-synthesis`
+- `xfoo_wizard_generate_synthesis` → `POST /conversations/{id}/generate-synthesis` (sends optional `preparations`, `notes`, `commitments` from wizard draft)
+
+**WP Admin history (not in wizard UI):**
+- `xfusion-one-on-one-briefs-admin.php` — LLM Prompts → 1-on-1 Brief History
+- `xfusion-one-on-one-synthesis-admin.php` — LLM Prompts → 1-on-1 Synthesis History
 
 **Company/charts:** `wordpress_xfusion_company_shortcode.php` → `/api/v1/companies/*`
 
@@ -402,7 +411,8 @@ WordPress AJAX actions map 1:1 to Laravel v1 endpoints above (e.g. `xfusion_oo_p
 ```
 
 **Response:** `{ "brief": {...}, "model", "tokens_used", "cost_usd" }`  
-**Fallback:** `MeetingBriefFromEvidenceService` (non-LLM composer) if FastAPI fails.
+**Storage:** New row appended to `wp_fusion_one_on_one_ai_briefs` on each regenerate (history via `brief-history` / `briefs/{id}`).  
+**Fallback:** `MeetingBriefFromEvidenceService` (`insight_model: evidence-composer`) if FastAPI fails.
 
 ---
 
@@ -428,6 +438,8 @@ WordPress AJAX actions map 1:1 to Laravel v1 endpoints above (e.g. `xfusion_oo_p
 ```
 
 **Response:** `{ "synthesis": {...}, "model", "tokens_used", "cost_usd" }`  
+**Storage:** New row appended to `wp_fusion_one_on_one_ai_syntheses` on each regenerate (history via `synthesis-history` / `syntheses/{id}`). Wizard Step 6 shows latest only.  
+**Post-processing:** `SynthesisCommitmentSummaryNormalizer` rebuilds `commitment_summary` counts/details from payload commitments (also done in `Xfusion-llm` `one_on_one.py`) to avoid duplicate commitment lines.  
 **Fallback:** `MeetingSynthesisFromContextService` (`insight_model: context-composer`) if FastAPI fails.
 
 ---
@@ -496,8 +508,8 @@ Laravel reads active prompts via `App\Services\WordPressLlmPromptService` (reads
 |-----------|---------------|-------------|
 | COR AI Insights | `wp_xfusion_result_evaluations` | Yes |
 | 1-on-1 evidence aggregation | `step-1-evidence-service.php` (on-the-fly query) | No — computed at request time |
-| 1-on-1 AI briefs | `wp_fusion_one_on_one_ai_briefs` | Yes |
-| 1-on-1 AI syntheses | `wp_fusion_one_on_one_ai_syntheses` | Yes |
+| 1-on-1 AI briefs | `wp_fusion_one_on_one_ai_briefs` (versioned rows) | Yes |
+| 1-on-1 AI syntheses | `wp_fusion_one_on_one_ai_syntheses` (versioned rows) | Yes |
 | 1-on-1 commitments | `wp_fusion_one_on_one_commitments` | Yes |
 | Knowledge vectors (RAG) | ChromaDB via FastAPI | Yes (external store) |
 | Evidence log | `wp_fusion_evidence_log` | **Schema only — not written to** |
@@ -520,7 +532,9 @@ Evidence blocks assembled on-the-fly from:
 ### Embedding & Retrieval
 
 - **Embedding:** Handled inside `Xfusion-llm` (Python). Not visible from this repo.
-- **Retrieval:** ChromaDB RAG with `category` metadata filter. Used by `evaluate-unified` (category: `COR Performance`) and planned for component-specific categories (`fusion_one_on_one`, `fusion_qbr`, etc.).
+- **Retrieval:** ChromaDB RAG with `category` metadata filter.
+  - **Active:** `COR Performance` (`evaluate-unified`), `fusion_one_on_one` (`meeting-brief`, `meeting-synthesis` in `Xfusion-llm`)
+  - **Planned:** `fusion_qbr`, `fusion_360`, `fusion_arp`, `fusion_arr`
 - **Knowledge sync:** WordPress CPT save → `POST /api/v1/knowledge/upsert` → ChromaDB. Sync status tracked in `wp_postmeta`.
 
 ### Privacy Pipeline (Implemented)
@@ -615,8 +629,8 @@ Header: `Authorization: Bearer {XFUSION_LLM_API_KEY}` (optional if key is empty)
 | Access method | Only via FastAPI (`Xfusion-llm`) — no direct ChromaDB client in Laravel or WordPress |
 | Indexing | `POST /api/v1/knowledge/upsert` with `category` metadata |
 | Deletion | `DELETE /api/v1/knowledge/delete/{wordpress_post_id}` |
-| Active category | `COR Performance` (used by `evaluate-unified` RAG) |
-| Planned categories | `fusion_one_on_one`, `fusion_qbr`, `fusion_360`, `fusion_arp`, `fusion_arr` |
+| Active categories | `COR Performance` (COR Unified), `fusion_one_on_one` (1-on-1 brief/synthesis RAG) |
+| Planned categories | `fusion_qbr`, `fusion_360`, `fusion_arp`, `fusion_arr` |
 | Sync status tracking | `wp_postmeta`: `sync_status`, `synced_at`, `sync_error`, `chunks_added` |
 | Config | `config/xfusion-llm.php` — category list, API URL, timeout |
 
@@ -711,6 +725,9 @@ Header: `Authorization: Bearer {XFUSION_LLM_API_KEY}` (optional if key is empty)
 | LLM config | `config/xfusion-llm.php` | FastAPI URL, categories, timeout |
 | Fusion API config | `config/fusion_api.php` | Bearer token config |
 | Prompt files | `app/Http/Plugin/xfusion-plugin/prompts/*.md` | Default prompt templates |
+| 1-on-1 brief/synthesis admin | `xfusion-one-on-one-briefs-admin.php`, `xfusion-one-on-one-synthesis-admin.php` | Version history viewers |
+| ARP wizard (UI only) | `annual-readiness-plan/` | `[fusion_arp_wizard]` frontend shell |
+| Synthesis normalizer | `app/Services/SynthesisCommitmentSummaryNormalizer.php` | Server-side `commitment_summary` formatting |
 
 ### Not Available in Repository
 
@@ -740,9 +757,56 @@ For the client's Memory Layer specification, here is what exists vs. what is pla
 | Evidence snapshots (frozen per review cycle) | Schema in SQL | Not implemented |
 | On-the-fly evidence aggregation (1-on-1) | Working | Not persistent; not generalized to QBR/360/ARR |
 | AI insight storage | Working (`wp_xfusion_result_evaluations`) | Only COR Unified; no per-component assessments yet |
-| Vector memory (ChromaDB RAG) | Working for COR Performance | Component categories not yet indexed |
+| Vector memory (ChromaDB RAG) | Working for `COR Performance` + `fusion_one_on_one` | Other component categories not yet indexed |
 | Privacy pipeline | Implemented for 1-on-1 | Needs extension to QBR/ARR |
 | Cross-component evidence linking | Not implemented | Requires `wp_fusion_evidence_log` + snapshot tables |
+
+---
+
+## Feature Status Summary (July 2026)
+
+The sections above are the full technical reference. This is a practical summary for the Memory Layer and FUSION OS:
+
+### Working (production / sandbox)
+
+| Area | Features |
+|------|----------|
+| **Organizations & users** | Company, company groups, employees, WordPress users |
+| **Activities & assessments** | Gravity Forms submissions, LearnDash progress, course scoring groups (5 Behavioral Drivers + 5 COR capabilities) |
+| **AI Insights (COR)** | COR Unified Insights (`evaluate-unified`), stored in `wp_xfusion_result_evaluations`, draft/published/sandbox status, prompt versioning, ChromaDB RAG category `COR Performance` |
+| **Knowledge base (RAG)** | CPT `xfusion_knowledge`, sync to ChromaDB via FastAPI, categories `COR Performance` + `fusion_one_on_one` |
+| **1-on-1 — database & API** | 7 `wp_fusion_one_on_one_*` tables, Laravel `/api/v1/one-on-one/*` (pairs, schedule, prep, notes, commitments, evidence, brief, synthesis) |
+| **1-on-1 — wizard Step 0** | Meeting gate: schedule new (leader), **Your meetings** with filters (timing + role) and pagination (10 per page) |
+| **1-on-1 — wizard Step 1** | Continuous Evidence (on-the-fly from evaluations, GF, scoring, prior meetings) |
+| **1-on-1 — wizard Step 2** | AI Meeting Brief™ (generate, latest in wizard, history in wp-admin) |
+| **1-on-1 — wizard Step 3–4** | Shared Preparation™ + Alignment Conversation™ (GF draft; TODO sync to DB) |
+| **1-on-1 — wizard Step 5** | Shared Commitments™ (CRUD via Laravel API) |
+| **1-on-1 — wizard Step 6** | AI Meeting Synthesis™ (generate, latest in wizard, history in wp-admin, `context-composer` fallback, commitment summary normalization) |
+| **1-on-1 — privacy** | Prep `is_revealed`, brief uses prior syntheses only, synthesis uses current meeting prep/notes only |
+| **Prompt management** | WP Admin LLM Prompts, `wp_options` registry, 4 slots (COR coach/user, 1-on-1 brief/synthesis) |
+| **ARP (UI only)** | Shortcode `[fusion_arp_wizard]` — 7-step frontend shell, not yet persisting to `wp_fusion_arp_*` |
+
+### Not working / partial / planned
+
+| Area | Status | Notes |
+|------|--------|-------|
+| **`wp_fusion_evidence_log`** | Schema only | No application writes yet |
+| **Evidence snapshots** (QBR/360/ARR) | Schema only | Not implemented |
+| **QBR, 360 Review, ARR** | Schema only | No models, API, or wizard |
+| **ARP — persistence & AI** | Partial | Wizard UI exists; DB + `readiness-review` API not yet |
+| **Prep & notes → DB** | Partial | Still GF draft (`save-draft.php` TODO); synthesis can accept wizard overrides |
+| **Other component AI endpoints** | Planned | QBR assessment/synthesis, 360, ARR, ARP readiness review |
+| **Other ChromaDB categories** | Planned | `fusion_qbr`, `fusion_360`, `fusion_arp`, `fusion_arr` not yet indexed |
+| **Centralized Memory Layer** | Planned | Cross-component linking requires evidence log + snapshots |
+| **Background jobs for AI** | None | All AI generation is synchronous (user waits) |
+| **Infrastructure** | Unknown | Backup, monitoring, CI/CD, SLA — not documented in repo |
+
+### Related repositories
+
+| Repo | Role |
+|------|------|
+| `xfusion` (Laravel + WP plugin) | DB, API, wizard UI, prompt registry |
+| `xfusion-llm` (Python FastAPI) | COR evaluation, knowledge vectors, 1-on-1 brief/synthesis |
 
 ---
 

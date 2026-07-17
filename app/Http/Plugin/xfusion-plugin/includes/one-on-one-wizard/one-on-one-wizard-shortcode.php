@@ -105,11 +105,11 @@ function xfusion_one_on_one_wizard_shortcode($atts = []): string
     <div id="xfw-meeting-gate" class="xfw-meeting-gate<?php echo $conversationId > 0 ? ' xfw-hidden' : ''; ?>">
         <div class="xfw-card xfw-gate-card">
             <h2 class="xfw-section-title" style="margin-top:0">Select your 1-on-1 meeting</h2>
-            <p class="xfw-section-desc">Open an existing meeting or pick a company group to schedule a new one. You may be a leader in one group and a member in another.</p>
+            <p class="xfw-section-desc">Open an existing meeting from <strong>Your meetings</strong>, or schedule a new one if you are a leader.</p>
             <div class="xfw-gate-columns">
                 <div class="xfw-gate-col xfw-gate-col-schedule">
                     <h3 class="xfw-gate-col-title">Schedule a new meeting</h3>
-                    <p class="xfw-muted xfw-gate-col-desc">Select the company group context, then pick a team member if you are the leader.</p>
+                    <p class="xfw-muted xfw-gate-col-desc">Leaders: select a company group and team member, then set date and time.</p>
                     <div id="xfw-gate-pairs"></div>
                     <div id="xfw-gate-conversations" class="xfw-hidden"></div>
                 </div>

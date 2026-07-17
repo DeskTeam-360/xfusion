@@ -413,7 +413,7 @@ Route::prefix('v1')->middleware('fusion.api')->group(function () {
     Route::get('/companies/{company}/participation-charts', [ParticipationChartsController::class, 'show']);
     Route::get('/course-groups', [CourseGroupPublicController::class, 'index']);
 
-    // 1-on-1 Alignment Capture — consumed by the [fusion_one_on_one] WordPress shortcode.
+    // 1-on-1 Alignment Capture — consumed by the [fusion_one_on_one_wizard] WordPress shortcode.
     Route::prefix('one-on-one')->group(function () {
         Route::get('/pairs', [OneOnOneController::class, 'pairsForUser']);
         Route::get('/leader-team', [OneOnOneController::class, 'leaderTeam']);

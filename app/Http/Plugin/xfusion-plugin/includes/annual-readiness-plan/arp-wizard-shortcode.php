@@ -15,6 +15,10 @@ if (! defined('ABSPATH')) {
 }
 
 require_once __DIR__ . '/styles.php';
+require_once __DIR__ . '/arp-gf-mapping.php';
+require_once __DIR__ . '/arp-gf-entry-service.php';
+require_once __DIR__ . '/arp-save-draft.php';
+require_once __DIR__ . '/arp-load-draft.php';
 require_once __DIR__ . '/core.php';
 require_once __DIR__ . '/steps/step-1-foundation.php';
 require_once __DIR__ . '/steps/step-2-future-state.php';
@@ -33,6 +37,8 @@ function xfusion_arp_wizard_shortcode($atts = []): string
     $atts = shortcode_atts([
         'organization'     => 'Northwind Solar Co-op',
         'plan_year'        => (string) wp_date('Y'),
+        'arp_id'           => '0',
+        'company_id'       => '0',
         'status'           => 'Draft',
         'version'          => '1.0',
         'executive_owner'  => '',
@@ -63,11 +69,28 @@ function xfusion_arp_wizard_shortcode($atts = []): string
     $publishJs   = xfarp_wizard_publish_init_js();
     $css         = xfarp_wizard_styles_css();
 
+    $companyId = (int) $atts['company_id'];
+    if ($companyId < 1 && function_exists('xfusion_wp_user_linked_company_id')) {
+        $companyId = xfusion_wp_user_linked_company_id((int) get_current_user_id());
+    }
+
+    $gfConfigured = [];
+    foreach (xfarp_gf_step_keys() as $stepKey) {
+        $gfConfigured[$stepKey] = xfarp_gf_step_is_configured($stepKey);
+    }
+
     $wizardConfig = [
-        'ajaxUrl' => admin_url('admin-ajax.php'),
-        'nonce'   => wp_create_nonce('xfarp_wizard_save_draft'),
-        'userId'  => get_current_user_id(),
+        'ajaxUrl'      => admin_url('admin-ajax.php'),
+        'nonce'        => wp_create_nonce('xfarp_wizard_save_draft'),
+        'userId'       => get_current_user_id(),
+        'companyId'    => $companyId,
+        'planYear'     => (int) $atts['plan_year'],
+        'arpId'        => (int) $atts['arp_id'],
+        'gfConfigured' => $gfConfigured,
     ];
+
+    $saveJs = xfarp_wizard_save_draft_js();
+    $loadJs = xfarp_wizard_load_draft_js();
 
     ob_start();
     ?>
@@ -128,7 +151,7 @@ function xfusion_arp_wizard_shortcode($atts = []): string
 <script>
 (function () {
 window.XFARP_WIZARD = <?php echo wp_json_encode($wizardConfig); ?>;
-<?php echo $panelsJs . "\n\n" . $readinessJs . "\n\n" . $strategicJs . "\n\n" . $learningJs . "\n\n" . $aiReviewJs . "\n\n" . $publishJs . "\n\n" . $coreJs; ?>
+<?php echo $panelsJs . "\n\n" . $readinessJs . "\n\n" . $strategicJs . "\n\n" . $learningJs . "\n\n" . $aiReviewJs . "\n\n" . $publishJs . "\n\n" . $coreJs . "\n\n" . $saveJs . "\n\n" . $loadJs; ?>
 })();
 </script>
     <?php
