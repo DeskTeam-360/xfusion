@@ -139,14 +139,19 @@ var xarSaveDraft = function () {
 
     var stepKey = STEPS[current] ? STEPS[current].key : '';
 
-    if (stepKey === 'readiness') {
+    var laravelBackedSteps = {
+        readiness: window.xarSaveReadinessDraft,
+        priorities: window.xarSaveStrategicDraft,
+    };
+
+    if (laravelBackedSteps[stepKey]) {
         if (!window.XFARP_WIZARD.arpId) {
             xarUpdateAutosaveLabel('No ARP selected — cannot save.', true);
             return;
         }
         xarSaveDraftBusy = true;
         xarUpdateAutosaveLabel('Saving draft...', false);
-        window.xarSaveReadinessDraft()
+        laravelBackedSteps[stepKey]()
             .then(function (json) {
                 if (!json || !json.success) {
                     xarUpdateAutosaveLabel((json && json.message) ? json.message : 'Save failed.', true);

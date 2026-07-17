@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Api;
 use App\Http\Controllers\Controller;
 use App\Models\Arp;
 use App\Models\ArpReadinessPriority;
+use App\Models\ArpStrategicPriority;
 use App\Models\Company;
 use App\Models\CompanyGroup;
 use App\Models\CompanyGroupDetail;
@@ -199,6 +200,88 @@ class ArpController extends Controller
                     'business_rationale' => $item['business_rationale'] ?? null,
                     'executive_owner_user_id' => $ownerId !== false ? $ownerId : null,
                     'expected_impact' => $item['expected_impact'] ?? null,
+                    'priority_rank' => $index,
+                ]);
+            }
+        });
+
+        return response()->json(['success' => true, 'saved_at' => now()->format('g:i A')]);
+    }
+
+    /**
+     * Step 4 — Strategic Priorities™: list, with readiness_priority_id
+     * resolved back to the readiness priority's name for the UI's
+     * "Related Readiness Priority" select (which matches by name, not id).
+     */
+    public function getStrategicPriorities(Arp $arp)
+    {
+        $items = ArpStrategicPriority::where('arp_id', $arp->id)
+            ->with('readinessPriority:id,name')
+            ->orderBy('priority_rank')
+            ->get();
+
+        return response()->json([
+            'success' => true,
+            'data' => $items->map(function (ArpStrategicPriority $p) {
+                $arr = $p->toArray();
+                $arr['related_readiness'] = $p->readinessPriority?->name;
+                unset($arr['readiness_priority']);
+
+                return $arr;
+            }),
+        ]);
+    }
+
+    /**
+     * Step 4 — replace-all save. `related_readiness` arrives as the
+     * readiness priority's NAME (the UI matches by name, not id) — resolved
+     * here against this ARP's saved readiness priorities before insert.
+     */
+    public function saveStrategicPriorities(Request $request, Arp $arp)
+    {
+        $userId = (int) $request->input('user_id');
+        if ($userId < 1 || ! $this->leadableCompanyIds($userId)->contains($arp->company_id)) {
+            return response()->json(['success' => false, 'message' => 'You do not lead this ARP\'s company group(s).'], 403);
+        }
+
+        $data = $request->validate([
+            'items' => 'present|array',
+            'items.*.title' => 'nullable|string|max:255',
+            'items.*.related_readiness' => 'nullable|string',
+            'items.*.executive_owner_user_id' => 'nullable',
+            'items.*.target_date' => 'nullable|string',
+            'items.*.description' => 'nullable|string',
+            'items.*.success_measures' => 'nullable|string',
+            'items.*.org_kpi' => 'nullable|string|max:80',
+            'items.*.readiness_indicator' => 'nullable|string|max:80',
+            'items.*.related_groups' => 'nullable|string|max:80',
+        ]);
+
+        $readinessByName = ArpReadinessPriority::where('arp_id', $arp->id)
+            ->get(['id', 'name'])
+            ->keyBy('name');
+
+        DB::transaction(function () use ($arp, $data, $readinessByName) {
+            ArpStrategicPriority::where('arp_id', $arp->id)->delete();
+
+            foreach (array_values($data['items']) as $index => $item) {
+                $ownerId = filter_var($item['executive_owner_user_id'] ?? null, FILTER_VALIDATE_INT);
+                $readinessName = $item['related_readiness'] ?? null;
+                $readinessId = $readinessName !== null ? ($readinessByName->get($readinessName)?->id) : null;
+                $targetDate = ! empty($item['target_date']) ? $item['target_date'] : null;
+
+                ArpStrategicPriority::create([
+                    'arp_id' => $arp->id,
+                    'readiness_priority_id' => $readinessId,
+                    'title' => $item['title'] ?? '',
+                    'description' => $item['description'] ?? null,
+                    'owner_user_id' => $ownerId !== false ? $ownerId : null,
+                    'target_date' => $targetDate,
+                    'success_measures' => $item['success_measures'] ?? null,
+                    'org_kpi' => $item['org_kpi'] ?? null,
+                    'readiness_indicator' => $item['readiness_indicator'] ?? null,
+                    'related_groups' => $item['related_groups'] ?? null,
+                    'status' => ArpStrategicPriority::STATUS_NOT_STARTED,
                     'priority_rank' => $index,
                 ]);
             }

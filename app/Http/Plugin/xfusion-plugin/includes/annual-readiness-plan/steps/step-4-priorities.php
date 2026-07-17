@@ -298,6 +298,17 @@ function xfarp_wizard_strategic_init_js(): string
                 renderList();
             };
         }
+
+        // Replace the dummy seed with real saved data from Laravel, if any
+        // exists for this ARP. Falls back silently to the seed on failure.
+        if (typeof window.xarLoadStrategicDraft === 'function') {
+            window.xarLoadStrategicDraft().then(function (items) {
+                if (items && items.length) {
+                    window.xarStrategicCache = items;
+                    renderList();
+                }
+            });
+        }
     };
 })();
 JS;
