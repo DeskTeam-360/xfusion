@@ -81,6 +81,34 @@ class ArpController extends Controller
         ]);
     }
 
+    /** Single ARP + the requesting user's leading group name for its company. */
+    public function show(Request $request, Arp $arp)
+    {
+        $userId = (int) $request->query('user_id');
+
+        $groupName = CompanyGroupDetail::query()
+            ->where('user_id', $userId)
+            ->where('status', CompanyGroup::STATUS_LEADER)
+            ->whereHas('companyGroup', fn ($q) => $q->where('company_id', $arp->company_id))
+            ->with('companyGroup:id,title')
+            ->first()
+            ?->companyGroup
+            ?->title;
+
+        return response()->json([
+            'success' => true,
+            'data' => [
+                'id' => $arp->id,
+                'company_id' => $arp->company_id,
+                'company_name' => $arp->company?->title,
+                'group_name' => $groupName,
+                'year' => $arp->year,
+                'title' => $arp->title,
+                'status' => $arp->status,
+            ],
+        ]);
+    }
+
     /**
      * Create a new ARP. If one already exists for this company+year, return
      * the existing record instead of erroring — the picker resumes it.
