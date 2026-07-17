@@ -15,6 +15,7 @@ if (! defined('ABSPATH')) {
 }
 
 require_once __DIR__ . '/styles.php';
+require_once __DIR__ . '/arp-picker.php';
 require_once __DIR__ . '/arp-gf-mapping.php';
 require_once __DIR__ . '/arp-gf-entry-service.php';
 require_once __DIR__ . '/arp-save-draft.php';
@@ -44,6 +45,17 @@ function xfusion_arp_wizard_shortcode($atts = []): string
         'executive_owner'  => '',
         'last_saved'       => '',
     ], $atts, 'fusion_arp_wizard');
+
+    $arpId = (int) $atts['arp_id'];
+    if ($arpId < 1 && isset($_GET['arp_id'])) {
+        $arpId = absint($_GET['arp_id']);
+    }
+
+    if ($arpId < 1) {
+        return xfarp_render_picker_gate();
+    }
+
+    $atts['arp_id'] = (string) $arpId;
 
     $currentUser = wp_get_current_user();
     $ownerName   = $atts['executive_owner'] !== ''

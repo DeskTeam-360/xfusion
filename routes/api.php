@@ -1,5 +1,6 @@
 <?php
 
+use App\Http\Controllers\Api\ArpController;
 use App\Http\Controllers\Api\CompanyPublicController;
 use App\Http\Controllers\Api\CourseGroupPublicController;
 use App\Http\Controllers\Api\OneOnOneController;
@@ -443,6 +444,14 @@ Route::prefix('v1')->middleware('fusion.api')->group(function () {
         Route::post('/commitments/{commitment}', [OneOnOneController::class, 'updateCommitment']);
         Route::post('/conversations/{conversation}/complete', [OneOnOneController::class, 'complete']);
         Route::post('/conversations/{conversation}/status', [OneOnOneController::class, 'updateConversationStatus']);
+    });
+
+    // ARP — consumed by the [fusion_arp_wizard] WordPress shortcode's picker gate.
+    // Rule: one ARP per (company, calendar year); only company-group leaders may view/create.
+    Route::prefix('arp')->group(function () {
+        Route::get('/leadable-companies', [ArpController::class, 'leadableCompanies']);
+        Route::get('/list', [ArpController::class, 'index']);
+        Route::post('/', [ArpController::class, 'store']);
     });
 });
 
