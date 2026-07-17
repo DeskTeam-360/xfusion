@@ -6,6 +6,7 @@ use App\Http\Controllers\Controller;
 use App\Models\Arp;
 use App\Models\ArpReadinessPriority;
 use App\Models\ArpStrategicPriority;
+use App\Models\ArpVersion;
 use App\Models\Company;
 use App\Models\CompanyGroup;
 use App\Models\CompanyGroupDetail;
@@ -108,8 +109,102 @@ class ArpController extends Controller
                 'year' => $arp->year,
                 'title' => $arp->title,
                 'status' => $arp->status,
+                'version' => (string) $arp->version,
+                'created_at' => $arp->created_at?->toIso8601String(),
+                'published_at' => $arp->published_at?->toIso8601String(),
             ],
         ]);
+    }
+
+    /** Version history — newest first. Snapshot bodies excluded from the list (fetch by id if needed). */
+    public function listVersions(Arp $arp)
+    {
+        $versions = $arp->versions()->get(['id', 'arp_id', 'version', 'status', 'published_by_user_id', 'published_at', 'created_at']);
+
+        return response()->json(['success' => true, 'data' => $versions]);
+    }
+
+    /**
+     * Archive the ARP's CURRENT state as a snapshot without changing its
+     * version number or status — used by the "Archive Previous Version"
+     * action on the Publish step, which archives the last-saved draft
+     * before the user proceeds to publish a new one.
+     */
+    public function archiveVersion(Request $request, Arp $arp)
+    {
+        $userId = (int) $request->input('user_id');
+        if ($userId < 1 || ! $this->leadableCompanyIds($userId)->contains($arp->company_id)) {
+            return response()->json(['success' => false, 'message' => 'You do not lead this ARP\'s company group(s).'], 403);
+        }
+
+        $version = ArpVersion::create([
+            'arp_id' => $arp->id,
+            'version' => $arp->version,
+            'status' => ArpVersion::STATUS_ARCHIVED,
+            'snapshot' => $this->buildSnapshot($arp),
+            'published_by_user_id' => $userId,
+            'published_at' => null,
+            'created_at' => now(),
+        ]);
+
+        return response()->json(['success' => true, 'data' => ['id' => $version->id, 'version' => (string) $version->version]]);
+    }
+
+    /**
+     * Publish: snapshot the current state as the new PUBLISHED version, bump
+     * the ARP's version number by 0.1, and mark it active. The prior draft
+     * is not silently lost — callers are expected to hit archiveVersion()
+     * first (the UI's "Archive Previous Version" button does this), but
+     * publish() does not require it.
+     */
+    public function publish(Request $request, Arp $arp)
+    {
+        $userId = (int) $request->input('user_id');
+        if ($userId < 1 || ! $this->leadableCompanyIds($userId)->contains($arp->company_id)) {
+            return response()->json(['success' => false, 'message' => 'You do not lead this ARP\'s company group(s).'], 403);
+        }
+
+        $newVersion = round(((float) $arp->version) + 0.1, 1);
+
+        $result = DB::transaction(function () use ($arp, $userId, $newVersion) {
+            $versionRow = ArpVersion::create([
+                'arp_id' => $arp->id,
+                'version' => $newVersion,
+                'status' => ArpVersion::STATUS_PUBLISHED,
+                'snapshot' => $this->buildSnapshot($arp),
+                'published_by_user_id' => $userId,
+                'published_at' => now(),
+                'created_at' => now(),
+            ]);
+
+            $arp->update([
+                'version' => $newVersion,
+                'status' => Arp::STATUS_ACTIVE,
+                'published_at' => now(),
+            ]);
+
+            return $versionRow;
+        });
+
+        return response()->json([
+            'success' => true,
+            'data' => [
+                'version' => (string) $result->version,
+                'status' => Arp::STATUS_ACTIVE,
+                'published_at' => $arp->fresh()->published_at?->toIso8601String(),
+            ],
+        ]);
+    }
+
+    /** Full plan state at the moment of archive/publish — the version history's source of truth. */
+    private function buildSnapshot(Arp $arp): array
+    {
+        return [
+            'arp' => $arp->only(['id', 'company_id', 'year', 'title', 'mission', 'vision', 'status', 'version']),
+            'readiness_priorities' => ArpReadinessPriority::where('arp_id', $arp->id)->orderBy('priority_rank')->get()->toArray(),
+            'strategic_priorities' => ArpStrategicPriority::where('arp_id', $arp->id)->orderBy('priority_rank')->get()->toArray(),
+            'learnings' => DB::table('wp_fusion_arp_learnings')->where('arp_id', $arp->id)->get()->toArray(),
+        ];
     }
 
     /**

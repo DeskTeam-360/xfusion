@@ -221,6 +221,7 @@ if (root) {
         root.scrollIntoView({ behavior: 'smooth', block: 'start' });
     };
     window.xarGoTo = goTo;
+    window.xarRenderCurrentStep = renderMain;
 
     var bindNav = function () {
         if (navBound) {

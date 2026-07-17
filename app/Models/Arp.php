@@ -17,7 +17,12 @@ class Arp extends Model
 
     protected $table = 'wp_fusion_arps';
 
-    protected $fillable = ['company_id', 'year', 'title', 'mission', 'vision', 'status', 'created_by'];
+    protected $fillable = ['company_id', 'year', 'title', 'mission', 'vision', 'status', 'version', 'published_at', 'created_by'];
+
+    protected $casts = [
+        'published_at' => 'datetime',
+        'version' => 'decimal:1',
+    ];
 
     public function company()
     {
@@ -27,5 +32,10 @@ class Arp extends Model
     public function creator()
     {
         return $this->belongsTo(User::class, 'created_by');
+    }
+
+    public function versions()
+    {
+        return $this->hasMany(ArpVersion::class, 'arp_id')->orderByDesc('id');
     }
 }

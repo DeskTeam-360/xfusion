@@ -15,16 +15,32 @@ function xfarp_wizard_step_publish_js(): string
 publish: function () {
     var iconBase = 'https://sandbox.xperiencefusion.com/wp-content/uploads/2026/07/';
     var root = document.getElementById('xfarp-wiz');
+    var cfg = window.XFARP_WIZARD || {};
     function textOr(sel, fallback) {
         var el = root ? root.querySelector(sel) : null;
         var t = el ? (el.textContent || '').trim() : '';
         return t && t !== '—' ? t : fallback;
     }
-    var org = textOr('#xar-si-org', 'Northwind Solar Co-op');
-    var year = textOr('#xar-si-year', '2025');
-    var owner = textOr('#xar-si-owner', 'James Scott');
-    var version = textOr('#xar-si-version', '1.0');
-    var saved = textOr('#xar-si-saved', 'May 14, 2025 10:32 AM');
+    function formatDate(iso, fallback) {
+        if (!iso) {
+            return fallback;
+        }
+        var d = new Date(iso);
+        if (isNaN(d.getTime())) {
+            return fallback;
+        }
+        return d.toLocaleDateString(undefined, { year: 'numeric', month: 'long', day: 'numeric' }) +
+            ' ' + d.toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' });
+    }
+    var org = textOr('#xar-si-org', '—');
+    var year = textOr('#xar-si-year', String(cfg.planYear || '—'));
+    var owner = textOr('#xar-si-owner', '—');
+    var version = cfg.version || textOr('#xar-si-version', '1.0');
+    var saved = textOr('#xar-si-saved', 'Not saved yet');
+    var created = formatDate(cfg.createdAt, 'Unknown');
+    var publishedAt = formatDate(cfg.publishedAt, null);
+    var statusBadgeEl = root ? root.querySelector('#xar-si-status .xar-badge') : null;
+    var statusBadgeHtml = statusBadgeEl ? statusBadgeEl.outerHTML : '<span class="xar-badge amber">Draft</span>';
 
     function summaryRow(label, value) {
         return '<div class="xar-summary-item"><dt>' + label + '</dt><dd>' + value + '</dd></div>';
@@ -67,10 +83,10 @@ publish: function () {
         summaryRow('Plan Year', year) +
         summaryRow('Executive Owner', owner) +
         summaryRow('Version', version) +
-        summaryRow('Status', '<span class="xar-badge amber">Draft</span>') +
-        summaryRow('Created', 'May 14, 2025 10:12 AM') +
+        summaryRow('Status', statusBadgeHtml) +
+        summaryRow('Created', created) +
         summaryRow('Last Saved', saved) +
-        summaryRow('Estimated Completion Time', '90 – 120 minutes') +
+        (publishedAt ? summaryRow('Last Published', publishedAt) : '') +
         '</dl></div>' +
 
         '<div class="xar-card">' +
@@ -109,10 +125,11 @@ publish: function () {
         actionCard('xar-publish-save', 'Clipboard-Checkmark-Blue-Icon.svg', 'Save Draft',
             'Save your progress and continue working on your plan.', 'Save Draft', 'xar-btn-outline') +
         actionCard('xar-publish-archive', 'Database-Icon-1.svg', 'Archive Previous Version',
-            'Archive Version 0.9 (Draft) before publishing this version.', 'Archive Version 0.9', 'xar-btn-outline') +
+            'Archive the current version (' + version + ') as a snapshot before publishing the next one.', 'Archive Version ' + version, 'xar-btn-outline') +
         actionCard('xar-publish-go', 'Trending-Up-Arrow-Icon-Green-1.svg', 'Publish ARP',
-            'Publish this plan and activate FUSION\'s connected operating system.', 'Publish ARP', 'xar-btn-accent') +
-        '</div>';
+            'Publish this plan as version ' + (Math.round((parseFloat(version) + 0.1) * 10) / 10).toFixed(1) + ' and activate FUSION\'s connected operating system.', 'Publish ARP', 'xar-btn-accent') +
+        '</div>' +
+        '<p class="xar-muted" id="xar-publish-status" style="margin-top:.75rem"></p>';
 }
 JS;
 }
@@ -121,24 +138,71 @@ function xfarp_wizard_publish_init_js(): string
 {
     return <<<'JS'
 (function () {
+    function setPublishStatus(text, isError) {
+        var el = document.getElementById('xar-publish-status');
+        if (!el) {
+            return;
+        }
+        el.style.color = isError ? '#dc2626' : '#6b7280';
+        el.textContent = text;
+    }
+
     window.xarPublishArp = function () {
+        if (!window.XFARP_WIZARD || !window.XFARP_WIZARD.arpId) {
+            setPublishStatus('No ARP selected — cannot publish.', true);
+            return;
+        }
         var confirmed = window.confirm('Publish this Annual Readiness Plan™ and activate it for the plan year?');
         if (!confirmed) {
             return;
         }
-        var statusBadge = document.querySelector('#xar-si-status .xar-badge');
-        if (statusBadge) {
-            statusBadge.textContent = 'Published';
-            statusBadge.classList.remove('amber');
-            statusBadge.classList.add('green');
+
+        var publishBtn = document.getElementById('xar-publish-go');
+        if (publishBtn) {
+            publishBtn.disabled = true;
         }
-        var status = document.getElementById('xar-autosave-status');
-        if (status) {
-            var now = new Date();
-            var time = now.toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' });
-            status.innerHTML = '<span class="xar-autosave-check" aria-hidden="true">&#10003;</span> ARP published ' + time;
-        }
-        window.alert('ARP published (UI shell). Backend publish will be wired in a future update.');
+        setPublishStatus('Publishing…', false);
+
+        window.xarPublishArpNow().then(function (json) {
+            if (publishBtn) {
+                publishBtn.disabled = false;
+            }
+            if (!json || !json.success) {
+                setPublishStatus((json && json.message) ? json.message : 'Publish failed.', true);
+                return;
+            }
+
+            window.XFARP_WIZARD.version = json.data.version;
+            window.XFARP_WIZARD.publishedAt = json.data.published_at;
+
+            var statusBadge = document.querySelector('#xar-si-status .xar-badge');
+            if (statusBadge) {
+                statusBadge.textContent = 'Active';
+                statusBadge.classList.remove('amber');
+                statusBadge.classList.add('green');
+            }
+            var versionEl = document.getElementById('xar-si-version');
+            if (versionEl) {
+                versionEl.textContent = json.data.version;
+            }
+            var status = document.getElementById('xar-autosave-status');
+            if (status) {
+                var now = new Date();
+                var time = now.toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' });
+                status.innerHTML = '<span class="xar-autosave-check" aria-hidden="true">&#10003;</span> ARP published ' + time;
+            }
+            setPublishStatus('Published as version ' + json.data.version + '.', false);
+            // Re-render this step so the summary card, archive button label,
+            // and "publish as version X.X" copy all reflect the new version.
+            if (typeof window.xarRenderCurrentStep === 'function') {
+                window.xarRenderCurrentStep();
+            }
+        }).catch(function () {
+            if (publishBtn) {
+                publishBtn.disabled = false;
+            }
+            setPublishStatus('Publish failed — network error.', true);
+        });
     };
 
     window.initPublishStep = function () {
@@ -166,7 +230,23 @@ function xfarp_wizard_publish_init_js(): string
         var archiveBtn = document.getElementById('xar-publish-archive');
         if (archiveBtn) {
             archiveBtn.onclick = function () {
-                window.alert('Previous version archived (UI shell).');
+                if (!window.XFARP_WIZARD || !window.XFARP_WIZARD.arpId) {
+                    setPublishStatus('No ARP selected — cannot archive.', true);
+                    return;
+                }
+                archiveBtn.disabled = true;
+                setPublishStatus('Archiving current version…', false);
+                window.xarArchiveArpVersion().then(function (json) {
+                    archiveBtn.disabled = false;
+                    if (!json || !json.success) {
+                        setPublishStatus((json && json.message) ? json.message : 'Archive failed.', true);
+                        return;
+                    }
+                    setPublishStatus('Version ' + json.data.version + ' archived.', false);
+                }).catch(function () {
+                    archiveBtn.disabled = false;
+                    setPublishStatus('Archive failed — network error.', true);
+                });
             };
         }
         var publishBtn = document.getElementById('xar-publish-go');

@@ -456,6 +456,9 @@ Route::prefix('v1')->middleware('fusion.api')->group(function () {
         Route::post('/{arp}/readiness-priorities', [ArpController::class, 'saveReadinessPriorities']);
         Route::get('/{arp}/strategic-priorities', [ArpController::class, 'getStrategicPriorities']);
         Route::post('/{arp}/strategic-priorities', [ArpController::class, 'saveStrategicPriorities']);
+        Route::get('/{arp}/versions', [ArpController::class, 'listVersions']);
+        Route::post('/{arp}/archive-version', [ArpController::class, 'archiveVersion']);
+        Route::post('/{arp}/publish', [ArpController::class, 'publish']);
         Route::get('/{arp}', [ArpController::class, 'show']);
     });
 });

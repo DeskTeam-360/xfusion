@@ -22,6 +22,7 @@ require_once __DIR__ . '/arp-save-draft.php';
 require_once __DIR__ . '/arp-load-draft.php';
 require_once __DIR__ . '/arp-readiness-service.php';
 require_once __DIR__ . '/arp-strategic-service.php';
+require_once __DIR__ . '/arp-publish-service.php';
 require_once __DIR__ . '/core.php';
 require_once __DIR__ . '/steps/step-1-foundation.php';
 require_once __DIR__ . '/steps/step-2-future-state.php';
@@ -64,12 +65,14 @@ function xfusion_arp_wizard_shortcode($atts = []): string
     // company title (ARP is scoped per-company, but leaders think in terms
     // of the group they run).
     $arpContext = xfarp_picker_api_request('GET', "/{$arpId}", ['user_id' => get_current_user_id()]);
+    $arpData    = [];
     if ($arpContext['ok'] && is_array($arpContext['body']['data'] ?? null)) {
         $arpData = $arpContext['body']['data'];
         $atts['organization'] = $arpData['group_name'] ?? $arpData['company_name'] ?? $atts['organization'];
         $atts['plan_year']    = (string) ($arpData['year'] ?? $atts['plan_year']);
         $atts['status']       = ucfirst((string) ($arpData['status'] ?? $atts['status']));
         $atts['company_id']   = (string) ($arpData['company_id'] ?? $atts['company_id']);
+        $atts['version']      = (string) ($arpData['version'] ?? $atts['version']);
     }
 
     $currentUser = wp_get_current_user();
@@ -113,6 +116,9 @@ function xfusion_arp_wizard_shortcode($atts = []): string
         'companyId'    => $companyId,
         'planYear'     => (int) $atts['plan_year'],
         'arpId'        => (int) $atts['arp_id'],
+        'version'      => $atts['version'],
+        'createdAt'    => $arpData['created_at'] ?? null,
+        'publishedAt'  => $arpData['published_at'] ?? null,
         'gfConfigured' => $gfConfigured,
     ];
 
@@ -120,6 +126,7 @@ function xfusion_arp_wizard_shortcode($atts = []): string
     $loadJs      = xfarp_wizard_load_draft_js();
     $readinessSvcJs = xfarp_wizard_readiness_service_js();
     $strategicSvcJs = xfarp_wizard_strategic_service_js();
+    $publishSvcJs   = xfarp_wizard_publish_service_js();
 
     ob_start();
     ?>
@@ -180,7 +187,7 @@ function xfusion_arp_wizard_shortcode($atts = []): string
 <script>
 (function () {
 window.XFARP_WIZARD = <?php echo wp_json_encode($wizardConfig); ?>;
-<?php echo $panelsJs . "\n\n" . $readinessJs . "\n\n" . $strategicJs . "\n\n" . $learningJs . "\n\n" . $aiReviewJs . "\n\n" . $publishJs . "\n\n" . $coreJs . "\n\n" . $saveJs . "\n\n" . $loadJs . "\n\n" . $readinessSvcJs . "\n\n" . $strategicSvcJs; ?>
+<?php echo $panelsJs . "\n\n" . $readinessJs . "\n\n" . $strategicJs . "\n\n" . $learningJs . "\n\n" . $aiReviewJs . "\n\n" . $publishJs . "\n\n" . $coreJs . "\n\n" . $saveJs . "\n\n" . $loadJs . "\n\n" . $readinessSvcJs . "\n\n" . $strategicSvcJs . "\n\n" . $publishSvcJs; ?>
 })();
 </script>
     <?php
