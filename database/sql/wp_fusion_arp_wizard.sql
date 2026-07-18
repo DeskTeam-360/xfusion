@@ -17,7 +17,8 @@
 
 CREATE TABLE IF NOT EXISTS `wp_fusion_arps` (
     `id` BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
-    `company_id` BIGINT UNSIGNED NOT NULL COMMENT 'wp_companies.id',
+    `company_id` BIGINT UNSIGNED NOT NULL COMMENT 'wp_companies.id — denormalized copy of company_group_id.company_id, for display/joins',
+    `company_group_id` BIGINT UNSIGNED NULL COMMENT 'wp_company_groups.id — the real scoping key: one ARP per group per year',
     `year` SMALLINT UNSIGNED NOT NULL,
     `title` VARCHAR(255) NOT NULL DEFAULT '',
     `mission` TEXT NULL,
@@ -31,7 +32,7 @@ CREATE TABLE IF NOT EXISTS `wp_fusion_arps` (
     `created_at` TIMESTAMP NULL,
     `updated_at` TIMESTAMP NULL,
     PRIMARY KEY (`id`),
-    UNIQUE KEY `arp_company_year_uq` (`company_id`, `year`),
+    UNIQUE KEY `arp_group_year_uq` (`company_group_id`, `year`),
     KEY `arp_status_idx` (`status`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 

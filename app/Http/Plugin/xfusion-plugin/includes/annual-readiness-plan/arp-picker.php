@@ -94,14 +94,14 @@ add_action('wp_ajax_xfarp_picker_leadable_companies', function (): void {
 
 add_action('wp_ajax_xfarp_picker_create', function (): void {
     xfarp_picker_require_login();
-    $companyId = (int) ($_POST['company_id'] ?? 0);
-    $year      = (int) ($_POST['year'] ?? 0);
-    $title     = sanitize_text_field($_POST['title'] ?? '');
+    $groupId = (int) ($_POST['company_group_id'] ?? 0);
+    $year    = (int) ($_POST['year'] ?? 0);
+    $title   = sanitize_text_field($_POST['title'] ?? '');
     xfarp_picker_send(xfarp_picker_api_request('POST', '/', [], [
-        'user_id'    => get_current_user_id(),
-        'company_id' => $companyId,
-        'year'       => $year,
-        'title'      => $title,
+        'user_id'          => get_current_user_id(),
+        'company_group_id' => $groupId,
+        'year'             => $year,
+        'title'            => $title,
     ]));
 });
 
@@ -210,7 +210,7 @@ function xfarp_render_picker_gate(): string
                 newBtn.disabled = true;
                 newBtn.textContent = 'Creating…';
                 call('xfarp_picker_create', {
-                    company_id: document.getElementById('xfarp-new-company').value,
+                    company_group_id: document.getElementById('xfarp-new-company').value,
                     year: document.getElementById('xfarp-new-year').value,
                 }).then(function (res) {
                     newBtn.disabled = false;
