@@ -162,31 +162,39 @@ function xfarp_render_picker_gate(): string
         window.location.href = url.toString();
     }
 
-    function render(arps, companies) {
+    function render(arps, companies, canCreate) {
         var html = '<h2>Annual Readiness Plan™</h2>' +
-            '<p class="xar-muted">Select an existing ARP, or create a new one for an organization you lead.</p>';
+            '<p class="xar-muted">' + (canCreate
+                ? 'Select an existing ARP, or create a new one for an organization you lead.'
+                : 'Select an ARP to view. Only leaders of your organization\'s group can edit or publish it.') + '</p>';
 
         if (arps.length === 0) {
-            html += '<p class="xar-muted">No ARPs yet for the organizations you lead.</p>';
+            html += '<p class="xar-muted">No ARPs yet for your organization' + (canCreate ? ' — create one below.' : '.') + '</p>';
         } else {
-            html += '<table><thead><tr><th>Organization</th><th>Year</th><th>Status</th><th></th></tr></thead><tbody>';
+            html += '<table><thead><tr><th>Organization</th><th>Year</th><th>Status</th><th>Access</th><th></th></tr></thead><tbody>';
             arps.forEach(function (a) {
                 var badgeClass = a.status === 'active' ? 'xar-badge active' : 'xar-badge';
+                var accessBadge = a.can_edit
+                    ? '<span class="xar-badge active">Editable</span>'
+                    : '<span class="xar-badge">View only</span>';
                 html += '<tr><td>' + escHtml(a.company_name) + '</td><td>' + escHtml(a.year) + '</td>' +
                     '<td><span class="' + badgeClass + '">' + escHtml(a.status) + '</span></td>' +
+                    '<td>' + accessBadge + '</td>' +
                     '<td><a href="javascript:void(0)" class="xar-open-link" data-open="' + a.id + '">Open</a></td></tr>';
             });
             html += '</tbody></table>';
         }
 
-        html += '<div class="xfarp-new-form">' +
-            '<div style="font-weight:700;font-size:.85rem;margin-bottom:.5rem">Create a new ARP</div>' +
-            '<select id="xfarp-new-company">' + companies.map(function (c) {
-                return '<option value="' + c.id + '">' + escHtml(c.name) + '</option>';
-            }).join('') + '</select>' +
-            '<input type="number" id="xfarp-new-year" value="' + new Date().getFullYear() + '" style="width:6rem"/>' +
-            '<button type="button" id="xfarp-new-btn">+ Create ARP</button>' +
-            '</div>';
+        if (canCreate) {
+            html += '<div class="xfarp-new-form">' +
+                '<div style="font-weight:700;font-size:.85rem;margin-bottom:.5rem">Create a new ARP</div>' +
+                '<select id="xfarp-new-company">' + companies.map(function (c) {
+                    return '<option value="' + c.id + '">' + escHtml(c.name) + '</option>';
+                }).join('') + '</select>' +
+                '<input type="number" id="xfarp-new-year" value="' + new Date().getFullYear() + '" style="width:6rem"/>' +
+                '<button type="button" id="xfarp-new-btn">+ Create ARP</button>' +
+                '</div>';
+        }
 
         body.innerHTML = html;
 
@@ -195,22 +203,24 @@ function xfarp_render_picker_gate(): string
         });
 
         var newBtn = document.getElementById('xfarp-new-btn');
-        newBtn.addEventListener('click', function () {
-            if (newBtn.dataset.busy === '1') return;
-            newBtn.dataset.busy = '1';
-            newBtn.disabled = true;
-            newBtn.textContent = 'Creating…';
-            call('xfarp_picker_create', {
-                company_id: document.getElementById('xfarp-new-company').value,
-                year: document.getElementById('xfarp-new-year').value,
-            }).then(function (res) {
-                newBtn.disabled = false;
-                newBtn.dataset.busy = '';
-                newBtn.textContent = '+ Create ARP';
-                if (!res.success) { alert(res.message || 'Failed to create ARP.'); return; }
-                openArp(res.data.id);
+        if (newBtn) {
+            newBtn.addEventListener('click', function () {
+                if (newBtn.dataset.busy === '1') return;
+                newBtn.dataset.busy = '1';
+                newBtn.disabled = true;
+                newBtn.textContent = 'Creating…';
+                call('xfarp_picker_create', {
+                    company_id: document.getElementById('xfarp-new-company').value,
+                    year: document.getElementById('xfarp-new-year').value,
+                }).then(function (res) {
+                    newBtn.disabled = false;
+                    newBtn.dataset.busy = '';
+                    newBtn.textContent = '+ Create ARP';
+                    if (!res.success) { alert(res.message || 'Failed to create ARP.'); return; }
+                    openArp(res.data.id);
+                });
             });
-        });
+        }
     }
 
     Promise.all([call('xfarp_picker_list'), call('xfarp_picker_leadable_companies')]).then(function (results) {
@@ -222,12 +232,12 @@ function xfarp_render_picker_gate(): string
         }
         if (listRes.has_access === false) {
             body.innerHTML = '<h2>Annual Readiness Plan™</h2>' +
-                '<p class="xar-muted">You do not lead any company group yet, so you do not have access to create or view an Annual Readiness Plan™. Contact your administrator if you believe this is a mistake.</p>';
+                '<p class="xar-muted">You are not a member of any organization yet, so you do not have access to any Annual Readiness Plan™. Contact your administrator if you believe this is a mistake.</p>';
             return;
         }
 
         var companies = (companiesRes.success ? companiesRes.data : []) || [];
-        render(listRes.data || [], companies);
+        render(listRes.data || [], companies, !!listRes.can_create);
     });
 })();
 </script>

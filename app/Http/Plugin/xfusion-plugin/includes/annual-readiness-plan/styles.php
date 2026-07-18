@@ -25,6 +25,18 @@ function xfarp_wizard_styles_css(): string
 .xar-spinner{width:16px;height:16px;border:2px solid var(--border);border-top-color:var(--green);border-radius:50%;display:inline-block;animation:xar-spin .7s linear infinite;flex-shrink:0}
 @keyframes xar-spin{to{transform:rotate(360deg)}}
 
+/* View-only mode (non-leader members) — CSS-based so it survives any
+   re-render from Step 3/4's async data load without re-applying JS. */
+#xfarp-wiz[data-view-only="1"] #xar-main input,
+#xfarp-wiz[data-view-only="1"] #xar-main textarea,
+#xfarp-wiz[data-view-only="1"] #xar-main select{
+    pointer-events:none;background:#f3f4f6;opacity:.85}
+#xfarp-wiz[data-view-only="1"] #xar-main button,
+#xfarp-wiz[data-view-only="1"] #xar-main .xar-add-link,
+#xfarp-wiz[data-view-only="1"] #xar-main .xar-prio-delete,
+#xfarp-wiz[data-view-only="1"] #xar-main a.xar-icon-btn{
+    display:none !important}
+
 /* Header */
 .xar-header{background:linear-gradient(120deg,var(--navy-dark) 0%,var(--navy) 55%,var(--green) 140%);padding:1.5rem 1.75rem;color:#fff}
 .xar-header-inner{display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:1rem}

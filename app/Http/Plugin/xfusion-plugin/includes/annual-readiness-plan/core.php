@@ -223,6 +223,12 @@ if (root) {
     window.xarGoTo = goTo;
     window.xarRenderCurrentStep = renderMain;
 
+    window.xarBackToPicker = function () {
+        var url = new URL(window.location.href);
+        url.searchParams.delete('arp_id');
+        window.location.href = url.toString();
+    };
+
     var bindNav = function () {
         if (navBound) {
             return;
@@ -249,10 +255,17 @@ if (root) {
         root.querySelector('#xar-prev-step').addEventListener('click', function () {
             var prevBtn = root.querySelector('#xar-prev-step');
             if (prevBtn && prevBtn.dataset.action === 'close') {
+                window.xarBackToPicker();
                 return;
             }
             goTo(current - 1);
         });
+        var changeLink = root.querySelector('#xar-change-arp');
+        if (changeLink) {
+            changeLink.addEventListener('click', function () {
+                window.xarBackToPicker();
+            });
+        }
         /* Save Draft wired in arp-save-draft.php */
     };
 

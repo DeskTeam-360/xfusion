@@ -60,13 +60,17 @@ class ArpController extends Controller
             return response()->json(['success' => false, 'message' => 'user_id is required'], 422);
         }
 
-        $companyIds = $this->leadableCompanyIds($userId);
-        if ($companyIds->isEmpty()) {
+        // Members see the ARPs of any company they belong to (view-only);
+        // leaders additionally get edit rights, flagged per-row via can_edit.
+        $memberCompanyIds = $this->memberCompanyIds($userId);
+        if ($memberCompanyIds->isEmpty()) {
             return response()->json(['success' => true, 'data' => [], 'has_access' => false]);
         }
 
+        $leadableCompanyIds = $this->leadableCompanyIds($userId);
+
         $arps = Arp::query()
-            ->whereIn('company_id', $companyIds)
+            ->whereIn('company_id', $memberCompanyIds)
             ->with('company:id,title')
             ->orderByDesc('year')
             ->get();
@@ -74,6 +78,7 @@ class ArpController extends Controller
         return response()->json([
             'success' => true,
             'has_access' => true,
+            'can_create' => $leadableCompanyIds->isNotEmpty(),
             'data' => $arps->map(fn (Arp $a) => [
                 'id' => $a->id,
                 'company_id' => $a->company_id,
@@ -81,6 +86,7 @@ class ArpController extends Controller
                 'year' => $a->year,
                 'title' => $a->title,
                 'status' => $a->status,
+                'can_edit' => $leadableCompanyIds->contains($a->company_id),
             ]),
         ]);
     }
@@ -111,7 +117,9 @@ class ArpController extends Controller
                 'status' => $arp->status,
                 'version' => (string) $arp->version,
                 'created_at' => $arp->created_at?->toIso8601String(),
+                'updated_at' => $arp->updated_at?->toIso8601String(),
                 'published_at' => $arp->published_at?->toIso8601String(),
+                'can_edit' => $this->leadableCompanyIds($userId)->contains($arp->company_id),
             ],
         ]);
     }
@@ -390,6 +398,20 @@ class ArpController extends Controller
         return CompanyGroupDetail::query()
             ->where('user_id', $userId)
             ->where('status', CompanyGroup::STATUS_LEADER)
+            ->whereHas('companyGroup')
+            ->with('companyGroup:id,company_id')
+            ->get()
+            ->pluck('companyGroup.company_id')
+            ->filter()
+            ->unique()
+            ->values();
+    }
+
+    /** Companies where the user belongs to any group, regardless of role — view-only access. */
+    private function memberCompanyIds(int $userId)
+    {
+        return CompanyGroupDetail::query()
+            ->where('user_id', $userId)
             ->whereHas('companyGroup')
             ->with('companyGroup:id,company_id')
             ->get()

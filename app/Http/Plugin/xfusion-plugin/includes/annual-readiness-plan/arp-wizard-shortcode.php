@@ -66,6 +66,7 @@ function xfusion_arp_wizard_shortcode($atts = []): string
     // of the group they run).
     $arpContext = xfarp_picker_api_request('GET', "/{$arpId}", ['user_id' => get_current_user_id()]);
     $arpData    = [];
+    $canEdit    = false;
     if ($arpContext['ok'] && is_array($arpContext['body']['data'] ?? null)) {
         $arpData = $arpContext['body']['data'];
         $atts['organization'] = $arpData['group_name'] ?? $arpData['company_name'] ?? $atts['organization'];
@@ -73,6 +74,11 @@ function xfusion_arp_wizard_shortcode($atts = []): string
         $atts['status']       = ucfirst((string) ($arpData['status'] ?? $atts['status']));
         $atts['company_id']   = (string) ($arpData['company_id'] ?? $atts['company_id']);
         $atts['version']      = (string) ($arpData['version'] ?? $atts['version']);
+        $canEdit              = (bool) ($arpData['can_edit'] ?? false);
+
+        if (! empty($arpData['updated_at'])) {
+            $atts['last_saved'] = wp_date('F j, Y g:i A', strtotime($arpData['updated_at']));
+        }
     }
 
     $currentUser = wp_get_current_user();
@@ -119,6 +125,7 @@ function xfusion_arp_wizard_shortcode($atts = []): string
         'version'      => $atts['version'],
         'createdAt'    => $arpData['created_at'] ?? null,
         'publishedAt'  => $arpData['published_at'] ?? null,
+        'canEdit'      => $canEdit,
         'gfConfigured' => $gfConfigured,
     ];
 
@@ -130,7 +137,13 @@ function xfusion_arp_wizard_shortcode($atts = []): string
 
     ob_start();
     ?>
-<div id="xfarp-wiz">
+<div id="xfarp-wiz"<?php echo $canEdit ? '' : ' data-view-only="1"'; ?>>
+
+    <?php if (! $canEdit) : ?>
+    <div class="xar-banner warn" style="margin:1rem 1.75rem 0">
+        &#128065; <span><b>View only.</b> You are viewing this Annual Readiness Plan™ as a member. Only leaders of this organization's group can edit or publish it.</span>
+    </div>
+    <?php endif; ?>
 
     <div class="xar-header">
         <div class="xar-header-inner">
@@ -139,7 +152,9 @@ function xfusion_arp_wizard_shortcode($atts = []): string
                 <p>Strategic Readiness Planning Object</p>
             </div>
             <div class="xar-header-actions">
+                <?php if ($canEdit) : ?>
                 <button type="button" class="xar-btn xar-btn-outline-white" id="xar-save-draft">Save Draft</button>
+                <?php endif; ?>
                 <button type="button" class="xar-btn xar-btn-accent" id="xar-next-step">Next Step &rarr;</button>
             </div>
         </div>
@@ -154,7 +169,10 @@ function xfusion_arp_wizard_shortcode($atts = []): string
 
         <aside class="xar-sidebar">
             <div class="xar-card">
-                <h4>ARP Information</h4>
+                <div class="xar-row" style="justify-content:space-between;align-items:flex-start;margin-bottom:.5rem">
+                    <h4 style="margin:0">ARP Information</h4>
+                    <a href="javascript:void(0)" class="xar-link" id="xar-change-arp" style="font-size:14px">Change plan</a>
+                </div>
                 <dl class="xar-dl">
                     <dt>Organization</dt><dd id="xar-si-org"><?php echo esc_html($atts['organization']); ?></dd>
                     <dt>Plan Year</dt><dd id="xar-si-year"><?php echo esc_html($atts['plan_year']); ?></dd>
@@ -176,7 +194,9 @@ function xfusion_arp_wizard_shortcode($atts = []): string
             Draft autosaved &mdash;
         </span>
         <div class="xar-row">
+            <?php if ($canEdit) : ?>
             <button type="button" class="xar-btn xar-btn-outline" id="xar-save-draft-2">Save Draft</button>
+            <?php endif; ?>
             <button type="button" class="xar-btn xar-btn-accent" id="xar-next-step-2">Next Step &rarr;</button>
         </div>
     </div>
