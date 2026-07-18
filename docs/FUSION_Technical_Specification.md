@@ -1,0 +1,940 @@
+# FUSION Operating System™ — Technical Specification
+
+**Status legend:** ✅ Implemented & verified in this repo · 🚧 Partially implemented · 📋 Planned (schema exists, logic not built)
+
+This document covers all five FUSION components (ARP, QBR, 1-on-1, 360, ARR) plus the
+cross-cutting Evidence Log. Database schemas are copied verbatim from
+[`database/sql/wp_fusion_core.sql`](../database/sql/wp_fusion_core.sql) — nothing here is
+speculative on the DB side. API contracts marked ✅ exist in
+[`app/Http/Controllers/Api/OneOnOneController.php`](../app/Http/Controllers/Api/OneOnOneController.php)
+and [`routes/api.php`](../routes/api.php) today.
+
+## 0. Actual Build Status (read this first)
+
+The sections below describe all five components at the same level of detail
+(schema, ERD, API contract, sequence diagram, retrieval algorithm) so the
+target design is fully documented. **That does not mean all five are equally
+built.** This table is the ground truth — check it before assuming a section
+below reflects working code.
+
+| Component | DB Schema | Laravel Model/Controller/API | WordPress Plugin (wizard, GF mapping, save/load) |
+|---|---|---|---|
+| **1-on-1 Alignment Capture** | ✅ Real | ✅ Real — 15 endpoints live in `OneOnOneController` | ✅ Real — 6-step wizard, GF mapping, save/load draft |
+| **ARP** | ✅ Real | ❌ None — no Model, no Controller, no route | 🚧 In progress — 7-step wizard, GF mapping, save/load draft, own migration (`wp_fusion_arp_wizard.sql`) exist, but not all 7 steps are wired/complete |
+| **QBR** | ✅ Real | ❌ None | ❌ None |
+| **360 Review** | ✅ Real | ❌ None | ❌ None |
+| **ARR** | ✅ Real | ❌ None | ❌ None |
+
+**Why the gap exists:**
+
+- **1-on-1 is the only component built end-to-end** because it was tackled
+  first per the CLAUDE.md roadmap (Phase 2) — schema, Laravel API, and the
+  WordPress-facing UI were all built together in the same effort.
+- **ARP is still in progress, and grew asymmetrically.** Its WordPress
+  wizard (Gravity Forms mapping, step-by-step UI, draft save/load) is being
+  built directly against Gravity Forms and its own SQL tables — without ever
+  routing through a Laravel API layer, and not all 7 steps are wired up yet.
+  That means whatever ARP data exists today lives and moves entirely inside
+  WordPress; Laravel has zero visibility into it (no Model, Controller, or
+  route exists for ARP in this repo). This should be revisited — both to
+  finish the remaining steps and to decide whether ARP should move to the
+  1-on-1 pattern (Laravel as source of truth) before more steps are built on
+  the current WordPress-only foundation.
+- **QBR, 360, and ARR have not been started.** Their sections below (§4, §5,
+  §7) are schema-verified but the API contracts, sequence diagrams, and
+  retrieval algorithms are **proposed designs**, not documentation of
+  existing code — they exist so implementation can start from a reviewed
+  plan instead of a blank page.
+
+Read every 📋-tagged item in this document as "designed, not built." Only ✅
+items can be pointed to as working software today.
+
+---
+
+## 1. System Architecture
+
+```mermaid
+flowchart LR
+    WP["WordPress + xfusion-plugin\n(Gravity Forms, shortcodes)"]
+    LA["Laravel API\n(this repo)"]
+    PY["Xfusion-llm\nPython FastAPI + ChromaDB"]
+    DB[("MySQL\nwp_ prefix, shared")]
+
+    WP -- "admin-ajax bridge\n(bearer token server-side)" --> LA
+    LA -- Eloquent --> DB
+    WP -- Eloquent (Corcel-style) --> DB
+    LA -- "HTTP + API key" --> PY
+    PY -- "RAG query" --> CDB[(ChromaDB)]
+```
+
+**Why the WP→Laravel→Python hop instead of direct WP→Python:** the privacy funnel
+(§6) must be enforced in one place. Laravel owns `is_revealed`, evidence
+aggregation, and decides exactly what crosses into an AI prompt. If WordPress
+called Python directly, that rule would live in PHP scattered across shortcodes
+instead of one controller layer.
+
+---
+
+## 2. Cross-Cutting: Evidence Log
+
+### 2.1 Schema ✅
+
+```sql
+CREATE TABLE IF NOT EXISTS `wp_fusion_evidence_log` (
+    `id` BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
+    `source_type` VARCHAR(60) NOT NULL COMMENT 'one_on_one | qbr | 360 | arr | arp | result_evaluation',
+    `source_id` BIGINT UNSIGNED NOT NULL COMMENT 'PK of the row in the source table',
+    `event_type` VARCHAR(60) NOT NULL COMMENT 'e.g. commitment_completed, conversation_held, ai_assessment_generated',
+    `user_id` BIGINT UNSIGNED NOT NULL COMMENT 'WP user ID this evidence is about',
+    `behavioral_driver` VARCHAR(40) NULL COMMENT 'get_real | fill_buckets | be_intentional | foster_grit | drive_growth',
+    `cor_capability` VARCHAR(40) NULL COMMENT 'alignment | accountability | communication | leadership | execution',
+    `evidence_date` DATE NOT NULL,
+    `metadata` LONGTEXT NULL COMMENT 'JSON: free-form context, never raw GF answers',
+    `created_at` TIMESTAMP NULL,
+    `updated_at` TIMESTAMP NULL,
+    PRIMARY KEY (`id`),
+    KEY `fel_user_idx` (`user_id`),
+    KEY `fel_source_idx` (`source_type`, `source_id`),
+    KEY `fel_driver_idx` (`behavioral_driver`),
+    KEY `fel_capability_idx` (`cor_capability`),
+    KEY `fel_evidence_date_idx` (`evidence_date`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+```
+
+### 2.2 ERD
+
+```mermaid
+erDiagram
+    wp_users ||--o{ wp_fusion_evidence_log : "user_id"
+    wp_fusion_evidence_log {
+        bigint id PK
+        varchar source_type
+        bigint source_id
+        varchar event_type
+        bigint user_id FK
+        varchar behavioral_driver
+        varchar cor_capability
+        date evidence_date
+        longtext metadata
+    }
+```
+
+### 2.3 Retrieval Algorithm 📋
+
+Every component that needs "what has this person/team done" reads from this
+table instead of querying five different sources ad hoc:
+
+```
+function getEvidenceFor(userId, sourceTypes[], dateRange):
+    rows = EvidenceLog.where(user_id = userId)
+                       .whereIn(source_type, sourceTypes)
+                       .whereBetween(evidence_date, dateRange)
+                       .orderBy(evidence_date DESC)
+                       .get()
+    return groupBy(rows, behavioral_driver | cor_capability)
+```
+
+Write-side: each component's controller writes one row to `evidence_log`
+whenever a meaningful event happens (conversation completed, commitment
+closed, AI assessment generated) — this is a fire-and-forget insert, not a
+sync process, so it never blocks the primary write.
+
+### 2.4 Who Writes to Evidence Log (planned wiring)
+
+| Source | Event | Behavioral driver / capability tagging |
+|---|---|---|
+| 1-on-1 | `conversation_held`, `commitment_completed` | From commitment's linked driver (not yet in schema — see §3 gap) |
+| QBR | `commitment_completed`, `ai_assessment_generated` | From COR capability discussed |
+| 360 | `review_completed` | All 5 drivers (full review) |
+| ARP | `plan_created`, `priority_set` | COR capability only (org-level, no individual driver) |
+| result_evaluation | `ai_assessment_generated` | From `wp_xfusion_result_evaluations.evaluation` JSON |
+
+---
+
+## 3. 1-on-1 Alignment Capture™
+
+### 3.1 Schema ✅ (7 tables, fully implemented)
+
+```sql
+CREATE TABLE IF NOT EXISTS `wp_fusion_one_on_ones` (
+    `id` BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
+    `company_id` BIGINT UNSIGNED NOT NULL,
+    `leader_user_id` BIGINT UNSIGNED NOT NULL,
+    `employee_user_id` BIGINT UNSIGNED NOT NULL,
+    `status` VARCHAR(20) NOT NULL DEFAULT 'active',
+    `created_at` TIMESTAMP NULL,
+    `updated_at` TIMESTAMP NULL,
+    PRIMARY KEY (`id`),
+    UNIQUE KEY `oo_pair_uq` (`leader_user_id`, `employee_user_id`),
+    KEY `oo_company_idx` (`company_id`),
+    KEY `oo_employee_idx` (`employee_user_id`)
+);
+
+CREATE TABLE IF NOT EXISTS `wp_fusion_one_on_one_conversations` (
+    `id` BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
+    `one_on_one_id` BIGINT UNSIGNED NOT NULL,
+    `scheduled_at` TIMESTAMP NULL,
+    `held_at` TIMESTAMP NULL,
+    `meeting_link` VARCHAR(500) NULL,
+    `status` VARCHAR(20) NOT NULL DEFAULT 'scheduled',
+    `created_at` TIMESTAMP NULL,
+    `updated_at` TIMESTAMP NULL,
+    PRIMARY KEY (`id`),
+    KEY `ooc_pair_idx` (`one_on_one_id`),
+    KEY `ooc_status_idx` (`status`)
+);
+
+CREATE TABLE IF NOT EXISTS `wp_fusion_one_on_one_ai_briefs` (
+    `id` BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
+    `conversation_id` BIGINT UNSIGNED NOT NULL,
+    `brief` LONGTEXT NOT NULL,
+    `insight_model` VARCHAR(60) NULL,
+    `tokens_used` INT UNSIGNED NOT NULL DEFAULT 0,
+    `cost_usd` DECIMAL(10,4) NOT NULL DEFAULT 0,
+    `created_at` TIMESTAMP NULL,
+    `updated_at` TIMESTAMP NULL,
+    PRIMARY KEY (`id`),
+    KEY `ooab_conversation_idx` (`conversation_id`)
+);
+
+CREATE TABLE IF NOT EXISTS `wp_fusion_one_on_one_preparations` (
+    `id` BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
+    `conversation_id` BIGINT UNSIGNED NOT NULL,
+    `author_role` VARCHAR(20) NOT NULL COMMENT 'employee | leader',
+    `author_user_id` BIGINT UNSIGNED NOT NULL,
+    `content` TEXT NOT NULL,
+    `is_revealed` TINYINT(1) NOT NULL DEFAULT 0,
+    `revealed_at` TIMESTAMP NULL,
+    `created_at` TIMESTAMP NULL,
+    `updated_at` TIMESTAMP NULL,
+    PRIMARY KEY (`id`),
+    UNIQUE KEY `oop_conversation_role_uq` (`conversation_id`, `author_role`),
+    KEY `oop_author_idx` (`author_user_id`)
+);
+
+CREATE TABLE IF NOT EXISTS `wp_fusion_one_on_one_notes` (
+    `id` BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
+    `conversation_id` BIGINT UNSIGNED NOT NULL,
+    `section` VARCHAR(60) NOT NULL,
+    `note` TEXT NOT NULL,
+    `created_by` BIGINT UNSIGNED NOT NULL,
+    `created_at` TIMESTAMP NULL,
+    `updated_at` TIMESTAMP NULL,
+    PRIMARY KEY (`id`),
+    KEY `oon_conversation_idx` (`conversation_id`),
+    KEY `oon_section_idx` (`section`)
+);
+
+CREATE TABLE IF NOT EXISTS `wp_fusion_one_on_one_commitments` (
+    `id` BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
+    `conversation_id` BIGINT UNSIGNED NOT NULL,
+    `title` VARCHAR(255) NOT NULL,
+    `description` TEXT NULL,
+    `owner_role` VARCHAR(20) NOT NULL DEFAULT 'shared',
+    `owner_user_id` BIGINT UNSIGNED NULL,
+    `status` VARCHAR(20) NOT NULL DEFAULT 'open',
+    `due_date` DATE NULL,
+    `created_at` TIMESTAMP NULL,
+    `updated_at` TIMESTAMP NULL,
+    PRIMARY KEY (`id`),
+    KEY `ooco_conversation_idx` (`conversation_id`),
+    KEY `ooco_owner_idx` (`owner_user_id`)
+);
+
+CREATE TABLE IF NOT EXISTS `wp_fusion_one_on_one_ai_syntheses` (
+    `id` BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
+    `conversation_id` BIGINT UNSIGNED NOT NULL,
+    `synthesis` LONGTEXT NOT NULL,
+    `insight_model` VARCHAR(60) NULL,
+    `tokens_used` INT UNSIGNED NOT NULL DEFAULT 0,
+    `cost_usd` DECIMAL(10,4) NOT NULL DEFAULT 0,
+    `created_at` TIMESTAMP NULL,
+    `updated_at` TIMESTAMP NULL,
+    PRIMARY KEY (`id`),
+    KEY `ooas_conversation_idx` (`conversation_id`)
+);
+```
+
+> **Schema gap identified while writing this doc:** `wp_fusion_one_on_one_commitments`
+> has no `behavioral_driver` column, but the wizard UI mockup (Step 5) shows a
+> "Behavioral Driver™" selector per commitment. Needs a migration:
+> `ALTER TABLE wp_fusion_one_on_one_commitments ADD COLUMN behavioral_driver VARCHAR(40) NULL;`
+
+### 3.2 ERD
+
+```mermaid
+erDiagram
+    wp_users ||--o{ wp_fusion_one_on_ones : "leader_user_id"
+    wp_users ||--o{ wp_fusion_one_on_ones : "employee_user_id"
+    wp_fusion_one_on_ones ||--o{ wp_fusion_one_on_one_conversations : "one_on_one_id"
+    wp_fusion_one_on_one_conversations ||--o| wp_fusion_one_on_one_ai_briefs : "conversation_id"
+    wp_fusion_one_on_one_conversations ||--o{ wp_fusion_one_on_one_preparations : "conversation_id"
+    wp_fusion_one_on_one_conversations ||--o{ wp_fusion_one_on_one_notes : "conversation_id"
+    wp_fusion_one_on_one_conversations ||--o{ wp_fusion_one_on_one_commitments : "conversation_id"
+    wp_fusion_one_on_one_conversations ||--o| wp_fusion_one_on_one_ai_syntheses : "conversation_id"
+```
+
+### 3.3 API Contracts ✅
+
+Base path: `/api/v1/one-on-one` · Middleware: `fusion.api` (bearer token)
+
+| Method | Path | Request body | Response | Status |
+|---|---|---|---|---|
+| GET | `/pairs?user_id=` | — | `{success, data:[{id, role, leader:{id,name}, employee:{id,name}}]}` | ✅ |
+| GET | `/{oneOnOne}/employee-scoring` | — | `{success, data:[{title, average, zone_label, zone_color}]}` | ✅ |
+| GET | `/{oneOnOne}/conversations` | — | `{success, data:[{id, scheduled_at, held_at, meeting_link, status}]}` | ✅ |
+| POST | `/{oneOnOne}/conversations` | `{scheduled_at, meeting_link?}` | `{success, data: Conversation}` (201) | ✅ |
+| POST | `/conversations/{id}/preparation` | `{author_role, author_user_id, content}` | `{success, data:{id, is_revealed}}` | ✅ |
+| GET | `/conversations/{id}/my-preparation?user_id=` | — | `{success, data:{content, author_role, is_revealed}\|null}` | ✅ |
+| GET | `/conversations/{id}/preparation-status` | — | `{success, data:{employee_submitted, leader_submitted, revealed}}` | ✅ |
+| POST | `/conversations/{id}/reveal` | — | `{success, data:[{author_role, content}]}` | ✅ |
+| GET | `/conversations/{id}/brief` | — | `{success, data: object}` or 503 if AI unconfigured | ✅ |
+| GET | `/conversations/{id}/notes` | — | `{success, data:[{id, section, note, created_by, created_at}]}` | ✅ |
+| POST | `/conversations/{id}/notes` | `{section, note, created_by}` | `{success, data: Note}` (201) | ✅ |
+| GET | `/conversations/{id}/commitments` | — | `{success, data:[{id, title, description, owner_role, status, due_date}]}` | ✅ |
+| POST | `/conversations/{id}/commitments` | `{title, description?, owner_role, owner_user_id?, due_date?}` | `{success, data: Commitment}` (201) | ✅ |
+| PATCH | `/commitments/{id}` | `{status}` | `{success, data: Commitment}` | ✅ |
+| POST | `/conversations/{id}/complete` | — | `{success, data:{conversation, synthesis, synthesis_available}}` | ✅ |
+
+**Not yet built (planned per wizard mockup):**
+
+| Method | Path | Purpose |
+|---|---|---|
+| GET | `/companies/{id}/groups/{groupId}/leader-employees` | Populate meeting-picker leader→employee dropdown | 📋 |
+| GET | `/{oneOnOne}/evidence` | Step 1 "Generate Continuous Evidence™" aggregation | 📋 |
+| PATCH | `/conversations/{id}` | Rating-scale preparation fields (Alignment Clarity, etc.) | 📋 |
+
+### 3.4 Sequence Diagram — Full Meeting Lifecycle
+
+```mermaid
+sequenceDiagram
+    actor L as Leader
+    actor E as Employee
+    participant WP as WordPress shortcode
+    participant API as Laravel API
+    participant AI as Xfusion-llm
+
+    L->>WP: Schedule conversation + meeting link
+    WP->>API: POST /{oneOnOne}/conversations
+    API-->>WP: Conversation (status=scheduled)
+
+    par Independent preparation
+        E->>WP: Write preparation
+        WP->>API: POST /conversations/{id}/preparation (author_role=employee)
+        API-->>WP: is_revealed=false
+    and
+        L->>WP: Write preparation
+        WP->>API: POST /conversations/{id}/preparation (author_role=leader)
+        API-->>WP: is_revealed=false
+    end
+
+    L->>WP: Click "Start meeting & reveal"
+    WP->>API: POST /conversations/{id}/reveal
+    API->>API: UPDATE preparations SET is_revealed=1
+    API-->>WP: Both preparations (now visible)
+
+    WP->>API: GET /conversations/{id}/brief
+    API->>AI: (planned) POST /one-on-one/meeting-brief with prior syntheses only
+    AI-->>API: AI Meeting Brief JSON
+    API-->>WP: Brief
+
+    L->>WP: Add notes / commitments during conversation
+    WP->>API: POST /conversations/{id}/notes, /commitments
+
+    L->>WP: Click "Complete meeting"
+    WP->>API: POST /conversations/{id}/complete
+    API->>API: status=completed, held_at=now()
+    API->>AI: (planned) POST /one-on-one/meeting-synthesis with preparations+notes+commitments
+    AI-->>API: AI Meeting Synthesis JSON
+    API-->>WP: {conversation, synthesis, synthesis_available}
+    API--)API: INSERT evidence_log (conversation_held)
+```
+
+### 3.5 Retrieval Algorithm — Employee Scoring Status ✅
+
+Implemented in `OneOnOneController::employeeScoring()`. Given an employee_user_id:
+
+```
+for each CourseScoringGroup (with weighted details):
+    formIds = distinct form_id from group.details
+    latestEntryByForm = latest WpGfEntry per form_id for this user (status=active, MAX(id))
+    for each detail (form_id, field_id, weight):
+        value = WpGfEntryMeta[latestEntry][field_id]
+        num = parseScaleScore(value)   # only accepts integer 1-5
+        weightedSum += num * weight
+        weightTotal += weight
+    average = weightedSum / weightTotal
+    zone = average < 3.0 ? "Needs improvement"
+         : average < 4.5 ? "Progressing"
+         : "Excellent"
+```
+
+This mirrors `ExportResult::computeGauges()` but scoped to a single user (no
+min/max, no needle angle) — kept as a separate method rather than reusing the
+Livewire component to avoid coupling the API to a UI-layer class.
+
+### 3.6 Context Assembly for AI (privacy-critical) 🚧
+
+| Endpoint | What enters the AI prompt | What is explicitly excluded |
+|---|---|---|
+| `meeting-brief` (planned) | Prior `wp_fusion_one_on_one_ai_syntheses.synthesis` only | Raw preparation text from any conversation, including prior ones |
+| `meeting-synthesis` (planned) | Current conversation's `preparations` (only after reveal) + `notes` + `commitments` | Preparations from other conversations |
+
+Enforcement point: `OneOnOneAiService` — it is the only class allowed to call
+the Python service, and its two methods (`meetingBrief`, `meetingSynthesis`)
+take a `OneOnOneConversation` model and internally decide what to serialize.
+No controller or shortcode is allowed to build the AI payload directly.
+
+### 3.7 Acceptance Criteria
+
+- [ ] AC1: Employee cannot fetch leader's preparation content via `/my-preparation` (endpoint filters by `author_user_id` server-side, not client-side)
+- [ ] AC2: `preparation-status` never returns the `content` field, only booleans
+- [ ] AC3: `reveal()` is idempotent — calling it twice does not double-timestamp `revealed_at`
+- [ ] AC4: A `meeting_link` scheduled without `https://` prefix is rejected with a 422, not silently dropped (regression test for the `$fillable` bug found 2026-07-18)
+- [ ] AC5: `employee-scoring` returns `"No data"` zone (not an error) when the employee has zero Gravity Forms entries
+- [ ] AC6: `complete()` sets `status=completed` even when the AI synthesis call fails (AI failure must never block meeting completion)
+
+---
+
+## 4. Quarterly Business Review™ (QBR)
+
+### 4.1 Schema ✅ (5 tables)
+
+```sql
+CREATE TABLE IF NOT EXISTS `wp_fusion_qbrs` (
+    `id` BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
+    `company_id` BIGINT UNSIGNED NOT NULL,
+    `company_group_id` BIGINT UNSIGNED NULL COMMENT 'null = whole company',
+    `quarter` TINYINT UNSIGNED NOT NULL COMMENT '1-4',
+    `year` SMALLINT UNSIGNED NOT NULL,
+    `status` VARCHAR(20) NOT NULL DEFAULT 'draft',
+    `held_at` TIMESTAMP NULL,
+    `created_at` TIMESTAMP NULL,
+    `updated_at` TIMESTAMP NULL,
+    PRIMARY KEY (`id`),
+    UNIQUE KEY `qbr_scope_period_uq` (`company_id`, `company_group_id`, `quarter`, `year`)
+);
+
+CREATE TABLE IF NOT EXISTS `wp_fusion_qbr_evidence_snapshots` (
+    `id` BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
+    `qbr_id` BIGINT UNSIGNED NOT NULL,
+    `snapshot` LONGTEXT NOT NULL COMMENT 'JSON: pulled from evidence_log + result_evaluations.evaluation only',
+    `captured_at` TIMESTAMP NULL,
+    `created_at` TIMESTAMP NULL,
+    `updated_at` TIMESTAMP NULL,
+    PRIMARY KEY (`id`)
+);
+
+CREATE TABLE IF NOT EXISTS `wp_fusion_qbr_ai_assessments` (
+    `id` BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
+    `qbr_id` BIGINT UNSIGNED NOT NULL,
+    `assessment` LONGTEXT NOT NULL,
+    `leadership_context` TEXT NULL,
+    `insight_model` VARCHAR(60) NULL,
+    `tokens_used` INT UNSIGNED NOT NULL DEFAULT 0,
+    `cost_usd` DECIMAL(10,4) NOT NULL DEFAULT 0,
+    `created_at` TIMESTAMP NULL,
+    `updated_at` TIMESTAMP NULL,
+    PRIMARY KEY (`id`)
+);
+
+CREATE TABLE IF NOT EXISTS `wp_fusion_qbr_commitments` (
+    `id` BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
+    `qbr_id` BIGINT UNSIGNED NOT NULL,
+    `title` VARCHAR(255) NOT NULL,
+    `description` TEXT NULL,
+    `owner_user_id` BIGINT UNSIGNED NULL,
+    `status` VARCHAR(20) NOT NULL DEFAULT 'open' COMMENT 'open | in_progress | done | carried_forward',
+    `carried_forward_from_id` BIGINT UNSIGNED NULL,
+    `created_at` TIMESTAMP NULL,
+    `updated_at` TIMESTAMP NULL,
+    PRIMARY KEY (`id`)
+);
+
+CREATE TABLE IF NOT EXISTS `wp_fusion_qbr_ai_syntheses` (
+    `id` BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
+    `qbr_id` BIGINT UNSIGNED NOT NULL,
+    `synthesis` LONGTEXT NOT NULL,
+    `insight_model` VARCHAR(60) NULL,
+    `tokens_used` INT UNSIGNED NOT NULL DEFAULT 0,
+    `cost_usd` DECIMAL(10,4) NOT NULL DEFAULT 0,
+    `created_at` TIMESTAMP NULL,
+    `updated_at` TIMESTAMP NULL,
+    PRIMARY KEY (`id`)
+);
+```
+
+### 4.2 ERD
+
+```mermaid
+erDiagram
+    wp_companies ||--o{ wp_fusion_qbrs : "company_id"
+    wp_company_groups ||--o{ wp_fusion_qbrs : "company_group_id (nullable)"
+    wp_fusion_qbrs ||--o{ wp_fusion_qbr_evidence_snapshots : "qbr_id"
+    wp_fusion_qbrs ||--o{ wp_fusion_qbr_ai_assessments : "qbr_id"
+    wp_fusion_qbrs ||--o{ wp_fusion_qbr_commitments : "qbr_id"
+    wp_fusion_qbrs ||--o{ wp_fusion_qbr_ai_syntheses : "qbr_id"
+    wp_fusion_qbr_commitments ||--o| wp_fusion_qbr_commitments : "carried_forward_from_id"
+```
+
+### 4.3 API Contract 📋 (none implemented yet)
+
+| Method | Path | Purpose |
+|---|---|---|
+| GET | `/api/v1/qbr?company_id=&group_id=&quarter=&year=` | Fetch or bootstrap the QBR record for a period |
+| POST | `/api/v1/qbr/{qbr}/evidence-snapshot` | Trigger evidence aggregation (writes `qbr_evidence_snapshots`) |
+| GET | `/api/v1/qbr/{qbr}/assessment` | Return AI Organizational Assessment (calls Python if not cached) |
+| POST | `/api/v1/qbr/{qbr}/commitments` | Add commitment (max 5 enforced server-side) |
+| POST | `/api/v1/qbr/{qbr}/complete` | Finalize → triggers AI synthesis + evidence_log write |
+
+### 4.4 Sequence Diagram — QBR Cycle
+
+```mermaid
+sequenceDiagram
+    actor Leader
+    participant API as Laravel API
+    participant EL as evidence_log
+    participant AI as Xfusion-llm
+
+    Leader->>API: Open QBR for (company, group, Q3 2026)
+    API->>API: findOrCreate wp_fusion_qbrs
+    API->>EL: SELECT evidence WHERE source_type IN (one_on_one, result_evaluation) AND evidence_date BETWEEN quarter_start, quarter_end
+    API->>API: INSERT qbr_evidence_snapshots (JSON, aggregated — no raw GF answers)
+    API->>AI: POST /qbr/organizational-assessment (snapshot only)
+    AI-->>API: assessment JSON
+    API-->>Leader: Assessment + prior quarter's carried-forward commitments
+
+    Leader->>API: Add up to 5 commitments for this quarter
+    Leader->>API: POST /{qbr}/complete
+    API->>AI: POST /qbr/organizational-synthesis
+    AI-->>API: synthesis JSON
+    API->>EL: INSERT (event_type=ai_assessment_generated)
+```
+
+### 4.5 Acceptance Criteria
+
+- [ ] AC1: Evidence snapshot JSON contains zero raw Gravity Forms field values (enforced by only reading `evidence_log.metadata` and `result_evaluations.evaluation`, never `wp_gf_entry_meta` directly)
+- [ ] AC2: Creating a 6th commitment in one quarter is rejected (max 5 rule)
+- [ ] AC3: A commitment marked `carried_forward` from last quarter pre-fills `carried_forward_from_id` and cannot be edited to remove that link
+- [ ] AC4: `company_group_id = NULL` correctly represents "whole company" scope in both the unique constraint and evidence aggregation query
+
+---
+
+## 5. 360 Review™
+
+### 5.1 Schema ✅ (6 tables)
+
+```sql
+CREATE TABLE IF NOT EXISTS `wp_fusion_360_reviews` (
+    `id` BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
+    `employee_user_id` BIGINT UNSIGNED NOT NULL,
+    `year` SMALLINT UNSIGNED NOT NULL,
+    `status` VARCHAR(20) NOT NULL DEFAULT 'draft',
+    `created_at` TIMESTAMP NULL,
+    `updated_at` TIMESTAMP NULL,
+    PRIMARY KEY (`id`),
+    UNIQUE KEY `r360_employee_year_uq` (`employee_user_id`, `year`)
+);
+
+CREATE TABLE IF NOT EXISTS `wp_fusion_360_evidence_snapshots` (
+    `id` BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
+    `review_id` BIGINT UNSIGNED NOT NULL,
+    `snapshot` LONGTEXT NOT NULL COMMENT 'annual evidence: 1-on-1 syntheses + evaluations, never raw GF',
+    `captured_at` TIMESTAMP NULL,
+    `created_at` TIMESTAMP NULL,
+    `updated_at` TIMESTAMP NULL,
+    PRIMARY KEY (`id`)
+);
+
+CREATE TABLE IF NOT EXISTS `wp_fusion_360_ai_assessments` (
+    `id` BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
+    `review_id` BIGINT UNSIGNED NOT NULL,
+    `assessment` LONGTEXT NOT NULL,
+    `insight_model` VARCHAR(60) NULL,
+    `tokens_used` INT UNSIGNED NOT NULL DEFAULT 0,
+    `cost_usd` DECIMAL(10,4) NOT NULL DEFAULT 0,
+    `created_at` TIMESTAMP NULL,
+    `updated_at` TIMESTAMP NULL,
+    PRIMARY KEY (`id`)
+);
+
+CREATE TABLE IF NOT EXISTS `wp_fusion_360_reflections` (
+    `id` BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
+    `review_id` BIGINT UNSIGNED NOT NULL,
+    `author_role` VARCHAR(20) NOT NULL COMMENT 'employee | leader',
+    `author_user_id` BIGINT UNSIGNED NOT NULL,
+    `reflection` TEXT NOT NULL,
+    `agreement_rating` TINYINT UNSIGNED NULL COMMENT '1-5',
+    `created_at` TIMESTAMP NULL,
+    `updated_at` TIMESTAMP NULL,
+    PRIMARY KEY (`id`)
+);
+
+CREATE TABLE IF NOT EXISTS `wp_fusion_360_commitments` (
+    `id` BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
+    `review_id` BIGINT UNSIGNED NOT NULL,
+    `title` VARCHAR(255) NOT NULL,
+    `description` TEXT NULL,
+    `status` VARCHAR(20) NOT NULL DEFAULT 'open',
+    `due_date` DATE NULL,
+    `created_at` TIMESTAMP NULL,
+    `updated_at` TIMESTAMP NULL,
+    PRIMARY KEY (`id`)
+);
+
+CREATE TABLE IF NOT EXISTS `wp_fusion_360_ai_syntheses` (
+    `id` BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
+    `review_id` BIGINT UNSIGNED NOT NULL,
+    `synthesis` LONGTEXT NOT NULL,
+    `insight_model` VARCHAR(60) NULL,
+    `tokens_used` INT UNSIGNED NOT NULL DEFAULT 0,
+    `cost_usd` DECIMAL(10,4) NOT NULL DEFAULT 0,
+    `created_at` TIMESTAMP NULL,
+    `updated_at` TIMESTAMP NULL,
+    PRIMARY KEY (`id`)
+);
+```
+
+### 5.2 ERD
+
+```mermaid
+erDiagram
+    wp_users ||--o{ wp_fusion_360_reviews : "employee_user_id"
+    wp_fusion_360_reviews ||--o{ wp_fusion_360_evidence_snapshots : "review_id"
+    wp_fusion_360_reviews ||--o{ wp_fusion_360_ai_assessments : "review_id"
+    wp_fusion_360_reviews ||--o{ wp_fusion_360_reflections : "review_id"
+    wp_fusion_360_reviews ||--o{ wp_fusion_360_commitments : "review_id"
+    wp_fusion_360_reviews ||--o{ wp_fusion_360_ai_syntheses : "review_id"
+```
+
+### 5.3 API Contract 📋 (none implemented yet)
+
+| Method | Path | Purpose |
+|---|---|---|
+| GET | `/api/v1/360-reviews?employee_id=&year=` | Fetch or bootstrap annual review |
+| POST | `/api/v1/360-reviews/{review}/evidence-snapshot` | Aggregate a full year of 1-on-1 syntheses + evaluations |
+| GET | `/api/v1/360-reviews/{review}/assessment` | AI Development Assessment |
+| POST | `/api/v1/360-reviews/{review}/reflections` | Employee/leader reflection + agreement rating |
+| POST | `/api/v1/360-reviews/{review}/complete` | Finalize → AI synthesis |
+
+### 5.4 Retrieval Algorithm — Annual Evidence Aggregation 📋
+
+```
+function build360Snapshot(employeeUserId, year):
+    conversations = OneOnOneConversation
+        .whereHas('oneOnOne', employee_user_id = employeeUserId)
+        .whereYear(held_at, year)
+        .where(status = 'completed')
+    syntheses = conversations.map(c => c.synthesis?.synthesis)   # AI JSON only, never notes/preparations
+    evaluations = ResultEvaluation
+        .where(user_id = employeeUserId)
+        .whereYear(created_at, year)
+        .pluck('evaluation')                                     # already-AI-processed JSON
+    return { conversation_syntheses: syntheses, evaluations: evaluations }
+```
+
+This is the concrete implementation of the CLAUDE.md rule: *"Yang boleh masuk
+ke 1-on-1 Meeting Brief: hanya AI synthesis dari conversation sebelumnya"* —
+same discipline applies one level up for 360.
+
+### 5.5 Acceptance Criteria
+
+- [ ] AC1: `build360Snapshot` never touches `wp_fusion_one_on_one_notes` or `wp_fusion_one_on_one_preparations` tables directly
+- [ ] AC2: A 360 review cannot be created for an employee with zero completed 1-on-1 conversations in that year (returns a clear "insufficient evidence" error, not a broken synthesis)
+- [ ] AC3: `agreement_rating` is optional on submission but required before `complete()` can run
+
+---
+
+## 6. Annual Readiness Plan™ (ARP)
+
+### 6.1 Schema ✅ (6 tables) — the only executive-only component
+
+```sql
+CREATE TABLE IF NOT EXISTS `wp_fusion_arps` (
+    `id` BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
+    `company_id` BIGINT UNSIGNED NOT NULL,
+    `year` SMALLINT UNSIGNED NOT NULL,
+    `title` VARCHAR(255) NOT NULL,
+    `mission` TEXT NULL,
+    `vision` TEXT NULL,
+    `status` VARCHAR(20) NOT NULL DEFAULT 'draft' COMMENT 'draft | active | archived',
+    `created_by` BIGINT UNSIGNED NULL,
+    `created_at` TIMESTAMP NULL,
+    `updated_at` TIMESTAMP NULL,
+    PRIMARY KEY (`id`),
+    UNIQUE KEY `arp_company_year_uq` (`company_id`, `year`)
+);
+
+CREATE TABLE IF NOT EXISTS `wp_fusion_arp_future_states` (
+    `id` BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
+    `arp_id` BIGINT UNSIGNED NOT NULL,
+    `narrative` TEXT NOT NULL COMMENT '"What kind of organization do we need to become?"',
+    `created_at` TIMESTAMP NULL,
+    `updated_at` TIMESTAMP NULL,
+    PRIMARY KEY (`id`)
+);
+
+CREATE TABLE IF NOT EXISTS `wp_fusion_arp_readiness_priorities` (
+    `id` BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
+    `arp_id` BIGINT UNSIGNED NOT NULL,
+    `cor_capability` VARCHAR(40) NOT NULL,
+    `description` TEXT NOT NULL,
+    `priority_rank` SMALLINT UNSIGNED NOT NULL DEFAULT 0,
+    `created_at` TIMESTAMP NULL,
+    `updated_at` TIMESTAMP NULL,
+    PRIMARY KEY (`id`)
+);
+
+CREATE TABLE IF NOT EXISTS `wp_fusion_arp_strategic_priorities` (
+    `id` BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
+    `arp_id` BIGINT UNSIGNED NOT NULL,
+    `title` VARCHAR(255) NOT NULL,
+    `description` TEXT NULL,
+    `owner_user_id` BIGINT UNSIGNED NULL,
+    `kpi` TEXT NULL,
+    `status` VARCHAR(20) NOT NULL DEFAULT 'not_started',
+    `created_at` TIMESTAMP NULL,
+    `updated_at` TIMESTAMP NULL,
+    PRIMARY KEY (`id`)
+);
+
+CREATE TABLE IF NOT EXISTS `wp_fusion_arp_learnings` (
+    `id` BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
+    `arp_id` BIGINT UNSIGNED NOT NULL,
+    `type` VARCHAR(30) NOT NULL COMMENT 'assumption | risk | learning_objective',
+    `description` TEXT NOT NULL,
+    `created_at` TIMESTAMP NULL,
+    `updated_at` TIMESTAMP NULL,
+    PRIMARY KEY (`id`)
+);
+
+CREATE TABLE IF NOT EXISTS `wp_fusion_arp_ai_assessments` (
+    `id` BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
+    `arp_id` BIGINT UNSIGNED NOT NULL,
+    `assessment` LONGTEXT NOT NULL,
+    `insight_model` VARCHAR(60) NULL,
+    `tokens_used` INT UNSIGNED NOT NULL DEFAULT 0,
+    `cost_usd` DECIMAL(10,4) NOT NULL DEFAULT 0,
+    `created_at` TIMESTAMP NULL,
+    `updated_at` TIMESTAMP NULL,
+    PRIMARY KEY (`id`)
+);
+```
+
+### 6.2 ERD
+
+```mermaid
+erDiagram
+    wp_companies ||--o{ wp_fusion_arps : "company_id"
+    wp_fusion_arps ||--o{ wp_fusion_arp_future_states : "arp_id"
+    wp_fusion_arps ||--o{ wp_fusion_arp_readiness_priorities : "arp_id"
+    wp_fusion_arps ||--o{ wp_fusion_arp_strategic_priorities : "arp_id"
+    wp_fusion_arps ||--o{ wp_fusion_arp_learnings : "arp_id"
+    wp_fusion_arps ||--o{ wp_fusion_arp_ai_assessments : "arp_id"
+```
+
+### 6.3 Actual Implementation Today: WordPress-only, no Laravel API 🚧
+
+Unlike every other component in this document, ARP already has a real,
+working UI — but it bypasses Laravel entirely. What exists today:
+
+- `app/Http/Plugin/xfusion-plugin/includes/annual-readiness-plan/` — a
+  7-step wizard shortcode (`arp-wizard-shortcode.php`), parallel in structure
+  to the 1-on-1 wizard (`core.php` + `steps/step-1-foundation.php` through
+  `step-7-publish.php`)
+- `arp-gf-mapping.php` / `arp-gf-entry-service.php` — reads and writes
+  directly against Gravity Forms entries
+- `arp-save-draft.php` / `arp-load-draft.php` — draft persistence, also
+  directly against WordPress tables
+- `database/sql/wp_fusion_arp_wizard.sql` — a **separate** SQL file from
+  `wp_fusion_core.sql`, meaning the ARP tables were extended independently
+  and may have drifted from the schema shown in §6.1
+
+**What does not exist:** no `App\Models\Arp*`, no
+`App\Http\Controllers\Api\ArpController`, no `/api/v1/arps/*` route. Laravel
+cannot currently read, validate, or expose ARP data to anything outside
+WordPress (no dashboard, no cross-component AI context assembly per §8 can
+reach ARP data without a new integration point).
+
+**Planned API contract (not yet built)** — this is what would need to exist
+to bring ARP in line with the 1-on-1 pattern:
+
+| Method | Path | Purpose |
+|---|---|---|
+| GET | `/api/v1/arps?company_id=&year=` | Fetch or bootstrap ARP |
+| POST | `/api/v1/arps/{arp}/strategic-priorities` | Add priority (owner + KPI) |
+| GET | `/api/v1/arps/{arp}/readiness-review` | AI Readiness Review — reads QBR + 360 + ARR history |
+
+### 6.4 Acceptance Criteria
+
+- [ ] AC1: Only users with `administrator` role (per `AdminLayout::$role` check pattern already used elsewhere) can create/edit an ARP
+- [ ] AC2: `arp_company_year_uq` prevents two ARPs for the same company+year even under concurrent requests (DB-level unique key, not just app-level check)
+- [ ] AC3 (new, blocking §8): `wp_fusion_arp_wizard.sql` is diffed against `wp_fusion_core.sql`'s ARP tables to confirm no schema drift before any Laravel Model is written against them
+
+---
+
+## 7. Annual Readiness Review™ (ARR)
+
+### 7.1 Schema ✅ (5 tables) — depends on all other components existing first
+
+```sql
+CREATE TABLE IF NOT EXISTS `wp_fusion_arrs` (
+    `id` BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
+    `company_id` BIGINT UNSIGNED NOT NULL,
+    `year` SMALLINT UNSIGNED NOT NULL,
+    `status` VARCHAR(20) NOT NULL DEFAULT 'draft',
+    `created_at` TIMESTAMP NULL,
+    `updated_at` TIMESTAMP NULL,
+    PRIMARY KEY (`id`),
+    UNIQUE KEY `arr_company_year_uq` (`company_id`, `year`)
+);
+
+CREATE TABLE IF NOT EXISTS `wp_fusion_arr_evidence_snapshots` (
+    `id` BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
+    `arr_id` BIGINT UNSIGNED NOT NULL,
+    `snapshot` LONGTEXT NOT NULL COMMENT 'annual evidence from ARP, QBR, 1-on-1, 360 syntheses',
+    `captured_at` TIMESTAMP NULL,
+    `created_at` TIMESTAMP NULL,
+    `updated_at` TIMESTAMP NULL,
+    PRIMARY KEY (`id`)
+);
+
+CREATE TABLE IF NOT EXISTS `wp_fusion_arr_ai_assessments` (
+    `id` BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
+    `arr_id` BIGINT UNSIGNED NOT NULL,
+    `assessment` LONGTEXT NOT NULL,
+    `executive_context` TEXT NULL,
+    `insight_model` VARCHAR(60) NULL,
+    `tokens_used` INT UNSIGNED NOT NULL DEFAULT 0,
+    `cost_usd` DECIMAL(10,4) NOT NULL DEFAULT 0,
+    `created_at` TIMESTAMP NULL,
+    `updated_at` TIMESTAMP NULL,
+    PRIMARY KEY (`id`)
+);
+
+CREATE TABLE IF NOT EXISTS `wp_fusion_arr_renewal_recommendations` (
+    `id` BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
+    `arr_id` BIGINT UNSIGNED NOT NULL,
+    `title` VARCHAR(255) NOT NULL,
+    `description` TEXT NOT NULL,
+    `priority_rank` SMALLINT UNSIGNED NOT NULL DEFAULT 0,
+    `created_at` TIMESTAMP NULL,
+    `updated_at` TIMESTAMP NULL,
+    PRIMARY KEY (`id`)
+);
+
+CREATE TABLE IF NOT EXISTS `wp_fusion_arr_ai_syntheses` (
+    `id` BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
+    `arr_id` BIGINT UNSIGNED NOT NULL,
+    `synthesis` LONGTEXT NOT NULL COMMENT 'feeds next ARP',
+    `insight_model` VARCHAR(60) NULL,
+    `tokens_used` INT UNSIGNED NOT NULL DEFAULT 0,
+    `cost_usd` DECIMAL(10,4) NOT NULL DEFAULT 0,
+    `created_at` TIMESTAMP NULL,
+    `updated_at` TIMESTAMP NULL,
+    PRIMARY KEY (`id`)
+);
+```
+
+### 7.2 ERD
+
+```mermaid
+erDiagram
+    wp_companies ||--o{ wp_fusion_arrs : "company_id"
+    wp_fusion_arrs ||--o{ wp_fusion_arr_evidence_snapshots : "arr_id"
+    wp_fusion_arrs ||--o{ wp_fusion_arr_ai_assessments : "arr_id"
+    wp_fusion_arrs ||--o{ wp_fusion_arr_renewal_recommendations : "arr_id"
+    wp_fusion_arrs ||--o{ wp_fusion_arr_ai_syntheses : "arr_id"
+```
+
+### 7.3 Sequence Diagram — Full Annual Cycle (all 5 components)
+
+```mermaid
+sequenceDiagram
+    participant ARP
+    participant QBR as QBR (x4/year)
+    participant OO as 1-on-1 (monthly)
+    participant R360 as 360 Review
+    participant ARR
+
+    ARP->>QBR: Strategic priorities feed Q1-Q4 readiness checks
+    loop Every month
+        OO->>OO: Conversation → AI Synthesis
+    end
+    OO->>QBR: Commitment completions feed evidence_log
+    QBR->>QBR: 4 quarterly cycles, each reading evidence_log
+    OO->>R360: 12 months of syntheses feed annual review
+    QBR->>ARR: 4 quarters of syntheses feed annual review
+    R360->>ARR: Development synthesis feeds annual review
+    ARP->>ARR: Original plan vs actual feeds annual review
+    ARR->>ARP: Strategic Renewal Synthesis becomes next year's ARP input
+```
+
+### 7.4 Acceptance Criteria
+
+- [ ] AC1: ARR cannot be generated for a year where the company has zero QBRs (hard dependency check, clear error message)
+- [ ] AC2: `arr_renewal_recommendations` are ordered by `priority_rank` and this ordering is preserved when displayed in the next year's ARP creation flow
+
+---
+
+## 8. Cross-Component Retrieval Algorithm Summary
+
+All AI-facing endpoints share one retrieval shape — **fetch only already-processed
+JSON, never raw form answers**:
+
+```
+function assembleAiContext(component, recordId):
+    match component:
+        case 'one_on_one':
+            return { prior_syntheses: OneOnOneAiSynthesis.where(...).pluck('synthesis') }
+        case 'qbr':
+            return { evidence_snapshot: QbrEvidenceSnapshot.latest(recordId).snapshot }
+        case '360':
+            return { evidence_snapshot: build360Snapshot(...) }
+        case 'arr':
+            return {
+                arp_snapshot: ...,
+                qbr_syntheses: QbrAiSynthesis.whereYear(...).pluck('synthesis'),
+                oo_syntheses: OneOnOneAiSynthesis.whereYear(...).pluck('synthesis'),
+                r360_synthesis: R360AiSynthesis.where(...).first()?.synthesis,
+            }
+```
+
+This function is the single choke point that should exist in each component's
+AI service class (mirroring `OneOnOneAiService` §3.6) — never inline the
+serialization logic inside a controller action.
+
+---
+
+## 9. Phased Implementation Plan
+
+| Phase | Scope | Status | Key deliverables |
+|---|---|---|---|
+| **1** | Evidence log + all `wp_fusion_*` schemas | ✅ Done | `wp_fusion_core.sql` (25 tables) |
+| **2** | 1-on-1 Alignment Capture | ✅ Done (backend + 2 UI prototypes) | Models, API (15 endpoints), WP shortcode, wizard UI shell |
+| **2.5** | 1-on-1 hardening | 🚧 In progress | Fix `behavioral_driver` gap on commitments (§3.1), wire wizard UI to real endpoints, build Xfusion-llm `meeting-brief`/`meeting-synthesis` |
+| **3** | QBR | 📋 Not started | Model+Controller, evidence aggregation service, `organizational-assessment`/`organizational-synthesis` Python endpoints, `[fusion_qbr]` shortcode |
+| **4** | 360 Review | 📋 Not started (needs ≥1 year of 1-on-1 data as evidence) | Model+Controller, `development-assessment`/`development-synthesis` Python endpoints |
+| **5** | ARP | 🚧 Skeleton exists | Executive-only Model+Controller, `arp-readiness-review` Python endpoint |
+| **6** | ARR | 📋 Not started (needs all above) | Model+Controller, `annual-assessment`/`strategic-renewal-synthesis` Python endpoints |
+| **7** | Dashboards | 📋 Not started | Individual / Leader / Executive dashboard shortcodes |
+
+### Phase 2.5 breakdown (immediate next step)
+
+1. Migration: add `behavioral_driver` to `wp_fusion_one_on_one_commitments`
+2. Wire wizard UI (`includes/one-on-one-wizard/`) steps 1, 3, 4, 5 to the real API endpoints already listed §3.3 as ✅
+3. Build `/one-on-one/evidence` endpoint for wizard Step 1 (currently static dummy list)
+4. In the separate Xfusion-llm repo: implement `POST /api/v1/one-on-one/meeting-brief` and `POST /api/v1/one-on-one/meeting-synthesis`, both scoped by the context-assembly rule in §3.6
+5. Upload `1-1 Framework.docx`, `1-1 Developer Specs.docx`, `1-1 Executive Guide.docx` to ChromaDB category `fusion_one_on_one` via XFusion Knowledge CPT
+
+---
+
+## 10. Open Gaps Found While Writing This Spec
+
+These are real inconsistencies discovered by cross-referencing the schema,
+the mockups, and the current code — not hypothetical:
+
+1. **`wp_fusion_one_on_one_commitments` missing `behavioral_driver` column** — the Step 5 mockup shows a driver selector per commitment; current schema and controller (`storeCommitment`) don't support it.
+2. **No endpoint for wizard Step 1 evidence aggregation** — the wizard's evidence list is still 100% static dummy data; there's no `/one-on-one/evidence` endpoint reading from `wp_fusion_evidence_log`.
+3. **ARP is the only component with a skeleton controller** — QBR, 360, and ARR have verified schemas but zero backend code; Phase 3-6 in the table above are accurate "not started," not "in progress."
+4. **Xfusion-llm has zero component-specific endpoints today** — all AI features across all 5 components depend on Python endpoints that don't exist yet outside `evaluate-unified`, `knowledge/upsert`, and `knowledge/delete`.

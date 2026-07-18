@@ -1,0 +1,84 @@
+FUSION OPERATING SYSTEM - REMAINING WORK PLAN
+==============================================
+(companion to docs/FUSION_Technical_Specification.md)
+
+
+1. ARP - FINISH THIS FIRST (closest to done)
+---------------------------------------------
+[ ] Finish wiring the remaining wizard steps in WordPress (not all 7 steps
+    are fully wired yet)
+[ ] ARCHITECTURE DECISION NEEDED: keep ARP WordPress-only, or move it to
+    the Laravel-as-source-of-truth pattern used by 1-on-1?
+    - If moving to Laravel:
+        [ ] Create Arp Model
+        [ ] Create ArpController
+        [ ] Add routes: /api/v1/arps/*
+        [ ] Migrate existing data out of GF/WP tables
+    - If staying WordPress-only:
+        [ ] Document the reason
+        [ ] Build a read-only bridge so Laravel dashboards / AI context
+            assembly can still reach ARP data
+[ ] Diff wp_fusion_arp_wizard.sql against wp_fusion_core.sql's ARP tables
+    to confirm there is no schema drift before writing any Laravel Model
+    against them
+
+
+2. QBR (Quarterly Business Review) - NOT STARTED
+---------------------------------------------
+[ ] Model + Controller + routes (/api/v1/qbr/*)
+[ ] Evidence Aggregation Service
+    - reads from wp_fusion_evidence_log
+    - reads from wp_xfusion_result_evaluations.evaluation (already
+      AI-processed, never raw Gravity Forms answers)
+[ ] Python endpoint: organizational-assessment
+[ ] Python endpoint: organizational-synthesis
+[ ] WordPress shortcode: [fusion_qbr]
+
+
+3. 360 REVIEW - NOT STARTED (needs >= 1 year of 1-on-1 data as evidence)
+---------------------------------------------
+[ ] Model + Controller + routes
+[ ] build360Snapshot() - aggregates a full year of 1-on-1 AI syntheses
+    plus result_evaluations, never raw preparation/notes text
+[ ] Python endpoint: development-assessment
+[ ] Python endpoint: development-synthesis
+
+
+4. ARR (Annual Readiness Review) - NOT STARTED (depends on all of the above)
+---------------------------------------------
+[ ] Model + Controller + routes
+[ ] Cross-component aggregation: ARP + QBR + 1-on-1 + 360
+[ ] Python endpoint: annual-assessment
+[ ] Python endpoint: strategic-renewal-synthesis
+
+
+5. DASHBOARDS - LAST (needs all component data available first)
+---------------------------------------------
+[ ] Individual Dashboard shortcode
+[ ] Leader Dashboard shortcode
+[ ] Executive Dashboard shortcode
+
+
+PARALLEL WORK (not blocked by the order above)
+---------------------------------------------
+[ ] Python endpoint: one-on-one/meeting-brief
+    (Laravel side already built and calling this — just needs the Python
+    endpoint to exist)
+[ ] Python endpoint: one-on-one/meeting-synthesis
+    (same as above)
+[ ] Wire 1-on-1 wizard Step 1 (Evidence) to a real endpoint instead of
+    static dummy data
+[ ] Add behavioral_driver column to
+    wp_fusion_one_on_one_commitments (migration needed - see spec doc
+    section 3.1 for the exact ALTER TABLE statement)
+
+
+STATUS SUMMARY
+---------------------------------------------
+1-on-1 Alignment Capture   : DONE (schema + Laravel API + WordPress UI)
+ARP                        : IN PROGRESS (WordPress wizard partial, zero
+                              Laravel API)
+QBR                        : NOT STARTED (schema only)
+360 Review                 : NOT STARTED (schema only)
+ARR                        : NOT STARTED (schema only)
+Dashboards                 : NOT STARTED
