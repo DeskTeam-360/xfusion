@@ -54,72 +54,9 @@ function xfarp_wizard_strategic_init_js(): string
         { value: 'product', label: 'Product' },
     ];
 
-    function seedStrategic() {
-        var readiness = window.xarReadinessCache || [];
-        var first = readiness[0] ? readiness[0].name : 'Strengthen Leadership Capability';
-        var second = readiness[1] ? readiness[1].name : 'Improve Cross-Functional Alignment';
-        return [
-            {
-                title: 'Leadership Capability Development',
-                related_readiness: first,
-                executive_owner: 'james_scott',
-                target_date: '2025-12-31',
-                description: 'Launch a structured leadership development path for emerging and current leaders.',
-                success_measures: '80% of people leaders complete core development modules; bench strength score improves by 15%.',
-                org_kpi: 'leadership_effectiveness',
-                readiness_indicator: 'leadership_bench',
-                related_groups: 'all_leaders',
-            },
-            {
-                title: 'Cross-Functional Priority Cadence',
-                related_readiness: second,
-                executive_owner: 'maria_chen',
-                target_date: '2025-09-30',
-                description: 'Install a recurring alignment cadence across functions around shared quarterly priorities.',
-                success_measures: 'All functions report shared top priorities each quarter; handoff defects decrease by 20%.',
-                org_kpi: 'on_time_delivery',
-                readiness_indicator: 'cross_team_alignment',
-                related_groups: 'operations',
-            },
-            {
-                title: 'Accountability Operating Rhythm',
-                related_readiness: readiness[2] ? readiness[2].name : 'Strengthen Accountability Practices',
-                executive_owner: 'alex_rivera',
-                target_date: '2025-10-31',
-                description: 'Define ownership standards and a weekly review rhythm for strategic commitments.',
-                success_measures: 'Commitment completion rate reaches 85% by year end.',
-                org_kpi: 'employee_engagement',
-                readiness_indicator: 'commitment_completion',
-                related_groups: 'all_leaders',
-            },
-            {
-                title: 'Communication Clarity Program',
-                related_readiness: readiness[3] ? readiness[3].name : 'Elevate Communication Clarity',
-                executive_owner: 'james_scott',
-                target_date: '2025-11-30',
-                description: 'Establish consistent leadership communication rituals and decision documentation.',
-                success_measures: 'Employee clarity pulse improves by 10 points; decision cycle time decreases.',
-                org_kpi: 'employee_engagement',
-                readiness_indicator: 'priority_clarity',
-                related_groups: 'all_employees',
-            },
-            {
-                title: 'Execution Excellence Initiative',
-                related_readiness: readiness[4] ? readiness[4].name : 'Accelerate Execution Discipline',
-                executive_owner: 'maria_chen',
-                target_date: '2025-12-15',
-                description: 'Connect ARP strategic priorities to quarterly operating plans and weekly execution reviews.',
-                success_measures: 'Strategic priority milestone attainment exceeds 90%.',
-                org_kpi: 'revenue_growth',
-                readiness_indicator: 'execution_velocity',
-                related_groups: 'operations',
-            },
-        ];
-    }
-
     function ensureCache() {
         if (!window.xarStrategicCache) {
-            window.xarStrategicCache = seedStrategic();
+            window.xarStrategicCache = [];
         }
         return window.xarStrategicCache;
     }
@@ -127,7 +64,7 @@ function xfarp_wizard_strategic_init_js(): string
     function readinessOptions(selected) {
         var names = (window.xarReadinessCache || []).map(function (r) { return r.name; }).filter(Boolean);
         if (!names.length) {
-            names = ['Strengthen Leadership Capability', 'Improve Cross-Functional Alignment'];
+            return '<option value="">No readiness priorities yet — add one in Step 3</option>';
         }
         var html = names.map(function (n) {
             return '<option value="' + escAttr(n) + '"' + (n === selected ? ' selected' : '') + '>' + escHtml(n) + '</option>';
@@ -244,12 +181,24 @@ function xfarp_wizard_strategic_init_js(): string
         return next;
     }
 
+    function showLoading() {
+        var list = document.getElementById('xar-strategic-list');
+        if (!list) {
+            return;
+        }
+        list.innerHTML = '<div class="xar-spinner-row"><span class="xar-spinner"></span> Loading strategic priorities…</div>';
+    }
+
     function renderList() {
         var list = document.getElementById('xar-strategic-list');
         if (!list) {
             return;
         }
         var data = ensureCache();
+        if (!data.length) {
+            list.innerHTML = '<p class="xar-muted">No strategic priorities yet. Click "+ Add Strategic Priority" to create one.</p>';
+            return;
+        }
         list.innerHTML = data.map(cardHtml).join('');
         bindList(list);
     }
@@ -284,8 +233,6 @@ function xfarp_wizard_strategic_init_js(): string
     }
 
     window.initStrategicStep = function () {
-        ensureCache();
-        renderList();
         var addBtn = document.getElementById('xar-add-strategic');
         if (addBtn) {
             addBtn.onclick = function (e) {
@@ -299,15 +246,24 @@ function xfarp_wizard_strategic_init_js(): string
             };
         }
 
-        // Replace the dummy seed with real saved data from Laravel, if any
-        // exists for this ARP. Falls back silently to the seed on failure.
+        // Already loaded once this session — render from cache immediately,
+        // no need to show a loading state again.
+        if (window.xarStrategicLoaded) {
+            renderList();
+            return;
+        }
+
+        showLoading();
         if (typeof window.xarLoadStrategicDraft === 'function') {
             window.xarLoadStrategicDraft().then(function (items) {
-                if (items && items.length) {
-                    window.xarStrategicCache = items;
-                    renderList();
-                }
+                window.xarStrategicCache = items || [];
+                window.xarStrategicLoaded = true;
+                renderList();
             });
+        } else {
+            window.xarStrategicCache = [];
+            window.xarStrategicLoaded = true;
+            renderList();
         }
     };
 })();
