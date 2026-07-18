@@ -20,6 +20,11 @@ function xfarp_wizard_styles_css(): string
 #xfarp-wiz h4{font-size:28px}
 #xfarp-wiz p{font-size:18px}
 
+/* Loading state */
+.xar-spinner-row{display:flex;align-items:center;gap:.6rem;padding:1rem 0;color:var(--muted);font-size:16px}
+.xar-spinner{width:16px;height:16px;border:2px solid var(--border);border-top-color:var(--green);border-radius:50%;display:inline-block;animation:xar-spin .7s linear infinite;flex-shrink:0}
+@keyframes xar-spin{to{transform:rotate(360deg)}}
+
 /* Header */
 .xar-header{background:linear-gradient(120deg,var(--navy-dark) 0%,var(--navy) 55%,var(--green) 140%);padding:1.5rem 1.75rem;color:#fff}
 .xar-header-inner{display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:1rem}

@@ -52,69 +52,9 @@ function xfarp_wizard_readiness_init_js(): string
         { value: 'alex_rivera', label: 'Alex Rivera', initials: 'AR' },
     ];
 
-    function seedReadiness() {
-        return [
-            {
-                name: 'Strengthen Leadership Capability',
-                cor_capability: 'leadership',
-                primary_driver: 'be_intentional',
-                priority_level: 'high',
-                description: 'Build leadership bench and develop leaders at all levels.',
-                business_rationale: 'Sustainable growth requires strong leadership capacity across the organization.',
-                secondary_driver: 'drive_growth',
-                executive_owner: 'james_scott',
-                expected_impact: 'Stronger decision making, higher engagement, and a deeper leadership bench for future growth.',
-            },
-            {
-                name: 'Improve Cross-Functional Alignment',
-                cor_capability: 'alignment',
-                primary_driver: 'get_real',
-                priority_level: 'high',
-                description: 'Create shared priorities and clearer handoffs across teams.',
-                business_rationale: 'Misalignment between functions slows execution and creates rework.',
-                secondary_driver: 'be_intentional',
-                executive_owner: 'maria_chen',
-                expected_impact: 'Faster delivery cycles, fewer conflicting priorities, and clearer ownership.',
-            },
-            {
-                name: 'Strengthen Accountability Practices',
-                cor_capability: 'accountability',
-                primary_driver: 'foster_grit',
-                priority_level: 'medium',
-                description: 'Establish consistent follow-through on commitments and outcomes.',
-                business_rationale: 'Accountability gaps undermine trust and delay strategic progress.',
-                secondary_driver: 'be_intentional',
-                executive_owner: 'alex_rivera',
-                expected_impact: 'Higher completion rates on priorities and clearer ownership of outcomes.',
-            },
-            {
-                name: 'Elevate Communication Clarity',
-                cor_capability: 'communication',
-                primary_driver: 'fill_buckets',
-                priority_level: 'medium',
-                description: 'Improve upward, downward, and cross-team communication rituals.',
-                business_rationale: 'Incomplete information flow creates friction and slow decisions.',
-                secondary_driver: 'get_real',
-                executive_owner: 'james_scott',
-                expected_impact: 'Better information flow, reduced ambiguity, and stronger team trust.',
-            },
-            {
-                name: 'Accelerate Execution Discipline',
-                cor_capability: 'execution',
-                primary_driver: 'drive_growth',
-                priority_level: 'high',
-                description: 'Translate strategy into measurable weekly and quarterly execution.',
-                business_rationale: 'Strategy without disciplined execution fails to create organizational readiness.',
-                secondary_driver: 'foster_grit',
-                executive_owner: 'maria_chen',
-                expected_impact: 'More predictable delivery and stronger linkage between plans and results.',
-            },
-        ];
-    }
-
     function ensureCache() {
         if (!window.xarReadinessCache) {
-            window.xarReadinessCache = seedReadiness();
+            window.xarReadinessCache = [];
         }
         return window.xarReadinessCache;
     }
@@ -217,12 +157,24 @@ function xfarp_wizard_readiness_init_js(): string
         return next;
     }
 
+    function showLoading() {
+        var list = document.getElementById('xar-readiness-list');
+        if (!list) {
+            return;
+        }
+        list.innerHTML = '<div class="xar-spinner-row"><span class="xar-spinner"></span> Loading readiness priorities…</div>';
+    }
+
     function renderList() {
         var list = document.getElementById('xar-readiness-list');
         if (!list) {
             return;
         }
         var data = ensureCache();
+        if (!data.length) {
+            list.innerHTML = '<p class="xar-muted">No readiness priorities yet. Click "+ Add Priority" to create one.</p>';
+            return;
+        }
         list.innerHTML = data.map(cardHtml).join('');
         bindList(list);
     }
@@ -257,8 +209,6 @@ function xfarp_wizard_readiness_init_js(): string
     }
 
     window.initReadinessStep = function () {
-        ensureCache();
-        renderList();
         var addBtn = document.getElementById('xar-add-readiness');
         if (addBtn) {
             addBtn.onclick = function (e) {
@@ -272,15 +222,24 @@ function xfarp_wizard_readiness_init_js(): string
             };
         }
 
-        // Replace the dummy seed with real saved data from Laravel, if any
-        // exists for this ARP. Falls back silently to the seed on failure.
+        // Already loaded once this session — render from cache immediately,
+        // no need to show a loading state again.
+        if (window.xarReadinessLoaded) {
+            renderList();
+            return;
+        }
+
+        showLoading();
         if (typeof window.xarLoadReadinessDraft === 'function') {
             window.xarLoadReadinessDraft().then(function (items) {
-                if (items && items.length) {
-                    window.xarReadinessCache = items;
-                    renderList();
-                }
+                window.xarReadinessCache = items || [];
+                window.xarReadinessLoaded = true;
+                renderList();
             });
+        } else {
+            window.xarReadinessCache = [];
+            window.xarReadinessLoaded = true;
+            renderList();
         }
     };
 })();
