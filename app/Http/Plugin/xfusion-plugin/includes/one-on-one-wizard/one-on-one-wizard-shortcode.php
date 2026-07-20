@@ -18,8 +18,8 @@ if (! defined('ABSPATH')) {
 require_once __DIR__ . '/styles.php';
 require_once __DIR__ . '/preparation-gf-mapping.php';
 require_once __DIR__ . '/conversation-gf-mapping.php';
-require_once __DIR__ . '/gf-entry-service.php';
 require_once __DIR__ . '/commitments-fusion-service.php';
+require_once __DIR__ . '/wizard-draft-service.php';
 require_once __DIR__ . '/step-1-evidence-service.php';
 require_once __DIR__ . '/brief-wizard-service.php';
 require_once __DIR__ . '/synthesis-wizard-service.php';
@@ -83,8 +83,6 @@ function xfusion_one_on_one_wizard_shortcode($atts = []): string
         'conversationId'         => $conversationId,
         'pairId'                 => 0,
         'userRole'               => $userRole,
-        'prepConfigured'         => xfoo_preparation_gf_is_configured(),
-        'conversationConfigured' => xfoo_conversation_gf_is_configured(),
     ];
 
     ob_start();

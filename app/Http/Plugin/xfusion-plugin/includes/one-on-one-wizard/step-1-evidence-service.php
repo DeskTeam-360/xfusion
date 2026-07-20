@@ -326,9 +326,10 @@ function xfoo_wizard_evidence_meeting_detail(int $conversationId): array
     $prepLabels = xfoo_preparation_gf_field_labels_for_js();
     $convLabels = xfoo_conversation_gf_field_labels();
 
-    $employeeValues = xfoo_gf_load_preparation_for_conversation('employee', $conversationId);
-    $leaderValues = xfoo_gf_load_preparation_for_conversation('leader', $conversationId);
-    $conversationValues = xfoo_gf_load_conversation_notes_for_conversation($conversationId);
+    $draft = xfoo_wizard_load_draft_data($conversationId, 'evidence');
+    $employeeValues = $draft['employee'];
+    $leaderValues = $draft['leader'];
+    $conversationValues = $draft['conversation'];
 
     $commitments = xfoo_wizard_get_commitments($conversationId);
     $commitmentRows = [];

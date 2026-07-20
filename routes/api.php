@@ -424,6 +424,9 @@ Route::prefix('v1')->middleware('fusion.api')->group(function () {
         Route::get('/{oneOnOne}/conversations', [OneOnOneController::class, 'conversations']);
         Route::post('/{oneOnOne}/conversations', [OneOnOneController::class, 'scheduleConversation']);
         Route::post('/conversations/{conversation}/preparation', [OneOnOneController::class, 'submitPreparation']);
+        Route::get('/conversations/{conversation}/wizard-draft', [OneOnOneController::class, 'getWizardDraft']);
+        Route::post('/conversations/{conversation}/wizard-draft/preparation', [OneOnOneController::class, 'saveWizardPreparation']);
+        Route::post('/conversations/{conversation}/wizard-draft/conversation-notes', [OneOnOneController::class, 'saveWizardConversationNotes']);
         Route::get('/conversations/{conversation}/my-preparation', [OneOnOneController::class, 'myPreparation']);
         Route::get('/conversations/{conversation}/preparation-status', [OneOnOneController::class, 'preparationStatus']);
         Route::post('/conversations/{conversation}/reveal', [OneOnOneController::class, 'reveal']);

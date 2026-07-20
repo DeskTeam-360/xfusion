@@ -1,9 +1,6 @@
 <?php
 /**
- * Save Draft skeleton — collect custom UI values and write to Gravity Forms.
- *
- * Wired to #xfw-save-draft and #xfw-save-draft-2. Saves whichever step data
- * is present in the current wizard view (preparation + conversation notes).
+ * Save Draft — preparation, conversation notes, and commitments via Laravel API.
  *
  * @package XFusion
  */
@@ -43,16 +40,10 @@ function xfoo_wizard_ajax_save_draft(): void
     $leaderCommitments = xfoo_wizard_decode_json_post('leader_commitments');
 
     if ($step === 'preparation') {
-        if (! class_exists('GFAPI')) {
-            wp_send_json_error(['message' => 'Gravity Forms not available.'], 503);
-        }
         xfoo_wizard_save_prep_roles($conversationId, $employeeValues, $leaderValues, $saved, $skipped, $errors);
     }
 
     if ($step === 'conversation') {
-        if (! class_exists('GFAPI')) {
-            wp_send_json_error(['message' => 'Gravity Forms not available.'], 503);
-        }
         xfoo_wizard_save_conversation_step($conversationId, $conversationValues, $saved, $skipped, $errors);
     }
 
@@ -92,34 +83,28 @@ function xfoo_wizard_save_prep_roles(
     array &$skipped,
     array &$errors
 ): void {
-    if (! xfoo_preparation_gf_is_configured()) {
-        $skipped[] = 'preparation:not_configured';
+    $allowed = xfoo_wizard_allowed_prep_roles();
+    $payloadEmployee = in_array('employee', $allowed, true) ? $employeeValues : [];
+    $payloadLeader = in_array('leader', $allowed, true) ? $leaderValues : [];
+
+    if ($payloadEmployee === [] && $payloadLeader === []) {
+        $skipped[] = 'preparation:empty';
 
         return;
     }
 
-    $allowed = xfoo_wizard_allowed_prep_roles();
+    $result = xfoo_wizard_save_preparation_to_laravel($conversationId, $payloadEmployee, $payloadLeader);
+    if (is_wp_error($result)) {
+        $errors[] = ['scope' => 'preparation', 'message' => $result->get_error_message()];
 
-    foreach (['employee' => $employeeValues, 'leader' => $leaderValues] as $role => $values) {
-        if ($values === []) {
-            continue;
-        }
+        return;
+    }
 
-        if (! in_array($role, $allowed, true)) {
-            $skipped[] = 'preparation:' . $role . ':forbidden';
-            continue;
-        }
-
-        $result = xfoo_gf_save_preparation_role($role, $conversationId, $values);
-        if (is_wp_error($result)) {
-            $errors[] = ['scope' => 'preparation:' . $role, 'message' => $result->get_error_message()];
-            continue;
-        }
-
-        $saved[] = array_merge(['scope' => 'preparation:' . $role], $result);
-
-        // TODO: sync JSON content to wp_fusion_one_on_one_preparations via Laravel API.
-        // xfoo_wizard_sync_preparation_to_fusion($conversationId, $role, $values);
+    if ($payloadEmployee !== []) {
+        $saved[] = ['scope' => 'preparation:employee'];
+    }
+    if ($payloadLeader !== []) {
+        $saved[] = ['scope' => 'preparation:leader'];
     }
 }
 
@@ -137,26 +122,19 @@ function xfoo_wizard_save_conversation_step(
     array &$errors
 ): void {
     if ($conversationValues === []) {
-        return;
-    }
-
-    if (! xfoo_conversation_gf_is_configured()) {
-        $skipped[] = 'conversation:not_configured';
+        $skipped[] = 'conversation:empty';
 
         return;
     }
 
-    $result = xfoo_gf_save_conversation_notes($conversationId, $conversationValues);
+    $result = xfoo_wizard_save_conversation_notes_to_laravel($conversationId, $conversationValues);
     if (is_wp_error($result)) {
         $errors[] = ['scope' => 'conversation', 'message' => $result->get_error_message()];
 
         return;
     }
 
-    $saved[] = array_merge(['scope' => 'conversation'], $result);
-
-    // TODO: sync per-section notes to wp_fusion_one_on_one_notes via Laravel API.
-    // xfoo_wizard_sync_conversation_notes_to_fusion($conversationId, $conversationValues);
+    $saved[] = ['scope' => 'conversation'];
 }
 
 /**

@@ -153,7 +153,13 @@ add_action('wp_ajax_xfusion_oo_save_preparation', function (): void {
     xfusion_oo_require_login();
     $conversationId = (int) ($_POST['conversation_id'] ?? 0);
     $role           = sanitize_text_field($_POST['author_role'] ?? '');
-    $content        = wp_kses_post(wp_unslash($_POST['content'] ?? ''));
+    $content        = wp_unslash($_POST['content'] ?? '');
+    if (isset($_POST['values']) && is_array($_POST['values'])) {
+        $encoded = wp_json_encode(wp_unslash($_POST['values']));
+        if ($encoded !== false) {
+            $content = $encoded;
+        }
+    }
     xfusion_oo_send(xfusion_oo_api_request('POST', "/conversations/{$conversationId}/preparation", [], [
         'author_role'    => $role,
         'author_user_id' => get_current_user_id(),

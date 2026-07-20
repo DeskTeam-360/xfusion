@@ -19,6 +19,7 @@ use App\Services\MeetingBriefFromEvidenceService;
 use App\Services\MeetingSynthesisFromContextService;
 use App\Services\OneOnOneAiService;
 use App\Services\OneOnOneCompanyGroupSyncService;
+use App\Services\OneOnOneWizardDraftService;
 use Illuminate\Http\Request;
 
 /**
@@ -468,21 +469,141 @@ class OneOnOneController extends Controller
      */
     public function submitPreparation(Request $request, OneOnOneConversation $conversation)
     {
+        $this->mergeJsonPayload($request);
+
         $data = $request->validate([
             'author_role' => 'required|in:employee,leader',
-            'author_user_id' => 'required|integer|min:1',
-            'content' => 'required|string',
+            'author_user_id' => 'nullable|integer|min:1',
+            'content' => 'nullable|string',
+            'values' => 'nullable|array',
         ]);
 
+        $pair = $conversation->oneOnOne;
+        if ($pair === null) {
+            return response()->json(['success' => false, 'message' => 'Pairing not found.'], 404);
+        }
+
+        $role = $data['author_role'];
+        $authorUserId = (int) ($data['author_user_id'] ?? 0);
+        if ($authorUserId < 1) {
+            $authorUserId = $role === OneOnOnePreparation::ROLE_LEADER
+                ? (int) $pair->leader_user_id
+                : (int) $pair->employee_user_id;
+        }
+
+        $draft = app(OneOnOneWizardDraftService::class);
+        if (isset($data['values']) && is_array($data['values'])) {
+            $content = $draft->encodePrepValues($data['values']);
+        } else {
+            $content = (string) ($data['content'] ?? '');
+        }
+
+        if (trim($content) === '' || $content === '[]' || $content === '{}') {
+            return response()->json(['success' => false, 'message' => 'Preparation content is required.'], 422);
+        }
+
         $prep = OneOnOnePreparation::updateOrCreate(
-            ['conversation_id' => $conversation->id, 'author_role' => $data['author_role']],
+            ['conversation_id' => $conversation->id, 'author_role' => $role],
             [
-                'author_user_id' => $data['author_user_id'],
-                'content' => $data['content'],
+                'author_user_id' => $authorUserId,
+                'content' => $content,
             ]
         );
 
         return response()->json(['success' => true, 'data' => ['id' => $prep->id, 'is_revealed' => $prep->is_revealed]]);
+    }
+
+    /** Wizard — load Steps 3–4 draft (preparation + conversation notes) from Laravel. */
+    public function getWizardDraft(Request $request, OneOnOneConversation $conversation)
+    {
+        $scope = (string) $request->query('scope', 'wizard');
+        $access = $this->wizardDraftAccess($request, $conversation, $scope);
+        if ($access instanceof \Illuminate\Http\JsonResponse) {
+            return $access;
+        }
+
+        $payload = app(OneOnOneWizardDraftService::class)->draftPayload(
+            $conversation,
+            $access['roles'],
+            $access['user_id'],
+            $access['notes_scope'] ?? 'own'
+        );
+
+        return response()->json([
+            'success' => true,
+            'data' => array_merge($payload, [
+                'conversation_id' => $conversation->id,
+            ]),
+        ]);
+    }
+
+    /** Wizard — save preparation for one or both roles (slug => value maps). */
+    public function saveWizardPreparation(Request $request, OneOnOneConversation $conversation)
+    {
+        $this->mergeJsonPayload($request);
+
+        $access = $this->wizardDraftAccess($request, $conversation, 'wizard');
+        if ($access instanceof \Illuminate\Http\JsonResponse) {
+            return $access;
+        }
+
+        $data = $request->validate([
+            'employee' => 'nullable|array',
+            'leader' => 'nullable|array',
+        ]);
+
+        $pair = $conversation->oneOnOne;
+        if ($pair === null) {
+            return response()->json(['success' => false, 'message' => 'Pairing not found.'], 404);
+        }
+
+        $draft = app(OneOnOneWizardDraftService::class);
+        $saved = [];
+
+        foreach (['employee' => $data['employee'] ?? null, 'leader' => $data['leader'] ?? null] as $role => $values) {
+            if (! is_array($values) || $values === []) {
+                continue;
+            }
+            if (! in_array($role, $access['roles'], true)) {
+                return response()->json(['success' => false, 'message' => "Not allowed to save {$role} preparation."], 403);
+            }
+
+            $authorUserId = $role === OneOnOnePreparation::ROLE_LEADER
+                ? (int) $pair->leader_user_id
+                : (int) $pair->employee_user_id;
+
+            $row = $draft->savePreparationRole($conversation, $role, $values, $authorUserId);
+            $saved[] = ['role' => $role, 'id' => $row->id];
+        }
+
+        if ($saved === []) {
+            return response()->json(['success' => false, 'message' => 'No preparation values received.'], 422);
+        }
+
+        return response()->json(['success' => true, 'saved' => $saved, 'saved_at' => now()->format('g:i A')]);
+    }
+
+    /** Wizard — save Step 4 conversation guide notes (section slug => text). */
+    public function saveWizardConversationNotes(Request $request, OneOnOneConversation $conversation)
+    {
+        $this->mergeJsonPayload($request);
+
+        $access = $this->wizardDraftAccess($request, $conversation, 'wizard');
+        if ($access instanceof \Illuminate\Http\JsonResponse) {
+            return $access;
+        }
+
+        $data = $request->validate([
+            'values' => 'required|array',
+        ]);
+
+        app(OneOnOneWizardDraftService::class)->saveConversationNotes(
+            $conversation,
+            $data['values'],
+            $access['user_id']
+        );
+
+        return response()->json(['success' => true, 'saved_at' => now()->format('g:i A')]);
     }
 
     /** Whether the current user's counterpart has submitted prep — never returns the content. */
@@ -735,15 +856,62 @@ class OneOnOneController extends Controller
      */
     private function decodePrepContent(mixed $content): array
     {
-        if (is_array($content)) {
-            return $content;
-        }
-        if (! is_string($content) || trim($content) === '') {
-            return [];
-        }
-        $decoded = json_decode($content, true);
+        return app(OneOnOneWizardDraftService::class)->decodePrepContent($content);
+    }
 
-        return is_array($decoded) ? $decoded : ['summary' => $content];
+    /**
+     * @return array{user_id: int, roles: list<string>, is_admin: bool, notes_scope?: string}|\Illuminate\Http\JsonResponse
+     */
+    private function wizardDraftAccess(Request $request, OneOnOneConversation $conversation, string $scope = 'wizard'): array|\Illuminate\Http\JsonResponse
+    {
+        $this->mergeJsonPayload($request);
+
+        $userId = (int) ($request->input('user_id') ?? $request->query('user_id'));
+        if ($userId < 1) {
+            return response()->json(['success' => false, 'message' => 'user_id is required.'], 422);
+        }
+
+        $isAdmin = $request->boolean('wizard_admin');
+        $pair = $conversation->oneOnOne;
+        if ($pair === null) {
+            return response()->json(['success' => false, 'message' => 'Pairing not found.'], 404);
+        }
+
+        $isParticipant = (int) $pair->leader_user_id === $userId || (int) $pair->employee_user_id === $userId;
+
+        if ($scope === 'evidence') {
+            if (! $isParticipant && ! $isAdmin) {
+                return response()->json(['success' => false, 'message' => 'Not authorized for this conversation.'], 403);
+            }
+
+            $revealed = $conversation->preparations()->where('is_revealed', true)->exists();
+            $completed = $conversation->status === OneOnOneConversation::STATUS_COMPLETED;
+
+            if (! $revealed && ! $completed && ! $isAdmin) {
+                return ['user_id' => $userId, 'roles' => [], 'is_admin' => false, 'notes_scope' => 'own'];
+            }
+
+            return [
+                'user_id' => $userId,
+                'roles' => OneOnOnePreparation::validRoles(),
+                'is_admin' => $isAdmin,
+                'notes_scope' => 'all',
+            ];
+        }
+
+        if ($isAdmin) {
+            return ['user_id' => $userId, 'roles' => OneOnOnePreparation::validRoles(), 'is_admin' => true, 'notes_scope' => 'all'];
+        }
+
+        if ((int) $pair->leader_user_id === $userId) {
+            return ['user_id' => $userId, 'roles' => [OneOnOnePreparation::ROLE_LEADER], 'is_admin' => false, 'notes_scope' => 'own'];
+        }
+
+        if ((int) $pair->employee_user_id === $userId) {
+            return ['user_id' => $userId, 'roles' => [OneOnOnePreparation::ROLE_EMPLOYEE], 'is_admin' => false, 'notes_scope' => 'own'];
+        }
+
+        return response()->json(['success' => false, 'message' => 'Not authorized for this conversation.'], 403);
     }
 
     public function synthesis(OneOnOneConversation $conversation)
