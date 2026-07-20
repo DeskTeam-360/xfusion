@@ -1,6 +1,6 @@
 <?php
 /**
- * Load Draft — fetch saved GF values for ARP steps 1, 2, 5.
+ * Load Draft — Steps 1, 2, 5 from Laravel (canonical storage).
  *
  * @package XFusion
  */
@@ -19,33 +19,36 @@ function xfarp_wizard_ajax_load_draft(): void
         wp_send_json_error(['message' => 'Unauthorized.'], 401);
     }
 
-    $planYear = isset($_GET['plan_year']) ? absint($_GET['plan_year']) : 0;
     $arpId = isset($_GET['arp_id']) ? absint($_GET['arp_id']) : 0;
-    $companyId = isset($_GET['company_id']) ? absint($_GET['company_id']) : 0;
-
-    $context = xfarp_wizard_session_context($planYear, $arpId);
-    if ($companyId > 0) {
-        $context['company_id'] = $companyId;
+    if ($arpId < 1) {
+        wp_send_json_error(['message' => 'arp_id is required.'], 422);
     }
 
-    if ((int) $context['company_id'] < 1) {
-        wp_send_json_error(['message' => 'company_id is required.'], 422);
+    $result = xfarp_picker_api_request('GET', "/{$arpId}/plan", [
+        'user_id' => get_current_user_id(),
+    ]);
+
+    if (! $result['ok']) {
+        wp_send_json_error([
+            'message' => is_string($result['error'] ?? null) ? $result['error'] : 'Failed to load draft.',
+        ], $result['code'] ?: 500);
     }
 
-    $data = xfarp_gf_load_all_steps($context);
+    $body = is_array($result['body'] ?? null) ? $result['body'] : [];
+    $data = is_array($body['data'] ?? null) ? $body['data'] : [];
 
     wp_send_json_success([
-        'company_id' => (int) $context['company_id'],
-        'plan_year' => (int) $context['plan_year'],
-        'arp_id' => (int) $context['arp_id'],
-        'foundation' => $data['foundation'],
-        'future_state' => $data['future_state'],
-        'learning' => $data['learning'],
+        'company_id' => (int) ($data['company_id'] ?? 0),
+        'plan_year' => (int) ($data['plan_year'] ?? 0),
+        'arp_id' => (int) ($data['arp_id'] ?? $arpId),
+        'foundation' => is_array($data['foundation'] ?? null) ? $data['foundation'] : [],
+        'future_state' => is_array($data['future_state'] ?? null) ? $data['future_state'] : [],
+        'learning' => is_array($data['learning'] ?? null) ? $data['learning'] : [],
     ]);
 }
 
 /**
- * JS: fetch draft from server, cache, and apply to step UI.
+ * JS: fetch draft from Laravel via admin-ajax, cache, and apply to step UI.
  */
 function xfarp_wizard_load_draft_js(): string
 {
@@ -97,7 +100,7 @@ var xarApplyDraftForCurrentStep = function () {
 };
 
 var xarLoadDraft = function (force) {
-    if (!window.XFARP_WIZARD || !window.XFARP_WIZARD.companyId) {
+    if (!window.XFARP_WIZARD || !window.XFARP_WIZARD.arpId) {
         return Promise.resolve(null);
     }
     if (window.xarDraftCache.loaded && !force) {
@@ -110,9 +113,7 @@ var xarLoadDraft = function (force) {
     var params = new URLSearchParams();
     params.set('action', 'xfarp_wizard_load_draft');
     params.set('nonce', window.XFARP_WIZARD.nonce);
-    params.set('company_id', String(window.XFARP_WIZARD.companyId));
-    params.set('plan_year', String(window.XFARP_WIZARD.planYear || ''));
-    params.set('arp_id', String(window.XFARP_WIZARD.arpId || '0'));
+    params.set('arp_id', String(window.XFARP_WIZARD.arpId));
 
     window.xarDraftCache.loading = true;
     window.xarDraftCache._promise = fetch(window.XFARP_WIZARD.ajaxUrl + '?' + params.toString(), {
@@ -144,7 +145,7 @@ var xarLoadDraft = function (force) {
 window.xarLoadDraft = xarLoadDraft;
 window.xarApplyDraftForCurrentStep = xarApplyDraftForCurrentStep;
 
-if (window.XFARP_WIZARD && window.XFARP_WIZARD.companyId) {
+if (window.XFARP_WIZARD && window.XFARP_WIZARD.arpId) {
     xarLoadDraft(false).then(function () {
         if (typeof xarApplyDraftForCurrentStep === 'function') {
             xarApplyDraftForCurrentStep();

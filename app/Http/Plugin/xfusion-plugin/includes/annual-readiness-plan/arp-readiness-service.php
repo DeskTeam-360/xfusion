@@ -2,9 +2,7 @@
 /**
  * Step 3 — Organizational Readiness™: Laravel-backed save/load bridge.
  *
- * Unlike steps 1, 2, 5 (which save to Gravity Forms), Step 3's repeatable
- * priority list saves directly to wp_fusion_arp_readiness_priorities via the
- * Laravel API (ArpController::getReadinessPriorities / saveReadinessPriorities).
+ * Saves directly to wp_fusion_arp_readiness_priorities via the Laravel API.
  * Reuses xfarp_picker_api_request() from arp-picker.php for the HTTP bridge.
  *
  * @package XFusion

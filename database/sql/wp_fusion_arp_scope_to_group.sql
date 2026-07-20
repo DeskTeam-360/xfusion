@@ -15,11 +15,32 @@ ALTER TABLE `wp_fusion_arps`
         AFTER `company_id`;
 
 -- Drop the old company-level unique key (only run if it still exists).
-ALTER TABLE `wp_fusion_arps` DROP INDEX `arp_company_year_uq`;
+SET @xf_arp_drop_old_uq := (
+    SELECT IF(COUNT(*) > 0,
+        'ALTER TABLE `wp_fusion_arps` DROP INDEX `arp_company_year_uq`',
+        'SELECT ''arp_company_year_uq already absent — skip drop'' AS note')
+    FROM information_schema.statistics
+    WHERE table_schema = DATABASE()
+      AND table_name = 'wp_fusion_arps'
+      AND index_name = 'arp_company_year_uq'
+);
+PREPARE xf_arp_stmt FROM @xf_arp_drop_old_uq;
+EXECUTE xf_arp_stmt;
+DEALLOCATE PREPARE xf_arp_stmt;
 
 -- One ARP per group per year.
-ALTER TABLE `wp_fusion_arps`
-    ADD UNIQUE KEY `arp_group_year_uq` (`company_group_id`, `year`);
+SET @xf_arp_add_group_uq := (
+    SELECT IF(COUNT(*) = 0,
+        'ALTER TABLE `wp_fusion_arps` ADD UNIQUE KEY `arp_group_year_uq` (`company_group_id`, `year`)',
+        'SELECT ''arp_group_year_uq already exists — skip add'' AS note')
+    FROM information_schema.statistics
+    WHERE table_schema = DATABASE()
+      AND table_name = 'wp_fusion_arps'
+      AND index_name = 'arp_group_year_uq'
+);
+PREPARE xf_arp_stmt FROM @xf_arp_add_group_uq;
+EXECUTE xf_arp_stmt;
+DEALLOCATE PREPARE xf_arp_stmt;
 
 ALTER TABLE `wp_fusion_arps`
     ADD INDEX IF NOT EXISTS `arp_group_idx` (`company_group_id`);

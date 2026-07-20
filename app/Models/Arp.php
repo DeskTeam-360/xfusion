@@ -17,12 +17,54 @@ class Arp extends Model
 
     protected $table = 'wp_fusion_arps';
 
-    protected $fillable = ['company_id', 'company_group_id', 'year', 'title', 'mission', 'vision', 'status', 'version', 'published_at', 'created_by'];
+    protected $fillable = [
+        'company_id',
+        'company_group_id',
+        'year',
+        'title',
+        'mission',
+        'vision',
+        'core_values',
+        'organizational_description',
+        'business_environment',
+        'executive_narrative',
+        'step_progress',
+        'status',
+        'version',
+        'published_at',
+        'created_by',
+    ];
 
     protected $casts = [
         'published_at' => 'datetime',
         'version' => 'decimal:1',
+        'step_progress' => 'array',
     ];
+
+    public function futureState()
+    {
+        return $this->hasOne(ArpFutureState::class, 'arp_id');
+    }
+
+    public function learnings()
+    {
+        return $this->hasMany(ArpLearning::class, 'arp_id');
+    }
+
+    public function readinessPriorities()
+    {
+        return $this->hasMany(ArpReadinessPriority::class, 'arp_id')->orderBy('priority_rank');
+    }
+
+    public function strategicPriorities()
+    {
+        return $this->hasMany(ArpStrategicPriority::class, 'arp_id')->orderBy('priority_rank');
+    }
+
+    public function aiAssessments()
+    {
+        return $this->hasMany(ArpAiAssessment::class, 'arp_id')->orderByDesc('id');
+    }
 
     public function company()
     {

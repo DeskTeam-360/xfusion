@@ -4,12 +4,15 @@ namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
 use App\Models\Arp;
+use App\Models\ArpLearning;
 use App\Models\ArpReadinessPriority;
 use App\Models\ArpStrategicPriority;
 use App\Models\ArpVersion;
 use App\Models\CompanyGroup;
 use App\Models\CompanyGroupDetail;
 use App\Services\ArpAiService;
+use App\Services\ArpEvidenceService;
+use App\Services\ArpPlanService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 
@@ -116,6 +119,7 @@ class ArpController extends Controller
                 'created_at' => $arp->created_at?->toIso8601String(),
                 'updated_at' => $arp->updated_at?->toIso8601String(),
                 'published_at' => $arp->published_at?->toIso8601String(),
+                'step_progress' => $arp->step_progress ?? app(ArpPlanService::class)->computeStepProgress($arp),
                 'can_edit' => $this->leadableGroupIds($userId)->contains($arp->company_group_id),
             ],
         ]);
@@ -151,6 +155,8 @@ class ArpController extends Controller
             'published_at' => null,
             'created_at' => now(),
         ]);
+
+        app(ArpEvidenceService::class)->logArchived($arp, $version, $userId);
 
         return response()->json(['success' => true, 'data' => ['id' => $version->id, 'version' => (string) $version->version]]);
     }
@@ -188,8 +194,12 @@ class ArpController extends Controller
                 'published_at' => now(),
             ]);
 
+            app(ArpEvidenceService::class)->logPublished($arp->fresh(), $versionRow, $userId);
+
             return $versionRow;
         });
+
+        app(ArpPlanService::class)->refreshStepProgress($arp->fresh());
 
         return response()->json([
             'success' => true,
@@ -204,11 +214,21 @@ class ArpController extends Controller
     /** Full plan state at the moment of archive/publish — the version history's source of truth. */
     private function buildSnapshot(Arp $arp): array
     {
+        $plan = app(ArpPlanService::class);
+
         return [
-            'arp' => $arp->only(['id', 'company_id', 'company_group_id', 'year', 'title', 'mission', 'vision', 'status', 'version']),
+            'arp' => $arp->only([
+                'id', 'company_id', 'company_group_id', 'year', 'title',
+                'mission', 'vision', 'core_values', 'organizational_description',
+                'business_environment', 'executive_narrative', 'status', 'version',
+            ]),
+            'foundation' => $plan->foundationValues($arp),
+            'future_state' => $plan->futureStateValues($arp),
             'readiness_priorities' => ArpReadinessPriority::where('arp_id', $arp->id)->orderBy('priority_rank')->get()->toArray(),
             'strategic_priorities' => ArpStrategicPriority::where('arp_id', $arp->id)->orderBy('priority_rank')->get()->toArray(),
-            'learnings' => DB::table('wp_fusion_arp_learnings')->where('arp_id', $arp->id)->get()->toArray(),
+            'learning' => $plan->learningValues($arp),
+            'learnings' => ArpLearning::where('arp_id', $arp->id)->get()->toArray(),
+            'step_progress' => $arp->step_progress ?? $plan->computeStepProgress($arp),
         ];
     }
 
@@ -249,6 +269,108 @@ class ArpController extends Controller
         ]);
 
         return response()->json(['success' => true, 'data' => $arp, 'already_existed' => false], 201);
+    }
+
+    /** Full wizard draft payload (Steps 1, 2, 5) — Laravel canonical storage. */
+    public function getPlan(Request $request, Arp $arp)
+    {
+        $userId = (int) $request->query('user_id');
+        if ($userId < 1 || ! $this->memberGroupIds($userId)->contains($arp->company_group_id)) {
+            return response()->json(['success' => false, 'message' => 'You do not have access to this ARP.'], 403);
+        }
+
+        $draft = app(ArpPlanService::class)->wizardDraftPayload($arp);
+
+        return response()->json([
+            'success' => true,
+            'data' => array_merge($draft, [
+                'arp_id' => $arp->id,
+                'company_id' => $arp->company_id,
+                'plan_year' => $arp->year,
+                'step_progress' => $arp->step_progress ?? app(ArpPlanService::class)->computeStepProgress($arp),
+            ]),
+        ]);
+    }
+
+    /** Step 1 — Organizational Foundation™ */
+    public function getFoundation(Arp $arp)
+    {
+        return response()->json([
+            'success' => true,
+            'data' => app(ArpPlanService::class)->foundationValues($arp),
+        ]);
+    }
+
+    public function saveFoundation(Request $request, Arp $arp)
+    {
+        $userId = (int) $request->input('user_id');
+        if ($userId < 1 || ! $this->leadableGroupIds($userId)->contains($arp->company_group_id)) {
+            return response()->json(['success' => false, 'message' => 'You do not lead this ARP\'s company group.'], 403);
+        }
+
+        $values = $request->input('values', []);
+        if (! is_array($values)) {
+            return response()->json(['success' => false, 'message' => 'values must be an object.'], 422);
+        }
+
+        app(ArpPlanService::class)->saveFoundation($arp, $values);
+        app(ArpPlanService::class)->refreshStepProgress($arp);
+
+        return response()->json(['success' => true, 'saved_at' => now()->format('g:i A')]);
+    }
+
+    /** Step 2 — Future State™ */
+    public function getFutureState(Arp $arp)
+    {
+        return response()->json([
+            'success' => true,
+            'data' => app(ArpPlanService::class)->futureStateValues($arp),
+        ]);
+    }
+
+    public function saveFutureState(Request $request, Arp $arp)
+    {
+        $userId = (int) $request->input('user_id');
+        if ($userId < 1 || ! $this->leadableGroupIds($userId)->contains($arp->company_group_id)) {
+            return response()->json(['success' => false, 'message' => 'You do not lead this ARP\'s company group.'], 403);
+        }
+
+        $values = $request->input('values', []);
+        if (! is_array($values)) {
+            return response()->json(['success' => false, 'message' => 'values must be an object.'], 422);
+        }
+
+        app(ArpPlanService::class)->saveFutureState($arp, $values);
+        app(ArpPlanService::class)->refreshStepProgress($arp);
+
+        return response()->json(['success' => true, 'saved_at' => now()->format('g:i A')]);
+    }
+
+    /** Step 5 — Organizational Learning™ */
+    public function getLearning(Arp $arp)
+    {
+        return response()->json([
+            'success' => true,
+            'data' => app(ArpPlanService::class)->learningValues($arp),
+        ]);
+    }
+
+    public function saveLearning(Request $request, Arp $arp)
+    {
+        $userId = (int) $request->input('user_id');
+        if ($userId < 1 || ! $this->leadableGroupIds($userId)->contains($arp->company_group_id)) {
+            return response()->json(['success' => false, 'message' => 'You do not lead this ARP\'s company group.'], 403);
+        }
+
+        $values = $request->input('values', []);
+        if (! is_array($values)) {
+            return response()->json(['success' => false, 'message' => 'values must be an object.'], 422);
+        }
+
+        app(ArpPlanService::class)->saveLearning($arp, $values);
+        app(ArpPlanService::class)->refreshStepProgress($arp);
+
+        return response()->json(['success' => true, 'saved_at' => now()->format('g:i A')]);
     }
 
     /** Step 3 — Organizational Readiness™: list priorities for an ARP. */
@@ -310,6 +432,8 @@ class ArpController extends Controller
                 ]);
             }
         });
+
+        app(ArpPlanService::class)->refreshStepProgress($arp);
 
         return response()->json(['success' => true, 'saved_at' => now()->format('g:i A')]);
     }
@@ -393,6 +517,8 @@ class ArpController extends Controller
             }
         });
 
+        app(ArpPlanService::class)->refreshStepProgress($arp);
+
         return response()->json(['success' => true, 'saved_at' => now()->format('g:i A')]);
     }
 
@@ -446,6 +572,9 @@ class ArpController extends Controller
                 'message' => $ai->getLastError() ?? 'AI generation failed.',
             ], 502);
         }
+
+        app(ArpEvidenceService::class)->logAiReadinessReview($arp, $row, $userId);
+        app(ArpPlanService::class)->refreshStepProgress($arp);
 
         $assessment = $row->assessment;
 

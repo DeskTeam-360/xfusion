@@ -447,11 +447,18 @@ Route::prefix('v1')->middleware('fusion.api')->group(function () {
     });
 
     // ARP — consumed by the [fusion_arp_wizard] WordPress shortcode's picker gate.
-    // Rule: one ARP per (company, calendar year); only company-group leaders may view/create.
-    Route::prefix('arp')->group(function () {
+    // Primary prefix: /arps (Laravel is system of record). /arp kept for backward compatibility.
+    $registerArpRoutes = function (): void {
         Route::get('/leadable-companies', [ArpController::class, 'leadableCompanies']);
         Route::get('/list', [ArpController::class, 'index']);
         Route::post('/', [ArpController::class, 'store']);
+        Route::get('/{arp}/plan', [ArpController::class, 'getPlan']);
+        Route::get('/{arp}/foundation', [ArpController::class, 'getFoundation']);
+        Route::post('/{arp}/foundation', [ArpController::class, 'saveFoundation']);
+        Route::get('/{arp}/future-state', [ArpController::class, 'getFutureState']);
+        Route::post('/{arp}/future-state', [ArpController::class, 'saveFutureState']);
+        Route::get('/{arp}/learning', [ArpController::class, 'getLearning']);
+        Route::post('/{arp}/learning', [ArpController::class, 'saveLearning']);
         Route::get('/{arp}/readiness-priorities', [ArpController::class, 'getReadinessPriorities']);
         Route::post('/{arp}/readiness-priorities', [ArpController::class, 'saveReadinessPriorities']);
         Route::get('/{arp}/strategic-priorities', [ArpController::class, 'getStrategicPriorities']);
@@ -464,6 +471,8 @@ Route::prefix('v1')->middleware('fusion.api')->group(function () {
         Route::post('/{arp}/archive-version', [ArpController::class, 'archiveVersion']);
         Route::post('/{arp}/publish', [ArpController::class, 'publish']);
         Route::get('/{arp}', [ArpController::class, 'show']);
-    });
+    };
+    Route::prefix('arps')->group($registerArpRoutes);
+    Route::prefix('arp')->group($registerArpRoutes);
 });
 

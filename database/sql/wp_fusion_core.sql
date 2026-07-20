@@ -45,10 +45,11 @@ CREATE TABLE IF NOT EXISTS `wp_fusion_evidence_log` (
 -- -----------------------------------------------------------------------------
 -- ARP — Annual Readiness Plan™ (strategic anchor, annual)
 -- -----------------------------------------------------------------------------
--- Full ARP schema (v1.0): see database/sql/wp_fusion_arp_wizard.sql for phpMyAdmin + ALTER patches.
+-- Full ARP schema (v1.0): Laravel is the system of record for all wizard steps.
 CREATE TABLE IF NOT EXISTS `wp_fusion_arps` (
     `id` BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
-    `company_id` BIGINT UNSIGNED NOT NULL COMMENT 'wp_companies.id',
+    `company_id` BIGINT UNSIGNED NOT NULL COMMENT 'wp_companies.id — denormalized for display/joins',
+    `company_group_id` BIGINT UNSIGNED NULL COMMENT 'wp_company_groups.id — one ARP per group per year',
     `year` SMALLINT UNSIGNED NOT NULL,
     `title` VARCHAR(255) NOT NULL DEFAULT '',
     `mission` TEXT NULL,
@@ -57,13 +58,17 @@ CREATE TABLE IF NOT EXISTS `wp_fusion_arps` (
     `organizational_description` TEXT NULL,
     `business_environment` TEXT NULL,
     `executive_narrative` TEXT NULL,
+    `step_progress` LONGTEXT NULL COMMENT 'JSON: wizard step completion flags',
     `status` VARCHAR(20) NOT NULL DEFAULT 'draft' COMMENT 'draft | active | archived',
+    `version` DECIMAL(4,1) NOT NULL DEFAULT 1.0 COMMENT 'Bumped by 0.1 on every publish',
+    `published_at` TIMESTAMP NULL COMMENT 'Set on first publish; updated on re-publish',
     `created_by` BIGINT UNSIGNED NULL COMMENT 'wp_users.id, executive who created it',
     `created_at` TIMESTAMP NULL,
     `updated_at` TIMESTAMP NULL,
     PRIMARY KEY (`id`),
-    UNIQUE KEY `arp_company_year_uq` (`company_id`, `year`),
-    KEY `arp_status_idx` (`status`)
+    UNIQUE KEY `arp_group_year_uq` (`company_group_id`, `year`),
+    KEY `arp_status_idx` (`status`),
+    KEY `arp_group_idx` (`company_group_id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 CREATE TABLE IF NOT EXISTS `wp_fusion_arp_future_states` (
@@ -149,6 +154,20 @@ CREATE TABLE IF NOT EXISTS `wp_fusion_arp_ai_assessments` (
     `updated_at` TIMESTAMP NULL,
     PRIMARY KEY (`id`),
     KEY `arpaa_arp_idx` (`arp_id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+CREATE TABLE IF NOT EXISTS `wp_fusion_arp_versions` (
+    `id` BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
+    `arp_id` BIGINT UNSIGNED NOT NULL,
+    `version` DECIMAL(4,1) NOT NULL,
+    `status` VARCHAR(20) NOT NULL COMMENT 'archived | published',
+    `snapshot` LONGTEXT NOT NULL COMMENT 'JSON: full ARP plan state at this version',
+    `published_by_user_id` BIGINT UNSIGNED NULL COMMENT 'wp_users.ID',
+    `published_at` TIMESTAMP NULL,
+    `created_at` TIMESTAMP NULL,
+    PRIMARY KEY (`id`),
+    KEY `arpv_arp_idx` (`arp_id`),
+    KEY `arpv_version_idx` (`arp_id`, `version`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 

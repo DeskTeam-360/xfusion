@@ -4,8 +4,7 @@
  *
  * Usage: [fusion_arp_wizard]
  *
- * 7-step wizard shell. Steps 1–2 are interactive form UI; steps 3–7 are
- * placeholders until their content is implemented.
+ * 7-step wizard shell. All steps persist via Laravel API (/api/v1/arps/*).
  *
  * @package XFusion
  */
@@ -16,10 +15,9 @@ if (! defined('ABSPATH')) {
 
 require_once __DIR__ . '/styles.php';
 require_once __DIR__ . '/arp-picker.php';
-require_once __DIR__ . '/arp-gf-mapping.php';
-require_once __DIR__ . '/arp-gf-entry-service.php';
 require_once __DIR__ . '/arp-save-draft.php';
 require_once __DIR__ . '/arp-load-draft.php';
+require_once __DIR__ . '/arp-plan-service.php';
 require_once __DIR__ . '/arp-readiness-service.php';
 require_once __DIR__ . '/arp-strategic-service.php';
 require_once __DIR__ . '/arp-ai-review-service.php';
@@ -111,11 +109,6 @@ function xfusion_arp_wizard_shortcode($atts = []): string
         $companyId = xfusion_wp_user_linked_company_id((int) get_current_user_id());
     }
 
-    $gfConfigured = [];
-    foreach (xfarp_gf_step_keys() as $stepKey) {
-        $gfConfigured[$stepKey] = xfarp_gf_step_is_configured($stepKey);
-    }
-
     $wizardConfig = [
         'ajaxUrl'      => admin_url('admin-ajax.php'),
         'nonce'        => wp_create_nonce('xfarp_wizard_save_draft'),
@@ -127,11 +120,11 @@ function xfusion_arp_wizard_shortcode($atts = []): string
         'createdAt'    => $arpData['created_at'] ?? null,
         'publishedAt'  => $arpData['published_at'] ?? null,
         'canEdit'      => $canEdit,
-        'gfConfigured' => $gfConfigured,
     ];
 
     $saveJs      = xfarp_wizard_save_draft_js();
     $loadJs      = xfarp_wizard_load_draft_js();
+    $planSvcJs   = xfarp_wizard_plan_service_js();
     $readinessSvcJs = xfarp_wizard_readiness_service_js();
     $strategicSvcJs = xfarp_wizard_strategic_service_js();
     $aiReviewSvcJs  = xfarp_wizard_ai_review_service_js();
@@ -209,7 +202,7 @@ function xfusion_arp_wizard_shortcode($atts = []): string
 <script>
 (function () {
 window.XFARP_WIZARD = <?php echo wp_json_encode($wizardConfig); ?>;
-<?php echo $panelsJs . "\n\n" . $readinessJs . "\n\n" . $strategicJs . "\n\n" . $learningJs . "\n\n" . $aiReviewJs . "\n\n" . $publishJs . "\n\n" . $coreJs . "\n\n" . $saveJs . "\n\n" . $loadJs . "\n\n" . $readinessSvcJs . "\n\n" . $strategicSvcJs . "\n\n" . $aiReviewSvcJs . "\n\n" . $publishSvcJs; ?>
+<?php echo $panelsJs . "\n\n" . $readinessJs . "\n\n" . $strategicJs . "\n\n" . $learningJs . "\n\n" . $aiReviewJs . "\n\n" . $publishJs . "\n\n" . $coreJs . "\n\n" . $saveJs . "\n\n" . $loadJs . "\n\n" . $planSvcJs . "\n\n" . $readinessSvcJs . "\n\n" . $strategicSvcJs . "\n\n" . $aiReviewSvcJs . "\n\n" . $publishSvcJs; ?>
 })();
 </script>
     <?php

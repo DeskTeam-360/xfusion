@@ -30,7 +30,7 @@ if (! defined('XFUSION_API_BEARER_TOKEN')) {
 function xfarp_picker_api_request(string $method, string $path, array $query = [], array $body = []): array
 {
     $base = rtrim(XFUSION_LARAVEL_API_BASE, '/');
-    $url  = $base . '/api/v1/arp' . $path;
+    $url  = $base . '/api/v1/arps' . $path;
     if ($query !== []) {
         $url .= '?' . http_build_query($query);
     }
