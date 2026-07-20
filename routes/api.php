@@ -456,6 +456,10 @@ Route::prefix('v1')->middleware('fusion.api')->group(function () {
         Route::post('/{arp}/readiness-priorities', [ArpController::class, 'saveReadinessPriorities']);
         Route::get('/{arp}/strategic-priorities', [ArpController::class, 'getStrategicPriorities']);
         Route::post('/{arp}/strategic-priorities', [ArpController::class, 'saveStrategicPriorities']);
+        Route::get('/{arp}/readiness-review', [ArpController::class, 'getReadinessReview']);
+        Route::post('/{arp}/readiness-review/generate', [ArpController::class, 'generateReadinessReview']);
+        Route::patch('/{arp}/readiness-review/context', [ArpController::class, 'saveReadinessReviewContext']);
+        Route::post('/{arp}/readiness-review/context', [ArpController::class, 'saveReadinessReviewContext']);
         Route::get('/{arp}/versions', [ArpController::class, 'listVersions']);
         Route::post('/{arp}/archive-version', [ArpController::class, 'archiveVersion']);
         Route::post('/{arp}/publish', [ArpController::class, 'publish']);

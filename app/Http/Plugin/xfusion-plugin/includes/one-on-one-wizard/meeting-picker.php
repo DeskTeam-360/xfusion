@@ -11,6 +11,81 @@ if (! defined('ABSPATH')) {
     exit;
 }
 
+/**
+ * Gate markup — shared by standalone picker and legacy embedded gate.
+ */
+function xfoo_meeting_picker_gate_markup(): string
+{
+    return '<div id="xfw-meeting-gate" class="xfw-meeting-gate">' .
+        '<div class="xfw-card xfw-gate-card">' .
+        '<h2 class="xfw-section-title" style="margin-top:0">Select your 1-on-1 meeting</h2>' .
+        '<p class="xfw-section-desc">Open an existing meeting from <strong>Your meetings</strong>, or schedule a new one if you are a leader.</p>' .
+        '<div class="xfw-gate-columns">' .
+        '<div class="xfw-gate-col xfw-gate-col-schedule">' .
+        '<h3 class="xfw-gate-col-title">Schedule a new meeting</h3>' .
+        '<p class="xfw-muted xfw-gate-col-desc">Leaders: select a company group and team member, then set date and time.</p>' .
+        '<div id="xfw-gate-pairs"></div>' .
+        '<div id="xfw-gate-conversations" class="xfw-hidden"></div>' .
+        '</div>' .
+        '<div class="xfw-gate-col xfw-gate-col-meetings">' .
+        '<h3 class="xfw-gate-col-title">Your meetings</h3>' .
+        '<p class="xfw-muted xfw-gate-col-desc">All scheduled and past meetings across your company groups.</p>' .
+        '<div id="xfw-gate-all-meetings"></div>' .
+        '</div>' .
+        '</div></div></div>';
+}
+
+/**
+ * Standalone meeting picker (like ARP picker) — shown when no conversation_id.
+ */
+function xfoo_render_meeting_picker_gate(): string
+{
+    $css      = xfoo_wizard_styles_css();
+    $pickerJs = xfoo_wizard_meeting_picker_js();
+
+    $wizardConfig = [
+        'ajaxUrl'        => admin_url('admin-ajax.php'),
+        'ooNonce'        => wp_create_nonce('xfusion_one_on_one'),
+        'userId'         => get_current_user_id(),
+        'conversationId' => 0,
+        'pairId'         => 0,
+        'userRole'       => '',
+    ];
+
+    ob_start();
+    ?>
+<div id="xfoo-wiz" data-conversation-id="0">
+
+    <div class="xfw-header">
+        <div class="xfw-header-inner">
+            <div>
+                <h1>1-ON-1 ALIGNMENT CAPTURE&trade; INTERACTIVE TOOL</h1>
+                <p>Continuous Alignment Process</p>
+            </div>
+        </div>
+    </div>
+
+    <?php echo xfoo_meeting_picker_gate_markup(); ?>
+</div>
+
+<style><?php echo $css; ?></style>
+
+<script>
+(function () {
+window.XFW_WIZARD = <?php echo wp_json_encode($wizardConfig); ?>;
+<?php echo $pickerJs; ?>
+
+var root = document.getElementById('xfoo-wiz');
+if (root && typeof window.xfwInitMeetingPicker === 'function') {
+    window.xfwInitMeetingPicker();
+}
+})();
+</script>
+    <?php
+
+    return (string) ob_get_clean();
+}
+
 function xfoo_wizard_meeting_picker_js(): string
 {
     return <<<'JS'
@@ -286,9 +361,40 @@ var xfwShowWizardWorkspace = function (show) {
     });
 };
 
+var xfwHasWizardWorkspace = function () {
+    return !!(root && root.querySelector('#xfw-wizard-workspace'));
+};
+
+var xfwNavigateToConversation = function (conversationId) {
+    if (!conversationId) {
+        return;
+    }
+    try {
+        var url = new URL(window.location.href);
+        url.searchParams.set('conversation_id', String(conversationId));
+        window.location.href = url.toString();
+    } catch (e) {
+        window.location.href = window.location.pathname + '?conversation_id=' + encodeURIComponent(String(conversationId));
+    }
+};
+
+window.xfooBackToMeetingPicker = function () {
+    try {
+        var url = new URL(window.location.href);
+        url.searchParams.delete('conversation_id');
+        window.location.href = url.toString();
+    } catch (e) {
+        window.location.href = window.location.pathname;
+    }
+};
+
 var xfwApplyMeetingContext = function (ctx, options) {
     options = options || {};
     if (!ctx || !ctx.conversationId) {
+        return;
+    }
+    if (!xfwHasWizardWorkspace()) {
+        xfwNavigateToConversation(ctx.conversationId);
         return;
     }
     var prevId = parseInt(window.XFW_WIZARD.conversationId, 10) || 0;
@@ -343,6 +449,10 @@ var xfwApplyMeetingContext = function (ctx, options) {
 };
 
 var xfwShowMeetingGate = function () {
+    if (typeof window.xfooBackToMeetingPicker === 'function') {
+        window.xfooBackToMeetingPicker();
+        return;
+    }
     xfwShowWizardWorkspace(false);
     if (typeof window.xfwInitMeetingPicker === 'function') {
         window.xfwInitMeetingPicker();
@@ -877,27 +987,23 @@ var xfwEnrichConversationContext = function (ctx) {
 
 var xfwResolveInitialContext = function () {
     var id = parseInt(window.XFW_WIZARD.conversationId, 10) || xfwReadUrlConversationId() || 0;
-    if (id > 0) {
-        var stored = xfwLoadStoredContext();
-        if (stored && parseInt(stored.conversationId, 10) === id) {
-            return stored;
-        }
-        return {
-            conversationId: id,
-            pairId: window.XFW_WIZARD.pairId || 0,
-            userRole: window.XFW_WIZARD.userRole || '',
-            employeeName: '—',
-            leaderName: '—',
-            scheduledAt: '',
-            status: 'scheduled',
-            meetingLink: '',
-        };
+    if (id < 1) {
+        return null;
     }
     var stored = xfwLoadStoredContext();
-    if (stored && stored.conversationId) {
+    if (stored && parseInt(stored.conversationId, 10) === id) {
         return stored;
     }
-    return null;
+    return {
+        conversationId: id,
+        pairId: window.XFW_WIZARD.pairId || 0,
+        userRole: window.XFW_WIZARD.userRole || '',
+        employeeName: '—',
+        leaderName: '—',
+        scheduledAt: '',
+        status: 'scheduled',
+        meetingLink: '',
+    };
 };
 
 var xfwInitMeetingGate = function () {
@@ -922,8 +1028,11 @@ var xfwInitMeetingGate = function () {
         xfwApplyMeetingContext(ctx, { resetStep: false });
         return;
     }
-    xfwShowWizardWorkspace(false);
-    window.xfwInitMeetingPicker();
+    if (!xfwHasWizardWorkspace()) {
+        window.xfwInitMeetingPicker();
+        return;
+    }
+    xfwShowMeetingGate();
 };
 
 /* xfwInitMeetingGate() is called from load-draft.php after all scripts are ready */

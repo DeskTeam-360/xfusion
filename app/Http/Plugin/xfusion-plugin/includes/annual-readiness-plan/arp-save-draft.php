@@ -142,6 +142,11 @@ var xarSaveDraft = function () {
     var laravelBackedSteps = {
         readiness: window.xarSaveReadinessDraft,
         priorities: window.xarSaveStrategicDraft,
+        ai_review: function () {
+            var ta = root.querySelector('#xar-leadership-context-card textarea[data-key="leadership_context"]');
+            var ctx = ta ? ta.value : (window.xarLeadershipContext || '');
+            return window.xarSaveLeadershipContext(ctx);
+        },
     };
 
     if (laravelBackedSteps[stepKey]) {
@@ -172,7 +177,7 @@ var xarSaveDraft = function () {
         return;
     }
 
-    if (['foundation', 'future_state', 'learning'].indexOf(stepKey) === -1) {
+    if (['foundation', 'future_state', 'learning'].indexOf(stepKey) === -1 && stepKey !== 'ai_review') {
         xarUpdateAutosaveLabel('Draft save for this step will use Laravel API (coming soon).', false);
         return;
     }

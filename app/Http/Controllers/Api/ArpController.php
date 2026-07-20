@@ -9,6 +9,7 @@ use App\Models\ArpStrategicPriority;
 use App\Models\ArpVersion;
 use App\Models\CompanyGroup;
 use App\Models\CompanyGroupDetail;
+use App\Services\ArpAiService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 
@@ -393,6 +394,96 @@ class ArpController extends Controller
         });
 
         return response()->json(['success' => true, 'saved_at' => now()->format('g:i A')]);
+    }
+
+    /** Step 6 — latest AI Readiness Review assessment + leadership context. */
+    public function getReadinessReview(Request $request, Arp $arp)
+    {
+        $userId = (int) $request->query('user_id');
+        if ($userId < 1 || ! $this->memberGroupIds($userId)->contains($arp->company_group_id)) {
+            return response()->json(['success' => false, 'message' => 'You do not have access to this ARP.'], 403);
+        }
+
+        $ai = app(ArpAiService::class);
+        $latest = $ai->latestAssessment($arp);
+        $assessment = $latest?->assessment;
+        $hasAssessment = is_array($assessment) && $assessment !== [];
+
+        return response()->json([
+            'success' => true,
+            'data' => [
+                'has_assessment' => $hasAssessment,
+                'assessment' => $hasAssessment ? $assessment : null,
+                'leadership_context' => (string) ($latest?->leadership_context ?? ''),
+                'insight_model' => $latest?->insight_model,
+                'generated_at' => $latest?->created_at?->toIso8601String(),
+                'can_edit' => $this->leadableGroupIds($userId)->contains($arp->company_group_id),
+            ],
+        ]);
+    }
+
+    /** Step 6 — generate (or regenerate) AI Readiness Review from Steps 1–5. */
+    public function generateReadinessReview(Request $request, Arp $arp)
+    {
+        $userId = (int) $request->input('user_id');
+        if ($userId < 1 || ! $this->leadableGroupIds($userId)->contains($arp->company_group_id)) {
+            return response()->json(['success' => false, 'message' => 'You do not lead this ARP\'s company group.'], 403);
+        }
+
+        $ai = app(ArpAiService::class);
+        if (! $ai->isConfigured()) {
+            return response()->json(['success' => false, 'message' => 'AI service is not configured (XFUSION_LLM_API_URL).'], 503);
+        }
+
+        $row = $ai->generateReadinessReview($arp);
+        if ($row === null) {
+            return response()->json([
+                'success' => false,
+                'message' => $ai->getLastError() ?? 'AI generation failed.',
+            ], 502);
+        }
+
+        $assessment = $row->assessment;
+
+        return response()->json([
+            'success' => true,
+            'data' => [
+                'has_assessment' => is_array($assessment) && $assessment !== [],
+                'assessment' => $assessment,
+                'leadership_context' => (string) ($row->leadership_context ?? ''),
+                'insight_model' => $row->insight_model,
+                'generated_at' => $row->created_at?->toIso8601String(),
+                'tokens_used' => (int) $row->tokens_used,
+                'cost_usd' => (float) $row->cost_usd,
+                'can_edit' => true,
+            ],
+        ]);
+    }
+
+    /** Step 6 — save leadership context (editable by group leaders). */
+    public function saveReadinessReviewContext(Request $request, Arp $arp)
+    {
+        $userId = (int) $request->input('user_id');
+        if ($userId < 1 || ! $this->leadableGroupIds($userId)->contains($arp->company_group_id)) {
+            return response()->json(['success' => false, 'message' => 'You do not lead this ARP\'s company group.'], 403);
+        }
+
+        $data = $request->validate([
+            'leadership_context' => 'nullable|string|max:2000',
+        ]);
+
+        $row = app(ArpAiService::class)->saveLeadershipContext(
+            $arp,
+            (string) ($data['leadership_context'] ?? '')
+        );
+
+        return response()->json([
+            'success' => true,
+            'data' => [
+                'leadership_context' => (string) ($row->leadership_context ?? ''),
+                'saved_at' => now()->format('g:i A'),
+            ],
+        ]);
     }
 
     /** Groups the user leads. */

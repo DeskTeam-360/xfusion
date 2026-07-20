@@ -5,8 +5,8 @@
  * Usage: [fusion_one_on_one_wizard]
  *        [fusion_one_on_one_wizard conversation_id="123"]
  *
- * Step 0 meeting picker → 6-step wizard. Save/load via GF (steps 3–4) and
- * Laravel API (step 5 commitments).
+ * Without conversation_id → meeting picker gate (like ARP arp_id picker).
+ * With conversation_id (shortcode attr or ?conversation_id=) → 6-step wizard.
  *
  * @package XFusion
  */
@@ -51,6 +51,10 @@ function xfusion_one_on_one_wizard_shortcode($atts = []): string
     }
     $userRole = sanitize_key($atts['user_role']);
 
+    if ($conversationId < 1) {
+        return xfoo_render_meeting_picker_gate();
+    }
+
     $panelFns = [
         xfoo_wizard_step_evidence_js(),
         xfoo_wizard_step_brief_js(),
@@ -83,8 +87,6 @@ function xfusion_one_on_one_wizard_shortcode($atts = []): string
         'conversationConfigured' => xfoo_conversation_gf_is_configured(),
     ];
 
-    $workspaceHidden = $conversationId < 1 ? ' xfw-hidden' : '';
-
     ob_start();
     ?>
 <div id="xfoo-wiz" data-conversation-id="<?php echo esc_attr((string) $conversationId); ?>"<?php echo $userRole !== '' ? ' data-user-role="' . esc_attr($userRole) . '"' : ''; ?>>
@@ -95,34 +97,14 @@ function xfusion_one_on_one_wizard_shortcode($atts = []): string
                 <h1>1-ON-1 ALIGNMENT CAPTURE&trade; INTERACTIVE TOOL</h1>
                 <p>Continuous Alignment Process</p>
             </div>
-            <div class="xfw-header-actions xfw-wizard-only<?php echo esc_attr($workspaceHidden); ?>">
+            <div class="xfw-header-actions xfw-wizard-only">
                 <button class="xfw-btn xfw-btn-outline-white" id="xfw-save-draft">Save Draft</button>
                 <button class="xfw-btn xfw-btn-accent" id="xfw-next-step">Next Step &rarr;</button>
             </div>
         </div>
     </div>
 
-    <div id="xfw-meeting-gate" class="xfw-meeting-gate<?php echo $conversationId > 0 ? ' xfw-hidden' : ''; ?>">
-        <div class="xfw-card xfw-gate-card">
-            <h2 class="xfw-section-title" style="margin-top:0">Select your 1-on-1 meeting</h2>
-            <p class="xfw-section-desc">Open an existing meeting from <strong>Your meetings</strong>, or schedule a new one if you are a leader.</p>
-            <div class="xfw-gate-columns">
-                <div class="xfw-gate-col xfw-gate-col-schedule">
-                    <h3 class="xfw-gate-col-title">Schedule a new meeting</h3>
-                    <p class="xfw-muted xfw-gate-col-desc">Leaders: select a company group and team member, then set date and time.</p>
-                    <div id="xfw-gate-pairs"></div>
-                    <div id="xfw-gate-conversations" class="xfw-hidden"></div>
-                </div>
-                <div class="xfw-gate-col xfw-gate-col-meetings">
-                    <h3 class="xfw-gate-col-title">Your meetings</h3>
-                    <p class="xfw-muted xfw-gate-col-desc">All scheduled and past meetings across your company groups.</p>
-                    <div id="xfw-gate-all-meetings"></div>
-                </div>
-            </div>
-        </div>
-    </div>
-
-    <div id="xfw-wizard-workspace" class="<?php echo $conversationId > 0 ? '' : 'xfw-hidden'; ?>">
+    <div id="xfw-wizard-workspace">
 
         <div class="xfw-steps">
             <div class="xfw-steps-inner" id="xfw-steps-inner"></div>
@@ -135,7 +117,7 @@ function xfusion_one_on_one_wizard_shortcode($atts = []): string
                 <div class="xfw-card">
                     <div class="xfw-row" style="justify-content:space-between;align-items:flex-start;margin-bottom:.5rem">
                         <h4 style="margin:0">Meeting Information</h4>
-                        <a href="#" class="xfw-link" id="xfw-change-meeting" style="font-size:.8rem">Change</a>
+                        <a href="#" class="xfw-link" id="xfw-change-meeting" style="font-size:.8rem">Change meeting</a>
                     </div>
                     <dl class="xfw-dl">
                         <dt>Employee</dt><dd id="xfw-si-employee">&mdash;</dd>
