@@ -5,7 +5,6 @@ namespace App\Services;
 use App\Models\Arp;
 use App\Models\ArpAiAssessment;
 use Illuminate\Http\Client\RequestException;
-use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Log;
 
 class ArpAiService
@@ -19,10 +18,7 @@ class ArpAiService
 
     public function isConfigured(): bool
     {
-        $url = (string) config('xfusion-llm.api_url');
-        $key = (string) config('xfusion-llm.api_key');
-
-        return $url !== '' && $key !== '';
+        return app(XfusionLlmHttpClient::class)->isConfigured();
     }
 
     public function latestAssessment(Arp $arp): ?ArpAiAssessment
@@ -46,7 +42,7 @@ class ArpAiService
             return null;
         }
 
-        if ((string) config('xfusion-llm.api_key') === '') {
+        if (app(XfusionLlmHttpClient::class)->apiKey() === '') {
             $this->lastError = 'XFUSION_LLM_API_KEY is not configured in Laravel .env. It must match API_KEY on the Xfusion-llm server.';
 
             return null;
@@ -84,8 +80,14 @@ class ArpAiService
             ]);
         } catch (RequestException $e) {
             $detail = $e->response?->json('detail') ?? $e->response?->body() ?? $e->getMessage();
-            if ($e->response?->status() === 401 || str_contains((string) $detail, 'Bearer token')) {
-                $detail = 'LLM API authentication failed. Set XFUSION_LLM_API_KEY in Laravel .env to the same value as API_KEY on the Xfusion-llm server, then run php artisan config:clear.';
+            $status = (int) ($e->response?->status() ?? 0);
+            $llmUrl = app(XfusionLlmHttpClient::class)->apiUrl();
+
+            if ($status === 401 || str_contains((string) $detail, 'Bearer token')) {
+                $detail = "LLM returned HTTP {$status} from {$llmUrl}/api/v1/arp/readiness-review. "
+                    .'Check: (1) XFUSION_LLM_API_KEY matches API_KEY in xfusion-llm .env, '
+                    .'(2) LLM server git pull + restart after ARP deploy, '
+                    .'(3) run php artisan xfusion:llm-probe on this server.';
             }
             $this->lastError = is_string($detail) ? $detail : json_encode($detail);
             Log::warning('[xfusion-llm] arp readiness-review failed', [
@@ -123,17 +125,6 @@ class ArpAiService
 
     private function client()
     {
-        $base = rtrim((string) config('xfusion-llm.api_url'), '/');
-        $token = (string) config('xfusion-llm.api_key');
-
-        $pending = Http::baseUrl($base)
-            ->timeout((int) config('xfusion-llm.timeout_seconds', 60))
-            ->acceptJson();
-
-        if ($token !== '') {
-            $pending = $pending->withToken($token);
-        }
-
-        return $pending;
+        return app(XfusionLlmHttpClient::class)->client();
     }
 }

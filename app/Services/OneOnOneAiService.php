@@ -241,16 +241,7 @@ class OneOnOneAiService
 
     private function client(): \Illuminate\Http\Client\PendingRequest
     {
-        $request = Http::baseUrl(config('xfusion-llm.api_url'))
-            ->timeout((int) config('xfusion-llm.timeout_seconds', 60))
-            ->acceptJson();
-
-        $key = config('xfusion-llm.api_key');
-        if (is_string($key) && $key !== '') {
-            $request = $request->withToken($key);
-        }
-
-        return $request;
+        return app(XfusionLlmHttpClient::class)->client();
     }
 
     /**
