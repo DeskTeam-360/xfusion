@@ -1057,9 +1057,6 @@ var loadWizardEvidence = function (force) {
 
 var initEvidenceStep = function () {
     xfwBindEvidenceAccordions();
-    if (typeof initGenerateBriefButton === 'function') {
-        initGenerateBriefButton();
-    }
 };
 
 window.xfwResetEvidenceCache = xfwResetEvidenceCache;

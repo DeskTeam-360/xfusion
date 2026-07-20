@@ -1,6 +1,6 @@
 <?php
 /**
- * Step 5 — Generate AI Meeting Synthesis™ (post-meeting record).
+ * Step 6 — Generate AI Meeting Synthesis™ (post-meeting record).
  *
  * @package XFusion
  */
@@ -242,7 +242,7 @@ var xfwSynthesisFollowupBody = function (raw) {
 
 var xfwRenderSynthesisPanel = function (synthesis) {
     if (!synthesis || typeof synthesis !== 'object') {
-        return '<div class="xfw-banner warn">ℹ️ <span>No AI Meeting Synthesis has been generated yet. Return to Step 5 and click <b>Generate AI Meeting Synthesis™</b>.</span></div>';
+        return '<div class="xfw-banner warn">ℹ️ <span>No AI Meeting Synthesis has been generated yet. Click <b>Generate AI Meeting Synthesis™</b> above.</span></div>';
     }
 
     var coaching = xfwSynthesisNormalizeSection(synthesis.suggested_coaching_topics);
@@ -437,6 +437,9 @@ var xfwRenderSynthesisStep = function () {
 var initSynthesisStep = function () {
     xfwEnsureSynthesisModal();
     xfwRenderSynthesisStep();
+    if (typeof initGenerateSynthesisButton === 'function') {
+        initGenerateSynthesisButton();
+    }
 
     if (!root.dataset.synthesisModalBound) {
         root.dataset.synthesisModalBound = '1';
@@ -559,7 +562,7 @@ var generateWizardSynthesis = function () {
                 commitments: xfwCollectSynthesisCommitments(),
             };
 
-            console.log('[XFW Step 5] generate synthesis request', {
+            console.log('[XFW Step 6] generate synthesis request', {
                 conversation_id: cid,
                 payload: synthesisPayload,
             });
@@ -599,12 +602,12 @@ var generateWizardSynthesis = function () {
         window.xfwSynthesisCache.loaded = true;
         window.xfwSynthesisCache.conversationId = cid;
 
-        console.log('[XFW Step 5] AI Meeting Synthesis response', json.data.synthesis, json.data.meta || {});
+        console.log('[XFW Step 6] AI Meeting Synthesis response', json.data.synthesis, json.data.meta || {});
         if (json.data.meta && json.data.meta.llm_fallback) {
-            console.warn('[XFW Step 5] LLM unavailable, used context-composer fallback', json.data.meta.llm_error || '');
+            console.warn('[XFW Step 6] LLM unavailable, used context-composer fallback', json.data.meta.llm_error || '');
         }
         if (json.data.debug_payload) {
-            console.log('[XFW Step 5] synthesis payload → LLM (from server)', json.data.debug_payload);
+            console.log('[XFW Step 6] synthesis payload → LLM (from server)', json.data.debug_payload);
         }
 
         if (typeof STEPS !== 'undefined' && STEPS[current] && STEPS[current].key === 'synthesis') {
@@ -615,7 +618,7 @@ var generateWizardSynthesis = function () {
             var fallbackNote = (json.data.meta && json.data.meta.llm_fallback)
                 ? ' (offline composer — LLM unavailable)'
                 : '';
-            statusEl.textContent = '\u2713 AI Meeting Synthesis generated' + fallbackNote + '. Continue to Step 6 to review.';
+            statusEl.textContent = '\u2713 AI Meeting Synthesis generated' + fallbackNote + '. Review below.';
             statusEl.style.color = '#16a34a';
         }
         return json.data.synthesis;

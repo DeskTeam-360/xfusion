@@ -1,5 +1,7 @@
 # FUSION Operating System™ — Technical Specification
 
+> **Out of date for ARP & 1-on-1 wizards.** Current behavior: [README.md](./README.md) → [api/](./api/README.md) and [ai-insights/](./ai-insights/README.md).
+
 **Status legend:** ✅ Implemented & verified in this repo · 🚧 Partially implemented · 📋 Planned (schema exists, logic not built)
 
 This document covers all five FUSION components (ARP, QBR, 1-on-1, 360, ARR) plus the

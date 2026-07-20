@@ -47,10 +47,6 @@ evidence: function () {
         '<div class="xfw-banner">ℹ️ <span>This evidence is read-only. It is generated from across the platform and cannot be edited.</span></div>' +
         '<div class="xfw-card" style="padding:0">' +
         '<div class="xfw-evidence">' + accordion + '</div>' +
-        '<div class="xfw-evidence-generate">' +
-        '<button type="button" class="xfw-btn xfw-btn-accent" id="xfw-generate-brief">Generate AI Meeting Brief\u2122</button>' +
-        '<p class="xfw-muted" id="xfw-generate-brief-status" style="margin-top:.5rem"></p>' +
-        '</div>' +
         '</div>' +
         '<p class="xfw-muted xfw-evidence-footer">&#10003; Click any section above to view evidence details</p>';
 }

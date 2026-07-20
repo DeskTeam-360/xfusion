@@ -66,7 +66,7 @@ var xfwBriefCard = function (sectionKey, sectionData) {
 
 var xfwRenderBriefPanel = function (brief) {
     if (!brief || typeof brief !== 'object') {
-        return '<div class="xfw-banner warn">ℹ️ <span>No AI Meeting Brief has been generated yet. Return to Step 1 and click <b>Generate AI Meeting Brief™</b>.</span></div>';
+        return '<div class="xfw-banner warn">ℹ️ <span>No AI Meeting Brief has been generated yet. Click <b>Generate AI Meeting Brief™</b> above.</span></div>';
     }
 
     var discussion = xfwBriefNormalizeSection(brief.suggested_discussion_areas);
@@ -424,6 +424,9 @@ var xfwRenderBriefStep = function () {
 var initBriefStep = function () {
     xfwEnsureBriefModal();
     xfwRenderBriefStep();
+    if (typeof initGenerateBriefButton === 'function') {
+        initGenerateBriefButton();
+    }
 
     if (!root.dataset.briefModalBound) {
         root.dataset.briefModalBound = '1';
@@ -442,7 +445,7 @@ var xfwFetchBriefBundlePreview = function (conversationId) {
         .then(function (res) { return res.json(); })
         .then(function (json) {
             if (json && json.success && json.data) {
-                console.log('[XFW Step 1] evidence_context → LLM (brief bundle)', json.data);
+                console.log('[XFW Step 2] evidence_context → LLM (brief bundle)', json.data);
                 return json.data;
             }
             return null;
@@ -497,11 +500,16 @@ var generateWizardBrief = function () {
             window.xfwBriefCache.loaded = true;
             window.xfwBriefCache.conversationId = cid;
             if (json.data.evidence_context) {
-                console.log('[XFW Step 1] evidence_context (sent with generate)', json.data.evidence_context);
+                console.log('[XFW Step 2] evidence_context (sent with generate)', json.data.evidence_context);
             }
-            console.log('[XFW Step 1] AI Meeting Brief response', json.data.brief, json.data.meta || {});
+            console.log('[XFW Step 2] AI Meeting Brief response', json.data.brief, json.data.meta || {});
+
+            if (typeof STEPS !== 'undefined' && STEPS[current] && STEPS[current].key === 'brief' && typeof xfwRenderBriefStep === 'function') {
+                xfwRenderBriefStep();
+            }
+
             if (statusEl) {
-                statusEl.textContent = '\u2713 AI Meeting Brief generated. Continue to Step 2 to review.';
+                statusEl.textContent = '\u2713 AI Meeting Brief generated. Review below.';
                 statusEl.style.color = '#16a34a';
             }
             return json.data.brief;

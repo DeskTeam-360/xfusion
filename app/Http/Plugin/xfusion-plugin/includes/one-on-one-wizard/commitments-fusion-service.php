@@ -537,9 +537,6 @@ var collectCommitmentRows = function (role) {
 };
 
 var initCommitmentsStep = function () {
-    if (typeof initGenerateSynthesisButton === 'function') {
-        initGenerateSynthesisButton();
-    }
     if (window.xfwCommitmentsCache && window.xfwCommitmentsCache.loaded && window.xfwCommitmentsCache.data) {
         applyCommitmentsData(window.xfwCommitmentsCache.data, true);
         return;

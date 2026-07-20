@@ -1,7 +1,8 @@
 # AI Insights — Planner Overview
 
 Non-technical reference for product planning, UAT, and handoff to planning agents.  
-For JSON schemas and code paths, see the [technical appendix](./README.md).
+For JSON schemas and code paths, see the [technical appendix](./README.md).  
+For REST endpoints, see [../api/README.md](../api/README.md).
 
 ---
 
@@ -38,7 +39,7 @@ Prepare the leader and employee **before** the 1-on-1 conversation with coaching
 
 ## When it runs
 
-User completes **Step 1 (Continuous Evidence)**, then clicks **Generate AI Meeting Brief** on Step 1 or views results on **Step 2**.
+User reviews **Step 1 (Continuous Evidence)**, opens **Step 2**, then clicks **Generate AI Meeting Brief**.
 
 ## What must exist first (inputs)
 
@@ -95,15 +96,15 @@ Summarize **this meeting only** after it happened: what was discussed, alignment
 
 ## When it runs
 
-After the meeting, user reaches **Step 6** and triggers synthesis generate (typically post-meeting workflow).
+After the meeting, user opens **Step 6** and clicks **Generate AI Meeting Synthesis** (commitments should be saved on Step 5 first).
 
 ## What must exist first (inputs)
 
 | Input | Source | Required? |
 |-------|--------|-----------|
-| Leader + employee preparations | This conversation’s prep step | Expected |
-| Meeting notes by section | Notes captured during/after meeting | Expected |
-| Commitments | Shared commitments from Step 5 | Expected |
+| Leader + employee preparations | This conversation — saved to Laravel (`wp_fusion_one_on_one_preparations`) | Expected |
+| Meeting notes by section | Saved to Laravel (`wp_fusion_one_on_one_notes`) | Expected |
+| Commitments | Step 5 — Laravel (`wp_fusion_one_on_one_commitments`) | Expected |
 
 **Scope rule:** Only **current conversation** data — not other meetings’ prep or notes.
 
@@ -153,13 +154,13 @@ User opens **ARP Step 6** and clicks **Generate AI Insights** (or **Regenerate**
 
 ## What must exist first (inputs)
 
-| Step | Human content | Sent to AI? |
-|------|---------------|-------------|
-| 1 Organizational Foundation | Mission, vision, values, narrative, environment | Yes |
-| 2 Future State | Future narrative and desired experiences | Yes |
-| 3 Organizational Readiness | Readiness priority list (COR, drivers, owners) | Yes |
-| 4 Strategic Priorities | Strategic priority list linked to readiness | Yes |
-| 5 Organizational Learning | Assumptions, risks, opportunities, learning objectives | Yes |
+| Step | Human content | Storage (Laravel) |
+|------|---------------|-------------------|
+| 1 Organizational Foundation | Mission, vision, values, narrative, environment | `wp_fusion_arps` |
+| 2 Future State | Future narrative and desired experiences | `wp_fusion_arp_future_states` |
+| 3 Organizational Readiness | Readiness priority list | `wp_fusion_arp_readiness_priorities` |
+| 4 Strategic Priorities | Strategic priority list | `wp_fusion_arp_strategic_priorities` |
+| 5 Organizational Learning | Assumptions, risks, opportunities, objectives | `wp_fusion_arp_learnings` |
 
 Empty steps are allowed — AI scores conservatively and states limitations.
 
@@ -205,7 +206,7 @@ Empty steps are allowed — AI scores conservatively and states limitations.
 ## Known gaps / future work
 
 - No admin UI for ARP AI version history  
-- ARP mission/vision may duplicate GF Step 1 vs `wp_fusion_arps` columns — planners should confirm single source of truth  
+- `wp_fusion_evidence_log` writes on ARP publish / AI generate — no cross-component UI yet  
 
 ---
 
@@ -232,8 +233,8 @@ Empty steps are allowed — AI scores conservatively and states limitations.
 |------------|-------------------|
 | LLM server down | Generate fails with user-visible error |
 | Wrong API key (Laravel ↔ LLM) | Auth error on generate |
-| GF forms not configured (ARP 1, 2, 5) | Partial or empty plan context |
-| Steps 3–4 not saved (ARP) | Weaker readiness / strategic analysis |
+| ARP Steps 1–5 not saved in wizard | Partial or empty plan context for AI |
+| Steps 3–4 empty (ARP) | Weaker readiness / strategic analysis |
 
 ---
 

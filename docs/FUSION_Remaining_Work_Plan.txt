@@ -1,29 +1,27 @@
 FUSION OPERATING SYSTEM - REMAINING WORK PLAN
 ==============================================
-(companion to docs/FUSION_Technical_Specification.md)
+(companion to docs/FUSION_Technical_Specification.md — may lag; see docs/README.md)
 
 
-1. ARP - FINISH THIS FIRST (closest to done)
+1. ARP - Laravel SoT DONE; polish remaining
 ---------------------------------------------
-[ ] Finish wiring the remaining wizard steps in WordPress (not all 7 steps
-    are fully wired yet)
-[ ] ARCHITECTURE DECISION NEEDED: keep ARP WordPress-only, or move it to
-    the Laravel-as-source-of-truth pattern used by 1-on-1?
-    - If moving to Laravel:
-        [ ] Create Arp Model
-        [ ] Create ArpController
-        [ ] Add routes: /api/v1/arps/*
-        [ ] Migrate existing data out of GF/WP tables
-    - If staying WordPress-only:
-        [ ] Document the reason
-        [ ] Build a read-only bridge so Laravel dashboards / AI context
-            assembly can still reach ARP data
-[ ] Diff wp_fusion_arp_wizard.sql against wp_fusion_core.sql's ARP tables
-    to confirm there is no schema drift before writing any Laravel Model
-    against them
+[x] Move ARP wizard save/load to Laravel (/api/v1/arps/*) — see docs/api/arp.md
+[x] ArpController, models, AI Readiness Review Step 6
+[ ] ARP admin UI for AI assessment history (data in DB + wizard only today)
+[ ] Optional Eloquent relation helpers (latestAiAssessment, FusionEvidenceLog relations)
+[ ] UAT all 7 wizard steps end-to-end on sandbox after deploy
 
 
-2. QBR (Quarterly Business Review) - NOT STARTED
+2. 1-on-1 - Laravel wizard draft DONE; polish remaining
+---------------------------------------------
+[x] Wizard prep + conversation notes → Laravel wizard-draft/* (not Gravity Forms)
+[x] LLM meeting-brief + meeting-synthesis endpoints (xfusion-llm)
+[x] Generate Brief on Step 2; Generate Synthesis on Step 6 (UI moved)
+[ ] Wire Step 1 evidence to full Laravel aggregation (still reads GF/scoring; GET .../evidence exists)
+[ ] Add behavioral_driver column to wp_fusion_one_on_one_commitments (see spec section 3.1)
+
+
+3. QBR (Quarterly Business Review) - NOT STARTED
 ---------------------------------------------
 [ ] Model + Controller + routes (/api/v1/qbr/*)
 [ ] Evidence Aggregation Service
@@ -35,7 +33,7 @@ FUSION OPERATING SYSTEM - REMAINING WORK PLAN
 [ ] WordPress shortcode: [fusion_qbr]
 
 
-3. 360 REVIEW - NOT STARTED (needs >= 1 year of 1-on-1 data as evidence)
+4. 360 REVIEW - NOT STARTED (needs >= 1 year of 1-on-1 data as evidence)
 ---------------------------------------------
 [ ] Model + Controller + routes
 [ ] build360Snapshot() - aggregates a full year of 1-on-1 AI syntheses
@@ -44,7 +42,7 @@ FUSION OPERATING SYSTEM - REMAINING WORK PLAN
 [ ] Python endpoint: development-synthesis
 
 
-4. ARR (Annual Readiness Review) - NOT STARTED (depends on all of the above)
+5. ARR (Annual Readiness Review) - NOT STARTED (depends on all of the above)
 ---------------------------------------------
 [ ] Model + Controller + routes
 [ ] Cross-component aggregation: ARP + QBR + 1-on-1 + 360
@@ -52,7 +50,7 @@ FUSION OPERATING SYSTEM - REMAINING WORK PLAN
 [ ] Python endpoint: strategic-renewal-synthesis
 
 
-5. DASHBOARDS - LAST (needs all component data available first)
+6. DASHBOARDS - LAST (needs all component data available first)
 ---------------------------------------------
 [ ] Individual Dashboard shortcode
 [ ] Leader Dashboard shortcode
@@ -61,23 +59,13 @@ FUSION OPERATING SYSTEM - REMAINING WORK PLAN
 
 PARALLEL WORK (not blocked by the order above)
 ---------------------------------------------
-[ ] Python endpoint: one-on-one/meeting-brief
-    (Laravel side already built and calling this — just needs the Python
-    endpoint to exist)
-[ ] Python endpoint: one-on-one/meeting-synthesis
-    (same as above)
-[ ] Wire 1-on-1 wizard Step 1 (Evidence) to a real endpoint instead of
-    static dummy data
-[ ] Add behavioral_driver column to
-    wp_fusion_one_on_one_commitments (migration needed - see spec doc
-    section 3.1 for the exact ALTER TABLE statement)
+(none — brief/synthesis LLM endpoints and wizard-draft cutover are done; see sections 1–2)
 
 
 STATUS SUMMARY
 ---------------------------------------------
-1-on-1 Alignment Capture   : DONE (schema + Laravel API + WordPress UI)
-ARP                        : IN PROGRESS (WordPress wizard partial, zero
-                              Laravel API)
+1-on-1 Alignment Capture   : DONE (Laravel API + wizard; Step 1 evidence partial)
+ARP                        : DONE (Laravel SoT + AI Step 6; admin AI history pending)
 QBR                        : NOT STARTED (schema only)
 360 Review                 : NOT STARTED (schema only)
 ARR                        : NOT STARTED (schema only)

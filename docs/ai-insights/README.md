@@ -1,29 +1,47 @@
-# AI Insight JSON Schemas
+# AI Insights
 
-Reference for data structures across all FUSION AI insight features.
+JSON schemas, LLM contracts, and product planning for FUSION AI-generated insights.
 
-| Audience | Document |
-|----------|----------|
-| **Product / planning** | [planner-overview.md](./planner-overview.md) — flows, UAT, acceptance criteria (non-technical) |
-| **Engineering** | Feature docs below — JSON schemas and code references |
+For REST endpoints (save/load/generate from WordPress), see **[../api/](../api/README.md)**.
 
-| Document | Feature | LLM endpoint | DB table |
-|----------|---------|--------------|----------|
-| [one-on-one-meeting-brief.md](./one-on-one-meeting-brief.md) | 1-on-1 AI Meeting Brief™ (Step 2) | `POST /api/v1/one-on-one/meeting-brief` | `wp_fusion_one_on_one_ai_briefs` |
-| [one-on-one-meeting-synthesis.md](./one-on-one-meeting-synthesis.md) | 1-on-1 AI Meeting Synthesis™ (Step 6) | `POST /api/v1/one-on-one/meeting-synthesis` | `wp_fusion_one_on_one_ai_syntheses` |
-| [arp-readiness-review.md](./arp-readiness-review.md) | ARP AI Readiness Review™ (Step 6) | `POST /api/v1/arp/readiness-review` | `wp_fusion_arp_ai_assessments` |
+## Audience
 
-## LLM configuration (Laravel)
+| Document | Who |
+|----------|-----|
+| [planner-overview.md](./planner-overview.md) | Product, UAT, planning agents — flows & acceptance criteria |
+| Feature docs below | Engineering — request/response JSON, normalization, UI mapping |
+
+## Features
+
+| Document | Product | Wizard | Generate button | LLM endpoint | DB table |
+|----------|---------|--------|-----------------|--------------|----------|
+| [one-on-one-meeting-brief.md](./one-on-one-meeting-brief.md) | 1-on-1 AI Meeting Brief™ | Step 2 | **Step 2** | `POST /api/v1/one-on-one/meeting-brief` | `wp_fusion_one_on_one_ai_briefs` |
+| [one-on-one-meeting-synthesis.md](./one-on-one-meeting-synthesis.md) | 1-on-1 AI Meeting Synthesis™ | Step 6 | **Step 6** | `POST /api/v1/one-on-one/meeting-synthesis` | `wp_fusion_one_on_one_ai_syntheses` |
+| [arp-readiness-review.md](./arp-readiness-review.md) | ARP AI Readiness Review™ | Step 6 | Step 6 | `POST /api/v1/arp/readiness-review` | `wp_fusion_arp_ai_assessments` |
+
+## Laravel → LLM configuration
 
 ```env
 XFUSION_LLM_API_URL=http://<llm-host>:8000
 XFUSION_LLM_API_KEY=<same as API_KEY in xfusion-llm .env>
 ```
 
-Diagnostics: `php artisan xfusion:llm-probe`
+Diagnostics: `php artisan xfusion:llm-probe`  
+Auth details: [../api/authentication.md](../api/authentication.md)
 
-## wp-admin dashboards
+## wp-admin history
 
-- **1-on-1 Brief History** — `xfusion-one-on-one-briefs-admin.php`
-- **1-on-1 Synthesis History** — `xfusion-one-on-one-synthesis-admin.php`
-- **ARP AI** — no admin UI yet (see ARP doc)
+| Feature | Admin page |
+|---------|------------|
+| 1-on-1 Brief | XFusion LLM → **1-on-1 Brief History** |
+| 1-on-1 Synthesis | XFusion LLM → **1-on-1 Synthesis History** |
+| ARP Readiness Review | **Not yet** — data in DB + wizard only |
+
+## Related services (Laravel)
+
+| Feature | Service classes |
+|---------|-----------------|
+| 1-on-1 Brief / Synthesis | `OneOnOneAiService`, `MeetingBriefFromEvidenceService`, `MeetingSynthesisFromContextService` |
+| ARP Review | `ArpAiService`, `ArpPlanService`, `ArpReadinessReviewNormalizer`, `ArpEvidenceService` |
+
+Prompts live in the **xfusion-llm** repo under `prompts/`.

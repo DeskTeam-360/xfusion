@@ -5,8 +5,10 @@ Data structure reference for generating, storing, and displaying the **AI Meetin
 ## Data flow
 
 ```
-WordPress Step 1 (evidence) → Laravel OneOnOneAiService → Xfusion-llm POST /api/v1/one-on-one/meeting-brief
-→ normalize → wp_fusion_one_on_one_ai_briefs.brief → Wizard Step 2 + wp-admin Brief History
+WordPress Step 1 (evidence, read-only)
+→ user clicks Generate on Step 2
+→ Laravel OneOnOneAiService → Xfusion-llm POST /api/v1/one-on-one/meeting-brief
+→ normalize → wp_fusion_one_on_one_ai_briefs.brief → Step 2 panel + wp-admin Brief History
 ```
 
 | Layer | Location |
@@ -16,7 +18,7 @@ WordPress Step 1 (evidence) → Laravel OneOnOneAiService → Xfusion-llm POST /
 | System prompt | `Xfusion-llm/prompts/one_on_one_brief_system.md` |
 | DB table | `wp_fusion_one_on_one_ai_briefs` |
 | Admin dashboard | WP Admin → XFusion LLM → **1-on-1 Brief History** |
-| Wizard UI | `steps/step-2-brief.php`, `brief-wizard-service.php` |
+| Wizard UI | `steps/step-2-brief.php` (Generate button), `brief-wizard-service.php` |
 
 ---
 

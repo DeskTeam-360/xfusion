@@ -5,11 +5,20 @@ Data structure reference for generating, storing, and displaying **AI Meeting Sy
 ## Data flow
 
 ```
-WordPress wizard (prep + notes + commitments) → Laravel OneOnOneAiService
-→ Xfusion-llm POST /api/v1/one-on-one/meeting-synthesis
+WordPress wizard (prep + notes from Laravel DB, commitments)
+→ user clicks Generate on Step 6
+→ Laravel OneOnOneAiService → Xfusion-llm POST /api/v1/one-on-one/meeting-synthesis
 → normalize + commitment merge → wp_fusion_one_on_one_ai_syntheses.synthesis
-→ Wizard Step 6 + wp-admin Synthesis History
+→ Step 6 panel + wp-admin Synthesis History
 ```
+
+**Input storage (Laravel, not Gravity Forms):**
+
+| Input | API / table |
+|-------|-------------|
+| Preparations | `POST .../wizard-draft/preparation` → `wp_fusion_one_on_one_preparations` |
+| Meeting notes | `POST .../wizard-draft/conversation-notes` → `wp_fusion_one_on_one_notes` |
+| Commitments | `POST .../commitments` → `wp_fusion_one_on_one_commitments` |
 
 | Layer | Location |
 |-------|----------|
@@ -18,7 +27,7 @@ WordPress wizard (prep + notes + commitments) → Laravel OneOnOneAiService
 | System prompt | `Xfusion-llm/prompts/one_on_one_synthesis_system.md` |
 | DB table | `wp_fusion_one_on_one_ai_syntheses` |
 | Admin dashboard | WP Admin → XFusion LLM → **1-on-1 Synthesis History** |
-| Wizard UI | `steps/step-6-synthesis.php` |
+| Wizard UI | `steps/step-6-synthesis.php` (Generate button), `synthesis-wizard-service.php` |
 
 ---
 

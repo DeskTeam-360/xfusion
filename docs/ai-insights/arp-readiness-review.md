@@ -5,17 +5,18 @@ Data structure reference for generating, storing, and displaying **AI Readiness 
 ## Data flow
 
 ```
-WordPress ARP Steps 1–5 → Laravel ArpPlanContextService (assemble plan_context)
+WordPress ARP Steps 1–5 (Laravel DB) → ArpPlanService (assemble plan_context)
 → ArpAiService → Xfusion-llm POST /api/v1/arp/readiness-review
 → ArpReadinessReviewNormalizer → wp_fusion_arp_ai_assessments.assessment
 → Wizard Step 6 UI (6.1–6.6) + leadership_context (editable)
+→ ArpEvidenceService → wp_fusion_evidence_log (on generate)
 ```
 
 | Layer | Location |
 |-------|----------|
 | LLM endpoint | `POST /api/v1/arp/readiness-review` |
 | Laravel service | `App\Services\ArpAiService::generateReadinessReview()` |
-| Context builder | `App\Services\ArpPlanContextService::build()` |
+| Context builder | `App\Services\ArpPlanService::aiPlanContext()` |
 | Normalizer | `App\Services\ArpReadinessReviewNormalizer` |
 | System prompt | `Xfusion-llm/prompts/arp_readiness_review_system.md` |
 | DB table | `wp_fusion_arp_ai_assessments` |
@@ -26,11 +27,15 @@ WordPress ARP Steps 1–5 → Laravel ArpPlanContextService (assemble plan_conte
 
 ## Laravel API (WordPress bridge)
 
+Primary prefix: **`/api/v1/arps/{arp}/...`** (alias: `/api/v1/arp/...`)
+
 | Method | Route | Purpose |
 |--------|-------|---------|
-| GET | `/api/v1/arp/{arp}/readiness-review` | Load assessment + leadership context |
-| POST | `/api/v1/arp/{arp}/readiness-review/generate` | Generate / regenerate AI |
-| PATCH | `/api/v1/arp/{arp}/readiness-review/context` | Save leadership context |
+| GET | `/readiness-review` | Load assessment + leadership context |
+| POST | `/readiness-review/generate` | Generate / regenerate AI |
+| PATCH | `/readiness-review/context` | Save leadership context |
+
+Full ARP API: [../api/arp.md](../api/arp.md)
 
 WordPress AJAX: `xfarp_ai_review_load`, `xfarp_ai_review_generate`, `xfarp_ai_review_save_context`
 
@@ -56,7 +61,7 @@ WordPress AJAX: `xfarp_ai_review_load`, `xfarp_ai_review_generate`, `xfarp_ai_re
 
 ### `plan_context` — Steps 1–5 sources
 
-Built by `ArpPlanContextService`:
+Built by `ArpPlanService` from Laravel tables only:
 
 ```json
 {
@@ -66,7 +71,7 @@ Built by `ArpPlanContextService`:
     "year": 2026,
     "status": "draft",
     "company_name": "Operations Group",
-    "mission": "From wp_fusion_arps or GF Step 1",
+    "mission": "From wp_fusion_arps foundation columns",
     "vision": "..."
   },
   "foundation": {
