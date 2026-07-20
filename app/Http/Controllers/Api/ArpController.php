@@ -432,7 +432,11 @@ class ArpController extends Controller
 
         $ai = app(ArpAiService::class);
         if (! $ai->isConfigured()) {
-            return response()->json(['success' => false, 'message' => 'AI service is not configured (XFUSION_LLM_API_URL).'], 503);
+            return response()->json([
+                'success' => false,
+                'message' => $ai->getLastError()
+                    ?? 'AI service is not configured. Set XFUSION_LLM_API_URL and XFUSION_LLM_API_KEY in Laravel .env (key must match Xfusion-llm API_KEY).',
+            ], 503);
         }
 
         $row = $ai->generateReadinessReview($arp);

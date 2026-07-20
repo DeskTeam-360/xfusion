@@ -19,7 +19,10 @@ class ArpAiService
 
     public function isConfigured(): bool
     {
-        return config('xfusion-llm.api_url') !== '';
+        $url = (string) config('xfusion-llm.api_url');
+        $key = (string) config('xfusion-llm.api_key');
+
+        return $url !== '' && $key !== '';
     }
 
     public function latestAssessment(Arp $arp): ?ArpAiAssessment
@@ -37,8 +40,14 @@ class ArpAiService
     {
         $this->lastError = null;
 
-        if (! $this->isConfigured()) {
-            $this->lastError = 'XFUSION_LLM_API_URL is not configured.';
+        if ((string) config('xfusion-llm.api_url') === '') {
+            $this->lastError = 'XFUSION_LLM_API_URL is not configured in Laravel .env.';
+
+            return null;
+        }
+
+        if ((string) config('xfusion-llm.api_key') === '') {
+            $this->lastError = 'XFUSION_LLM_API_KEY is not configured in Laravel .env. It must match API_KEY on the Xfusion-llm server.';
 
             return null;
         }
@@ -74,7 +83,11 @@ class ArpAiService
                 'cost_usd' => (float) ($body['cost_usd'] ?? 0),
             ]);
         } catch (RequestException $e) {
-            $this->lastError = $e->response?->json('detail') ?? $e->response?->body() ?? $e->getMessage();
+            $detail = $e->response?->json('detail') ?? $e->response?->body() ?? $e->getMessage();
+            if ($e->response?->status() === 401 || str_contains((string) $detail, 'Bearer token')) {
+                $detail = 'LLM API authentication failed. Set XFUSION_LLM_API_KEY in Laravel .env to the same value as API_KEY on the Xfusion-llm server, then run php artisan config:clear.';
+            }
+            $this->lastError = is_string($detail) ? $detail : json_encode($detail);
             Log::warning('[xfusion-llm] arp readiness-review failed', [
                 'arp_id' => $arp->id,
                 'error' => $this->lastError,
