@@ -113,44 +113,17 @@ function xfusion_qbr_wizard_shortcode($atts = []): string
         'stepProgress'    => is_array($qbrData['step_progress'] ?? null) ? $qbrData['step_progress'] : new stdClass(),
     ];
 
-    // Generic header/footer "Save Draft" — dispatches to whichever step has an
-    // explicit save action (KPIs, discussion notes + decisions, commitments).
-    // Steps 1/3/6 save via their own dedicated Generate/Save buttons instead.
+    // UI-only prototype: "Save Draft" is a local no-op for now — it just
+    // confirms visually. No Laravel calls are made from any step yet;
+    // wiring real persistence is a follow-up pass once the visuals are
+    // approved (see commit message / task notes).
     $saveDraftDispatchJs = <<<'JS'
 window.xqbrSaveDraft = function () {
-    var key = (STEPS[current] || {}).key;
-    if (key === 'evidence_review') {
-        var kpiBtn = document.getElementById('xqbr-kpi-save');
-        if (kpiBtn) { kpiBtn.click(); return; }
-    }
-    if (key === 'assessment') {
-        var contextEl = document.getElementById('xqbr-leadership-context');
-        var ratingEl = document.querySelector('input[name="xqbr-agreement"]:checked');
-        var status = document.getElementById('xqbr-autosave-status');
-        if (!contextEl) { return; }
-        if (status) status.innerHTML = '<span class="xqbr-autosave-check" aria-hidden="true">&#10003;</span> Saving…';
-        window.xqbrSaveLeadershipContext(contextEl.value, ratingEl ? ratingEl.value : '').then(function (res) {
-            if (!status) return;
-            status.innerHTML = (res && res.success)
-                ? '<span class="xqbr-autosave-check" aria-hidden="true">&#10003;</span> Draft saved.'
-                : '<span style="color:#dc2626">&#9888; Save failed.</span>';
-        });
-        return;
-    }
-    if (key === 'collaboration') {
-        var notesBtn = document.getElementById('xqbr-save-notes-btn');
-        var decisionsBtn = document.getElementById('xqbr-save-decisions-btn');
-        if (notesBtn) notesBtn.click();
-        if (decisionsBtn) decisionsBtn.click();
-        return;
-    }
-    if (key === 'commitments') {
-        var commitBtn = document.getElementById('xqbr-save-commitments-btn');
-        if (commitBtn) { commitBtn.click(); return; }
-    }
     var status = document.getElementById('xqbr-autosave-status');
     if (status) {
-        status.innerHTML = '<span class="xqbr-autosave-check" aria-hidden="true">&#10003;</span> This step saves automatically via its own action button.';
+        var now = new Date();
+        var time = now.toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' });
+        status.innerHTML = '<span class="xqbr-autosave-check" aria-hidden="true">&#10003;</span> Draft autosaved ' + time + ' (UI shell — not yet connected).';
     }
 };
 ['#xqbr-save-draft', '#xqbr-save-draft-2'].forEach(function (sel) {

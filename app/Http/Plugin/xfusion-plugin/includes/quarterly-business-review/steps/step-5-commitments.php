@@ -1,6 +1,9 @@
 <?php
 /**
- * Step 5 — Quarterly Commitments™ (max 5, auto carry-forward).
+ * Step 5 — Quarterly Commitments™ (max 5).
+ *
+ * UI-only prototype: static dummy content, local-only state (no Laravel
+ * calls) while the visual design is being finalized.
  *
  * @package XFusion
  */
@@ -20,11 +23,10 @@ commitments: function () {
         '<h3 style="margin:0">Organizational Commitments</h3>' +
         '<a href="javascript:void(0)" class="xqbr-add-link" id="xqbr-add-commitment">+ Add Commitment</a>' +
         '</div>' +
-        '<p class="xqbr-muted" style="margin-top:-.4rem" id="xqbr-commitment-count">You can create up to 5 commitments for this quarter.</p>' +
+        '<p class="xqbr-muted" style="margin-top:-.4rem" id="xqbr-commitment-count"></p>' +
         '<div id="xqbr-commitments-list"></div>' +
-        '<button type="button" class="xqbr-btn xqbr-btn-outline xqbr-btn-sm" id="xqbr-save-commitments-btn" style="margin-top:.75rem">Save Commitments</button>' +
-        '<span class="xqbr-muted" id="xqbr-commitments-save-status" style="margin-left:.5rem"></span>' +
         '</div>' +
+        '<div class="xqbr-card"><h4>Commitment Summary</h4><div id="xqbr-commitment-summary"></div></div>' +
         '<div class="xqbr-card" style="background:#fbfaf5">' +
         '<h4>Commitment Tip</h4>' +
         '<p class="xqbr-muted">Make your commitments specific, measurable, and aligned to your Annual Readiness Plan™ objectives. This ensures accountability and progress tracking throughout the quarter.</p>' +
@@ -38,9 +40,15 @@ function xfqbr_wizard_commitments_init_js(): string
     return <<<'JS'
 (function () {
     var MAX_COMMITMENTS = 5;
-    var cache = [];
+    var cache = [
+        { title: 'Improve Project Delivery Efficiency', description: 'Streamline project planning and execution processes to reduce cycle time and improve on-time delivery.', owner_user_id: 'Sarah Johnson', priority: 'high', related_arp_objective: 'Operational Excellence Objective 2.1', success_measure: 'Increase on-time project delivery from 88% to 95%', due_date: '2025-06-30', status: 'in_progress' },
+        { title: 'Strengthen Member Engagement', description: 'Increase member participation and satisfaction through enhanced communication and outreach.', owner_user_id: 'David Miller', priority: 'high', related_arp_objective: 'Member Engagement Objective 1.2', success_measure: 'Increase member engagement score from 72 to 80', due_date: '2025-06-30', status: 'in_progress' },
+        { title: 'Enhance Safety Performance', description: 'Reduce incident rates through proactive safety training and site inspections.', owner_user_id: 'Lisa Chen', priority: 'medium', related_arp_objective: 'Safety & Compliance Objective 3.1', success_measure: 'Reduce recordable incident rate from 1.2 to 0.8', due_date: '2025-06-30', status: 'open' },
+        { title: 'Develop Leadership Bench Strength', description: 'Build internal leadership capabilities through mentoring and development programs.', owner_user_id: 'James Scott', priority: 'medium', related_arp_objective: 'People Development Objective 4.1', success_measure: 'Identify and develop 3 internal leaders', due_date: '2025-06-30', status: 'open' },
+        { title: 'Optimize Cost Management', description: 'Implement cost control initiatives to improve operational margins.', owner_user_id: 'Mark Thompson', priority: 'medium', related_arp_objective: 'Financial Stewardship Objective 5.1', success_measure: 'Reduce operating expenses by 5%', due_date: '2025-06-30', status: 'open' },
+    ];
 
-    function escHtml(s) { return String(s == null ? '' : s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
+    function esc(s) { return String(s == null ? '' : s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
     function escAttr(s) { return String(s == null ? '' : s).replace(/&/g,'&amp;').replace(/"/g,'&quot;').replace(/</g,'&lt;'); }
 
     function opt(value, label, selected) {
@@ -55,13 +63,13 @@ function xfqbr_wizard_commitments_init_js(): string
             '<a href="javascript:void(0)" class="xqbr-icon-btn xqbr-prio-delete" data-index="' + index + '">✕</a>' +
             '<div class="xqbr-prio-grid xqbr-prio-grid-4">' +
             '<div class="xqbr-form-field"><label>Commitment Title</label><input class="xqbr-input" data-key="title" value="' + escAttr(item.title) + '"></div>' +
-            '<div class="xqbr-form-field"><label>Owner (user ID)</label><input type="number" class="xqbr-input" data-key="owner_user_id" value="' + escAttr(item.owner_user_id) + '"></div>' +
+            '<div class="xqbr-form-field"><label>Owner</label><input class="xqbr-input" data-key="owner_user_id" value="' + escAttr(item.owner_user_id) + '" placeholder="Name"></div>' +
             '<div class="xqbr-form-field"><label>Priority</label><select class="xqbr-input" data-key="priority">' +
             opt('high', 'High', item.priority) + opt('medium', 'Medium', item.priority) + opt('low', 'Low', item.priority) + '</select></div>' +
             '<div class="xqbr-form-field"><label>Status</label><select class="xqbr-input" data-key="status">' +
             opt('open', 'Not Started', item.status) + opt('in_progress', 'In Progress', item.status) +
             opt('done', 'Done', item.status) + opt('carried_forward', 'Carried Forward', item.status) + '</select>' +
-            (statusBadge ? '<span class="xqbr-badge-pill ' + statusBadge + '" style="margin-top:.35rem;display:inline-block">' + escHtml(item.status) + '</span>' : '') +
+            (statusBadge ? '<span class="xqbr-badge-pill ' + statusBadge + '" style="margin-top:.35rem;display:inline-block">' + esc(item.status) + '</span>' : '') +
             '</div></div>' +
             '<div class="xqbr-prio-grid xqbr-prio-grid-4">' +
             '<div class="xqbr-form-field"><label>Related ARP Objective</label><input class="xqbr-input" data-key="related_arp_objective" value="' + escAttr(item.related_arp_objective) + '"></div>' +
@@ -70,10 +78,26 @@ function xfqbr_wizard_commitments_init_js(): string
             '<div class="xqbr-form-field"><label>&nbsp;</label></div>' +
             '</div>' +
             '<div class="xqbr-prio-grid xqbr-prio-grid-1">' +
-            '<div class="xqbr-form-field"><label>Description</label><textarea class="xqbr-input" rows="2" data-key="description">' + escHtml(item.description) + '</textarea></div>' +
-            '</div>' +
-            (item.carried_forward_from_id ? '<input type="hidden" data-key="carried_forward_from_id" value="' + escAttr(item.carried_forward_from_id) + '">' : '') +
-            '</div></div>';
+            '<div class="xqbr-form-field"><label>Description</label><textarea class="xqbr-input" rows="2" data-key="description">' + esc(item.description) + '</textarea></div>' +
+            '</div></div></div>';
+    }
+
+    function renderSummary() {
+        var summary = document.getElementById('xqbr-commitment-summary');
+        if (!summary) return;
+        var high = cache.filter(function (c) { return c.priority === 'high'; }).length;
+        var medium = cache.filter(function (c) { return c.priority === 'medium'; }).length;
+        var notStarted = cache.filter(function (c) { return c.status === 'open'; }).length;
+        var inProgress = cache.filter(function (c) { return c.status === 'in_progress'; }).length;
+        var done = cache.filter(function (c) { return c.status === 'done'; }).length;
+        summary.innerHTML = '<div class="xqbr-stat-list">' +
+            '<div class="xqbr-stat-row">Total Commitments <strong>' + cache.length + ' of ' + MAX_COMMITMENTS + '</strong></div>' +
+            '<div class="xqbr-stat-row">High Priority <strong>' + high + '</strong></div>' +
+            '<div class="xqbr-stat-row">Medium Priority <strong>' + medium + '</strong></div>' +
+            '<div class="xqbr-stat-row">Not Started <strong>' + notStarted + '</strong></div>' +
+            '<div class="xqbr-stat-row">In Progress <strong>' + inProgress + '</strong></div>' +
+            '<div class="xqbr-stat-row">Completed <strong>' + done + '</strong></div>' +
+            '</div>';
     }
 
     function renderList() {
@@ -89,6 +113,7 @@ function xfqbr_wizard_commitments_init_js(): string
         if (countEl) countEl.textContent = cache.length + ' of ' + MAX_COMMITMENTS + ' commitments used.';
         var addLink = document.getElementById('xqbr-add-commitment');
         if (addLink) addLink.style.display = cache.length >= MAX_COMMITMENTS ? 'none' : '';
+        renderSummary();
     }
 
     function collect(list) {
@@ -104,8 +129,8 @@ function xfqbr_wizard_commitments_init_js(): string
 
     function bindEvents(list) {
         list.querySelectorAll('[data-key]').forEach(function (el) {
-            el.addEventListener('input', function () { collect(list); });
-            el.addEventListener('change', function () { collect(list); });
+            el.addEventListener('input', function () { collect(list); renderSummary(); });
+            el.addEventListener('change', function () { collect(list); renderSummary(); });
         });
         list.querySelectorAll('.xqbr-prio-delete').forEach(function (link) {
             link.addEventListener('click', function () {
@@ -119,12 +144,8 @@ function xfqbr_wizard_commitments_init_js(): string
     window.initCommitmentsStep = function () {
         var canEdit = !window.XFQBR_WIZARD || window.XFQBR_WIZARD.canEdit !== false;
         var addLink = document.getElementById('xqbr-add-commitment');
-        var saveBtn = document.getElementById('xqbr-save-commitments-btn');
 
-        if (!canEdit) {
-            if (addLink) addLink.style.display = 'none';
-            if (saveBtn) saveBtn.style.display = 'none';
-        }
+        if (!canEdit && addLink) addLink.style.display = 'none';
 
         if (addLink) {
             addLink.addEventListener('click', function () {
@@ -136,27 +157,7 @@ function xfqbr_wizard_commitments_init_js(): string
             });
         }
 
-        if (saveBtn) {
-            saveBtn.addEventListener('click', function () {
-                var list = document.getElementById('xqbr-commitments-list');
-                var items = list ? collect(list) : cache;
-                var statusEl = document.getElementById('xqbr-commitments-save-status');
-                saveBtn.disabled = true;
-                if (statusEl) statusEl.textContent = 'Saving…';
-                window.xqbrSaveCommitments(items).then(function (res) {
-                    saveBtn.disabled = false;
-                    if (statusEl) statusEl.textContent = (res && res.success) ? 'Saved ' + res.saved_at : (res && res.message) || 'Save failed.';
-                });
-            });
-        }
-
-        var list = document.getElementById('xqbr-commitments-list');
-        if (list) list.innerHTML = '<div class="xqbr-spinner-row"><span class="xqbr-spinner"></span> Loading commitments…</div>';
-
-        window.xqbrLoadCommitments().then(function (items) {
-            cache = items || [];
-            renderList();
-        });
+        renderList();
     };
 })();
 JS;

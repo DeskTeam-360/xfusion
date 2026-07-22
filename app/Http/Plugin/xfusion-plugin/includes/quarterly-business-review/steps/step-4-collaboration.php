@@ -2,6 +2,9 @@
 /**
  * Step 4 — Leadership Collaboration™.
  *
+ * UI-only prototype: static dummy content, local-only state (no Laravel
+ * calls) while the visual design is being finalized.
+ *
  * @package XFusion
  */
 
@@ -38,8 +41,6 @@ collaboration: function () {
         '<h3 style="margin:0">Leadership Discussion Notes</h3></div>' +
         '<p class="xqbr-muted" style="margin-top:-.4rem">Capture key discussion points, decisions, and insights from your leadership conversation.</p>' +
         '<textarea class="xqbr-input" id="xqbr-discussion-notes" rows="6" maxlength="20000" placeholder="Start typing your discussion notes here..."></textarea>' +
-        '<button type="button" class="xqbr-btn xqbr-btn-outline xqbr-btn-sm" id="xqbr-save-notes-btn">Save Notes</button>' +
-        '<span class="xqbr-muted" id="xqbr-notes-save-status" style="margin-left:.5rem"></span>' +
         '</div>' +
 
         '<div class="xqbr-card"><div class="xqbr-row" style="justify-content:space-between">' +
@@ -48,8 +49,6 @@ collaboration: function () {
         '</div>' +
         '<p class="xqbr-muted" style="margin-top:-.4rem">Capture the key decisions and takeaways agreed upon by the leadership team.</p>' +
         '<div id="xqbr-decisions-list"></div>' +
-        '<button type="button" class="xqbr-btn xqbr-btn-outline xqbr-btn-sm" id="xqbr-save-decisions-btn" style="margin-top:.75rem">Save Decisions</button>' +
-        '<span class="xqbr-muted" id="xqbr-decisions-save-status" style="margin-left:.5rem"></span>' +
         '</div>';
 }
 JS;
@@ -59,10 +58,13 @@ function xfqbr_wizard_collaboration_init_js(): string
 {
     return <<<'JS'
 (function () {
-    function escHtml(s) { return String(s == null ? '' : s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
+    function esc(s) { return String(s == null ? '' : s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
     function escAttr(s) { return String(s == null ? '' : s).replace(/&/g,'&amp;').replace(/"/g,'&quot;').replace(/</g,'&lt;'); }
 
-    var decisionsCache = [];
+    var decisionsCache = [
+        { decision: 'Prioritize Community Solar Program expansion for Q3', owner_user_id: '', impact_area: 'Operational Excellence', next_step: 'Finalize site selection and vendor contracts.', target_date: '2025-08-15' },
+        { decision: 'Launch cross-functional communication cadence', owner_user_id: '', impact_area: 'Communication', next_step: 'Weekly sync between field and office teams.', target_date: '2025-07-31' },
+    ];
 
     function decisionRow(item, index) {
         return '<div class="xqbr-prio-card" data-index="' + index + '" style="margin-bottom:.75rem">' +
@@ -70,12 +72,12 @@ function xfqbr_wizard_collaboration_init_js(): string
             '<a href="javascript:void(0)" class="xqbr-icon-btn xqbr-prio-delete" data-index="' + index + '" style="position:absolute;top:.5rem;right:.5rem">✕</a>' +
             '<div class="xqbr-prio-grid xqbr-prio-grid-4">' +
             '<div class="xqbr-form-field"><label>Decision / Takeaway</label><input class="xqbr-input" data-key="decision" value="' + escAttr(item.decision) + '"></div>' +
-            '<div class="xqbr-form-field"><label>Owner (user ID)</label><input type="number" class="xqbr-input" data-key="owner_user_id" value="' + escAttr(item.owner_user_id) + '"></div>' +
+            '<div class="xqbr-form-field"><label>Owner</label><input class="xqbr-input" data-key="owner_user_id" value="' + escAttr(item.owner_user_id) + '" placeholder="Name"></div>' +
             '<div class="xqbr-form-field"><label>Impact Area</label><input class="xqbr-input" data-key="impact_area" value="' + escAttr(item.impact_area) + '"></div>' +
             '<div class="xqbr-form-field"><label>Target Date</label><input type="date" class="xqbr-input" data-key="target_date" value="' + escAttr(item.target_date) + '"></div>' +
             '</div>' +
             '<div class="xqbr-prio-grid xqbr-prio-grid-1">' +
-            '<div class="xqbr-form-field"><label>Next Step</label><textarea class="xqbr-input" rows="2" data-key="next_step">' + escHtml(item.next_step) + '</textarea></div>' +
+            '<div class="xqbr-form-field"><label>Next Step</label><textarea class="xqbr-input" rows="2" data-key="next_step">' + esc(item.next_step) + '</textarea></div>' +
             '</div></div></div>';
     }
 
@@ -117,32 +119,13 @@ function xfqbr_wizard_collaboration_init_js(): string
     window.initCollaborationStep = function () {
         var canEdit = !window.XFQBR_WIZARD || window.XFQBR_WIZARD.canEdit !== false;
         var notesArea = document.getElementById('xqbr-discussion-notes');
-        var saveNotesBtn = document.getElementById('xqbr-save-notes-btn');
-        var saveDecisionsBtn = document.getElementById('xqbr-save-decisions-btn');
         var addLink = document.getElementById('xqbr-add-decision');
 
-        if (!canEdit) {
-            if (notesArea) notesArea.disabled = true;
-            if (saveNotesBtn) saveNotesBtn.style.display = 'none';
-            if (saveDecisionsBtn) saveDecisionsBtn.style.display = 'none';
-            if (addLink) addLink.style.display = 'none';
+        if (notesArea) {
+            notesArea.value = 'Team agreed that Operations needs closer alignment with field staff. Leadership will pilot a weekly cross-functional check-in starting next month.';
+            if (!canEdit) notesArea.disabled = true;
         }
-
-        if (window.XFQBR_WIZARD && window.XFQBR_WIZARD.discussionNotes && notesArea) {
-            notesArea.value = window.XFQBR_WIZARD.discussionNotes;
-        }
-
-        if (saveNotesBtn) {
-            saveNotesBtn.addEventListener('click', function () {
-                var statusEl = document.getElementById('xqbr-notes-save-status');
-                saveNotesBtn.disabled = true;
-                if (statusEl) statusEl.textContent = 'Saving…';
-                window.xqbrSaveDiscussionNotes(notesArea.value).then(function (res) {
-                    saveNotesBtn.disabled = false;
-                    if (statusEl) statusEl.textContent = (res && res.success) ? 'Saved ' + res.saved_at : 'Save failed.';
-                });
-            });
-        }
+        if (!canEdit && addLink) addLink.style.display = 'none';
 
         if (addLink) {
             addLink.addEventListener('click', function () {
@@ -153,24 +136,7 @@ function xfqbr_wizard_collaboration_init_js(): string
             });
         }
 
-        if (saveDecisionsBtn) {
-            saveDecisionsBtn.addEventListener('click', function () {
-                var list = document.getElementById('xqbr-decisions-list');
-                var items = list ? collectDecisions(list) : decisionsCache;
-                var statusEl = document.getElementById('xqbr-decisions-save-status');
-                saveDecisionsBtn.disabled = true;
-                if (statusEl) statusEl.textContent = 'Saving…';
-                window.xqbrSaveDecisions(items).then(function (res) {
-                    saveDecisionsBtn.disabled = false;
-                    if (statusEl) statusEl.textContent = (res && res.success) ? 'Saved ' + res.saved_at : 'Save failed.';
-                });
-            });
-        }
-
-        window.xqbrLoadDecisions().then(function (items) {
-            decisionsCache = items || [];
-            renderDecisions();
-        });
+        renderDecisions();
     };
 })();
 JS;
