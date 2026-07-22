@@ -31,6 +31,14 @@ class XfusionLlmProbe extends Command
                 '/api/v1/arp/readiness-review',
                 ['arp_id' => 1, 'plan_context' => []],
             ],
+            'qbr assessment' => [
+                '/api/v1/qbr/assessment',
+                ['qbr_id' => 1, 'evidence' => []],
+            ],
+            'qbr synthesis' => [
+                '/api/v1/qbr/synthesis',
+                ['qbr_id' => 1, 'context' => []],
+            ],
         ];
 
         $allOk = true;

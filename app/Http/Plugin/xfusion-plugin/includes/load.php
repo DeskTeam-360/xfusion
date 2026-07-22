@@ -13,6 +13,7 @@ $xfusion_include_files = [
     'one-on-one-wizard/one-on-one-wizard-shortcode.php',
     'annual-readiness-plan/arp-db-migration.php',
     'annual-readiness-plan/arp-wizard-shortcode.php',
+    'quarterly-business-review/qbr-wizard-shortcode.php',
     'woocommerce-mindful-mothers-checkout.php',
     'woocommerce-mindful-mothers-email.php',
     'learndash-topic-global-search.php',

@@ -5,6 +5,7 @@ use App\Http\Controllers\Api\CompanyPublicController;
 use App\Http\Controllers\Api\CourseGroupPublicController;
 use App\Http\Controllers\Api\OneOnOneController;
 use App\Http\Controllers\Api\ParticipationChartsController;
+use App\Http\Controllers\Api\QbrController;
 use App\Models\CourseList;
 use App\Models\Tag;
 use App\Models\User;
@@ -477,5 +478,34 @@ Route::prefix('v1')->middleware('fusion.api')->group(function () {
     };
     Route::prefix('arps')->group($registerArpRoutes);
     Route::prefix('arp')->group($registerArpRoutes);
+
+    // QBR — consumed by the [fusion_qbr_wizard] WordPress shortcode's picker gate.
+    // Primary prefix: /qbrs. /qbr kept for consistency with ARP's dual-prefix pattern.
+    $registerQbrRoutes = function (): void {
+        Route::get('/leadable-companies', [QbrController::class, 'leadableCompanies']);
+        Route::get('/list', [QbrController::class, 'index']);
+        Route::post('/', [QbrController::class, 'store']);
+        Route::post('/{qbr}/evidence/generate', [QbrController::class, 'generateEvidence']);
+        Route::get('/{qbr}/evidence', [QbrController::class, 'getEvidence']);
+        Route::get('/{qbr}/kpis', [QbrController::class, 'getKpis']);
+        Route::post('/{qbr}/kpis', [QbrController::class, 'saveKpis']);
+        Route::get('/{qbr}/assessment', [QbrController::class, 'getAssessment']);
+        Route::post('/{qbr}/assessment/generate', [QbrController::class, 'generateAssessment']);
+        Route::patch('/{qbr}/assessment/context', [QbrController::class, 'saveLeadershipContext']);
+        Route::post('/{qbr}/assessment/context', [QbrController::class, 'saveLeadershipContext']);
+        Route::patch('/{qbr}/discussion-notes', [QbrController::class, 'saveDiscussionNotes']);
+        Route::post('/{qbr}/discussion-notes', [QbrController::class, 'saveDiscussionNotes']);
+        Route::get('/{qbr}/decisions', [QbrController::class, 'getDecisions']);
+        Route::post('/{qbr}/decisions', [QbrController::class, 'saveDecisions']);
+        Route::get('/{qbr}/commitments', [QbrController::class, 'getCommitments']);
+        Route::post('/{qbr}/commitments', [QbrController::class, 'saveCommitments']);
+        Route::get('/{qbr}/synthesis', [QbrController::class, 'getSynthesis']);
+        Route::post('/{qbr}/synthesis/generate', [QbrController::class, 'generateSynthesis']);
+        Route::post('/{qbr}/publish', [QbrController::class, 'publish']);
+        Route::post('/{qbr}/archive', [QbrController::class, 'archive']);
+        Route::get('/{qbr}', [QbrController::class, 'show']);
+    };
+    Route::prefix('qbrs')->group($registerQbrRoutes);
+    Route::prefix('qbr')->group($registerQbrRoutes);
 });
 
