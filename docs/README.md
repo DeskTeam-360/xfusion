@@ -21,6 +21,7 @@ When in doubt, prefer **api/** and **ai-insights/** for current behavior.
 ## Quick links
 
 - ARP wizard storage: Laravel `/api/v1/arps/*` — see [api/arp.md](./api/arp.md)
+- QBR wizard storage: Laravel `/api/v1/qbrs/*` — see [api/qbr.md](./api/qbr.md)
 - 1-on-1 wizard storage: Laravel `/api/v1/one-on-one/*` — see [api/one-on-one.md](./api/one-on-one.md)
 - LLM service: separate **xfusion-llm** repo; schemas in [ai-insights/](./ai-insights/README.md)
 - DB bootstrap: `database/sql/wp_fusion_core.sql`, `database/sql/wp_fusion_arp_server_patch.sql`

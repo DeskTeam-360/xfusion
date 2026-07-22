@@ -11,6 +11,7 @@ All routes below use middleware **`fusion.api`** (Bearer token). WordPress wizar
 | [authentication.md](./authentication.md) | Bearer token, env vars, diagnostics |
 | [one-on-one.md](./one-on-one.md) | 1-on-1 Alignment Capture™ wizard API |
 | [arp.md](./arp.md) | Annual Readiness Plan™ wizard API |
+| [qbr.md](./qbr.md) | Quarterly Business Review™ wizard API |
 
 ## Public routes (same prefix, no wizard)
 
@@ -49,7 +50,8 @@ HTTP status: `403` forbidden, `422` validation, `502` LLM failure, etc.
 |-----------|-------------------------|
 | 1-on-1 | `OneOnOne`, `OneOnOneConversation`, `OneOnOnePreparation`, `OneOnOneNote`, `OneOnOneCommitment`, `OneOnOneAiBrief`, `OneOnOneAiSynthesis` |
 | ARP | `Arp`, `ArpFutureState`, `ArpReadinessPriority`, `ArpStrategicPriority`, `ArpLearning`, `ArpAiAssessment`, `ArpVersion` |
-| Cross-cutting | `FusionEvidenceLog` (ARP publish / AI events) |
+| QBR | `Qbr`, `QbrEvidenceSnapshot`, `QbrAiAssessment`, `QbrAiSynthesis`, `QbrCommitment`, `QbrKpi`, `QbrDecision` |
+| Cross-cutting | `FusionEvidenceLog` (ARP/QBR publish / AI events) |
 
 ## Code entry points
 
@@ -58,5 +60,7 @@ HTTP status: `403` forbidden, `422` validation, `502` LLM failure, etc.
 | Routes | `routes/api.php` (prefix `v1`) |
 | 1-on-1 controller | `app/Http/Controllers/Api/OneOnOneController.php` |
 | ARP controller | `app/Http/Controllers/Api/ArpController.php` |
+| QBR controller | `app/Http/Controllers/Api/QbrController.php` |
 | WP 1-on-1 bridge | `app/Http/Plugin/.../one-on-one-shortcode.php` |
 | WP ARP bridge | `app/Http/Plugin/.../annual-readiness-plan/arp-picker.php` |
+| WP QBR bridge | `app/Http/Plugin/.../quarterly-business-review/qbr-picker.php` |
