@@ -155,6 +155,7 @@ class QbrController extends Controller
                 'created_at' => $qbr->created_at?->toIso8601String(),
                 'updated_at' => $qbr->updated_at?->toIso8601String(),
                 'held_at' => $qbr->held_at?->toIso8601String(),
+                'step_progress' => is_array($qbr->step_progress) ? $qbr->step_progress : [],
                 'can_edit' => $this->leadableGroupIds($userId)->contains($qbr->company_group_id),
             ],
         ]);
@@ -297,14 +298,33 @@ class QbrController extends Controller
 
         $data = $request->validate(['discussion_notes' => 'nullable|string|max:20000']);
         $qbr->update(['discussion_notes' => $data['discussion_notes'] ?? null]);
-        $this->refreshStepProgress($qbr, 'collaboration', trim(strip_tags($data['discussion_notes'] ?? '')) !== '');
+        $hasNotes = trim(strip_tags($data['discussion_notes'] ?? '')) !== '';
+        $hasDecisions = $qbr->decisions()->where('decision', '!=', '')->exists();
+        $this->refreshStepProgress($qbr, 'collaboration', $hasNotes || $hasDecisions);
 
         return response()->json(['success' => true, 'saved_at' => now()->format('g:i A')]);
     }
 
     public function getDecisions(Qbr $qbr)
     {
-        return response()->json(['success' => true, 'data' => $qbr->decisions()->get()]);
+        return response()->json([
+            'success' => true,
+            'data' => $qbr->decisions()
+                ->with('owner:ID,display_name')
+                ->orderBy('priority_rank')
+                ->get()
+                ->map(fn (QbrDecision $row) => [
+                    'id' => $row->id,
+                    'decision' => $row->decision,
+                    'owner_user_id' => $row->owner_user_id,
+                    'owner_name' => $row->owner_name ?: $row->owner?->display_name,
+                    'impact_area' => $row->impact_area,
+                    'next_step' => $row->next_step,
+                    'target_date' => $row->target_date?->format('Y-m-d'),
+                    'priority_rank' => $row->priority_rank,
+                ])
+                ->values(),
+        ]);
     }
 
     public function saveDecisions(Request $request, Qbr $qbr)
@@ -318,6 +338,7 @@ class QbrController extends Controller
             'items' => 'present|array',
             'items.*.decision' => 'nullable|string|max:255',
             'items.*.owner_user_id' => 'nullable|integer',
+            'items.*.owner_name' => 'nullable|string|max:255',
             'items.*.impact_area' => 'nullable|string|max:80',
             'items.*.next_step' => 'nullable|string',
             'items.*.target_date' => 'nullable|string',
@@ -327,10 +348,12 @@ class QbrController extends Controller
             QbrDecision::where('qbr_id', $qbr->id)->delete();
             foreach (array_values($data['items']) as $index => $item) {
                 $ownerId = filter_var($item['owner_user_id'] ?? null, FILTER_VALIDATE_INT);
+                $ownerName = trim((string) ($item['owner_name'] ?? ''));
                 QbrDecision::create([
                     'qbr_id' => $qbr->id,
                     'decision' => $item['decision'] ?? '',
                     'owner_user_id' => $ownerId !== false ? $ownerId : null,
+                    'owner_name' => $ownerName !== '' ? $ownerName : null,
                     'impact_area' => $item['impact_area'] ?? null,
                     'next_step' => $item['next_step'] ?? null,
                     'target_date' => ! empty($item['target_date']) ? $item['target_date'] : null,
@@ -338,6 +361,12 @@ class QbrController extends Controller
                 ]);
             }
         });
+
+        $hasDecisions = collect($data['items'])->contains(
+            fn ($item) => trim((string) ($item['decision'] ?? '')) !== ''
+        );
+        $hasNotes = trim(strip_tags((string) ($qbr->fresh()->discussion_notes ?? ''))) !== '';
+        $this->refreshStepProgress($qbr, 'collaboration', $hasDecisions || $hasNotes);
 
         return response()->json(['success' => true, 'saved_at' => now()->format('g:i A')]);
     }
@@ -350,7 +379,28 @@ class QbrController extends Controller
     {
         $this->carryForwardIncomplete($qbr);
 
-        return response()->json(['success' => true, 'data' => $qbr->commitments()->get()]);
+        return response()->json([
+            'success' => true,
+            'data' => $qbr->commitments()
+                ->with('owner:ID,display_name')
+                ->orderBy('priority_rank')
+                ->get()
+                ->map(fn (QbrCommitment $row) => [
+                    'id' => $row->id,
+                    'title' => $row->title,
+                    'description' => $row->description,
+                    'owner_user_id' => $row->owner_user_id,
+                    'owner_name' => $row->owner_name ?: $row->owner?->display_name,
+                    'priority' => $row->priority,
+                    'related_arp_objective' => $row->related_arp_objective,
+                    'success_measure' => $row->success_measure,
+                    'due_date' => $row->due_date?->format('Y-m-d'),
+                    'status' => $row->status,
+                    'carried_forward_from_id' => $row->carried_forward_from_id,
+                    'priority_rank' => $row->priority_rank,
+                ])
+                ->values(),
+        ]);
     }
 
     public function saveCommitments(Request $request, Qbr $qbr)
@@ -365,6 +415,7 @@ class QbrController extends Controller
             'items.*.title' => 'nullable|string|max:255',
             'items.*.description' => 'nullable|string',
             'items.*.owner_user_id' => 'nullable|integer',
+            'items.*.owner_name' => 'nullable|string|max:255',
             'items.*.priority' => 'nullable|in:high,medium,low',
             'items.*.related_arp_objective' => 'nullable|string|max:255',
             'items.*.success_measure' => 'nullable|string|max:255',
@@ -381,12 +432,14 @@ class QbrController extends Controller
             QbrCommitment::where('qbr_id', $qbr->id)->delete();
             foreach (array_values($data['items']) as $index => $item) {
                 $ownerId = filter_var($item['owner_user_id'] ?? null, FILTER_VALIDATE_INT);
+                $ownerName = trim((string) ($item['owner_name'] ?? ''));
                 $carriedFromId = filter_var($item['carried_forward_from_id'] ?? null, FILTER_VALIDATE_INT);
                 QbrCommitment::create([
                     'qbr_id' => $qbr->id,
                     'title' => $item['title'] ?? '',
                     'description' => $item['description'] ?? null,
                     'owner_user_id' => $ownerId !== false ? $ownerId : null,
+                    'owner_name' => $ownerName !== '' ? $ownerName : null,
                     'priority' => $item['priority'] ?? 'medium',
                     'related_arp_objective' => $item['related_arp_objective'] ?? null,
                     'success_measure' => $item['success_measure'] ?? null,
@@ -398,7 +451,9 @@ class QbrController extends Controller
             }
         });
 
-        $this->refreshStepProgress($qbr, 'commitments', count($data['items']) > 0);
+        $this->refreshStepProgress($qbr, 'commitments', collect($data['items'])->contains(
+            fn ($item) => trim((string) ($item['title'] ?? '')) !== ''
+        ));
 
         return response()->json(['success' => true, 'saved_at' => now()->format('g:i A')]);
     }
@@ -427,6 +482,7 @@ class QbrController extends Controller
                 'title' => $source->title,
                 'description' => $source->description,
                 'owner_user_id' => $source->owner_user_id,
+                'owner_name' => $source->owner_name,
                 'priority' => $source->priority,
                 'related_arp_objective' => $source->related_arp_objective,
                 'success_measure' => $source->success_measure,
@@ -563,6 +619,7 @@ class QbrController extends Controller
         }
 
         $qbr->update(['status' => Qbr::STATUS_CLOSED, 'held_at' => now()]);
+        $this->refreshStepProgress($qbr, 'publish', true);
 
         FusionEvidenceLog::create([
             'source_type' => FusionEvidenceLog::SOURCE_QBR,

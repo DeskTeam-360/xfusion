@@ -24,6 +24,8 @@ require_once __DIR__ . '/qbr-collaboration-service.php';
 require_once __DIR__ . '/qbr-commitments-service.php';
 require_once __DIR__ . '/qbr-synthesis-service.php';
 require_once __DIR__ . '/qbr-publish-service.php';
+require_once __DIR__ . '/qbr-save-draft.php';
+require_once __DIR__ . '/qbr-loading.php';
 require_once __DIR__ . '/core.php';
 require_once __DIR__ . '/steps/step-1-evidence.php';
 require_once __DIR__ . '/steps/step-2-evidence-review.php';
@@ -102,6 +104,8 @@ function xfusion_qbr_wizard_shortcode($atts = []): string
     $commitmentsSvcJs  = xfqbr_wizard_commitments_service_js();
     $synthesisSvcJs    = xfqbr_wizard_synthesis_service_js();
     $publishSvcJs      = xfqbr_wizard_publish_service_js();
+    $saveDraftJs       = xfqbr_wizard_save_draft_js();
+    $loadingJs         = xfqbr_wizard_loading_js();
 
     $wizardConfig = [
         'ajaxUrl'         => admin_url('admin-ajax.php'),
@@ -110,27 +114,9 @@ function xfusion_qbr_wizard_shortcode($atts = []): string
         'qbrId'           => $qbrId,
         'canEdit'         => $canEdit,
         'discussionNotes' => $qbrData['discussion_notes'] ?? '',
+        'status'          => $qbrData['status'] ?? 'draft',
         'stepProgress'    => is_array($qbrData['step_progress'] ?? null) ? $qbrData['step_progress'] : new stdClass(),
     ];
-
-    // UI-only prototype: "Save Draft" is a local no-op for now — it just
-    // confirms visually. No Laravel calls are made from any step yet;
-    // wiring real persistence is a follow-up pass once the visuals are
-    // approved (see commit message / task notes).
-    $saveDraftDispatchJs = <<<'JS'
-window.xqbrSaveDraft = function () {
-    var status = document.getElementById('xqbr-autosave-status');
-    if (status) {
-        var now = new Date();
-        var time = now.toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' });
-        status.innerHTML = '<span class="xqbr-autosave-check" aria-hidden="true">&#10003;</span> Draft autosaved ' + time + ' (UI shell — not yet connected).';
-    }
-};
-['#xqbr-save-draft', '#xqbr-save-draft-2'].forEach(function (sel) {
-    var btn = document.querySelector(sel);
-    if (btn) btn.addEventListener('click', window.xqbrSaveDraft);
-});
-JS;
 
     ob_start();
     ?>
@@ -204,12 +190,12 @@ JS;
 (function () {
 window.XFQBR_WIZARD = <?php echo wp_json_encode($wizardConfig); ?>;
 <?php
-echo $panelsJs . "\n\n" . $coreJs . "\n\n"
+echo $panelsJs . "\n\n" . $loadingJs . "\n\n" . $coreJs . "\n\n"
     . $evidenceInitJs . "\n\n" . $evidenceReviewInitJs . "\n\n" . $assessmentInitJs . "\n\n"
     . $collaborationInitJs . "\n\n" . $commitmentsInitJs . "\n\n" . $synthesisInitJs . "\n\n" . $publishInitJs . "\n\n"
     . $evidenceSvcJs . "\n\n" . $assessmentSvcJs . "\n\n" . $collaborationSvcJs . "\n\n"
     . $commitmentsSvcJs . "\n\n" . $synthesisSvcJs . "\n\n" . $publishSvcJs . "\n\n"
-    . $saveDraftDispatchJs;
+    . $saveDraftJs;
 ?>
 })();
 </script>

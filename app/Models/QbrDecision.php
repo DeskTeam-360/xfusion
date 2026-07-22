@@ -15,6 +15,7 @@ class QbrDecision extends Model
         'qbr_id',
         'decision',
         'owner_user_id',
+        'owner_name',
         'impact_area',
         'next_step',
         'target_date',

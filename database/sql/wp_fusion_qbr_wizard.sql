@@ -67,6 +67,9 @@ ALTER TABLE `wp_fusion_qbr_commitments`
     ADD COLUMN IF NOT EXISTS `priority` VARCHAR(20) NOT NULL DEFAULT 'medium'
         COMMENT 'high | medium | low'
         AFTER `owner_user_id`,
+    ADD COLUMN IF NOT EXISTS `owner_name` VARCHAR(255) NULL
+        COMMENT 'Free-text owner when not a wp_users.ID'
+        AFTER `priority`,
     ADD COLUMN IF NOT EXISTS `related_arp_objective` VARCHAR(255) NULL
         COMMENT 'Free-text label of the linked ARP strategic priority (matched by name, same pattern as ARP Step 4)'
         AFTER `priority`,
@@ -108,6 +111,7 @@ CREATE TABLE IF NOT EXISTS `wp_fusion_qbr_decisions` (
     `qbr_id` BIGINT UNSIGNED NOT NULL,
     `decision` VARCHAR(255) NOT NULL,
     `owner_user_id` BIGINT UNSIGNED NULL,
+    `owner_name` VARCHAR(255) NULL COMMENT 'Free-text owner when not a wp_users.ID',
     `impact_area` VARCHAR(80) NULL,
     `next_step` TEXT NULL,
     `target_date` DATE NULL,
@@ -117,3 +121,8 @@ CREATE TABLE IF NOT EXISTS `wp_fusion_qbr_decisions` (
     PRIMARY KEY (`id`),
     KEY `qbrd_qbr_idx` (`qbr_id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+ALTER TABLE `wp_fusion_qbr_decisions`
+    ADD COLUMN IF NOT EXISTS `owner_name` VARCHAR(255) NULL
+        COMMENT 'Free-text owner when not a wp_users.ID'
+        AFTER `owner_user_id`;

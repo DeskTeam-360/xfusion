@@ -2,8 +2,7 @@
 /**
  * Step 4 — Leadership Collaboration™.
  *
- * UI-only prototype: static dummy content, local-only state (no Laravel
- * calls) while the visual design is being finalized.
+ * Data loads when the step is first opened; persist only via Save Draft.
  *
  * @package XFusion
  */
@@ -49,7 +48,8 @@ collaboration: function () {
         '</div>' +
         '<p class="xqbr-muted" style="margin-top:-.4rem">Capture the key decisions and takeaways agreed upon by the leadership team.</p>' +
         '<div id="xqbr-decisions-list"></div>' +
-        '</div>';
+        '</div>' +
+        '<p class="xqbr-muted" id="xqbr-collaboration-status" style="margin-top:.5rem"></p>';
 }
 JS;
 }
@@ -61,18 +61,41 @@ function xfqbr_wizard_collaboration_init_js(): string
     function esc(s) { return String(s == null ? '' : s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
     function escAttr(s) { return String(s == null ? '' : s).replace(/&/g,'&amp;').replace(/"/g,'&quot;').replace(/</g,'&lt;'); }
 
-    var decisionsCache = [
-        { decision: 'Prioritize Community Solar Program expansion for Q3', owner_user_id: '', impact_area: 'Operational Excellence', next_step: 'Finalize site selection and vendor contracts.', target_date: '2025-08-15' },
-        { decision: 'Launch cross-functional communication cadence', owner_user_id: '', impact_area: 'Communication', next_step: 'Weekly sync between field and office teams.', target_date: '2025-07-31' },
-    ];
+    var decisionsCache = [];
+    var collaborationEdited = false;
+    var loadState = { qbrId: null, token: 0, fetched: false, loading: false };
+
+    function markEdited() {
+        collaborationEdited = true;
+    }
+
+    function currentQbrId() {
+        return window.XFQBR_WIZARD && window.XFQBR_WIZARD.qbrId
+            ? String(window.XFQBR_WIZARD.qbrId)
+            : null;
+    }
+
+    function mapDecisionRow(row) {
+        var targetDate = row.target_date || '';
+        if (targetDate && targetDate.length >= 10) {
+            targetDate = targetDate.substring(0, 10);
+        }
+        return {
+            decision: row.decision || '',
+            owner_name: row.owner_name || row.owner_display_name || '',
+            impact_area: row.impact_area || '',
+            next_step: row.next_step || '',
+            target_date: targetDate,
+        };
+    }
 
     function decisionRow(item, index) {
-        return '<div class="xqbr-prio-card" data-index="' + index + '" style="margin-bottom:.75rem">' +
+        return '<div class="xqbr-prio-card" data-index="' + index + '" style="margin-bottom:.75rem;position:relative">' +
             '<div class="xqbr-prio-body" style="padding-right:2rem">' +
             '<a href="javascript:void(0)" class="xqbr-icon-btn xqbr-prio-delete" data-index="' + index + '" style="position:absolute;top:.5rem;right:.5rem">✕</a>' +
             '<div class="xqbr-prio-grid xqbr-prio-grid-4">' +
             '<div class="xqbr-form-field"><label>Decision / Takeaway</label><input class="xqbr-input" data-key="decision" value="' + escAttr(item.decision) + '"></div>' +
-            '<div class="xqbr-form-field"><label>Owner</label><input class="xqbr-input" data-key="owner_user_id" value="' + escAttr(item.owner_user_id) + '" placeholder="Name"></div>' +
+            '<div class="xqbr-form-field"><label>Owner</label><input class="xqbr-input" data-key="owner_name" value="' + escAttr(item.owner_name) + '" placeholder="Name"></div>' +
             '<div class="xqbr-form-field"><label>Impact Area</label><input class="xqbr-input" data-key="impact_area" value="' + escAttr(item.impact_area) + '"></div>' +
             '<div class="xqbr-form-field"><label>Target Date</label><input type="date" class="xqbr-input" data-key="target_date" value="' + escAttr(item.target_date) + '"></div>' +
             '</div>' +
@@ -81,9 +104,24 @@ function xfqbr_wizard_collaboration_init_js(): string
             '</div></div></div>';
     }
 
+    function showDecisionsLoading(message) {
+        loadState.loading = true;
+        var list = document.getElementById('xqbr-decisions-list');
+        var addLink = document.getElementById('xqbr-add-decision');
+        if (typeof window.xqbrRenderListLoading === 'function') {
+            window.xqbrRenderListLoading(list, 2, message || 'Loading key decisions…');
+        } else if (list) {
+            list.innerHTML = window.xqbrSpinnerHtml ? window.xqbrSpinnerHtml(message) : '<p class="xqbr-muted">Loading…</p>';
+        }
+        if (addLink) addLink.style.display = 'none';
+    }
+
     function renderDecisions() {
         var list = document.getElementById('xqbr-decisions-list');
         if (!list) return;
+        if (loadState.loading) {
+            return;
+        }
         if (!decisionsCache.length) {
             list.innerHTML = '<p class="xqbr-muted">No decisions or takeaways added yet. Use the + Add Decision button to capture key outcomes from your discussion.</p>';
             return;
@@ -105,38 +143,124 @@ function xfqbr_wizard_collaboration_init_js(): string
 
     function bindDecisionEvents(list) {
         list.querySelectorAll('[data-key]').forEach(function (el) {
-            el.addEventListener('input', function () { collectDecisions(list); });
+            el.addEventListener('input', function () { collectDecisions(list); markEdited(); });
         });
         list.querySelectorAll('.xqbr-prio-delete').forEach(function (link) {
             link.addEventListener('click', function () {
                 collectDecisions(list);
+                markEdited();
                 decisionsCache.splice(parseInt(link.getAttribute('data-index'), 10), 1);
                 renderDecisions();
             });
         });
     }
 
+    function bindAddLink(addLink) {
+        if (!addLink || addLink.dataset.bound === '1') {
+            return;
+        }
+        addLink.dataset.bound = '1';
+        addLink.addEventListener('click', function () {
+            var list = document.getElementById('xqbr-decisions-list');
+            if (list && list.querySelector('.xqbr-prio-card')) {
+                collectDecisions(list);
+            }
+            markEdited();
+            decisionsCache.push({ decision: '', owner_name: '', impact_area: '', next_step: '', target_date: '' });
+            renderDecisions();
+        });
+    }
+
+    window.xqbrLoadCollaborationData = function () {
+        if (typeof window.xqbrLoadDecisions !== 'function') {
+            return Promise.resolve();
+        }
+        var qbrId = currentQbrId();
+        if (!qbrId || loadState.fetched) {
+            return Promise.resolve();
+        }
+        var statusEl = document.getElementById('xqbr-collaboration-status');
+        if (statusEl) {
+            statusEl.textContent = '';
+        }
+        showDecisionsLoading('Loading key decisions…');
+        var token = loadState.token;
+        return window.xqbrLoadDecisions().then(function (rows) {
+            if (token !== loadState.token) {
+                return;
+            }
+            loadState.fetched = true;
+            loadState.loading = false;
+            if (!collaborationEdited) {
+                decisionsCache = (rows || []).map(mapDecisionRow);
+                renderDecisions();
+            } else {
+                renderDecisions();
+            }
+            if (statusEl) {
+                statusEl.textContent = 'Click Save Draft to save your changes.';
+            }
+        }).catch(function () {
+            loadState.loading = false;
+            var list = document.getElementById('xqbr-decisions-list');
+            if (list) {
+                list.innerHTML = window.xqbrSpinnerHtml
+                    ? window.xqbrSpinnerHtml('Could not load decisions.')
+                    : '<p class="xqbr-muted">Could not load decisions.</p>';
+            }
+            if (statusEl) {
+                statusEl.textContent = 'Could not load decisions. Click Save Draft after editing to retry.';
+            }
+        });
+    };
+
     window.initCollaborationStep = function () {
         var canEdit = !window.XFQBR_WIZARD || window.XFQBR_WIZARD.canEdit !== false;
         var notesArea = document.getElementById('xqbr-discussion-notes');
         var addLink = document.getElementById('xqbr-add-decision');
+        var statusEl = document.getElementById('xqbr-collaboration-status');
+        var qbrId = currentQbrId();
+
+        if (qbrId !== loadState.qbrId) {
+            loadState.qbrId = qbrId;
+            loadState.token += 1;
+            loadState.fetched = false;
+            decisionsCache = [];
+            collaborationEdited = false;
+        }
 
         if (notesArea) {
-            notesArea.value = 'Team agreed that Operations needs closer alignment with field staff. Leadership will pilot a weekly cross-functional check-in starting next month.';
-            if (!canEdit) notesArea.disabled = true;
+            notesArea.value = (window.XFQBR_WIZARD && window.XFQBR_WIZARD.discussionNotes)
+                ? window.XFQBR_WIZARD.discussionNotes
+                : '';
+            if (!canEdit) {
+                notesArea.disabled = true;
+            } else {
+                notesArea.addEventListener('input', markEdited);
+            }
         }
-        if (!canEdit && addLink) addLink.style.display = 'none';
-
-        if (addLink) {
-            addLink.addEventListener('click', function () {
-                var list = document.getElementById('xqbr-decisions-list');
-                if (list) collectDecisions(list);
-                decisionsCache.push({ decision: '', owner_user_id: '', impact_area: '', next_step: '', target_date: '' });
-                renderDecisions();
-            });
+        if (!canEdit && addLink) {
+            addLink.style.display = 'none';
         }
 
-        renderDecisions();
+        if (!loadState.fetched) {
+            showDecisionsLoading('Loading key decisions…');
+        } else {
+            renderDecisions();
+        }
+        bindAddLink(addLink);
+
+        if (statusEl && canEdit && loadState.fetched) {
+            statusEl.textContent = 'Click Save Draft to save your changes.';
+        }
+    };
+
+    window.xqbrCollaborationIsDirty = function () {
+        return collaborationEdited;
+    };
+
+    window.xqbrCollaborationMarkSaved = function () {
+        collaborationEdited = false;
     };
 })();
 JS;

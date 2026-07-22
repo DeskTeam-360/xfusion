@@ -24,6 +24,7 @@ class QbrCommitment extends Model
         'title',
         'description',
         'owner_user_id',
+        'owner_name',
         'priority',
         'related_arp_objective',
         'success_measure',

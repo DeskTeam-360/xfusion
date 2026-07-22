@@ -93,5 +93,58 @@ window.xqbrSaveDecisions = function (items) {
         body: payload.toString(),
     }).then(function (res) { return res.json(); });
 };
+
+window.xqbrCollectCollaborationDecisions = function () {
+    var list = document.getElementById('xqbr-decisions-list');
+    if (!list) {
+        return [];
+    }
+    var items = [];
+    list.querySelectorAll('.xqbr-prio-card').forEach(function (card) {
+        var item = {};
+        card.querySelectorAll('[data-key]').forEach(function (el) {
+            item[el.getAttribute('data-key')] = el.value;
+        });
+        items.push({
+            decision: (item.decision || '').trim(),
+            owner_user_id: null,
+            owner_name: (item.owner_name || '').trim() || null,
+            impact_area: (item.impact_area || '').trim() || null,
+            next_step: (item.next_step || '').trim() || null,
+            target_date: (item.target_date || '').trim() || null,
+        });
+    });
+    return items;
+};
+
+window.xqbrSaveCollaborationStep = function (snapshot) {
+    var notesEl = document.getElementById('xqbr-discussion-notes');
+    var notes = snapshot ? snapshot.notes : (notesEl ? notesEl.value : '');
+    var items = snapshot ? snapshot.decisions : window.xqbrCollectCollaborationDecisions();
+
+    return Promise.all([
+        window.xqbrSaveDiscussionNotes(notes),
+        window.xqbrSaveDecisions(items),
+    ]).then(function (results) {
+        var notesJson = results[0];
+        var decisionsJson = results[1];
+        if (!notesJson || !notesJson.success) {
+            return notesJson || { success: false, message: 'Failed to save discussion notes.' };
+        }
+        if (window.XFQBR_WIZARD) {
+            window.XFQBR_WIZARD.discussionNotes = notes;
+        }
+        if (!decisionsJson || !decisionsJson.success) {
+            return decisionsJson || { success: false, message: 'Failed to save key decisions.' };
+        }
+        if (typeof window.xqbrCollaborationMarkSaved === 'function') {
+            window.xqbrCollaborationMarkSaved();
+        }
+        return {
+            success: true,
+            saved_at: decisionsJson.saved_at || decisionsJson.data && decisionsJson.data.saved_at || '',
+        };
+    });
+};
 JS;
 }

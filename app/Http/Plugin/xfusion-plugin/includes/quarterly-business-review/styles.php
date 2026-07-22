@@ -21,9 +21,35 @@ function xfqbr_wizard_styles_css(): string
 #xfqbr-wiz p{font-size:18px}
 
 /* Loading state */
-.xqbr-spinner-row{display:flex;align-items:center;gap:.6rem;padding:1rem 0;color:var(--muted);font-size:16px}
-.xqbr-spinner{width:16px;height:16px;border:2px solid var(--border);border-top-color:var(--green);border-radius:50%;display:inline-block;animation:xqbr-spin .7s linear infinite;flex-shrink:0}
+.xqbr-spinner-row{display:flex;align-items:center;gap:.6rem;padding:.75rem 0;color:var(--muted);font-size:16px}
+.xqbr-spinner{width:18px;height:18px;border:2px solid var(--border);border-top-color:var(--green);border-radius:50%;display:inline-block;animation:xqbr-spin .7s linear infinite;flex-shrink:0}
+.xqbr-spinner-inline{width:14px;height:14px;vertical-align:-2px;margin-right:.15rem}
 @keyframes xqbr-spin{to{transform:rotate(360deg)}}
+.xqbr-loading-stack{display:flex;flex-direction:column;gap:.35rem}
+.xqbr-skeleton-list{opacity:.92}
+.xqbr-skeleton-card{pointer-events:none;border-color:#eef0f3;background:linear-gradient(90deg,#fafafa 0%,#f3f4f6 50%,#fafafa 100%);background-size:200% 100%;animation:xqbr-shimmer 1.4s ease-in-out infinite}
+.xqbr-skeleton-card .xqbr-skeleton-circle{width:30px;height:30px;border-radius:50%;background:#e5e7eb;color:transparent;flex-shrink:0}
+.xqbr-skeleton-line{height:12px;border-radius:999px;background:linear-gradient(90deg,#eceff3 0%,#f8f9fb 50%,#eceff3 100%);background-size:200% 100%;animation:xqbr-shimmer 1.4s ease-in-out infinite;margin-bottom:.55rem}
+.xqbr-skeleton-line:last-child{margin-bottom:0}
+.xqbr-skeleton-line.w-full{width:100%}
+.xqbr-skeleton-line.w-95{width:95%}
+.xqbr-skeleton-line.w-90{width:90%}
+.xqbr-skeleton-line.w-80{width:80%}
+.xqbr-skeleton-line.w-75{width:75%}
+.xqbr-skeleton-line.w-70{width:70%}
+.xqbr-skeleton-line.w-65{width:65%}
+.xqbr-skeleton-line.w-60{width:60%}
+.xqbr-skeleton-line.w-55{width:55%}
+.xqbr-skeleton-line.w-50{width:50%}
+.xqbr-skeleton-line.w-45{width:45%}
+.xqbr-skeleton-line.w-40{width:40%}
+.xqbr-skeleton-line.w-35{width:35%}
+.xqbr-skeleton-line.w-20{width:20%}
+.xqbr-skeleton-stats .xqbr-skeleton-line{height:14px;margin-bottom:.7rem}
+@keyframes xqbr-shimmer{0%{background-position:200% 0}100%{background-position:-200% 0}}
+.xqbr-main-loading{position:relative;min-height:120px}
+.xqbr-main-loading::after{content:'';position:absolute;inset:0;background:rgba(255,255,255,.55);z-index:2;pointer-events:none}
+.xqbr-main-loading .xqbr-step-loading-bar{position:absolute;top:0;left:0;right:0;height:3px;z-index:3;background:linear-gradient(90deg,transparent,var(--green),transparent);background-size:200% 100%;animation:xqbr-shimmer 1s linear infinite}
 
 /* View-only mode (non-leader members) — CSS-based so it survives any
    re-render from Step 3/4's async data load without re-applying JS. */
@@ -96,6 +122,7 @@ function xfqbr_wizard_styles_css(): string
 .xqbr-badge{display:inline-block;padding:.15rem .55rem;border-radius:999px;font-size:16px;font-weight:600}
 .xqbr-badge.amber{background:#fef3c7;color:#92400e}
 .xqbr-badge.green{background:#dcfce7;color:#166534}
+.xqbr-badge.gray{background:#f3f4f6;color:#374151}
 
 .xqbr-progress-track{height:8px;background:#e5e7eb;border-radius:999px;overflow:hidden;margin-top:.5rem}
 .xqbr-progress-fill{height:100%;background:var(--green);border-radius:999px}
@@ -165,10 +192,14 @@ select.xqbr-input[multiple]{min-height:4.75rem;padding:.35rem}
 .xqbr-summary-item dt{color:var(--muted);font-size:13px;text-transform:uppercase;letter-spacing:.03em;margin:0 0 .2rem}
 .xqbr-summary-item dd{margin:0;font-weight:700;color:var(--ink);font-size:16px}
 .xqbr-review-list{display:flex;flex-direction:column}
-.xqbr-review-row{display:flex;align-items:center;justify-content:space-between;gap:1rem;padding:.85rem 0;border-bottom:1px solid var(--border)}
+.xqbr-review-row{display:flex;align-items:center;justify-content:space-between;gap:1rem;padding:.85rem 0;border-bottom:1px solid var(--border);width:100%;text-align:left;background:transparent;border-left:none;border-right:none;border-top:none;font:inherit;color:inherit}
+.xqbr-review-row-link{cursor:pointer;border-radius:.375rem;margin:0 -.35rem;padding-left:.35rem;padding-right:.35rem;transition:background .15s ease}
+.xqbr-review-row-link:hover{background:#f3f4f6}
+.xqbr-review-row-link:focus-visible{outline:2px solid var(--green);outline-offset:2px}
 .xqbr-review-row:last-child{border-bottom:none;padding-bottom:0}
 .xqbr-review-row:first-child{padding-top:0}
-.xqbr-review-left{display:flex;align-items:flex-start;gap:.75rem;min-width:0}
+.xqbr-review-left{display:flex;align-items:flex-start;gap:.75rem;min-width:0;flex:1}
+.xqbr-review-go{color:var(--green);font-size:1.25rem;font-weight:700;flex-shrink:0;line-height:1}
 .xqbr-review-check{width:28px;height:28px;border-radius:50%;background:#e9f5e1;color:var(--green);display:inline-flex;align-items:center;justify-content:center;font-weight:700;font-size:.85rem;flex-shrink:0}
 .xqbr-review-status{color:var(--green);font-size:14px;font-weight:600;margin-top:.15rem}
 .xqbr-activate-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:1rem}

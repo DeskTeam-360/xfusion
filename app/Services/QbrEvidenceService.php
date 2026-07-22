@@ -6,11 +6,15 @@ use App\Models\Arp;
 use App\Models\ArpStrategicPriority;
 use App\Models\CompanyGroup;
 use App\Models\CompanyGroupDetail;
+use App\Models\CourseGroup;
+use App\Models\CourseGroupDetail;
+use App\Models\CourseList;
 use App\Models\OneOnOne;
 use App\Models\OneOnOneConversation;
 use App\Models\Qbr;
 use App\Models\QbrCommitment;
 use App\Models\ResultEvaluation;
+use App\Models\User;
 use App\Models\WpGfEntry;
 use Carbon\Carbon;
 
@@ -27,6 +31,8 @@ class QbrEvidenceService
 
     private const BEHAVIORAL_DRIVERS = ['get_real', 'fill_buckets', 'be_intentional', 'foster_grit', 'drive_growth'];
 
+    private const ACTIVITY_PROGRAM_TYPES = ['transform', 'sustain', 'revitalize'];
+
     /** Build the full evidence snapshot for a QBR's quarter/group. */
     public function buildSnapshot(Qbr $qbr): array
     {
@@ -41,8 +47,10 @@ class QbrEvidenceService
         $objectivesProgress = $this->qbrObjectivesProgress($qbr);
         $commitmentCompletion = $this->commitmentCompletionFromPreviousQuarter($qbr);
         $oneOnOne = $this->oneOnOneCompletionRate($memberIds, $start, $end);
+        $oneOnOneSummaries = $this->oneOnOneMeetingSummaries($memberIds, $start, $end);
         $assessment = $this->assessmentCompletionRate($memberIds, $evaluations);
-        $activity = $this->activityParticipationRate($memberIds, $start, $end);
+        $activity = $this->activityParticipationByProgram($memberIds, $start, $end);
+        $toolUtilization = $this->toolUtilizationStats($memberIds, $start, $end);
 
         $priorSnapshot = $qbr->previousQuarter()?->evidenceSnapshots()->first()?->snapshot;
 
@@ -54,12 +62,13 @@ class QbrEvidenceService
             'qbr_objectives_progress' => $objectivesProgress,
             'commitment_completion' => $commitmentCompletion,
             'one_on_one_completion' => $oneOnOne,
+            'one_on_one_summaries' => $oneOnOneSummaries,
             'assessment_completion' => $assessment,
             'activity_participation' => $activity,
-            'tool_utilization' => ['rate' => null, 'note' => 'No tool-usage tracking source exists yet — not fabricated.'],
+            'tool_utilization' => $toolUtilization,
             'cor_capability_trends' => $corTrends,
             'behavioral_driver_trends' => $driverTrends,
-            'readiness_indicators' => $this->readinessIndicators($oneOnOne, $assessment, $commitmentCompletion, $objectivesProgress),
+            'readiness_indicators' => $this->readinessIndicators($oneOnOne, $assessment, $commitmentCompletion, $objectivesProgress, $toolUtilization),
             'kpis' => $qbr->kpis()->get()->map(fn ($k) => [
                 'name' => $k->name,
                 'current' => $k->current_value,
@@ -67,7 +76,7 @@ class QbrEvidenceService
                 'status' => $k->status,
                 'trend' => $k->trend,
             ])->all(),
-            'evidence_sources' => $this->evidenceSourcesChecklist($qbr),
+            'evidence_sources' => $this->evidenceSourcesChecklist($qbr, $oneOnOneSummaries, $activity, $toolUtilization),
         ];
     }
 
@@ -268,38 +277,360 @@ class QbrEvidenceService
     }
 
     /**
-     * % of group members with at least one Gravity Forms submission in the
-     * period, as a proxy for "activity participation" — the codebase has no
-     * dedicated LMS-activity tracking table separate from GF entries today.
+     * Completed 1-on-1 conversations for this group in the review period —
+     * meeting_summary only (Step 6 synthesis), never prep or raw notes.
+     *
+     * @return list<array<string, mixed>>
      */
-    private function activityParticipationRate(array $memberIds, Carbon $start, Carbon $end): array
+    private function oneOnOneMeetingSummaries(array $memberIds, Carbon $start, Carbon $end): array
     {
         if ($memberIds === []) {
-            return ['rate' => null, 'total_members' => 0, 'participated' => 0];
+            return [];
         }
 
-        $participated = WpGfEntry::query()
-            ->whereIn('created_by', $memberIds)
-            ->whereBetween('date_created', [$start, $end])
-            ->distinct('created_by')
-            ->count('created_by');
+        $pairIds = OneOnOne::query()
+            ->whereIn('employee_user_id', $memberIds)
+            ->where('status', OneOnOne::STATUS_ACTIVE)
+            ->pluck('id');
+
+        if ($pairIds->isEmpty()) {
+            return [];
+        }
+
+        $conversations = OneOnOneConversation::query()
+            ->whereIn('one_on_one_id', $pairIds)
+            ->where('status', OneOnOneConversation::STATUS_COMPLETED)
+            ->where(function ($q) use ($start, $end) {
+                $q->whereBetween('held_at', [$start, $end])
+                    ->orWhereBetween('scheduled_at', [$start, $end]);
+            })
+            ->with(['oneOnOne:id,leader_user_id,employee_user_id', 'synthesis'])
+            ->orderByDesc('held_at')
+            ->orderByDesc('scheduled_at')
+            ->get();
+
+        $summaries = [];
+
+        foreach ($conversations as $conversation) {
+            $synthesis = $conversation->synthesis;
+            if ($synthesis === null || ! is_array($synthesis->synthesis)) {
+                continue;
+            }
+
+            $meetingSummary = $synthesis->synthesis['meeting_summary'] ?? null;
+            if (! is_array($meetingSummary)) {
+                continue;
+            }
+
+            $items = array_values(array_filter(
+                array_map(static fn ($item) => is_string($item) ? trim($item) : '', $meetingSummary['items'] ?? []),
+                static fn ($item) => $item !== ''
+            ));
+            $details = trim((string) ($meetingSummary['details'] ?? ''));
+
+            if ($items === [] && $details === '') {
+                continue;
+            }
+
+            $pair = $conversation->oneOnOne;
+            $heldAt = $conversation->held_at ?? $conversation->scheduled_at;
+
+            $summaries[] = [
+                'conversation_id' => $conversation->id,
+                'employee_user_id' => $pair?->employee_user_id,
+                'leader_user_id' => $pair?->leader_user_id,
+                'held_at' => $heldAt?->toIso8601String(),
+                'meeting_summary' => [
+                    'items' => $items,
+                    'details' => $details,
+                ],
+            ];
+        }
+
+        return $summaries;
+    }
+
+    /**
+     * Group members who submitted Transform / Sustain / Revitalize activities
+     * (GF forms linked to wp_course_groups.type) within the review period.
+     */
+    private function activityParticipationByProgram(array $memberIds, Carbon $start, Carbon $end): array
+    {
+        if ($memberIds === []) {
+            return [
+                'rate' => null,
+                'total_members' => 0,
+                'participated' => 0,
+                'by_program' => $this->emptyActivityByProgram(),
+                'participants' => [],
+            ];
+        }
+
+        $groupsByType = CourseGroup::query()
+            ->whereIn('type', self::ACTIVITY_PROGRAM_TYPES)
+            ->get()
+            ->groupBy('type');
+
+        $byProgram = [];
+        $userPrograms = [];
+
+        foreach (self::ACTIVITY_PROGRAM_TYPES as $programType) {
+            $groups = $groupsByType->get($programType, collect());
+            $participantIds = $this->activityParticipantsForCourseGroups(
+                $groups->pluck('id')->map(fn ($id) => (int) $id)->all(),
+                $memberIds,
+                $start,
+                $end
+            );
+
+            foreach ($participantIds as $userId) {
+                $userPrograms[$userId][] = $programType;
+            }
+
+            $byProgram[$programType] = [
+                'label' => ucfirst($programType),
+                'participated' => count($participantIds),
+                'total_members' => count($memberIds),
+                'rate' => round(count($participantIds) / count($memberIds) * 100, 1),
+                'user_ids' => $participantIds,
+            ];
+        }
+
+        $allParticipantIds = array_values(array_unique(array_merge(
+            ...array_map(static fn ($row) => $row['user_ids'], $byProgram)
+        )));
+
+        $displayNames = User::query()
+            ->whereIn('ID', $allParticipantIds)
+            ->pluck('display_name', 'ID');
+
+        $participants = [];
+        foreach ($allParticipantIds as $userId) {
+            $programs = array_values(array_unique($userPrograms[$userId] ?? []));
+            sort($programs);
+            $participants[] = [
+                'user_id' => $userId,
+                'display_name' => (string) ($displayNames[$userId] ?? ''),
+                'programs' => $programs,
+            ];
+        }
+
+        usort($participants, static fn ($a, $b) => strcasecmp($a['display_name'], $b['display_name']));
 
         return [
-            'rate' => round($participated / count($memberIds) * 100, 1),
+            'rate' => round(count($allParticipantIds) / count($memberIds) * 100, 1),
             'total_members' => count($memberIds),
-            'participated' => $participated,
+            'participated' => count($allParticipantIds),
+            'by_program' => $byProgram,
+            'participants' => $participants,
         ];
     }
 
-    private function readinessIndicators(array $oneOnOne, array $assessment, array $commitment, array $objectives): array
+    /** @return array<string, array{label: string, participated: int, total_members: int, rate: float, user_ids: list<int>}> */
+    private function emptyActivityByProgram(): array
+    {
+        $out = [];
+        foreach (self::ACTIVITY_PROGRAM_TYPES as $programType) {
+            $out[$programType] = [
+                'label' => ucfirst($programType),
+                'participated' => 0,
+                'total_members' => 0,
+                'rate' => 0.0,
+                'user_ids' => [],
+            ];
+        }
+
+        return $out;
+    }
+
+    /**
+     * @param  list<int>  $courseGroupIds
+     * @param  list<int>  $memberIds
+     * @return list<int>
+     */
+    private function activityParticipantsForCourseGroups(array $courseGroupIds, array $memberIds, Carbon $start, Carbon $end): array
+    {
+        if ($courseGroupIds === [] || $memberIds === []) {
+            return [];
+        }
+
+        $courseListIds = CourseGroupDetail::query()
+            ->whereIn('course_group_id', $courseGroupIds)
+            ->pluck('course_list_id')
+            ->map(fn ($id) => (int) $id)
+            ->unique()
+            ->values()
+            ->all();
+
+        if ($courseListIds === []) {
+            return [];
+        }
+
+        $formIds = CourseList::query()
+            ->whereIn('id', $courseListIds)
+            ->pluck('wp_gf_form_id')
+            ->filter()
+            ->map(fn ($id) => (int) $id)
+            ->unique()
+            ->values()
+            ->all();
+
+        if ($formIds === []) {
+            return [];
+        }
+
+        return WpGfEntry::query()
+            ->whereIn('created_by', $memberIds)
+            ->whereIn('form_id', $formIds)
+            ->whereBetween('date_created', [$start, $end])
+            ->whereIn('status', ['active', 'Active', 'ACTIVE'])
+            ->distinct()
+            ->pluck('created_by')
+            ->map(fn ($id) => (int) $id)
+            ->values()
+            ->all();
+    }
+
+    /**
+     * Tool submissions from wp_course_groups.tools = 1 (Tool List), scoped to
+     * group members and the QBR review period.
+     */
+    private function toolUtilizationStats(array $memberIds, Carbon $start, Carbon $end): array
+    {
+        $empty = [
+            'rate' => null,
+            'submitted_count' => 0,
+            'tools_submitted' => 0,
+            'total_tools' => 0,
+            'members_submitted' => 0,
+            'total_members' => count($memberIds),
+            'by_tool' => [],
+        ];
+
+        if ($memberIds === []) {
+            return $empty;
+        }
+
+        $toolGroupIds = CourseGroup::query()
+            ->where('tools', 1)
+            ->pluck('id')
+            ->map(fn ($id) => (int) $id)
+            ->values()
+            ->all();
+
+        if ($toolGroupIds === []) {
+            return $empty;
+        }
+
+        $courseListIds = CourseGroupDetail::query()
+            ->whereIn('course_group_id', $toolGroupIds)
+            ->pluck('course_list_id')
+            ->map(fn ($id) => (int) $id)
+            ->unique()
+            ->values()
+            ->all();
+
+        if ($courseListIds === []) {
+            return $empty;
+        }
+
+        $courseLists = CourseList::query()
+            ->whereIn('id', $courseListIds)
+            ->whereNotNull('wp_gf_form_id')
+            ->where('wp_gf_form_id', '>', 0)
+            ->get(['id', 'page_title', 'course_title', 'wp_gf_form_id']);
+
+        if ($courseLists->isEmpty()) {
+            return $empty;
+        }
+
+        $formToCourse = [];
+        foreach ($courseLists as $course) {
+            $formToCourse[(int) $course->wp_gf_form_id] = $course;
+        }
+
+        $formIds = array_keys($formToCourse);
+        $entries = WpGfEntry::query()
+            ->whereIn('created_by', $memberIds)
+            ->whereIn('form_id', $formIds)
+            ->whereBetween('date_created', [$start, $end])
+            ->whereIn('status', ['active', 'Active', 'ACTIVE'])
+            ->get(['id', 'form_id', 'created_by']);
+
+        $byTool = [];
+        foreach ($courseLists as $course) {
+            $byTool[(int) $course->id] = [
+                'course_list_id' => (int) $course->id,
+                'form_id' => (int) $course->wp_gf_form_id,
+                'name' => trim((string) ($course->page_title ?: $course->course_title)),
+                'submission_count' => 0,
+                'member_ids' => [],
+            ];
+        }
+
+        $membersSubmitted = [];
+        foreach ($entries as $entry) {
+            $formId = (int) $entry->form_id;
+            $userId = (int) $entry->created_by;
+            $course = $formToCourse[$formId] ?? null;
+            if ($course === null) {
+                continue;
+            }
+
+            $courseId = (int) $course->id;
+            $byTool[$courseId]['submission_count']++;
+            $byTool[$courseId]['member_ids'][$userId] = $userId;
+            $membersSubmitted[$userId] = $userId;
+        }
+
+        $byToolList = [];
+        $toolsSubmitted = 0;
+        foreach ($byTool as $row) {
+            $memberIdsForTool = array_values($row['member_ids']);
+            if ($row['submission_count'] > 0) {
+                $toolsSubmitted++;
+            }
+            $byToolList[] = [
+                'course_list_id' => $row['course_list_id'],
+                'form_id' => $row['form_id'],
+                'name' => $row['name'],
+                'submission_count' => $row['submission_count'],
+                'members_submitted' => count($memberIdsForTool),
+            ];
+        }
+
+        usort($byToolList, static fn ($a, $b) => strcasecmp($a['name'], $b['name']));
+
+        $totalTools = count($byToolList);
+        $submittedCount = $entries->count();
+
+        return [
+            'rate' => $totalTools > 0 ? round($toolsSubmitted / $totalTools * 100, 1) : null,
+            'submitted_count' => $submittedCount,
+            'tools_submitted' => $toolsSubmitted,
+            'total_tools' => $totalTools,
+            'members_submitted' => count($membersSubmitted),
+            'total_members' => count($memberIds),
+            'by_tool' => $byToolList,
+        ];
+    }
+
+    private function readinessIndicators(array $oneOnOne, array $assessment, array $commitment, array $objectives, array $toolUtilization): array
     {
         $people = $this->averageOrNull([$oneOnOne['rate'] ?? null, $assessment['rate'] ?? null]);
         $process = $this->averageOrNull([$commitment['rate'] ?? null, $objectives['progress'] ?? null]);
+        $system = null;
+        if (($toolUtilization['total_tools'] ?? 0) > 0 && ($toolUtilization['total_members'] ?? 0) > 0) {
+            $system = round(
+                ($toolUtilization['members_submitted'] / $toolUtilization['total_members']) * 100,
+                1
+            );
+        }
 
         return [
             'people_readiness' => $people,
             'process_readiness' => $process,
-            'system_readiness' => null, // no tool-usage source — see tool_utilization
+            'system_readiness' => $system,
         ];
     }
 
@@ -331,18 +662,21 @@ class QbrEvidenceService
     }
 
     /** Step 1's read-only checklist — which sources actually returned data. */
-    private function evidenceSourcesChecklist(Qbr $qbr): array
+    private function evidenceSourcesChecklist(Qbr $qbr, array $oneOnOneSummaries, array $activity, array $toolUtilization): array
     {
         $group = CompanyGroup::find($qbr->company_group_id);
+        $activityAvailable = ($activity['participated'] ?? 0) > 0;
+        $toolAvailable = ($toolUtilization['submitted_count'] ?? 0) > 0
+            || ($toolUtilization['total_tools'] ?? 0) > 0;
 
         return [
             ['key' => 'arp_objectives', 'label' => 'Annual Readiness Plan™ Objectives', 'available' => Arp::where('company_group_id', $qbr->company_group_id)->exists()],
             ['key' => 'previous_commitments', 'label' => 'Previous Quarterly Commitments', 'available' => $qbr->previousQuarter() !== null],
             ['key' => 'individual_insight_trends', 'label' => 'Individual Insight Trends', 'available' => true],
-            ['key' => 'one_on_one_summaries', 'label' => '1-on-1 Alignment Capture™ Summaries', 'available' => true],
-            ['key' => 'activity_participation', 'label' => 'Activity Participation', 'available' => true],
+            ['key' => 'one_on_one_summaries', 'label' => '1-on-1 Alignment Capture™ Summaries', 'available' => $oneOnOneSummaries !== []],
+            ['key' => 'activity_participation', 'label' => 'Activity Participation', 'available' => $activityAvailable],
             ['key' => 'assessment_trends', 'label' => 'Assessment Trends', 'available' => true],
-            ['key' => 'tool_usage', 'label' => 'Tool Usage', 'available' => false],
+            ['key' => 'tool_usage', 'label' => 'Tool Usage', 'available' => $toolAvailable],
             ['key' => 'ai_insight_themes', 'label' => 'AI Insight Themes', 'available' => true],
             ['key' => 'organizational_kpis', 'label' => 'Organizational KPIs', 'available' => $qbr->kpis()->exists()],
             ['key' => 'operational_metrics', 'label' => 'Operational Metrics', 'available' => $qbr->kpis()->exists()],

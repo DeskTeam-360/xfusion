@@ -199,14 +199,74 @@ if (root) {
         if (STEPS[current].key === 'publish' && typeof initPublishStep === 'function') {
             initPublishStep();
         }
+        xqbrLoadCurrentStepData();
     };
 
-    var goTo = function (i) {
+    var goToInner = function (i) {
         current = Math.max(0, Math.min(STEPS.length - 1, i));
         renderSteps();
         renderSidebar();
         renderMain();
-        root.scrollIntoView({ behavior: 'smooth', block: 'start' });
+        root.scrollIntoView({ behavior: 'auto', block: 'start' });
+    };
+
+    var STEP_DATA_LOADERS = {
+        collaboration: 'xqbrLoadCollaborationData',
+        commitments: 'xqbrLoadCommitmentsData',
+    };
+
+    var xqbrSetMainLoading = function (active) {
+        var main = root.querySelector('#xqbr-main');
+        if (!main) {
+            return;
+        }
+        if (active) {
+            main.classList.add('xqbr-main-loading');
+            if (!main.querySelector('.xqbr-step-loading-bar')) {
+                var bar = document.createElement('div');
+                bar.className = 'xqbr-step-loading-bar';
+                bar.setAttribute('aria-hidden', 'true');
+                main.appendChild(bar);
+            }
+            return;
+        }
+        main.classList.remove('xqbr-main-loading');
+        var bar = main.querySelector('.xqbr-step-loading-bar');
+        if (bar) {
+            bar.remove();
+        }
+    };
+
+    var xqbrLoadCurrentStepData = function () {
+        var stepKey = STEPS[current] ? STEPS[current].key : '';
+        var loaderName = STEP_DATA_LOADERS[stepKey];
+        if (!loaderName || typeof window[loaderName] !== 'function') {
+            return;
+        }
+        xqbrSetMainLoading(true);
+        try {
+            var result = window[loaderName]();
+            if (result && typeof result.finally === 'function') {
+                result.finally(function () {
+                    xqbrSetMainLoading(false);
+                });
+                return;
+            }
+        } catch (err) {
+            xqbrSetMainLoading(false);
+            return;
+        }
+        window.setTimeout(function () {
+            xqbrSetMainLoading(false);
+        }, 400);
+    };
+
+    var goTo = function (i) {
+        var target = Math.max(0, Math.min(STEPS.length - 1, i));
+        if (target === current) {
+            return;
+        }
+        goToInner(target);
     };
     window.xqbrGoTo = goTo;
     window.xqbrRenderCurrentStep = renderMain;

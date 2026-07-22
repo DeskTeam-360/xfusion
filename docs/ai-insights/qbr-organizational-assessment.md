@@ -49,6 +49,9 @@ Key fields the LLM analyzes:
 | `cor_capability_trends` | Five COR capabilities with scores |
 | `behavioral_driver_trends` | Five behavioral drivers |
 | `one_on_one_completion` | `{ rate, completed, scheduled }` |
+| `one_on_one_summaries` | Completed 1-on-1 Step 6 `meeting_summary` (items + details) for group members in period |
+| `activity_participation` | Transform / Sustain / Revitalize participation — `by_program`, `participants[]` |
+| `tool_utilization` | Tool List submissions (`wp_course_groups.tools = 1`) — `submitted_count`, `tools_submitted`, `by_tool[]` |
 | `assessment_completion` | Individual Insights completion rate |
 | `commitment_completion` | Prior quarter commitment follow-through |
 | `qbr_objectives_progress` | ARP objectives progress for the group |
