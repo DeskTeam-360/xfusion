@@ -137,13 +137,28 @@ function xfqbr_wizard_evidence_review_init_js(): string
         }
     }
 
-    window.initEvidenceReviewStep = function () {
-        var body = document.getElementById('xqbr-evidence-review-body');
-        if (body) body.innerHTML = '<div class="xqbr-spinner-row"><span class="xqbr-spinner"></span> Loading organizational evidence…</div>';
+    // TEMPORARY: render static dummy evidence while real aggregation is being
+    // debugged — see the note in step-1-evidence.php. Save KPIs still calls
+    // the real Laravel endpoint (harmless either way).
+    var DUMMY_EVIDENCE = {
+        overall_readiness_score: 72,
+        overall_readiness_trend: 'up',
+        qbr_objectives_progress: { progress: 68 },
+        commitment_completion: { rate: 63 },
+        one_on_one_completion: { rate: 81 },
+        activity_participation: { rate: 76 },
+        assessment_completion: { rate: 74 },
+        readiness_indicators: { people_readiness: 71, process_readiness: 68, system_readiness: 76 },
+    };
+    var DUMMY_KPIS = [
+        { name: 'Revenue Growth', current_value: '$4.2M', target_value: '$4.5M', status: 'at_risk' },
+        { name: 'Customer Retention', current_value: '92%', target_value: '90%', status: 'on_track' },
+        { name: 'Project On-Time Delivery', current_value: '88%', target_value: '90%', status: 'at_risk' },
+        { name: 'Employee Engagement', current_value: '78%', target_value: '80%', status: 'at_risk' },
+    ];
 
-        Promise.all([window.xqbrLoadEvidence(), window.xqbrLoadKpis()]).then(function (results) {
-            render(results[0], results[1] || []);
-        });
+    window.initEvidenceReviewStep = function () {
+        render(DUMMY_EVIDENCE, DUMMY_KPIS);
     };
 })();
 JS;

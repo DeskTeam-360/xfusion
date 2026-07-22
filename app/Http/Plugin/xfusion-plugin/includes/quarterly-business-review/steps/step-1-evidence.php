@@ -69,6 +69,18 @@ function xfqbr_wizard_evidence_init_js(): string
         }).join('');
     }
 
+    // TEMPORARY: Steps 1–3 render static dummy data while the real Laravel
+    // evidence/assessment aggregation is being debugged (some sources were
+    // returning empty for real groups). The Laravel endpoints and
+    // window.xqbrLoadEvidence / xqbrGenerateEvidence are untouched — only
+    // this step's init stops calling them for now. Revert by restoring the
+    // fetch-based version once data issues are resolved.
+    var DUMMY_SOURCES = ['arp_objectives', 'previous_commitments', 'individual_insight_trends', 'one_on_one_summaries',
+        'activity_participation', 'assessment_trends', 'tool_usage', 'ai_insight_themes',
+        'organizational_kpis', 'operational_metrics', 'historical_qbr_data'].map(function (key) {
+        return { key: key, available: true };
+    });
+
     window.initEvidenceStep = function () {
         var btn = document.getElementById('xqbr-generate-evidence-btn');
         var statusEl = document.getElementById('xqbr-evidence-status');
@@ -76,14 +88,8 @@ function xfqbr_wizard_evidence_init_js(): string
             btn.style.display = 'none';
         }
 
-        renderChecklist([]);
-
-        window.xqbrLoadEvidence().then(function (data) {
-            if (data && data.evidence_sources) {
-                renderChecklist(data.evidence_sources);
-                if (statusEl) statusEl.textContent = 'Evidence already generated for this quarter. Click Generate Evidence to refresh it.';
-            }
-        });
+        renderChecklist(DUMMY_SOURCES);
+        if (statusEl) statusEl.textContent = 'All evidence is current through today (dummy data).';
 
         if (btn) {
             btn.addEventListener('click', function () {
@@ -93,22 +99,13 @@ function xfqbr_wizard_evidence_init_js(): string
                 btn.textContent = 'Generating…';
                 if (statusEl) statusEl.textContent = 'Collecting the most up-to-date data. This may take a few seconds.';
 
-                window.xqbrGenerateEvidence().then(function (res) {
+                setTimeout(function () {
                     btn.disabled = false;
                     btn.dataset.busy = '';
                     btn.textContent = 'Generate Evidence';
-                    if (!res || !res.success) {
-                        if (statusEl) statusEl.textContent = (res && res.message) ? res.message : 'Failed to generate evidence.';
-                        return;
-                    }
-                    renderChecklist(res.data.evidence_sources);
-                    if (statusEl) statusEl.textContent = '✓ Evidence generation complete — captured ' + (res.captured_at || 'just now') + '.';
-                }).catch(function () {
-                    btn.disabled = false;
-                    btn.dataset.busy = '';
-                    btn.textContent = 'Generate Evidence';
-                    if (statusEl) statusEl.textContent = 'Failed to generate evidence — network error.';
-                });
+                    renderChecklist(DUMMY_SOURCES);
+                    if (statusEl) statusEl.textContent = '✓ Evidence generation complete (dummy data).';
+                }, 600);
             });
         }
     };

@@ -104,12 +104,10 @@ function xfqbr_wizard_assessment_init_js(): string
             '<h4 style="margin-top:1rem">Leadership Context</h4>' +
             '<p class="xqbr-muted" style="margin-top:-.4rem">What organizational context should be considered in addition to the evidence presented?</p>' +
             '<textarea class="xqbr-input" id="xqbr-leadership-context" rows="3" maxlength="2000" ' + (canEdit ? '' : 'disabled') + '>' + escHtml(payload.leadership_context || '') + '</textarea>' +
-            (canEdit ? '<button type="button" class="xqbr-btn xqbr-btn-outline xqbr-btn-sm" id="xqbr-save-context-btn">Save Leadership Context</button>' : '') +
-            '<span class="xqbr-muted" id="xqbr-context-save-status" style="margin-left:.5rem"></span>' +
+            '<p class="xqbr-muted" style="margin-top:.3rem">Use the <b>Save Draft</b> button below to save your agreement rating and context.</p>' +
             '</div>';
 
         wireGenerate();
-        wireContextSave();
     }
 
     function wireGenerate() {
@@ -144,28 +142,51 @@ function xfqbr_wizard_assessment_init_js(): string
         });
     }
 
-    function wireContextSave() {
-        var saveBtn = document.getElementById('xqbr-save-context-btn');
-        if (!saveBtn) return;
-        saveBtn.addEventListener('click', function () {
-            var context = document.getElementById('xqbr-leadership-context').value;
-            var rating = document.querySelector('input[name="xqbr-agreement"]:checked');
-            var statusEl = document.getElementById('xqbr-context-save-status');
-            saveBtn.disabled = true;
-            if (statusEl) statusEl.textContent = 'Saving…';
-            window.xqbrSaveLeadershipContext(context, rating ? rating.value : '').then(function (res) {
-                saveBtn.disabled = false;
-                if (statusEl) statusEl.textContent = (res && res.success) ? 'Saved.' : 'Save failed.';
-            });
-        });
-    }
+    // TEMPORARY: shown immediately instead of fetching — see the note in
+    // step-1-evidence.php. window.xqbrLoadAssessment / xqbrGenerateAssessment
+    // are untouched; Regenerate still calls the real endpoint if clicked.
+    var DUMMY_ASSESSMENT = {
+        leadership_context: '',
+        agreement_rating: null,
+        assessment: {
+            overall_readiness: { score: 68, label: 'Moderate Strength', trend: 'Improving' },
+            confidence_level: { percent: 82, label: 'High Confidence — based on data completeness and consistency.' },
+            cor_capability_assessment: [
+                { capability: 'alignment', score: 72, label: 'Strength' },
+                { capability: 'accountability', score: 64, label: 'Developing' },
+                { capability: 'communication', score: 61, label: 'Developing' },
+                { capability: 'leadership', score: 69, label: 'Strength' },
+                { capability: 'execution', score: 57, label: 'Opportunity' },
+            ],
+            top_strengths: [
+                'Strong leadership bench and emerging leaders.',
+                'Consistent improvement in project delivery efficiency.',
+                'High engagement in development activities.',
+                'Clear strategic direction and aligned priorities.',
+                'Effective cross-functional collaboration on key initiatives.',
+            ],
+            top_opportunities: [
+                'Improve communication consistency across teams.',
+                'Increase follow-through on action commitments.',
+                'Strengthen accountability for operational metrics.',
+                'Expand coaching practices across all leaders.',
+                'Improve resource planning and capacity visibility.',
+            ],
+            emerging_risks: [
+                'Resource constraints may impact ability to meet Q2 objectives.',
+                'Inconsistent follow-through on commitments in Operations.',
+                'Communication gaps between field and office teams.',
+            ],
+            emerging_opportunities: [
+                'Leverage growing leadership bench for stretch assignments.',
+                'Expand successful pilot programs to additional teams.',
+                'Improve system utilization to drive efficiency.',
+            ],
+        },
+    };
 
     window.initAssessmentStep = function () {
-        var body = document.getElementById('xqbr-assessment-body');
-        if (body) body.innerHTML = '<div class="xqbr-spinner-row"><span class="xqbr-spinner"></span> Loading AI assessment…</div>';
-        window.xqbrLoadAssessment().then(function (data) {
-            renderAssessment(data || {});
-        });
+        renderAssessment(DUMMY_ASSESSMENT);
     };
 })();
 JS;

@@ -123,6 +123,20 @@ window.xqbrSaveDraft = function () {
         var kpiBtn = document.getElementById('xqbr-kpi-save');
         if (kpiBtn) { kpiBtn.click(); return; }
     }
+    if (key === 'assessment') {
+        var contextEl = document.getElementById('xqbr-leadership-context');
+        var ratingEl = document.querySelector('input[name="xqbr-agreement"]:checked');
+        var status = document.getElementById('xqbr-autosave-status');
+        if (!contextEl) { return; }
+        if (status) status.innerHTML = '<span class="xqbr-autosave-check" aria-hidden="true">&#10003;</span> Saving…';
+        window.xqbrSaveLeadershipContext(contextEl.value, ratingEl ? ratingEl.value : '').then(function (res) {
+            if (!status) return;
+            status.innerHTML = (res && res.success)
+                ? '<span class="xqbr-autosave-check" aria-hidden="true">&#10003;</span> Draft saved.'
+                : '<span style="color:#dc2626">&#9888; Save failed.</span>';
+        });
+        return;
+    }
     if (key === 'collaboration') {
         var notesBtn = document.getElementById('xqbr-save-notes-btn');
         var decisionsBtn = document.getElementById('xqbr-save-decisions-btn');
