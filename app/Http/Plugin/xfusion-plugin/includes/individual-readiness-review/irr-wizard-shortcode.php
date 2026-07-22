@@ -4,10 +4,8 @@
  *
  * Usage: [fusion_irr_wizard]
  *
- * 7-step wizard shell. UI-only prototype matching the IRR mockups — no
- * Laravel calls anywhere yet (evidence, assessment, conversation notes,
- * commitments, synthesis, and publish are all static/local dummy data).
- * Structurally identical to the QBR wizard shell (qbr-wizard-shortcode.php).
+ * 7-step wizard shell. Picker gate loads groups/employees via Laravel; step
+ * panels remain UI-only until wired in later waves.
  *
  * Naming note: product-facing name is "Individual Readiness Review™ / IRR"
  * (formerly "360 Review"); underlying tables stay `wp_fusion_360_*`.
@@ -40,24 +38,45 @@ function xfusion_irr_wizard_shortcode($atts = []): string
         'irr_id' => '0',
     ], $atts, 'fusion_irr_wizard');
 
-    $irrId = sanitize_text_field($atts['irr_id']);
-    if ($irrId === '0' && isset($_GET['irr_id'])) {
-        $irrId = sanitize_text_field(wp_unslash($_GET['irr_id']));
+    $irrIdRaw = sanitize_text_field($atts['irr_id']);
+    if ($irrIdRaw === '0' && isset($_GET['irr_id'])) {
+        $irrIdRaw = sanitize_text_field(wp_unslash($_GET['irr_id']));
     }
 
-    if ($irrId === '' || $irrId === '0') {
+    if ($irrIdRaw === '' || $irrIdRaw === '0' || str_starts_with($irrIdRaw, 'new-')) {
         return xfirr_render_picker_gate();
     }
 
-    // UI-only prototype: no Laravel lookup — the sidebar shows static sample
-    // Review Summary data matching the mockups, regardless of which dummy
-    // record was picked (new-YYYY or an id from the picker list).
-    $currentUser  = wp_get_current_user();
-    $employeeName = $currentUser->display_name !== '' ? $currentUser->display_name : $currentUser->user_login;
-    $year         = (int) wp_date('Y');
-    if (str_starts_with($irrId, 'new-')) {
-        $year = (int) substr($irrId, 4) ?: $year;
+    $irrId = absint($irrIdRaw);
+    if ($irrId < 1) {
+        return xfirr_render_picker_gate();
     }
+
+    $irrContext = xfirr_picker_api_request('GET', "/{$irrId}", ['user_id' => get_current_user_id()]);
+    if (! $irrContext['ok']) {
+        $message = is_array($irrContext['body']) ? ($irrContext['body']['message'] ?? 'Unable to load this review.') : 'Unable to load this review.';
+
+        return '<p class="xirr-muted">' . esc_html($message) . ' <a href="' . esc_url(remove_query_arg('irr_id')) . '">' . esc_html__('Back to review picker', 'xfusion') . '</a></p>';
+    }
+
+    $irrData = is_array($irrContext['body']['data'] ?? null) ? $irrContext['body']['data'] : [];
+    $canEdit = (bool) ($irrData['can_edit'] ?? false);
+
+    $employeeName = $irrData['employee_name'] ?? '—';
+    $managerName  = $irrData['manager_name'] ?? '—';
+    $groupName    = $irrData['group_name'] ?? '—';
+    $orgName      = $irrData['organization_name'] ?? '—';
+    $year         = (int) ($irrData['year'] ?? wp_date('Y'));
+    $status       = (string) ($irrData['status'] ?? 'draft');
+    $statusLabels = [
+        'draft' => 'Draft',
+        'in_progress' => 'In Progress',
+        'ready_to_publish' => 'Ready to Publish',
+        'published' => 'Published',
+        'archived' => 'Archived',
+    ];
+    $statusLabel = $statusLabels[$status] ?? ucfirst(str_replace('_', ' ', $status));
+    $statusBadgeClass = in_array($status, ['published'], true) ? 'green' : (in_array($status, ['archived'], true) ? 'gray' : 'amber');
 
     $panelFns = [
         xfirr_wizard_step_evidence_js(),
@@ -85,7 +104,9 @@ function xfusion_irr_wizard_shortcode($atts = []): string
         'ajaxUrl' => admin_url('admin-ajax.php'),
         'userId'  => get_current_user_id(),
         'irrId'   => $irrId,
-        'canEdit' => true,
+        'canEdit' => $canEdit,
+        'status'  => $status,
+        'stepProgress' => is_array($irrData['step_progress'] ?? null) ? $irrData['step_progress'] : new stdClass(),
     ];
 
     // UI-only prototype: "Save Draft" is a local no-op for now — it just
@@ -137,12 +158,12 @@ JS;
                 </div>
                 <dl class="xirr-dl">
                     <dt>Employee</dt><dd id="xirr-si-employee"><?php echo esc_html($employeeName); ?></dd>
-                    <dt>Role</dt><dd id="xirr-si-role">Operations Manager</dd>
-                    <dt>Manager</dt><dd id="xirr-si-manager">James Scott</dd>
-                    <dt>Group</dt><dd id="xirr-si-group">Leadership Team</dd>
-                    <dt>Organization</dt><dd id="xirr-si-org">Northwind Energy Co-op</dd>
+                    <dt>Role</dt><dd id="xirr-si-role">—</dd>
+                    <dt>Manager</dt><dd id="xirr-si-manager"><?php echo esc_html($managerName); ?></dd>
+                    <dt>Group</dt><dd id="xirr-si-group"><?php echo esc_html($groupName); ?></dd>
+                    <dt>Organization</dt><dd id="xirr-si-org"><?php echo esc_html($orgName); ?></dd>
                     <dt>Review Year</dt><dd id="xirr-si-year"><?php echo esc_html((string) $year); ?></dd>
-                    <dt>Status</dt><dd id="xirr-si-status"><span class="xirr-badge amber">In Progress</span></dd>
+                    <dt>Status</dt><dd id="xirr-si-status"><span class="xirr-badge <?php echo esc_attr($statusBadgeClass); ?>"><?php echo esc_html($statusLabel); ?></span></dd>
                 </dl>
             </div>
 

@@ -3,6 +3,7 @@
 use App\Http\Controllers\Api\ArpController;
 use App\Http\Controllers\Api\CompanyPublicController;
 use App\Http\Controllers\Api\CourseGroupPublicController;
+use App\Http\Controllers\Api\IrrController;
 use App\Http\Controllers\Api\OneOnOneController;
 use App\Http\Controllers\Api\ParticipationChartsController;
 use App\Http\Controllers\Api\QbrController;
@@ -507,5 +508,14 @@ Route::prefix('v1')->middleware('fusion.api')->group(function () {
     };
     Route::prefix('qbrs')->group($registerQbrRoutes);
     Route::prefix('qbr')->group($registerQbrRoutes);
+
+    $registerIrrRoutes = function () {
+        Route::get('/picker-dashboard', [IrrController::class, 'pickerDashboard']);
+        Route::post('/', [IrrController::class, 'store']);
+        Route::get('/{irr}', [IrrController::class, 'show']);
+    };
+    Route::prefix('irrs')->group($registerIrrRoutes);
+    Route::prefix('irr')->group($registerIrrRoutes);
+    Route::prefix('360-reviews')->group($registerIrrRoutes);
 });
 
