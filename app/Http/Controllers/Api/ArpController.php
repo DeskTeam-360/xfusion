@@ -125,6 +125,35 @@ class ArpController extends Controller
         ]);
     }
 
+    /**
+     * Members of this ARP's company group — used to populate the
+     * Executive Owner dropdown on Steps 3 (Readiness Priorities) and 4
+     * (Strategic Priorities) instead of a hardcoded name list.
+     */
+    public function groupMembers(Request $request, Arp $arp)
+    {
+        $userId = (int) $request->query('user_id');
+        if ($userId < 1 || ! $this->memberGroupIds($userId)->contains($arp->company_group_id)) {
+            return response()->json(['success' => false, 'message' => 'You do not have access to this ARP.'], 403);
+        }
+
+        $members = CompanyGroupDetail::query()
+            ->where('company_group_id', $arp->company_group_id)
+            ->whereHas('user')
+            ->with('user:ID,display_name,user_nicename')
+            ->get()
+            ->map(fn (CompanyGroupDetail $d) => [
+                'id' => (int) $d->user_id,
+                'name' => $d->user?->display_name ?: $d->user?->user_nicename,
+                'is_leader' => $d->isLeader(),
+            ])
+            ->unique('id')
+            ->sortBy('name')
+            ->values();
+
+        return response()->json(['success' => true, 'data' => $members]);
+    }
+
     /** Version history — newest first. Snapshot bodies excluded from the list (fetch by id if needed). */
     public function listVersions(Arp $arp)
     {

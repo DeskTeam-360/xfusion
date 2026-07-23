@@ -80,6 +80,14 @@ function xfusion_arp_wizard_shortcode($atts = []): string
         }
     }
 
+    // Real company-group roster for the Executive Owner dropdowns on Steps 3
+    // and 4 — replaces the previous hardcoded name list.
+    $groupMembers = [];
+    $membersContext = xfarp_picker_api_request('GET', "/{$arpId}/group-members", ['user_id' => get_current_user_id()]);
+    if ($membersContext['ok'] && is_array($membersContext['body']['data'] ?? null)) {
+        $groupMembers = $membersContext['body']['data'];
+    }
+
     $currentUser = wp_get_current_user();
     $ownerName   = $atts['executive_owner'] !== ''
         ? $atts['executive_owner']
@@ -120,6 +128,7 @@ function xfusion_arp_wizard_shortcode($atts = []): string
         'createdAt'    => $arpData['created_at'] ?? null,
         'publishedAt'  => $arpData['published_at'] ?? null,
         'canEdit'      => $canEdit,
+        'groupMembers' => $groupMembers,
     ];
 
     $saveJs      = xfarp_wizard_save_draft_js();

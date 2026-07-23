@@ -472,6 +472,7 @@ Route::prefix('v1')->middleware('fusion.api')->group(function () {
         Route::post('/{arp}/readiness-review/generate', [ArpController::class, 'generateReadinessReview']);
         Route::patch('/{arp}/readiness-review/context', [ArpController::class, 'saveReadinessReviewContext']);
         Route::post('/{arp}/readiness-review/context', [ArpController::class, 'saveReadinessReviewContext']);
+        Route::get('/{arp}/group-members', [ArpController::class, 'groupMembers']);
         Route::get('/{arp}/versions', [ArpController::class, 'listVersions']);
         Route::post('/{arp}/archive-version', [ArpController::class, 'archiveVersion']);
         Route::post('/{arp}/publish', [ArpController::class, 'publish']);
@@ -512,6 +513,8 @@ Route::prefix('v1')->middleware('fusion.api')->group(function () {
     $registerIrrRoutes = function () {
         Route::get('/picker-dashboard', [IrrController::class, 'pickerDashboard']);
         Route::post('/', [IrrController::class, 'store']);
+        Route::post('/{irr}/evidence/generate', [IrrController::class, 'generateEvidence']);
+        Route::get('/{irr}/evidence', [IrrController::class, 'getEvidence']);
         Route::get('/{irr}', [IrrController::class, 'show']);
     };
     Route::prefix('irrs')->group($registerIrrRoutes);

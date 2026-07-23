@@ -27,11 +27,14 @@ function xfarp_wizard_strategic_init_js(): string
 {
     return <<<'JS'
 (function () {
-    var OWNERS = [
-        { value: 'james_scott', label: 'James Scott', initials: 'JS' },
-        { value: 'maria_chen', label: 'Maria Chen', initials: 'MC' },
-        { value: 'alex_rivera', label: 'Alex Rivera', initials: 'AR' },
-    ];
+    // Executive Owner options come from this ARP's company group roster
+    // (Laravel /api/v1/arps/{arp}/group-members) — not a hardcoded name list.
+    var OWNERS = ((window.XFARP_WIZARD && window.XFARP_WIZARD.groupMembers) || []).map(function (m) {
+        var name = m.name || ('User #' + m.id);
+        var parts = name.trim().split(/\s+/).filter(Boolean);
+        var initials = ((parts[0] || '')[0] || '') + ((parts.length > 1 ? parts[parts.length - 1] : '')[0] || '');
+        return { value: String(m.id), label: name, initials: initials.toUpperCase() || '—' };
+    });
     var ORG_KPIS = [
         { value: 'leadership_effectiveness', label: 'Leadership Effectiveness Index' },
         { value: 'employee_engagement', label: 'Employee Engagement Score' },
@@ -82,7 +85,9 @@ function xfarp_wizard_strategic_init_js(): string
     }
 
     function ownerOpts(selected) {
-        return OWNERS.map(function (o) {
+        var blank = '<option value=""' + (selected ? '' : ' selected') + '>' +
+            (OWNERS.length ? '— Select group member —' : 'No group members found') + '</option>';
+        return blank + OWNERS.map(function (o) {
             return '<option value="' + o.value + '"' + (o.value === selected ? ' selected' : '') + '>' + o.label + '</option>';
         }).join('');
     }
@@ -104,7 +109,7 @@ function xfarp_wizard_strategic_init_js(): string
         return {
             title: '',
             related_readiness: readiness[0] ? readiness[0].name : '',
-            executive_owner: 'james_scott',
+            executive_owner: OWNERS.length ? OWNERS[0].value : '',
             target_date: '',
             description: '',
             success_measures: '',
