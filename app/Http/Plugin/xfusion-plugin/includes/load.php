@@ -15,6 +15,7 @@ $xfusion_include_files = [
     'annual-readiness-plan/arp-wizard-shortcode.php',
     'quarterly-business-review/qbr-wizard-shortcode.php',
     'individual-readiness-review/irr-wizard-shortcode.php',
+    'annual-readiness-review/arr-wizard-shortcode.php',
     'woocommerce-mindful-mothers-checkout.php',
     'woocommerce-mindful-mothers-email.php',
     'learndash-topic-global-search.php',
