@@ -113,30 +113,35 @@ function xfqbr_render_picker_gate(): string
 {
     $nonce   = wp_create_nonce('xfqbr_picker');
     $ajaxUrl = esc_url(admin_url('admin-ajax.php'));
+    $css     = xfqbr_wizard_styles_css();
 
     ob_start();
     ?>
-<div id="xfqbr-picker" data-ajax-url="<?php echo $ajaxUrl; ?>" data-nonce="<?php echo esc_attr($nonce); ?>">
-    <div class="xqbr-card" id="xfqbr-picker-body">
-        <p class="xqbr-muted">Loading your organizations…</p>
+<div id="xfqbr-wiz">
+
+    <div class="xqbr-header">
+        <div class="xqbr-header-inner">
+            <div>
+                <h1>QUARTERLY BUSINESS REVIEW&trade; (QBR)</h1>
+                <p>Select a company group to begin</p>
+            </div>
+        </div>
+    </div>
+
+    <div style="padding:1.5rem 1.75rem">
+        <div id="xfqbr-picker" data-ajax-url="<?php echo $ajaxUrl; ?>" data-nonce="<?php echo esc_attr($nonce); ?>">
+            <div class="xqbr-card" id="xfqbr-picker-body">
+                <p class="xqbr-muted">Loading your organizations…</p>
+            </div>
+        </div>
     </div>
 </div>
 
-<style>
-#xfqbr-picker{max-width:760px;margin:0 auto}
-#xfqbr-picker .xqbr-card{border:1px solid #e5e7eb;border-radius:.5rem;padding:1.5rem;background:#fff}
-#xfqbr-picker h2{margin:0 0 .3rem;font-size:1.15rem;color:#1e2a52}
-#xfqbr-picker .xqbr-muted{color:#6b7280;font-size:.85rem;line-height:1.5}
-#xfqbr-picker table{width:100%;border-collapse:collapse;margin-top:1rem;font-size:.85rem}
-#xfqbr-picker th{text-align:left;padding:.5rem;color:#6b7280;font-size:.72rem;text-transform:uppercase;border-bottom:1px solid #e5e7eb}
-#xfqbr-picker td{padding:.6rem .5rem;border-bottom:1px solid #f3f4f6}
-#xfqbr-picker .xqbr-badge{display:inline-block;padding:.15rem .55rem;border-radius:999px;font-size:.72rem;font-weight:600;background:#fef3c7;color:#92400e}
-#xfqbr-picker .xqbr-badge.active{background:#dcfce7;color:#166534}
-#xfqbr-picker a.xqbr-open-link{color:#5f9a3f;font-weight:600;text-decoration:underline}
-#xfqbr-picker .xfqbr-new-form{margin-top:1.25rem;border-top:1px solid #e5e7eb;padding-top:1rem}
-#xfqbr-picker select,#xfqbr-picker input{border:1px solid #d1d5db;border-radius:.375rem;padding:.4rem .6rem;font-size:.85rem;margin:.2rem .4rem .2rem 0}
-#xfqbr-picker button{cursor:pointer;border:1px solid #5f9a3f;background:#5f9a3f;color:#fff;border-radius:.375rem;padding:.4rem 1rem;font-size:.85rem;font-weight:600}
-#xfqbr-picker button:disabled{opacity:.5;cursor:default}
+<style><?php echo $css; ?>
+#xfqbr-picker h2{margin:0 0 .3rem;font-size:22px;color:var(--navy)}
+#xfqbr-picker .xfqbr-new-form{margin-top:1.25rem;border-top:1px solid var(--border);padding-top:1rem}
+#xfqbr-picker .xfqbr-new-form select,
+#xfqbr-picker .xfqbr-new-form input{margin:.2rem .5rem .5rem 0;width:auto;display:inline-block}
 </style>
 
 <script>
@@ -180,18 +185,18 @@ function xfqbr_render_picker_gate(): string
         if (qbrs.length === 0) {
             html += '<p class="xqbr-muted">No QBRs yet for your organization' + (canCreate ? ' — create one below.' : '.') + '</p>';
         } else {
-            html += '<table><thead><tr><th>Organization</th><th>Quarter</th><th>Status</th><th>Access</th><th></th></tr></thead><tbody>';
+            html += '<div class="xqbr-table-scroll"><table class="xqbr-table"><thead><tr><th>Organization</th><th>Quarter</th><th>Status</th><th>Access</th><th></th></tr></thead><tbody>';
             qbrs.forEach(function (q) {
-                var badgeClass = (q.status === 'closed' || q.status === 'held') ? 'xqbr-badge active' : 'xqbr-badge';
+                var badgeClass = (q.status === 'closed' || q.status === 'held') ? 'xqbr-badge green' : 'xqbr-badge amber';
                 var accessBadge = q.can_edit
-                    ? '<span class="xqbr-badge active">Editable</span>'
-                    : '<span class="xqbr-badge">View only</span>';
+                    ? '<span class="xqbr-badge green">Editable</span>'
+                    : '<span class="xqbr-badge amber">View only</span>';
                 html += '<tr><td>' + escHtml(q.company_name) + '</td><td>' + quarterLabel(q.quarter) + ' ' + escHtml(q.year) + '</td>' +
                     '<td><span class="' + badgeClass + '">' + escHtml(q.status) + '</span></td>' +
                     '<td>' + accessBadge + '</td>' +
-                    '<td><a href="javascript:void(0)" class="xqbr-open-link" data-open="' + q.id + '">Open</a></td></tr>';
+                    '<td><a href="javascript:void(0)" class="xqbr-link" data-open="' + q.id + '">Open &rarr;</a></td></tr>';
             });
-            html += '</tbody></table>';
+            html += '</tbody></table></div>';
         }
 
         if (canCreate) {
@@ -199,13 +204,13 @@ function xfqbr_render_picker_gate(): string
                 return '<option value="' + q + '"' + (q === currentQuarter() ? ' selected' : '') + '>' + quarterLabel(q) + '</option>';
             }).join('');
             html += '<div class="xfqbr-new-form">' +
-                '<div style="font-weight:700;font-size:.85rem;margin-bottom:.5rem">Create a new QBR</div>' +
-                '<select id="xfqbr-new-company">' + companies.map(function (c) {
+                '<div style="font-weight:700;font-size:15px;color:var(--navy);margin-bottom:.5rem">Create a new QBR</div>' +
+                '<select class="xqbr-input" id="xfqbr-new-company">' + companies.map(function (c) {
                     return '<option value="' + c.id + '">' + escHtml(c.name) + '</option>';
                 }).join('') + '</select>' +
-                '<select id="xfqbr-new-quarter">' + qOpts + '</select>' +
-                '<input type="number" id="xfqbr-new-year" value="' + new Date().getFullYear() + '" style="width:6rem"/>' +
-                '<button type="button" id="xfqbr-new-btn">+ Create QBR</button>' +
+                '<select class="xqbr-input" id="xfqbr-new-quarter">' + qOpts + '</select>' +
+                '<input type="number" class="xqbr-input" id="xfqbr-new-year" value="' + new Date().getFullYear() + '" style="width:6rem"/>' +
+                '<button type="button" class="xqbr-btn xqbr-btn-accent" id="xfqbr-new-btn">+ Create QBR</button>' +
                 '</div>';
         }
 

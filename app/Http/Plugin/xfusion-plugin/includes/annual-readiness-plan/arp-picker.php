@@ -113,30 +113,35 @@ function xfarp_render_picker_gate(): string
 {
     $nonce   = wp_create_nonce('xfarp_picker');
     $ajaxUrl = esc_url(admin_url('admin-ajax.php'));
+    $css     = xfarp_wizard_styles_css();
 
     ob_start();
     ?>
-<div id="xfarp-picker" data-ajax-url="<?php echo $ajaxUrl; ?>" data-nonce="<?php echo esc_attr($nonce); ?>">
-    <div class="xar-card" id="xfarp-picker-body">
-        <p class="xar-muted">Loading your organizations…</p>
+<div id="xfarp-wiz">
+
+    <div class="xar-header">
+        <div class="xar-header-inner">
+            <div>
+                <h1>ANNUAL READINESS PLAN (ARP)</h1>
+                <p>Select an organization to begin</p>
+            </div>
+        </div>
+    </div>
+
+    <div style="padding:1.5rem 1.75rem">
+        <div id="xfarp-picker" data-ajax-url="<?php echo $ajaxUrl; ?>" data-nonce="<?php echo esc_attr($nonce); ?>">
+            <div class="xar-card" id="xfarp-picker-body">
+                <p class="xar-muted">Loading your organizations…</p>
+            </div>
+        </div>
     </div>
 </div>
 
-<style>
-#xfarp-picker{max-width:720px;margin:0 auto}
-#xfarp-picker .xar-card{border:1px solid #e5e7eb;border-radius:.5rem;padding:1.5rem;background:#fff}
-#xfarp-picker h2{margin:0 0 .3rem;font-size:1.15rem;color:#1e2a52}
-#xfarp-picker .xar-muted{color:#6b7280;font-size:.85rem;line-height:1.5}
-#xfarp-picker table{width:100%;border-collapse:collapse;margin-top:1rem;font-size:.85rem}
-#xfarp-picker th{text-align:left;padding:.5rem;color:#6b7280;font-size:.72rem;text-transform:uppercase;border-bottom:1px solid #e5e7eb}
-#xfarp-picker td{padding:.6rem .5rem;border-bottom:1px solid #f3f4f6}
-#xfarp-picker .xar-badge{display:inline-block;padding:.15rem .55rem;border-radius:999px;font-size:.72rem;font-weight:600;background:#fef3c7;color:#92400e}
-#xfarp-picker .xar-badge.active{background:#dcfce7;color:#166534}
-#xfarp-picker a.xar-open-link{color:#5f9a3f;font-weight:600;text-decoration:underline}
-#xfarp-picker .xfarp-new-form{margin-top:1.25rem;border-top:1px solid #e5e7eb;padding-top:1rem}
-#xfarp-picker select,#xfarp-picker input{border:1px solid #d1d5db;border-radius:.375rem;padding:.4rem .6rem;font-size:.85rem;margin:.2rem .4rem .2rem 0}
-#xfarp-picker button{cursor:pointer;border:1px solid #5f9a3f;background:#5f9a3f;color:#fff;border-radius:.375rem;padding:.4rem 1rem;font-size:.85rem;font-weight:600}
-#xfarp-picker button:disabled{opacity:.5;cursor:default}
+<style><?php echo $css; ?>
+#xfarp-picker h2{margin:0 0 .3rem;font-size:22px;color:var(--navy)}
+#xfarp-picker .xfarp-new-form{margin-top:1.25rem;border-top:1px solid var(--border);padding-top:1rem}
+#xfarp-picker .xfarp-new-form select,
+#xfarp-picker .xfarp-new-form input{margin:.2rem .5rem .5rem 0;width:auto;display:inline-block}
 </style>
 
 <script>
@@ -171,28 +176,28 @@ function xfarp_render_picker_gate(): string
         if (arps.length === 0) {
             html += '<p class="xar-muted">No ARPs yet for your organization' + (canCreate ? ' — create one below.' : '.') + '</p>';
         } else {
-            html += '<table><thead><tr><th>Organization</th><th>Year</th><th>Status</th><th>Access</th><th></th></tr></thead><tbody>';
+            html += '<div class="xar-table-scroll"><table class="xar-table"><thead><tr><th>Organization</th><th>Year</th><th>Status</th><th>Access</th><th></th></tr></thead><tbody>';
             arps.forEach(function (a) {
-                var badgeClass = a.status === 'active' ? 'xar-badge active' : 'xar-badge';
+                var badgeClass = a.status === 'active' ? 'xar-badge green' : 'xar-badge amber';
                 var accessBadge = a.can_edit
-                    ? '<span class="xar-badge active">Editable</span>'
-                    : '<span class="xar-badge">View only</span>';
+                    ? '<span class="xar-badge green">Editable</span>'
+                    : '<span class="xar-badge amber">View only</span>';
                 html += '<tr><td>' + escHtml(a.company_name) + '</td><td>' + escHtml(a.year) + '</td>' +
                     '<td><span class="' + badgeClass + '">' + escHtml(a.status) + '</span></td>' +
                     '<td>' + accessBadge + '</td>' +
-                    '<td><a href="javascript:void(0)" class="xar-open-link" data-open="' + a.id + '">Open</a></td></tr>';
+                    '<td><a href="javascript:void(0)" class="xar-link" data-open="' + a.id + '">Open &rarr;</a></td></tr>';
             });
-            html += '</tbody></table>';
+            html += '</tbody></table></div>';
         }
 
         if (canCreate) {
             html += '<div class="xfarp-new-form">' +
-                '<div style="font-weight:700;font-size:.85rem;margin-bottom:.5rem">Create a new ARP</div>' +
-                '<select id="xfarp-new-company">' + companies.map(function (c) {
+                '<div style="font-weight:700;font-size:15px;color:var(--navy);margin-bottom:.5rem">Create a new ARP</div>' +
+                '<select class="xar-input" id="xfarp-new-company">' + companies.map(function (c) {
                     return '<option value="' + c.id + '">' + escHtml(c.name) + '</option>';
                 }).join('') + '</select>' +
-                '<input type="number" id="xfarp-new-year" value="' + new Date().getFullYear() + '" style="width:6rem"/>' +
-                '<button type="button" id="xfarp-new-btn">+ Create ARP</button>' +
+                '<input type="number" class="xar-input" id="xfarp-new-year" value="' + new Date().getFullYear() + '" style="width:6rem"/>' +
+                '<button type="button" class="xar-btn xar-btn-accent" id="xfarp-new-btn">+ Create ARP</button>' +
                 '</div>';
         }
 

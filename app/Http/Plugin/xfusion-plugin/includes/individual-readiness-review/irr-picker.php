@@ -105,36 +105,41 @@ function xfirr_render_picker_gate(): string
 {
     $nonce   = wp_create_nonce('xfirr_picker');
     $ajaxUrl = esc_url(admin_url('admin-ajax.php'));
+    $css     = xfirr_wizard_styles_css();
 
     ob_start();
     ?>
-<div id="xfirr-picker" data-ajax-url="<?php echo $ajaxUrl; ?>" data-nonce="<?php echo esc_attr($nonce); ?>">
-    <div class="xirr-card" id="xfirr-picker-body">
-        <p class="xirr-muted">Loading your groups and reviews…</p>
+<div id="xfirr-wiz">
+
+    <div class="xirr-header">
+        <div class="xirr-header-inner">
+            <div>
+                <h1>INDIVIDUAL READINESS REVIEW&trade;</h1>
+                <p>Select a team member to begin</p>
+            </div>
+        </div>
+    </div>
+
+    <div style="padding:1.5rem 1.75rem">
+        <div id="xfirr-picker" data-ajax-url="<?php echo $ajaxUrl; ?>" data-nonce="<?php echo esc_attr($nonce); ?>">
+            <div class="xirr-card" id="xfirr-picker-body">
+                <p class="xirr-muted">Loading your groups and reviews…</p>
+            </div>
+        </div>
     </div>
 </div>
 
-<style>
-#xfirr-picker{max-width:960px;margin:0 auto}
-#xfirr-picker .xirr-card{border:1px solid #e5e7eb;border-radius:.5rem;padding:1.5rem;background:#fff}
-#xfirr-picker h2{margin:0 0 .3rem;font-size:1.15rem;color:#1e2a52}
-#xfirr-picker h3{margin:0 0 .35rem;font-size:.95rem;color:#1e2a52}
-#xfirr-picker .xirr-muted{color:#6b7280;font-size:.85rem;line-height:1.5}
+<style><?php echo $css; ?>
+#xfirr-picker h2{margin:0 0 .3rem;font-size:22px;color:var(--navy)}
+#xfirr-picker h3{margin:0 0 .5rem;font-size:15px;color:var(--navy);text-transform:uppercase;letter-spacing:.03em}
 #xfirr-picker .xfirr-gate-columns{display:grid;grid-template-columns:1fr 1fr;gap:1.5rem;margin-top:1rem}
-@media(max-width:720px){#xfirr-picker .xfirr-gate-columns{grid-template-columns:1fr}}
-#xfirr-picker .xfirr-gate-col{border:1px solid #f3f4f6;border-radius:.375rem;padding:1rem;background:#fafafa}
-#xfirr-picker table{width:100%;border-collapse:collapse;margin-top:.75rem;font-size:.85rem}
-#xfirr-picker th{text-align:left;padding:.5rem;color:#6b7280;font-size:.72rem;text-transform:uppercase;border-bottom:1px solid #e5e7eb}
-#xfirr-picker td{padding:.6rem .5rem;border-bottom:1px solid #f3f4f6;vertical-align:middle}
-#xfirr-picker .xirr-badge{display:inline-block;padding:.15rem .55rem;border-radius:999px;font-size:.72rem;font-weight:600;background:#fef3c7;color:#92400e}
-#xfirr-picker .xirr-badge.active{background:#dcfce7;color:#166534}
-#xfirr-picker .xirr-badge.gray{background:#f3f4f6;color:#4b5563}
-#xfirr-picker a.xirr-open-link{color:#5f9a3f;font-weight:600;text-decoration:underline}
-#xfirr-picker label{display:block;font-size:.78rem;font-weight:600;color:#374151;margin-bottom:.25rem}
-#xfirr-picker select,#xfirr-picker input{border:1px solid #d1d5db;border-radius:.375rem;padding:.45rem .6rem;font-size:.85rem;width:100%;max-width:100%;box-sizing:border-box;margin:0 0 .65rem}
-#xfirr-picker button{cursor:pointer;border:1px solid #5f9a3f;background:#5f9a3f;color:#fff;border-radius:.375rem;padding:.45rem 1rem;font-size:.85rem;font-weight:600;width:100%;margin-top:.25rem}
-#xfirr-picker button:disabled{opacity:.5;cursor:default}
+@media(max-width:1024px){#xfirr-picker .xfirr-gate-columns{grid-template-columns:1fr}}
+#xfirr-picker .xfirr-gate-col{border:1px solid var(--border);border-radius:.5rem;padding:1.1rem 1.25rem;background:#fafafa}
+#xfirr-picker label{display:block;font-size:13px;font-weight:700;color:var(--navy);margin-bottom:.3rem}
+#xfirr-picker select,#xfirr-picker input{margin:0 0 .65rem;width:100%;box-sizing:border-box}
+#xfirr-picker button{width:100%;margin-top:.25rem}
 #xfirr-picker .xfirr-field-gap{margin-top:.5rem}
+#xfirr-picker .xirr-badge.gray{background:#f3f4f6;color:#4b5563}
 </style>
 
 <script>
@@ -181,29 +186,29 @@ function xfirr_render_picker_gate(): string
 
     function statusBadgeClass(status) {
         var key = String(status || 'draft').toLowerCase();
-        if (key === 'published') return 'xirr-badge active';
+        if (key === 'published') return 'xirr-badge green';
         if (key === 'archived') return 'xirr-badge gray';
-        return 'xirr-badge';
+        return 'xirr-badge amber';
     }
 
     function renderReviews(reviews) {
         if (!reviews.length) {
             return '<p class="xirr-muted">No reviews yet' + (pickerState.groups.length ? ' — start one on the left.' : '.') + '</p>';
         }
-        var html = '<table><thead><tr><th>Employee</th><th>Year</th><th>Group</th><th>Status</th><th></th></tr></thead><tbody>';
+        var html = '<div class="xirr-table-scroll"><table class="xirr-table"><thead><tr><th>Employee</th><th>Year</th><th>Group</th><th>Status</th><th></th></tr></thead><tbody>';
         reviews.forEach(function (r) {
             var access = r.can_edit
-                ? '<span class="xirr-badge active">Editable</span>'
-                : (r.is_self ? '<span class="xirr-badge">Your review</span>' : '<span class="xirr-badge gray">View only</span>');
+                ? '<span class="xirr-badge green">Editable</span>'
+                : (r.is_self ? '<span class="xirr-badge amber">Your review</span>' : '<span class="xirr-badge gray">View only</span>');
             html += '<tr>' +
                 '<td>' + escHtml(r.employee_name) + '</td>' +
                 '<td>' + escHtml(r.year) + '</td>' +
                 '<td>' + escHtml(r.group_name) + '</td>' +
                 '<td><span class="' + statusBadgeClass(r.status) + '">' + escHtml(statusLabel(r.status)) + '</span><br>' + access + '</td>' +
-                '<td><a href="javascript:void(0)" class="xirr-open-link" data-open="' + r.id + '">Open</a></td>' +
+                '<td><a href="javascript:void(0)" class="xirr-link" data-open="' + r.id + '">Open &rarr;</a></td>' +
                 '</tr>';
         });
-        html += '</tbody></table>';
+        html += '</tbody></table></div>';
         return html;
     }
 
@@ -216,7 +221,7 @@ function xfirr_render_picker_gate(): string
             return;
         }
         var html = '<label for="xfirr-gate-member-select">Team member</label>' +
-            '<select id="xfirr-gate-member-select"><option value="">— Select team member —</option>';
+            '<select class="xirr-input" id="xfirr-gate-member-select"><option value="">— Select team member —</option>';
         members.forEach(function (m) {
             html += '<option value="' + m.employee.id + '">' + escHtml(m.employee.name) + '</option>';
         });
@@ -231,15 +236,15 @@ function xfirr_render_picker_gate(): string
 
         var html = '<p class="xirr-muted">Select a company group and team member, then choose the review year.</p>' +
             '<label for="xfirr-gate-group-select">Company group</label>' +
-            '<select id="xfirr-gate-group-select"><option value="">— Select company group —</option>';
+            '<select class="xirr-input" id="xfirr-gate-group-select"><option value="">— Select company group —</option>';
         groups.forEach(function (g) {
             html += '<option value="' + g.id + '">' + escHtml(groupLabel(g)) + '</option>';
         });
         html += '</select>' +
             '<div id="xfirr-gate-member-wrap" class="xfirr-field-gap"></div>' +
             '<label for="xfirr-new-year">Review year</label>' +
-            '<input type="number" id="xfirr-new-year" value="' + new Date().getFullYear() + '" min="2000" max="2100"/>' +
-            '<button type="button" id="xfirr-new-btn" disabled>+ Start Review</button>';
+            '<input type="number" class="xirr-input" id="xfirr-new-year" value="' + new Date().getFullYear() + '" min="2000" max="2100"/>' +
+            '<button type="button" class="xirr-btn xirr-btn-accent" id="xfirr-new-btn" disabled>+ Start Review</button>';
 
         return html;
     }
