@@ -195,8 +195,17 @@ echo $panelsJs . "\n\n" . $loadingJs . "\n\n"
     . $collaborationInitJs . "\n\n" . $commitmentsInitJs . "\n\n" . $synthesisInitJs . "\n\n" . $publishInitJs . "\n\n"
     . $evidenceSvcJs . "\n\n" . $assessmentSvcJs . "\n\n" . $collaborationSvcJs . "\n\n"
     . $commitmentsSvcJs . "\n\n" . $synthesisSvcJs . "\n\n" . $publishSvcJs . "\n\n"
-    . $saveDraftJs . "\n\n"
-    . $coreJs;
+    // coreJs must come BEFORE saveDraftJs: coreJs is what assigns
+    // `var root = document.getElementById('xfqbr-wiz')` (via var hoisting
+    // root exists but is undefined until this line runs), and
+    // saveDraftJs's bottom block calls root.querySelector(...) immediately
+    // at parse time (not inside a function) — running it first throws
+    // "Cannot read properties of undefined (reading 'querySelector')",
+    // which aborts the whole IIFE before coreJs's own
+    // window.xqbrBootWizard(false) call ever fires, leaving the step
+    // indicator and main panel empty.
+    . $coreJs . "\n\n"
+    . $saveDraftJs;
 ?>
 })();
 </script>
