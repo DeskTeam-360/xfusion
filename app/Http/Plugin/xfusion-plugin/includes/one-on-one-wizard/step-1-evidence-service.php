@@ -584,8 +584,8 @@ function xfoo_wizard_evidence_bundle_for_brief(int $conversationId): array
                 'data' => $placeholder('ARP Priorities'),
             ],
             'previous_360' => [
-                'title' => 'Previous 360 Review™',
-                'data' => $placeholder('Previous 360 Review™'),
+                'title' => 'Previous Individual Readiness Review™',
+                'data' => $placeholder('Previous Individual Readiness Review™'),
             ],
             'organizational_context' => [
                 'title' => 'Organizational Context',
@@ -750,7 +750,7 @@ var xfwEvidenceEmptyMessages = {
 var xfwEvidenceDummyMessages = {
     qbr_priorities: 'Current Quarterly Business Review\u2122 priorities and progress will appear here once this evidence source is connected.',
     arp_priorities: 'Annual Readiness Plan\u2122 priorities and strategic context will appear here once this evidence source is connected.',
-    previous_360: 'Most recent 360 Review\u2122 feedback themes and insights will appear here once this evidence source is connected.',
+    previous_360: 'Most recent Individual Readiness Review\u2122 feedback themes and insights will appear here once this evidence source is connected.',
     organizational_context: 'Role, team, organizational goals, and readiness priorities will appear here once this evidence source is connected.',
 };
 

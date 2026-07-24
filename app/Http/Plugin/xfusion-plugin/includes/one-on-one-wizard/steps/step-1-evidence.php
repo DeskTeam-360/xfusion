@@ -25,7 +25,7 @@ evidence: function () {
         [iconBase + 'Brain-Icon-1.svg', 'AI Insight Trends', 'AI-generated insights and observed patterns over time.', 'ai_insight', 'live'],
         [iconBase + 'Target-Bullseye-Icon-1.svg', 'QBR Priorities', 'Current Quarterly Business Review\u2122 priorities and progress.', 'qbr_priorities', 'dummy'],
         [iconBase + 'Flag-Icon-1.svg', 'ARP Priorities', 'Annual Readiness Plan\u2122 priorities and strategic context.', 'arp_priorities', 'dummy'],
-        [iconBase + 'Star-Icon-1.svg', 'Previous 360 Review\u2122', 'Most recent 360 feedback themes and insights.', 'previous_360', 'dummy'],
+        [iconBase + 'Star-Icon-1.svg', 'Previous Individual Readiness Review\u2122', 'Most recent IRR feedback themes and insights.', 'previous_360', 'dummy'],
         [iconBase + 'Building-Icon-1.svg', 'Organizational Context', 'Role, team, organizational goals, and readiness priorities.', 'organizational_context', 'dummy'],
     ];
 

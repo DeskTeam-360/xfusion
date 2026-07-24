@@ -185,7 +185,7 @@ function xfarr_wizard_dashboard_init_js(): string
             statCard('Commitment Completion', '68%', '&#8593; 9% vs 2024', [58, 60, 63, 68]) +
             statCard('Development Participation', '82%', '&#8593; 11% vs 2024', [70, 74, 78, 82]) +
             statCard('1-on-1 Alignment Capture™', '91%', '&#8593; 7% vs 2024', [82, 85, 88, 91]) +
-            statCard('360 Reviews™ Completion', '88%', '&#8593; 10% vs 2024', [76, 80, 84, 88]) +
+            statCard('IRR Completion', '88%', '&#8593; 10% vs 2024', [76, 80, 84, 88]) +
             '</div>' +
 
             '<div class="xarr-grid-3" style="display:grid;grid-template-columns:repeat(3,1fr);gap:1rem;margin-bottom:1rem">' +

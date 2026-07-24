@@ -56,7 +56,7 @@ function xfarr_wizard_evidence_init_js(): string
         { title: 'Annual Readiness Plan™', icon: '&#127919;' },
         { title: 'Quarterly Business Reviews™', icon: '&#128197;' },
         { title: '1-on-1 Alignment Capture™', icon: '&#128101;' },
-        { title: '360 Reviews™', icon: '&#128101;' },
+        { title: 'Individual Readiness Reviews™', icon: '&#128101;' },
         { title: 'Individual Insights™', icon: '&#128200;' },
         { title: 'Group Readiness Trends', icon: '&#128202;' },
         { title: 'Executive Dashboard Trends', icon: '&#128187;' },
