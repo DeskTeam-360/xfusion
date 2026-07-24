@@ -443,9 +443,49 @@ function xfoo_wizard_evidence_qbr_priorities(int $conversationId): ?array
 }
 
 /**
- * Organizational Context evidence card: Executive Summary™ from the most
- * recent ARR belonging to this pair's organization. Read-only,
- * AI-synthesized text only.
+/**
+ * Resolve the company group shared by a leader/employee pair — a group
+ * where the leader has 'leader' status and the employee is any member.
+ * Mirrors OneOnOneCompanyGroupSyncService::findGroupForPair() on the
+ * Laravel side, queried directly since WordPress shares the same DB.
+ *
+ * @return array{company_group_id: int, company_id: int, group_title: string, company_title: string}|null
+ */
+function xfoo_wizard_evidence_group_for_pair(int $leaderUserId, int $employeeUserId): ?array
+{
+    global $wpdb;
+
+    $row = $wpdb->get_row($wpdb->prepare(
+        "SELECT cg.id AS company_group_id, cg.company_id, cg.title AS group_title, c.title AS company_title
+         FROM wp_company_group_details cgd_emp
+         INNER JOIN wp_company_group_details cgd_lead
+             ON cgd_lead.company_group_id = cgd_emp.company_group_id
+             AND cgd_lead.user_id = %d AND cgd_lead.status = 'leader'
+         INNER JOIN wp_company_groups cg ON cg.id = cgd_emp.company_group_id
+         LEFT JOIN wp_companies c ON c.id = cg.company_id
+         WHERE cgd_emp.user_id = %d
+         LIMIT 1",
+        $leaderUserId,
+        $employeeUserId
+    ));
+
+    if (! $row) {
+        return null;
+    }
+
+    return [
+        'company_group_id' => (int) $row->company_group_id,
+        'company_id' => (int) $row->company_id,
+        'group_title' => (string) $row->group_title,
+        'company_title' => (string) $row->company_title,
+    ];
+}
+
+/**
+ * Organizational Context evidence card: Role/Team/Organizational Goals/
+ * Readiness Priorities entered by admins on the Company and Company Group
+ * (group values override company defaults when set), plus the most recent
+ * ARR's Executive Summary™ as supplemental AI-synthesized context.
  *
  * @return array<string, mixed>|null
  */
@@ -456,22 +496,59 @@ function xfoo_wizard_evidence_organizational_context(int $conversationId): ?arra
         return null;
     }
 
-    if (! function_exists('xfarr_picker_api_request')) {
+    $group = xfoo_wizard_evidence_group_for_pair($pair['leader_user_id'], $pair['employee_user_id']);
+
+    $context = null;
+    if ($group !== null) {
+        global $wpdb;
+
+        $company = $wpdb->get_row($wpdb->prepare(
+            'SELECT role, team, organizational_goals, readiness_priorities FROM wp_companies WHERE id = %d LIMIT 1',
+            $group['company_id']
+        ));
+        $groupRow = $wpdb->get_row($wpdb->prepare(
+            'SELECT role, team, organizational_goals, readiness_priorities FROM wp_company_groups WHERE id = %d LIMIT 1',
+            $group['company_group_id']
+        ));
+
+        $pick = static fn (?string $groupValue, ?string $companyValue) =>
+            ($groupValue !== null && trim($groupValue) !== '') ? $groupValue : $companyValue;
+
+        $role = $pick($groupRow->role ?? null, $company->role ?? null);
+        $team = $pick($groupRow->team ?? null, $company->team ?? null);
+        $organizationalGoals = $pick($groupRow->organizational_goals ?? null, $company->organizational_goals ?? null);
+        $readinessPriorities = $pick($groupRow->readiness_priorities ?? null, $company->readiness_priorities ?? null);
+
+        if ($role || $team || $organizationalGoals || $readinessPriorities) {
+            $context = [
+                'role' => $role,
+                'team' => $team,
+                'organizational_goals' => $organizationalGoals,
+                'readiness_priorities' => $readinessPriorities,
+                'group_name' => $group['group_title'],
+                'company_name' => $group['company_title'],
+            ];
+        }
+    }
+
+    $executiveSummary = null;
+    if (function_exists('xfarr_picker_api_request')) {
+        $result = xfarr_picker_api_request('GET', '/executive-summary-for-pair', [
+            'leader_user_id' => $pair['leader_user_id'],
+            'employee_user_id' => $pair['employee_user_id'],
+        ]);
+        if ($result['ok']) {
+            $executiveSummary = is_array($result['body']['data'] ?? null) ? $result['body']['data'] : null;
+        }
+    }
+
+    if ($context === null && $executiveSummary === null) {
         return null;
     }
 
-    $result = xfarr_picker_api_request('GET', '/executive-summary-for-pair', [
-        'leader_user_id' => $pair['leader_user_id'],
-        'employee_user_id' => $pair['employee_user_id'],
+    return array_merge($context ?? [], [
+        'executive_summary' => $executiveSummary,
     ]);
-
-    if (! $result['ok']) {
-        return null;
-    }
-
-    $data = is_array($result['body']['data'] ?? null) ? $result['body']['data'] : null;
-
-    return $data;
 }
 
 /**
@@ -1065,17 +1142,48 @@ var xfwRenderQbrPrioritiesPanel = function (data) {
 };
 
 var xfwRenderOrganizationalContextPanel = function (data) {
-    if (!data || !data.summary) {
+    var hasFields = data && (data.role || data.team || data.organizational_goals || data.readiness_priorities);
+    var summary = data && data.executive_summary ? data.executive_summary : null;
+
+    if (!hasFields && !summary) {
         return xfwEvidenceNoData(xfwEvidenceEmptyMessages.organizational_context);
     }
-    var html = '<div class="xfw-evidence-section">' +
-        '<h5>Executive Summary&trade;</h5>' +
-        '<div class="xfw-evidence-text">' + xfwEvidenceEsc(data.summary).replace(/\n/g, '<br>') + '</div>';
-    if (data.company_name || data.year) {
-        html += '<p class="xfw-muted" style="margin-top:.75rem">' +
-            [data.company_name, data.year].filter(Boolean).map(xfwEvidenceEsc).join(' &middot; ') + '</p>';
+
+    var html = '';
+
+    if (hasFields) {
+        var rows = [];
+        if (data.role) {
+            rows.push({ label: 'Role', value: data.role, type: 'text' });
+        }
+        if (data.team) {
+            rows.push({ label: 'Team', value: data.team, type: 'text' });
+        }
+        if (data.organizational_goals) {
+            rows.push({ label: 'Organizational Goals', value: data.organizational_goals, type: 'text' });
+        }
+        if (data.readiness_priorities) {
+            rows.push({ label: 'Readiness Priorities', value: data.readiness_priorities, type: 'text' });
+        }
+        html += '<div class="xfw-evidence-section">';
+        if (data.group_name || data.company_name) {
+            html += '<p class="xfw-muted" style="margin-bottom:.5rem">' +
+                [data.group_name, data.company_name].filter(Boolean).map(xfwEvidenceEsc).join(' &middot; ') + '</p>';
+        }
+        html += xfwRenderEvidenceFields(rows) + '</div>';
     }
-    html += '</div>';
+
+    if (summary && summary.summary) {
+        html += '<div class="xfw-evidence-section" style="margin-top:1rem">' +
+            '<h5>Executive Summary&trade; (ARR)</h5>' +
+            '<div class="xfw-evidence-text">' + xfwEvidenceEsc(summary.summary).replace(/\n/g, '<br>') + '</div>';
+        if (summary.company_name || summary.year) {
+            html += '<p class="xfw-muted" style="margin-top:.75rem">' +
+                [summary.company_name, summary.year].filter(Boolean).map(xfwEvidenceEsc).join(' &middot; ') + '</p>';
+        }
+        html += '</div>';
+    }
+
     return html;
 };
 

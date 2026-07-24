@@ -36,6 +36,34 @@
                         <textarea wire:model="description" rows="4"
                                   class="form-control w-full rounded border border-border bg-white px-3 py-2 text-dark dark:bg-darkgray dark:border-darkborder dark:text-white"></textarea>
                     </div>
+
+                    <div class="border-t border-border pt-4 dark:border-darkborder">
+                        <h4 class="mb-1 text-sm font-semibold text-dark dark:text-white">Organizational Context&trade;</h4>
+                        <p class="mb-3 text-xs text-dark/60 dark:text-darklink">Shown read-only in the 1-on-1 wizard's Step 1 evidence card. Leave blank to use the company's defaults.</p>
+                        <div class="space-y-4">
+                            <div>
+                                <label class="mb-1 block text-sm font-bold text-dark dark:text-light">Role</label>
+                                <input wire:model="role" type="text"
+                                       class="form-control w-full rounded border border-border bg-white px-3 py-2 text-dark dark:bg-darkgray dark:border-darkborder dark:text-white"/>
+                            </div>
+                            <div>
+                                <label class="mb-1 block text-sm font-bold text-dark dark:text-light">Team</label>
+                                <input wire:model="team" type="text"
+                                       class="form-control w-full rounded border border-border bg-white px-3 py-2 text-dark dark:bg-darkgray dark:border-darkborder dark:text-white"/>
+                            </div>
+                            <div>
+                                <label class="mb-1 block text-sm font-bold text-dark dark:text-light">Organizational Goals</label>
+                                <textarea wire:model="organizationalGoals" rows="3"
+                                          class="form-control w-full rounded border border-border bg-white px-3 py-2 text-dark dark:bg-darkgray dark:border-darkborder dark:text-white"></textarea>
+                            </div>
+                            <div>
+                                <label class="mb-1 block text-sm font-bold text-dark dark:text-light">Readiness Priorities</label>
+                                <textarea wire:model="readinessPriorities" rows="3"
+                                          class="form-control w-full rounded border border-border bg-white px-3 py-2 text-dark dark:bg-darkgray dark:border-darkborder dark:text-white"></textarea>
+                            </div>
+                        </div>
+                    </div>
+
                     <button type="submit" class="btn btn-primary inline-flex items-center gap-2" wire:loading.attr="disabled" wire:target="saveNew">
                         <span wire:loading wire:target="saveNew" aria-hidden="true">{!! $spinnerSvg !!}</span>
                         <span wire:loading.remove wire:target="saveNew">Create group</span>
@@ -69,6 +97,33 @@
                         <label class="mb-1 block text-sm font-bold text-dark dark:text-light">Description</label>
                         <textarea wire:model="description" rows="3"
                                   class="form-control w-full rounded border border-border bg-white px-3 py-2 text-dark dark:bg-darkgray dark:border-darkborder dark:text-white"></textarea>
+                    </div>
+                </div>
+
+                <div class="mt-8 border-t border-border pt-6 dark:border-darkborder">
+                    <h3 class="mb-1 text-lg font-semibold text-dark dark:text-white">Organizational Context&trade;</h3>
+                    <p class="mb-4 text-xs text-dark/60 dark:text-darklink">Shown read-only in the 1-on-1 wizard's Step 1 evidence card. Leave blank to use the company's defaults.</p>
+                    <div class="grid gap-6 md:grid-cols-2">
+                        <div>
+                            <label class="mb-1 block text-sm font-bold text-dark dark:text-light">Role</label>
+                            <input wire:model="role" type="text"
+                                   class="form-control w-full rounded border border-border bg-white px-3 py-2 text-dark dark:bg-darkgray dark:border-darkborder dark:text-white"/>
+                        </div>
+                        <div>
+                            <label class="mb-1 block text-sm font-bold text-dark dark:text-light">Team</label>
+                            <input wire:model="team" type="text"
+                                   class="form-control w-full rounded border border-border bg-white px-3 py-2 text-dark dark:bg-darkgray dark:border-darkborder dark:text-white"/>
+                        </div>
+                        <div class="md:col-span-2">
+                            <label class="mb-1 block text-sm font-bold text-dark dark:text-light">Organizational Goals</label>
+                            <textarea wire:model="organizationalGoals" rows="3"
+                                      class="form-control w-full rounded border border-border bg-white px-3 py-2 text-dark dark:bg-darkgray dark:border-darkborder dark:text-white"></textarea>
+                        </div>
+                        <div class="md:col-span-2">
+                            <label class="mb-1 block text-sm font-bold text-dark dark:text-light">Readiness Priorities</label>
+                            <textarea wire:model="readinessPriorities" rows="3"
+                                      class="form-control w-full rounded border border-border bg-white px-3 py-2 text-dark dark:bg-darkgray dark:border-darkborder dark:text-white"></textarea>
+                        </div>
                     </div>
                 </div>
 

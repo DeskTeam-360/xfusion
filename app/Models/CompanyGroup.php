@@ -15,7 +15,10 @@ class CompanyGroup extends Model
 
     protected $table = 'wp_company_groups';
 
-    protected $fillable = ['company_id', 'title', 'description'];
+    protected $fillable = [
+        'company_id', 'title', 'description',
+        'role', 'team', 'organizational_goals', 'readiness_priorities',
+    ];
 
     public function company()
     {

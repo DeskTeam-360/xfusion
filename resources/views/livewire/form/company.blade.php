@@ -26,6 +26,25 @@
 
     </div>
 
+    <hr>
+    <h5>Organizational Context&trade;</h5>
+    <p class="text-muted" style="margin-top:-.5rem">Shown read-only in the 1-on-1 wizard's Step 1 evidence card. A group's own values (if set) override these company-level defaults.</p>
+
+    <div class="form-group">
+        <x-input model="role" id="role" title="Role"/>
+    </div>
+    <div class="form-group">
+        <x-input model="team" id="team" title="Team"/>
+    </div>
+    <div class="form-group">
+        <label for="organizational_goals">{{ __('Organizational Goals') }}</label>@error('organizational_goals') <span style="margin-left: 10px; color: indianred;">{{ $message }}</span> @enderror
+        <textarea wire:model="organizational_goals" id="organizational_goals" class="form-control" rows="3"></textarea>
+    </div>
+    <div class="form-group">
+        <label for="readiness_priorities">{{ __('Readiness Priorities') }}</label>@error('readiness_priorities') <span style="margin-left: 10px; color: indianred;">{{ $message }}</span> @enderror
+        <textarea wire:model="readiness_priorities" id="readiness_priorities" class="form-control" rows="3"></textarea>
+    </div>
+
     <button type="submit" class="btn" wire:loading.attr="disabled">Submit</button>
 
 </form>

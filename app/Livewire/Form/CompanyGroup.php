@@ -20,6 +20,16 @@ class CompanyGroup extends Component
 
     public ?string $description = null;
 
+    // Organizational Context™ — overrides the company-level defaults when
+    // set; shown read-only in the 1-on-1 wizard's Step 1 evidence card.
+    public ?string $role = null;
+
+    public ?string $team = null;
+
+    public ?string $organizationalGoals = null;
+
+    public ?string $readinessPriorities = null;
+
     /**
      * @var list<array{detail_id: int|null, user_id: int, status: string, label: string}>
      */
@@ -37,6 +47,10 @@ class CompanyGroup extends Component
             $this->companyId = (int) $group->company_id;
             $this->title = (string) $group->title;
             $this->description = $group->description;
+            $this->role = $group->role;
+            $this->team = $group->team;
+            $this->organizationalGoals = $group->organizational_goals;
+            $this->readinessPriorities = $group->readiness_priorities;
             $this->hydrateMembersFromGroup($group);
         }
     }
@@ -199,12 +213,20 @@ class CompanyGroup extends Component
             'companyId' => 'required|integer|exists:wp_companies,id',
             'title' => 'required|string|max:255',
             'description' => 'nullable|string',
+            'role' => 'nullable|string|max:255',
+            'team' => 'nullable|string|max:255',
+            'organizationalGoals' => 'nullable|string',
+            'readinessPriorities' => 'nullable|string',
         ]);
 
         $group = CompanyGroupModel::create([
             'company_id' => (int) $this->companyId,
             'title' => trim($this->title),
             'description' => $this->description !== null ? trim((string) $this->description) : null,
+            'role' => $this->role !== null ? trim($this->role) : null,
+            'team' => $this->team !== null ? trim($this->team) : null,
+            'organizational_goals' => $this->organizationalGoals !== null ? trim($this->organizationalGoals) : null,
+            'readiness_priorities' => $this->readinessPriorities !== null ? trim($this->readinessPriorities) : null,
         ]);
 
         $this->dispatch('swal:alert', data: [
@@ -224,6 +246,10 @@ class CompanyGroup extends Component
         $this->validate([
             'title' => 'required|string|max:255',
             'description' => 'nullable|string',
+            'role' => 'nullable|string|max:255',
+            'team' => 'nullable|string|max:255',
+            'organizationalGoals' => 'nullable|string',
+            'readinessPriorities' => 'nullable|string',
             'members' => 'present|array',
             'members.*.user_id' => 'required|integer|min:1',
             'members.*.status' => 'required|in:member,leader',
@@ -240,6 +266,10 @@ class CompanyGroup extends Component
         $group->update([
             'title' => trim($this->title),
             'description' => $this->description !== null ? trim((string) $this->description) : null,
+            'role' => $this->role !== null ? trim($this->role) : null,
+            'team' => $this->team !== null ? trim($this->team) : null,
+            'organizational_goals' => $this->organizationalGoals !== null ? trim($this->organizationalGoals) : null,
+            'readiness_priorities' => $this->readinessPriorities !== null ? trim($this->readinessPriorities) : null,
         ]);
 
         $existing = CompanyGroupDetail::query()

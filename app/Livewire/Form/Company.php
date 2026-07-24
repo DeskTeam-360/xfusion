@@ -28,11 +28,22 @@ class Company extends Component
     public $qrcode_url;
     public $company_url;
 
+    // Organizational Context™ — shown read-only in the 1-on-1 wizard's
+    // Step 1 evidence card; group-level values (if set) take precedence.
+    public $role;
+    public $team;
+    public $organizational_goals;
+    public $readiness_priorities;
+
     protected $rules = [
         'title' => 'required|max:255',
         'logo_url' => 'nullable|image|mimes:jpeg,png,jpg,gif|max:4096|dimensions:min_width=140,min_height=60,max_width=160,max_height=80',
         'company_url' => 'nullable',
         'user_id' => 'required',
+        'role' => 'nullable|string|max:255',
+        'team' => 'nullable|string|max:255',
+        'organizational_goals' => 'nullable|string',
+        'readiness_priorities' => 'nullable|string',
     ];
 
     protected $messages = [
@@ -59,6 +70,10 @@ class Company extends Component
             $this->logo_url = $data->logo_url;
             $this->qrcode_url = $data->qrcode_url;
             $this->company_url = $data->company_url;
+            $this->role = $data->role;
+            $this->team = $data->team;
+            $this->organizational_goals = $data->organizational_goals;
+            $this->readiness_priorities = $data->readiness_priorities;
             $this->usersOption[] = ['value' => $data->user_id, 'title' => \App\Models\User::find($data->user_id)->user_email. " - Current Company Leader"];
         }
     }
@@ -78,7 +93,11 @@ class Company extends Component
             'title' => $this->title,
             'logo_url' => $logoUrl??'',
             'qrcode_url' => $qrcodeUrl??'',
-            'company_url' => $this->company_url
+            'company_url' => $this->company_url,
+            'role' => $this->role,
+            'team' => $this->team,
+            'organizational_goals' => $this->organizational_goals,
+            'readiness_priorities' => $this->readiness_priorities,
         ]);
         \App\Models\User::find($this->user_id)
         ->saveMeta([
@@ -124,6 +143,10 @@ class Company extends Component
             'user_id' => $this->user_id,
             'title' => $this->title,
             'company_url' => $this->company_url,
+            'role' => $this->role,
+            'team' => $this->team,
+            'organizational_goals' => $this->organizational_goals,
+            'readiness_priorities' => $this->readiness_priorities,
         ]);
         $this->dispatch('swal:alert', data:[
             'icon' => 'success',

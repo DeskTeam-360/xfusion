@@ -22,7 +22,10 @@ class Company extends Model
 
     protected $table = 'wp_companies';
 
-    protected $fillable=['user_id', 'title', 'logo_url', 'qrcode_url','company_url'];
+    protected $fillable = [
+        'user_id', 'title', 'logo_url', 'qrcode_url', 'company_url',
+        'role', 'team', 'organizational_goals', 'readiness_priorities',
+    ];
 
     public function companyEmployees()
     {
