@@ -67,4 +67,9 @@ class IrrReview extends Model
     {
         return $this->belongsTo(User::class, 'created_by');
     }
+
+    public function evidenceSnapshots()
+    {
+        return $this->hasMany(IrrEvidenceSnapshot::class, 'review_id')->orderByDesc('id');
+    }
 }

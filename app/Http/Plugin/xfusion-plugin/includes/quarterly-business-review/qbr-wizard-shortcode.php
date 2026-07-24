@@ -190,12 +190,13 @@ function xfusion_qbr_wizard_shortcode($atts = []): string
 (function () {
 window.XFQBR_WIZARD = <?php echo wp_json_encode($wizardConfig); ?>;
 <?php
-echo $panelsJs . "\n\n" . $loadingJs . "\n\n" . $coreJs . "\n\n"
+echo $panelsJs . "\n\n" . $loadingJs . "\n\n"
     . $evidenceInitJs . "\n\n" . $evidenceReviewInitJs . "\n\n" . $assessmentInitJs . "\n\n"
     . $collaborationInitJs . "\n\n" . $commitmentsInitJs . "\n\n" . $synthesisInitJs . "\n\n" . $publishInitJs . "\n\n"
     . $evidenceSvcJs . "\n\n" . $assessmentSvcJs . "\n\n" . $collaborationSvcJs . "\n\n"
     . $commitmentsSvcJs . "\n\n" . $synthesisSvcJs . "\n\n" . $publishSvcJs . "\n\n"
-    . $saveDraftJs;
+    . $saveDraftJs . "\n\n"
+    . $coreJs;
 ?>
 })();
 </script>

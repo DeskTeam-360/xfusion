@@ -19,6 +19,7 @@ if (! defined('ABSPATH')) {
 
 require_once __DIR__ . '/styles.php';
 require_once __DIR__ . '/irr-picker.php';
+require_once __DIR__ . '/irr-evidence-service.php';
 require_once __DIR__ . '/core.php';
 require_once __DIR__ . '/steps/step-1-evidence.php';
 require_once __DIR__ . '/steps/step-2-evidence-review.php';
@@ -100,8 +101,11 @@ function xfusion_irr_wizard_shortcode($atts = []): string
     $synthesisInitJs     = xfirr_wizard_synthesis_init_js();
     $publishInitJs       = xfirr_wizard_publish_init_js();
 
+    $evidenceSvcJs = xfirr_wizard_evidence_service_js();
+
     $wizardConfig = [
         'ajaxUrl' => admin_url('admin-ajax.php'),
+        'nonce'   => wp_create_nonce('xfirr_wizard'),
         'userId'  => get_current_user_id(),
         'irrId'   => $irrId,
         'canEdit' => $canEdit,
@@ -109,8 +113,6 @@ function xfusion_irr_wizard_shortcode($atts = []): string
         'stepProgress' => is_array($irrData['step_progress'] ?? null) ? $irrData['step_progress'] : new stdClass(),
     ];
 
-    // UI-only prototype: "Save Draft" is a local no-op for now — it just
-    // confirms visually. No Laravel calls are made from any step yet.
     $saveDraftDispatchJs = <<<'JS'
 window.xirrSaveDraft = function () {
     var status = document.getElementById('xirr-autosave-status');
@@ -190,10 +192,12 @@ JS;
 (function () {
 window.XFIRR_WIZARD = <?php echo wp_json_encode($wizardConfig); ?>;
 <?php
-echo $panelsJs . "\n\n" . $coreJs . "\n\n"
+echo $panelsJs . "\n\n"
     . $evidenceInitJs . "\n\n" . $evidenceReviewInitJs . "\n\n" . $assessmentInitJs . "\n\n"
     . $conversationInitJs . "\n\n" . $commitmentsInitJs . "\n\n" . $synthesisInitJs . "\n\n" . $publishInitJs . "\n\n"
-    . $saveDraftDispatchJs;
+    . $evidenceSvcJs . "\n\n"
+    . $saveDraftDispatchJs . "\n\n"
+    . $coreJs;
 ?>
 })();
 </script>

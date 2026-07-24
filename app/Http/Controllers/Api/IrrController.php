@@ -5,8 +5,10 @@ namespace App\Http\Controllers\Api;
 use App\Http\Controllers\Controller;
 use App\Models\CompanyGroup;
 use App\Models\CompanyGroupDetail;
+use App\Models\IrrEvidenceSnapshot;
 use App\Models\IrrReview;
 use App\Models\User;
+use App\Services\IrrEvidenceService;
 use App\Services\OneOnOneCompanyGroupSyncService;
 use Illuminate\Http\Request;
 
@@ -131,6 +133,56 @@ class IrrController extends Controller
             'data' => ['id' => $review->id],
             'already_existed' => false,
         ], 201);
+    }
+
+    /** Step 1: build and persist annual evidence snapshot. */
+    public function generateEvidence(Request $request, IrrReview $irr, IrrEvidenceService $evidenceService)
+    {
+        $userId = (int) $request->input('user_id');
+        if (! $this->canEditReview($userId, $irr)) {
+            return $this->forbidden();
+        }
+
+        $snapshot = $evidenceService->buildSnapshot($irr);
+        $row = IrrEvidenceSnapshot::create([
+            'review_id' => $irr->id,
+            'snapshot' => $snapshot,
+            'captured_at' => now(),
+        ]);
+
+        $this->refreshStepProgress($irr, 'evidence', true);
+
+        return response()->json([
+            'success' => true,
+            'data' => $snapshot,
+            'captured_at' => $row->captured_at?->toIso8601String(),
+        ]);
+    }
+
+    /** Step 2: latest evidence snapshot; auto-build on first view if none exists. */
+    public function getEvidence(Request $request, IrrReview $irr, IrrEvidenceService $evidenceService)
+    {
+        $userId = (int) $request->query('user_id');
+        if ($userId < 1 || ! $this->canAccessReview($userId, $irr)) {
+            return $this->forbidden();
+        }
+
+        $latest = $irr->evidenceSnapshots()->first();
+        if ($latest === null) {
+            $snapshot = $evidenceService->buildSnapshot($irr);
+            $latest = IrrEvidenceSnapshot::create([
+                'review_id' => $irr->id,
+                'snapshot' => $snapshot,
+                'captured_at' => now(),
+            ]);
+            $this->refreshStepProgress($irr, 'evidence', true);
+        }
+
+        return response()->json([
+            'success' => true,
+            'data' => $latest->snapshot,
+            'captured_at' => $latest->captured_at?->toIso8601String(),
+        ]);
     }
 
     /**
@@ -260,5 +312,12 @@ class IrrController extends Controller
     private function forbidden()
     {
         return response()->json(['success' => false, 'message' => 'You do not have access to this review.'], 403);
+    }
+
+    private function refreshStepProgress(IrrReview $irr, string $step, bool $complete): void
+    {
+        $progress = is_array($irr->step_progress) ? $irr->step_progress : [];
+        $progress[$step] = $complete;
+        $irr->update(['step_progress' => $progress]);
     }
 }

@@ -177,26 +177,26 @@ if (root) {
         main.innerHTML = typeof panelFn === 'function' ? panelFn() : '<div class="xirr-card xirr-placeholder"><p class="xirr-muted">This step is coming soon.</p></div>';
         updateFooterNav();
         wireFieldCounters(main);
-        if (STEPS[current].key === 'evidence' && typeof initEvidenceStep === 'function') {
-            initEvidenceStep();
+        if (STEPS[current].key === 'evidence' && typeof window.initEvidenceStep === 'function') {
+            window.initEvidenceStep();
         }
-        if (STEPS[current].key === 'evidence_review' && typeof initEvidenceReviewStep === 'function') {
-            initEvidenceReviewStep();
+        if (STEPS[current].key === 'evidence_review' && typeof window.initEvidenceReviewStep === 'function') {
+            window.initEvidenceReviewStep();
         }
-        if (STEPS[current].key === 'assessment' && typeof initAssessmentStep === 'function') {
-            initAssessmentStep();
+        if (STEPS[current].key === 'assessment' && typeof window.initAssessmentStep === 'function') {
+            window.initAssessmentStep();
         }
-        if (STEPS[current].key === 'conversation' && typeof initConversationStep === 'function') {
-            initConversationStep();
+        if (STEPS[current].key === 'conversation' && typeof window.initConversationStep === 'function') {
+            window.initConversationStep();
         }
-        if (STEPS[current].key === 'commitments' && typeof initCommitmentsStep === 'function') {
-            initCommitmentsStep();
+        if (STEPS[current].key === 'commitments' && typeof window.initCommitmentsStep === 'function') {
+            window.initCommitmentsStep();
         }
-        if (STEPS[current].key === 'synthesis' && typeof initSynthesisStep === 'function') {
-            initSynthesisStep();
+        if (STEPS[current].key === 'synthesis' && typeof window.initSynthesisStep === 'function') {
+            window.initSynthesisStep();
         }
-        if (STEPS[current].key === 'publish' && typeof initPublishStep === 'function') {
-            initPublishStep();
+        if (STEPS[current].key === 'publish' && typeof window.initPublishStep === 'function') {
+            window.initPublishStep();
         }
     };
 
