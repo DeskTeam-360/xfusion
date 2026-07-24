@@ -2,10 +2,9 @@
 /**
  * Step 5 — Annual Development Commitments™.
  *
- * UI-only prototype: static dummy content matching the IRR mockup. Starts
- * with an empty commitment table (per mockup: "0 of 5 commitments added")
- * and lets the user add up to 5 local-only rows. No Laravel calls are made
- * from this step for now.
+ * Laravel-backed: loads/saves via IrrController::getCommitments() /
+ * saveCommitments() (replace-all semantics, max 5), same pattern as QBR's
+ * Quarterly Commitments™ step.
  *
  * @package XFusion
  */
@@ -23,8 +22,8 @@ commitments: function () {
         '<div class="xirr-banner">&#8505;&#65039; <span>Your commitments will become part of your future 1-on-1 Alignment Capture™ conversations and will be tracked throughout the year.</span></div>' +
 
         '<div class="xirr-row" style="justify-content:space-between;margin-bottom:.75rem">' +
-        '<span class="xirr-muted" id="xirr-commit-count">0 of 5 commitments added</span>' +
-        '<button type="button" class="xirr-btn xirr-btn-outline" id="xirr-add-commitment">+ Add Commitment</button>' +
+        '<span class="xirr-muted" id="xirr-commit-count">Loading commitments…</span>' +
+        '<button type="button" class="xirr-btn xirr-btn-outline" id="xirr-add-commitment" disabled>+ Add Commitment</button>' +
         '</div>' +
         '<div class="xirr-card"><div id="xirr-commitments-list"></div></div>' +
 
@@ -55,10 +54,40 @@ function xfirr_wizard_commitments_init_js(): string
 {
     return <<<'JS'
 (function () {
-    var DRIVERS = ['Get Real', 'Be Intentional', 'Fill Buckets', 'Foster Grit', 'Drive Growth'];
+    var DRIVER_OPTIONS = [
+        { value: 'get_real', label: 'Get Real' },
+        { value: 'be_intentional', label: 'Be Intentional' },
+        { value: 'fill_buckets', label: 'Fill Buckets' },
+        { value: 'foster_grit', label: 'Foster Grit' },
+        { value: 'drive_growth', label: 'Drive Growth' },
+    ];
     var cache = [];
+    var loaded = false;
 
     function esc(s) { return String(s == null ? '' : s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
+
+    function fromApi(row) {
+        return {
+            title: row.title || '',
+            owner_name: row.owner_name || '',
+            priority: row.priority ? (row.priority.charAt(0).toUpperCase() + row.priority.slice(1)) : 'Medium',
+            due_date: row.due_date || '',
+            driver: row.behavioral_driver || '',
+            success_indicator: row.success_indicator || '',
+        };
+    }
+
+    function toApi(c) {
+        return {
+            title: (c.title || '').trim(),
+            owner_name: (c.owner_name || '').trim() || null,
+            priority: (c.priority || 'Medium').toLowerCase(),
+            due_date: (c.due_date || '').trim() || null,
+            behavioral_driver: c.driver || null,
+            success_indicator: (c.success_indicator || '').trim() || null,
+            status: 'open',
+        };
+    }
 
     function row(i, c) {
         return '<div class="xirr-prio-card">' +
@@ -66,13 +95,13 @@ function xfirr_wizard_commitments_init_js(): string
             '<div class="xirr-prio-body">' +
             '<div class="xirr-prio-grid xirr-prio-grid-1"><input class="xirr-input" data-f="title" placeholder="Commitment" value="' + esc(c.title) + '"></div>' +
             '<div class="xirr-prio-grid xirr-prio-grid-4">' +
-            '<input class="xirr-input" data-f="owner" placeholder="Owner" value="' + esc(c.owner) + '">' +
+            '<input class="xirr-input" data-f="owner_name" placeholder="Owner" value="' + esc(c.owner_name) + '">' +
             '<select class="xirr-input" data-f="priority">' + ['High','Medium','Low'].map(function (p) {
                 return '<option' + (c.priority === p ? ' selected' : '') + '>' + p + '</option>';
             }).join('') + '</select>' +
-            '<input type="date" class="xirr-input" data-f="target_date" value="' + esc(c.target_date) + '">' +
-            '<select class="xirr-input" data-f="driver"><option value="">Behavioral Driver™</option>' + DRIVERS.map(function (d) {
-                return '<option' + (c.driver === d ? ' selected' : '') + '>' + d + '</option>';
+            '<input type="date" class="xirr-input" data-f="due_date" value="' + esc(c.due_date) + '">' +
+            '<select class="xirr-input" data-f="driver"><option value="">Behavioral Driver™</option>' + DRIVER_OPTIONS.map(function (d) {
+                return '<option value="' + d.value + '"' + (c.driver === d.value ? ' selected' : '') + '>' + d.label + '</option>';
             }).join('') + '</select>' +
             '</div>' +
             '<div class="xirr-prio-grid xirr-prio-grid-1"><input class="xirr-input" data-f="success_indicator" placeholder="Success Indicator" value="' + esc(c.success_indicator) + '"></div>' +
@@ -94,10 +123,12 @@ function xfirr_wizard_commitments_init_js(): string
         } else {
             list.innerHTML = cache.map(function (c, i) { return row(i, c); }).join('');
             list.querySelectorAll('[data-f]').forEach(function (el) {
-                el.addEventListener('input', function () {
+                var handler = function () {
                     var i = Array.prototype.indexOf.call(list.children, el.closest('.xirr-prio-card'));
                     cache[i][el.dataset.f] = el.value;
-                });
+                };
+                el.addEventListener('input', handler);
+                el.addEventListener('change', handler);
             });
             list.querySelectorAll('[data-remove]').forEach(function (btn) {
                 btn.addEventListener('click', function () {
@@ -108,19 +139,40 @@ function xfirr_wizard_commitments_init_js(): string
         }
 
         if (count) count.textContent = cache.length + ' of 5 commitments added';
-        if (addBtn) addBtn.disabled = cache.length >= 5;
+        if (addBtn) addBtn.disabled = cache.length >= 5 || !loaded;
     }
+
+    window.xirrSaveCommitmentsStep = function () {
+        var items = cache
+            .filter(function (c) { return (c.title || '').trim() !== ''; })
+            .map(toApi);
+        return window.xirrSaveCommitments(items);
+    };
 
     window.initCommitmentsStep = function () {
         var addBtn = document.getElementById('xirr-add-commitment');
         if (addBtn) {
             addBtn.addEventListener('click', function () {
                 if (cache.length >= 5) return;
-                cache.push({ title: '', owner: '', priority: 'Medium', target_date: '', driver: '', success_indicator: '' });
+                cache.push({ title: '', owner_name: '', priority: 'Medium', due_date: '', driver: '', success_indicator: '' });
                 renderList();
             });
         }
-        renderList();
+
+        if (typeof window.xfirrLoadCommitments !== 'function') {
+            loaded = true;
+            renderList();
+            return;
+        }
+
+        var count = document.getElementById('xirr-commit-count');
+        if (count) count.textContent = 'Loading commitments…';
+
+        window.xfirrLoadCommitments().then(function (rows) {
+            cache = (rows || []).map(fromApi);
+            loaded = true;
+            renderList();
+        });
     };
 })();
 JS;

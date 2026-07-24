@@ -72,4 +72,9 @@ class IrrReview extends Model
     {
         return $this->hasMany(IrrEvidenceSnapshot::class, 'review_id')->orderByDesc('id');
     }
+
+    public function commitments()
+    {
+        return $this->hasMany(IrrCommitment::class, 'review_id')->orderBy('priority_rank');
+    }
 }

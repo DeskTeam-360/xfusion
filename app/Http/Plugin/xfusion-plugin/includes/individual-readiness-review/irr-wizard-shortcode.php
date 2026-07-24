@@ -20,6 +20,8 @@ if (! defined('ABSPATH')) {
 require_once __DIR__ . '/styles.php';
 require_once __DIR__ . '/irr-picker.php';
 require_once __DIR__ . '/irr-evidence-service.php';
+require_once __DIR__ . '/irr-commitments-service.php';
+require_once __DIR__ . '/irr-save-draft.php';
 require_once __DIR__ . '/core.php';
 require_once __DIR__ . '/steps/step-1-evidence.php';
 require_once __DIR__ . '/steps/step-2-evidence-review.php';
@@ -101,7 +103,9 @@ function xfusion_irr_wizard_shortcode($atts = []): string
     $synthesisInitJs     = xfirr_wizard_synthesis_init_js();
     $publishInitJs       = xfirr_wizard_publish_init_js();
 
-    $evidenceSvcJs = xfirr_wizard_evidence_service_js();
+    $evidenceSvcJs     = xfirr_wizard_evidence_service_js();
+    $commitmentsSvcJs  = xfirr_wizard_commitments_service_js();
+    $saveDraftJs       = xfirr_wizard_save_draft_js();
 
     $wizardConfig = [
         'ajaxUrl' => admin_url('admin-ajax.php'),
@@ -112,21 +116,6 @@ function xfusion_irr_wizard_shortcode($atts = []): string
         'status'  => $status,
         'stepProgress' => is_array($irrData['step_progress'] ?? null) ? $irrData['step_progress'] : new stdClass(),
     ];
-
-    $saveDraftDispatchJs = <<<'JS'
-window.xirrSaveDraft = function () {
-    var status = document.getElementById('xirr-autosave-status');
-    if (status) {
-        var now = new Date();
-        var time = now.toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' });
-        status.innerHTML = '<span class="xirr-autosave-check" aria-hidden="true">&#10003;</span> Draft autosaved ' + time + ' (UI shell — not yet connected).';
-    }
-};
-['#xirr-save-draft', '#xirr-save-draft-2'].forEach(function (sel) {
-    var btn = document.querySelector(sel);
-    if (btn) btn.addEventListener('click', window.xirrSaveDraft);
-});
-JS;
 
     ob_start();
     ?>
@@ -195,9 +184,16 @@ window.XFIRR_WIZARD = <?php echo wp_json_encode($wizardConfig); ?>;
 echo $panelsJs . "\n\n"
     . $evidenceInitJs . "\n\n" . $evidenceReviewInitJs . "\n\n" . $assessmentInitJs . "\n\n"
     . $conversationInitJs . "\n\n" . $commitmentsInitJs . "\n\n" . $synthesisInitJs . "\n\n" . $publishInitJs . "\n\n"
-    . $evidenceSvcJs . "\n\n"
-    . $saveDraftDispatchJs . "\n\n"
-    . $coreJs;
+    . $evidenceSvcJs . "\n\n" . $commitmentsSvcJs . "\n\n"
+    // coreJs must come BEFORE saveDraftJs: coreJs assigns
+    // `var root = document.getElementById('xfirr-wiz')`, and saveDraftJs's
+    // bottom block calls root.querySelector(...) immediately at parse
+    // time — running it first throws (root is undefined until coreJs's
+    // line executes), aborting the IIFE before coreJs's own
+    // window.xirrBootWizard(false) call fires. Same bug class fixed in
+    // the QBR wizard shortcode — see that commit for the full writeup.
+    . $coreJs . "\n\n"
+    . $saveDraftJs;
 ?>
 })();
 </script>

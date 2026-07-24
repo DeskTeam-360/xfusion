@@ -5,12 +5,14 @@ namespace App\Http\Controllers\Api;
 use App\Http\Controllers\Controller;
 use App\Models\CompanyGroup;
 use App\Models\CompanyGroupDetail;
+use App\Models\IrrCommitment;
 use App\Models\IrrEvidenceSnapshot;
 use App\Models\IrrReview;
 use App\Models\User;
 use App\Services\IrrEvidenceService;
 use App\Services\OneOnOneCompanyGroupSyncService;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
 
 /**
  * IRR picker + wizard bridge for the WordPress [fusion_irr_wizard] shortcode.
@@ -183,6 +185,95 @@ class IrrController extends Controller
             'data' => $latest->snapshot,
             'captured_at' => $latest->captured_at?->toIso8601String(),
         ]);
+    }
+
+    /** Step 5: Annual Development Commitments™ — up to 5, ordered by priority_rank. */
+    public function getCommitments(Request $request, IrrReview $irr)
+    {
+        $userId = (int) $request->query('user_id');
+        if ($userId < 1 || ! $this->canAccessReview($userId, $irr)) {
+            return $this->forbidden();
+        }
+
+        return response()->json([
+            'success' => true,
+            'data' => $irr->commitments()
+                ->with('owner:ID,display_name,user_nicename')
+                ->get()
+                ->map(fn (IrrCommitment $row) => [
+                    'id' => $row->id,
+                    'title' => $row->title,
+                    'description' => $row->description,
+                    'owner_user_id' => $row->owner_user_id,
+                    'owner_name' => $row->owner_name ?: $this->userDisplayName($row->owner),
+                    'priority' => $row->priority,
+                    'success_indicator' => $row->success_indicator,
+                    'behavioral_driver' => $row->behavioral_driver,
+                    'org_priority_type' => $row->org_priority_type,
+                    'org_priority_label' => $row->org_priority_label,
+                    'status' => $row->status,
+                    'due_date' => $row->due_date?->format('Y-m-d'),
+                    'priority_rank' => $row->priority_rank,
+                ])
+                ->values(),
+        ]);
+    }
+
+    /** Step 5 save — replace-all semantics (max 5), same pattern as QBR/ARP commitments. */
+    public function saveCommitments(Request $request, IrrReview $irr)
+    {
+        $userId = (int) $request->input('user_id');
+        if (! $this->canEditReview($userId, $irr)) {
+            return $this->forbidden();
+        }
+
+        $data = $request->validate([
+            'items' => 'present|array|max:5',
+            'items.*.title' => 'nullable|string|max:255',
+            'items.*.description' => 'nullable|string',
+            'items.*.owner_user_id' => 'nullable|integer',
+            'items.*.owner_name' => 'nullable|string|max:255',
+            'items.*.priority' => 'nullable|in:high,medium,low',
+            'items.*.success_indicator' => 'nullable|string|max:255',
+            'items.*.behavioral_driver' => 'nullable|in:get_real,fill_buckets,be_intentional,foster_grit,drive_growth',
+            'items.*.org_priority_type' => 'nullable|in:arp,qbr',
+            'items.*.org_priority_label' => 'nullable|string|max:255',
+            'items.*.due_date' => 'nullable|string',
+            'items.*.status' => 'nullable|in:open,in_progress,done',
+        ]);
+
+        if (count($data['items']) > 5) {
+            return response()->json(['success' => false, 'message' => 'An Individual Readiness Review™ may have at most 5 commitments.'], 422);
+        }
+
+        DB::transaction(function () use ($irr, $data) {
+            IrrCommitment::where('review_id', $irr->id)->delete();
+            foreach (array_values($data['items']) as $index => $item) {
+                $ownerId = filter_var($item['owner_user_id'] ?? null, FILTER_VALIDATE_INT);
+                $ownerName = trim((string) ($item['owner_name'] ?? ''));
+                IrrCommitment::create([
+                    'review_id' => $irr->id,
+                    'title' => $item['title'] ?? '',
+                    'description' => $item['description'] ?? null,
+                    'owner_user_id' => $ownerId !== false ? $ownerId : null,
+                    'owner_name' => $ownerName !== '' ? $ownerName : null,
+                    'priority' => $item['priority'] ?? 'medium',
+                    'success_indicator' => $item['success_indicator'] ?? null,
+                    'behavioral_driver' => $item['behavioral_driver'] ?? null,
+                    'org_priority_type' => $item['org_priority_type'] ?? null,
+                    'org_priority_label' => $item['org_priority_label'] ?? null,
+                    'due_date' => ! empty($item['due_date']) ? $item['due_date'] : null,
+                    'status' => $item['status'] ?? IrrCommitment::STATUS_OPEN,
+                    'priority_rank' => $index,
+                ]);
+            }
+        });
+
+        $this->refreshStepProgress($irr, 'commitments', collect($data['items'])->contains(
+            fn ($item) => trim((string) ($item['title'] ?? '')) !== ''
+        ));
+
+        return response()->json(['success' => true, 'saved_at' => now()->format('g:i A')]);
     }
 
     /**

@@ -516,6 +516,8 @@ Route::prefix('v1')->middleware('fusion.api')->group(function () {
         Route::post('/', [IrrController::class, 'store']);
         Route::post('/{irr}/evidence/generate', [IrrController::class, 'generateEvidence']);
         Route::get('/{irr}/evidence', [IrrController::class, 'getEvidence']);
+        Route::get('/{irr}/commitments', [IrrController::class, 'getCommitments']);
+        Route::post('/{irr}/commitments', [IrrController::class, 'saveCommitments']);
         Route::get('/{irr}', [IrrController::class, 'show']);
     };
     Route::prefix('irrs')->group($registerIrrRoutes);
