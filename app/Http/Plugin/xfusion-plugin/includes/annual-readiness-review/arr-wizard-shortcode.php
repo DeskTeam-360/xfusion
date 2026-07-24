@@ -4,10 +4,10 @@
  *
  * Usage: [fusion_arr_wizard]
  *
- * 7-step wizard shell. UI-only prototype matching the ARR mockups — no
- * Laravel calls anywhere yet (evidence, dashboard, assessment, reflection,
- * recommendations, synthesis, and publish are all static/local dummy data).
- * Structurally identical to the QBR/IRR wizard shells.
+ * 7-step wizard shell. Picker gate + Review Summary sidebar load real data
+ * via Laravel (App\Http\Controllers\Api\ArrController); the 7 step panels
+ * remain UI-only dummy content pending a follow-up pass, same as
+ * ARP/QBR/IRR's incremental build-out.
  *
  * ARR sits at the top of the FUSION cycle: organization-wide (one per
  * company/year), synthesizing ARP + QBR + 1-on-1 + 360/IRR evidence and
@@ -41,21 +41,46 @@ function xfusion_arr_wizard_shortcode($atts = []): string
         'arr_id' => '0',
     ], $atts, 'fusion_arr_wizard');
 
-    $arrId = sanitize_text_field($atts['arr_id']);
-    if ($arrId === '0' && isset($_GET['arr_id'])) {
-        $arrId = sanitize_text_field(wp_unslash($_GET['arr_id']));
+    $arrIdRaw = sanitize_text_field($atts['arr_id']);
+    if ($arrIdRaw === '0' && isset($_GET['arr_id'])) {
+        $arrIdRaw = sanitize_text_field(wp_unslash($_GET['arr_id']));
     }
 
-    if ($arrId === '' || $arrId === '0') {
+    $arrId = absint($arrIdRaw);
+    if ($arrId < 1) {
         return xfarr_render_picker_gate();
     }
 
-    // UI-only prototype: no Laravel lookup — the sidebar shows static sample
-    // Review Summary data matching the mockups, regardless of which dummy
-    // record was picked (new-YYYY or an id from the picker list).
-    $year = (int) wp_date('Y');
-    if (str_starts_with($arrId, 'new-')) {
-        $year = (int) substr($arrId, 4) ?: $year;
+    $arrContext = xfarr_picker_api_request('GET', "/{$arrId}", ['user_id' => get_current_user_id()]);
+    if (! $arrContext['ok']) {
+        $message = is_array($arrContext['body']) ? ($arrContext['body']['message'] ?? 'Unable to load this ARR.') : 'Unable to load this ARR.';
+
+        return '<p class="xarr-muted">' . esc_html($message) . ' <a href="' . esc_url(remove_query_arg('arr_id')) . '">' . esc_html__('Back to ARR picker', 'xfusion') . '</a></p>';
+    }
+
+    $arrData = is_array($arrContext['body']['data'] ?? null) ? $arrContext['body']['data'] : [];
+    $canEdit = (bool) ($arrData['can_edit'] ?? false);
+
+    $orgName   = $arrData['company_name'] ?? '—';
+    $year      = (int) ($arrData['year'] ?? wp_date('Y'));
+    $ownerName = $arrData['executive_owner_name'] ?? '—';
+    $status    = (string) ($arrData['status'] ?? 'draft');
+    $statusLabels = [
+        'draft' => 'Draft',
+        'in_progress' => 'In Progress',
+        'ready_to_publish' => 'Ready to Publish',
+        'published' => 'Published',
+        'archived' => 'Archived',
+    ];
+    $statusLabel = $statusLabels[$status] ?? ucfirst(str_replace('_', ' ', $status));
+    $statusBadgeClass = $status === 'published' ? 'green' : ($status === 'archived' ? 'gray' : 'amber');
+
+    // Roster across the ARR's company — populates the Executive Owner
+    // dropdown on Step 5 (Strategic Renewal Recommendations).
+    $groupMembers = [];
+    $membersContext = xfarr_picker_api_request('GET', "/{$arrId}/group-members", ['user_id' => get_current_user_id()]);
+    if ($membersContext['ok'] && is_array($membersContext['body']['data'] ?? null)) {
+        $groupMembers = $membersContext['body']['data'];
     }
 
     $panelFns = [
@@ -81,10 +106,12 @@ function xfusion_arr_wizard_shortcode($atts = []): string
     $publishInitJs        = xfarr_wizard_publish_init_js();
 
     $wizardConfig = [
-        'ajaxUrl' => admin_url('admin-ajax.php'),
-        'userId'  => get_current_user_id(),
-        'arrId'   => $arrId,
-        'canEdit' => true,
+        'ajaxUrl'      => admin_url('admin-ajax.php'),
+        'userId'       => get_current_user_id(),
+        'arrId'        => $arrId,
+        'canEdit'      => $canEdit,
+        'groupMembers' => $groupMembers,
+        'stepProgress' => is_array($arrData['step_progress'] ?? null) ? $arrData['step_progress'] : new stdClass(),
     ];
 
     // UI-only prototype: "Save Draft" is a local no-op for now — it just
@@ -106,7 +133,13 @@ JS;
 
     ob_start();
     ?>
-<div id="xfarr-wiz">
+<div id="xfarr-wiz"<?php echo $canEdit ? '' : ' data-view-only="1"'; ?>>
+
+    <?php if (! $canEdit) : ?>
+    <div class="xarr-banner warn" style="margin:1rem 1.75rem 0">
+        &#128065; <span><b>View only.</b> You are viewing this Annual Readiness Review™ as a member. Only leaders of a group in this organization can edit or publish it.</span>
+    </div>
+    <?php endif; ?>
 
     <div class="xarr-header">
         <div class="xarr-header-inner">
@@ -115,7 +148,9 @@ JS;
                 <p>Organizational Learning &amp; Strategic Renewal Engine</p>
             </div>
             <div class="xarr-header-actions">
+                <?php if ($canEdit) : ?>
                 <button type="button" class="xarr-btn xarr-btn-outline-white" id="xarr-save-draft">Save Draft</button>
+                <?php endif; ?>
                 <button type="button" class="xarr-btn xarr-btn-accent" id="xarr-next-step">Next Step &rarr;</button>
             </div>
         </div>
@@ -135,10 +170,10 @@ JS;
                     <a href="javascript:void(0)" class="xarr-link" id="xarr-change-arr" style="font-size:14px">Change review</a>
                 </div>
                 <dl class="xarr-dl">
-                    <dt>Organization</dt><dd id="xarr-si-org">Northwind Energy Co-op</dd>
+                    <dt>Organization</dt><dd id="xarr-si-org"><?php echo esc_html($orgName); ?></dd>
                     <dt>Review Year</dt><dd id="xarr-si-year"><?php echo esc_html((string) $year); ?></dd>
-                    <dt>Executive Owner</dt><dd id="xarr-si-owner">James Scott</dd>
-                    <dt>Status</dt><dd id="xarr-si-status"><span class="xarr-badge amber">In Progress</span></dd>
+                    <dt>Executive Owner</dt><dd id="xarr-si-owner"><?php echo esc_html($ownerName); ?></dd>
+                    <dt>Status</dt><dd id="xarr-si-status"><span class="xarr-badge <?php echo esc_attr($statusBadgeClass); ?>"><?php echo esc_html($statusLabel); ?></span></dd>
                 </dl>
             </div>
 
@@ -153,7 +188,9 @@ JS;
             Draft autosaved &mdash;
         </span>
         <div class="xarr-row">
+            <?php if ($canEdit) : ?>
             <button type="button" class="xarr-btn xarr-btn-outline" id="xarr-save-draft-2">Save Draft</button>
+            <?php endif; ?>
             <button type="button" class="xarr-btn xarr-btn-accent" id="xarr-next-step-2">Next Step &rarr;</button>
         </div>
     </div>

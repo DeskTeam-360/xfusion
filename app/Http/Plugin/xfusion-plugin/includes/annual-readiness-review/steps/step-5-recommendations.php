@@ -40,6 +40,15 @@ function xfarr_wizard_recommendations_init_js(): string
     var DRIVERS = ['Get Real', 'Be Intentional', 'Fill Buckets', 'Foster Grit', 'Drive Growth'];
     var TIMELINES = ['Q1', 'Q2', 'Q3', 'Q4', 'Full Year', 'Multi-Year'];
     var STATUSES = ['Draft', 'Proposed', 'Accepted', 'Rejected'];
+    // Executive Owner options come from this ARR's company-wide roster
+    // (Laravel /api/v1/arrs/{arr}/group-members) — not free text.
+    var OWNERS = ((window.XFARR_WIZARD && window.XFARR_WIZARD.groupMembers) || []).map(function (m) {
+        return String(m.id);
+    });
+    var OWNER_LABELS = {};
+    ((window.XFARR_WIZARD && window.XFARR_WIZARD.groupMembers) || []).forEach(function (m) {
+        OWNER_LABELS[String(m.id)] = m.name || ('User #' + m.id);
+    });
     var cache = [
         { recommendation: '', rationale: '', priority: '', owner: '', capability: '', driver: '', impact: '', timeline: '', status: '' },
         { recommendation: '', rationale: '', priority: '', owner: '', capability: '', driver: '', impact: '', timeline: '', status: '' },
@@ -51,6 +60,13 @@ function xfarr_wizard_recommendations_init_js(): string
     function selectOpts(opts, val) {
         return '<option value="">Select…</option>' + opts.map(function (o) {
             return '<option' + (val === o ? ' selected' : '') + '>' + o + '</option>';
+        }).join('');
+    }
+
+    function ownerOpts(selected) {
+        var blank = '<option value="">' + (OWNERS.length ? 'Select executive owner…' : 'No group members found') + '</option>';
+        return blank + OWNERS.map(function (id) {
+            return '<option value="' + id + '"' + (id === selected ? ' selected' : '') + '>' + esc(OWNER_LABELS[id]) + '</option>';
         }).join('');
     }
 
@@ -68,7 +84,7 @@ function xfarr_wizard_recommendations_init_js(): string
             '</div>' +
             '<div class="xarr-prio-grid xarr-prio-grid-4">' +
             '<div class="xarr-form-field"><label>Priority *</label><select class="xarr-input" data-f="priority">' + selectOpts(['High','Medium','Low'], c.priority) + '</select></div>' +
-            '<div class="xarr-form-field"><label>Executive Owner *</label><input class="xarr-input" data-f="owner" placeholder="Select executive owner" value="' + esc(c.owner) + '"></div>' +
+            '<div class="xarr-form-field"><label>Executive Owner *</label><select class="xarr-input" data-f="owner">' + ownerOpts(c.owner) + '</select></div>' +
             '<div class="xarr-form-field"><label>Related COR Capability™ *</label><select class="xarr-input" data-f="capability">' + selectOpts(COR_CAPABILITIES, c.capability) + '</select></div>' +
             '<div class="xarr-form-field"><label>Related Behavioral Driver™ *</label><select class="xarr-input" data-f="driver">' + selectOpts(DRIVERS, c.driver) + '</select></div>' +
             '</div>' +

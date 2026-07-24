@@ -3,6 +3,7 @@
 use App\Http\Controllers\Api\ArpController;
 use App\Http\Controllers\Api\CompanyPublicController;
 use App\Http\Controllers\Api\CourseGroupPublicController;
+use App\Http\Controllers\Api\ArrController;
 use App\Http\Controllers\Api\IrrController;
 use App\Http\Controllers\Api\OneOnOneController;
 use App\Http\Controllers\Api\ParticipationChartsController;
@@ -520,5 +521,17 @@ Route::prefix('v1')->middleware('fusion.api')->group(function () {
     Route::prefix('irrs')->group($registerIrrRoutes);
     Route::prefix('irr')->group($registerIrrRoutes);
     Route::prefix('360-reviews')->group($registerIrrRoutes);
+
+    // ARR — consumed by the [fusion_arr_wizard] WordPress shortcode's picker gate.
+    // Primary prefix: /arrs. /arr kept for consistency with ARP's dual-prefix pattern.
+    $registerArrRoutes = function (): void {
+        Route::get('/leadable-groups', [ArrController::class, 'leadableGroups']);
+        Route::get('/list', [ArrController::class, 'index']);
+        Route::post('/', [ArrController::class, 'store']);
+        Route::get('/{arr}/group-members', [ArrController::class, 'groupMembers']);
+        Route::get('/{arr}', [ArrController::class, 'show']);
+    };
+    Route::prefix('arrs')->group($registerArrRoutes);
+    Route::prefix('arr')->group($registerArrRoutes);
 });
 
