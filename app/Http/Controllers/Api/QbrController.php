@@ -11,6 +11,7 @@ use App\Models\QbrCommitment;
 use App\Models\QbrDecision;
 use App\Models\QbrEvidenceSnapshot;
 use App\Models\QbrKpi;
+use App\Services\OneOnOneCompanyGroupSyncService;
 use App\Services\QbrAiService;
 use App\Services\QbrAssessmentFromEvidenceService;
 use App\Services\QbrEvidenceService;
@@ -133,6 +134,90 @@ class QbrController extends Controller
         ]);
 
         return response()->json(['success' => true, 'data' => $qbr, 'already_existed' => false], 201);
+    }
+
+    /**
+     * Organizational Readiness Summary (score/trend/narrative) for the QBR
+     * of the company group a 1-on-1 leader/employee pair belongs to — feeds
+     * the "QBR Priorities" evidence card in the 1-on-1 wizard's Step 1.
+     * Read-only; only the AI-synthesized readiness figures are exposed,
+     * never raw evidence or Gravity Forms answers.
+     */
+    public function readinessSummaryForPair(
+        Request $request,
+        OneOnOneCompanyGroupSyncService $groupSync,
+        QbrAiService $ai,
+        QbrEvidenceService $evidenceService
+    ) {
+        $leaderUserId = (int) $request->query('leader_user_id');
+        $employeeUserId = (int) $request->query('employee_user_id');
+        if ($leaderUserId < 1 || $employeeUserId < 1) {
+            return response()->json(['success' => true, 'data' => null]);
+        }
+
+        $group = $groupSync->findGroupForPair($leaderUserId, $employeeUserId);
+        if ($group === null) {
+            return response()->json(['success' => true, 'data' => null]);
+        }
+
+        $qbr = Qbr::query()
+            ->where('company_group_id', $group->id)
+            ->orderByDesc('year')
+            ->orderByDesc('quarter')
+            ->first();
+        if ($qbr === null) {
+            return response()->json(['success' => true, 'data' => null]);
+        }
+
+        $summary = null;
+
+        $synthesis = $ai->latestSynthesis($qbr);
+        $synthesisSummary = $synthesis?->synthesis['organizational_readiness_summary'] ?? null;
+        if (is_array($synthesisSummary) && ($synthesisSummary['score'] ?? null) !== null) {
+            $summary = [
+                'score' => $synthesisSummary['score'],
+                'trend' => $synthesisSummary['trend'] ?? null,
+                'narrative' => $synthesisSummary['narrative'] ?? null,
+            ];
+        }
+
+        if ($summary === null) {
+            $assessment = $ai->latestAssessment($qbr);
+            $overall = $assessment?->assessment['overall_readiness'] ?? null;
+            if (is_array($overall) && ($overall['score'] ?? null) !== null) {
+                $summary = [
+                    'score' => $overall['score'],
+                    'trend' => $overall['trend'] ?? null,
+                    'narrative' => $overall['label'] ?? null,
+                ];
+            }
+        }
+
+        if ($summary === null) {
+            $snapshot = $qbr->evidenceSnapshots()->first()?->snapshot ?? $evidenceService->buildSnapshot($qbr);
+            $score = $snapshot['overall_readiness_score'] ?? null;
+            if ($score !== null) {
+                $summary = [
+                    'score' => $score,
+                    'trend' => $snapshot['overall_readiness_trend'] ?? null,
+                    'narrative' => null,
+                ];
+            }
+        }
+
+        if ($summary === null) {
+            return response()->json(['success' => true, 'data' => null]);
+        }
+
+        return response()->json([
+            'success' => true,
+            'data' => array_merge($summary, [
+                'group_name' => $group->title,
+                'quarter' => $qbr->quarter,
+                'year' => $qbr->year,
+                'status' => $qbr->status,
+            ]),
+        ]);
     }
 
     public function show(Request $request, Qbr $qbr)

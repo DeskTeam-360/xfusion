@@ -192,6 +192,18 @@ function xfoo_wizard_styles_css(): string
 .xfw-evidence-driver-title{font-size:.85rem;font-weight:700;color:var(--navy);margin-bottom:.35rem;line-height:1.3}
 .xfw-evidence-driver-score{font-size:1.75rem;font-weight:700;color:var(--green)}
 
+/* QBR Priorities readiness donut (Step 1 evidence card) */
+.xfw-evidence-readiness{display:grid;grid-template-columns:auto 1fr;gap:1.25rem;align-items:center}
+.xfw-donut-wrap{display:flex;flex-direction:column;align-items:center;width:130px;margin:0 auto}
+.xfw-donut-chart{position:relative;width:130px;height:130px}
+.xfw-donut{width:130px;height:130px;transform:rotate(-90deg)}
+.xfw-donut-track{fill:none;stroke:#e5e7eb;stroke-width:3.2}
+.xfw-donut-value{fill:none;stroke-width:3.2;stroke-linecap:round}
+.xfw-donut-center{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;pointer-events:none}
+.xfw-donut-score{font-size:1.2rem;font-weight:800;color:var(--navy);line-height:1.1}
+.xfw-donut-score span{font-size:.7rem;font-weight:600;color:var(--muted)}
+.xfw-donut-label{margin-top:.5rem;font-size:.78rem;font-weight:600;color:var(--muted);text-align:center;line-height:1.25}
+
 /* Step 2 brief details modal */
 .xfw-brief-modal-body{max-height:60vh;overflow:auto}
 .xfw-brief-details-heading{margin:1.25rem 0 .65rem;font-size:1rem;color:var(--navy)}

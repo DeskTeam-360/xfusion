@@ -382,6 +382,99 @@ function xfoo_wizard_evidence_employee_id_for_conversation(int $conversationId):
 }
 
 /**
+ * Resolve {leader_user_id, employee_user_id} for a conversation's pair.
+ *
+ * @return array{leader_user_id: int, employee_user_id: int}
+ */
+function xfoo_wizard_evidence_pair_for_conversation(int $conversationId): array
+{
+    if ($conversationId < 1) {
+        return ['leader_user_id' => 0, 'employee_user_id' => 0];
+    }
+
+    global $wpdb;
+
+    $row = $wpdb->get_row($wpdb->prepare(
+        'SELECT oo.leader_user_id, oo.employee_user_id
+         FROM wp_fusion_one_on_one_conversations c
+         INNER JOIN wp_fusion_one_on_ones oo ON oo.id = c.one_on_one_id
+         WHERE c.id = %d
+         LIMIT 1',
+        $conversationId
+    ));
+
+    return [
+        'leader_user_id' => $row ? (int) $row->leader_user_id : 0,
+        'employee_user_id' => $row ? (int) $row->employee_user_id : 0,
+    ];
+}
+
+/**
+ * QBR Priorities evidence card: Organizational Readiness Summary (score,
+ * trend, narrative) from the most recent QBR belonging to this pair's
+ * company group. Read-only, AI-synthesized figures only — never raw
+ * evidence or Gravity Forms answers (see privacy principle in CLAUDE.md).
+ *
+ * @return array<string, mixed>|null
+ */
+function xfoo_wizard_evidence_qbr_priorities(int $conversationId): ?array
+{
+    $pair = xfoo_wizard_evidence_pair_for_conversation($conversationId);
+    if ($pair['leader_user_id'] < 1 || $pair['employee_user_id'] < 1) {
+        return null;
+    }
+
+    if (! function_exists('xfqbr_picker_api_request')) {
+        return null;
+    }
+
+    $result = xfqbr_picker_api_request('GET', '/readiness-summary-for-pair', [
+        'leader_user_id' => $pair['leader_user_id'],
+        'employee_user_id' => $pair['employee_user_id'],
+    ]);
+
+    if (! $result['ok']) {
+        return null;
+    }
+
+    $data = is_array($result['body']['data'] ?? null) ? $result['body']['data'] : null;
+
+    return $data;
+}
+
+/**
+ * Organizational Context evidence card: Executive Summary™ from the most
+ * recent ARR belonging to this pair's organization. Read-only,
+ * AI-synthesized text only.
+ *
+ * @return array<string, mixed>|null
+ */
+function xfoo_wizard_evidence_organizational_context(int $conversationId): ?array
+{
+    $pair = xfoo_wizard_evidence_pair_for_conversation($conversationId);
+    if ($pair['leader_user_id'] < 1 || $pair['employee_user_id'] < 1) {
+        return null;
+    }
+
+    if (! function_exists('xfarr_picker_api_request')) {
+        return null;
+    }
+
+    $result = xfarr_picker_api_request('GET', '/executive-summary-for-pair', [
+        'leader_user_id' => $pair['leader_user_id'],
+        'employee_user_id' => $pair['employee_user_id'],
+    ]);
+
+    if (! $result['ok']) {
+        return null;
+    }
+
+    $data = is_array($result['body']['data'] ?? null) ? $result['body']['data'] : null;
+
+    return $data;
+}
+
+/**
  * Empty evidence payload with optional employee-centric blocks.
  *
  * @return array<string, mixed>
@@ -398,6 +491,8 @@ function xfoo_wizard_evidence_empty_payload(int $conversationId, int $employeeId
             'current_conversation_id' => $conversationId,
             'previous_meetings' => [],
             'commitments' => [],
+            'qbr_priorities' => null,
+            'organizational_context' => null,
         ],
         xfoo_wizard_evidence_employee_blocks($employeeId)
     );
@@ -474,6 +569,8 @@ function xfoo_wizard_load_evidence_summary(int $conversationId): array
                 'current_conversation_id' => $conversationId,
                 'previous_meetings' => $meetings,
                 'commitments' => $commitments,
+                'qbr_priorities' => xfoo_wizard_evidence_qbr_priorities($conversationId),
+                'organizational_context' => xfoo_wizard_evidence_organizational_context($conversationId),
             ],
             $employeeBlocks
         ),
@@ -728,6 +825,8 @@ var xfwEvidenceEmptyDefaults = function () {
         self_assessments: [],
         ai_insight: { key_observation: '', evaluated_at: '' },
         development_tools: [],
+        qbr_priorities: null,
+        organizational_context: null,
     };
 };
 
@@ -744,6 +843,8 @@ var xfwEvidenceEmptyMessages = {
     self_assessments: 'No self-assessment scores are available yet.',
     ai_insight: 'No Overall Insight is available yet.',
     development_tools: 'No development tool submissions are available yet.',
+    qbr_priorities: 'No Quarterly Business Review™ has been published for this group yet.',
+    organizational_context: 'No Annual Readiness Review™ Executive Summary is available for this organization yet.',
     default: 'No data is available for this section yet.',
 };
 
@@ -923,6 +1024,61 @@ var xfwRenderAiInsightPanel = function (data) {
     return html;
 };
 
+var xfwQbrTrendColor = function (trend) {
+    if (trend === 'up' || trend === 'improving') {
+        return '#16a34a';
+    }
+    if (trend === 'down' || trend === 'declining') {
+        return '#dc2626';
+    }
+    return '#ca8a04';
+};
+
+var xfwEvidenceDonut = function (score, max, color) {
+    var s = Math.max(0, Math.min(100, Math.round((score / max) * 100)));
+    return '<div class="xfw-donut-wrap">' +
+        '<div class="xfw-donut-chart">' +
+        '<svg class="xfw-donut" viewBox="0 0 36 36" aria-hidden="true">' +
+        '<circle class="xfw-donut-track" cx="18" cy="18" r="15.9155"></circle>' +
+        '<circle class="xfw-donut-value" cx="18" cy="18" r="15.9155" stroke="' + color + '" stroke-dasharray="' + s + ' ' + (100 - s) + '"></circle>' +
+        '</svg>' +
+        '<div class="xfw-donut-center"><div class="xfw-donut-score">' + Math.round(score) + '<span>/' + max + '</span></div></div>' +
+        '</div></div>';
+};
+
+var xfwRenderQbrPrioritiesPanel = function (data) {
+    if (!data || data.score === null || data.score === undefined) {
+        return xfwEvidenceNoData(xfwEvidenceEmptyMessages.qbr_priorities);
+    }
+    var color = xfwQbrTrendColor(data.trend);
+    var trendLabel = data.trend
+        ? data.trend.charAt(0).toUpperCase() + data.trend.slice(1)
+        : 'Stable';
+    var periodLabel = (data.quarter && data.year) ? ('Q' + data.quarter + ' ' + data.year) : '';
+    return '<div class="xfw-evidence-section xfw-evidence-readiness">' +
+        xfwEvidenceDonut(data.score, 100, color) +
+        '<div>' +
+        (data.group_name ? '<p class="xfw-muted" style="margin:0 0 .35rem">' + xfwEvidenceEsc(data.group_name) + (periodLabel ? ' &middot; ' + xfwEvidenceEsc(periodLabel) : '') + '</p>' : '') +
+        '<p style="margin:0 0 .5rem"><strong>Readiness Trend:</strong> <span style="color:' + color + '">' + xfwEvidenceEsc(trendLabel) + '</span></p>' +
+        (data.narrative ? '<div class="xfw-evidence-text">' + xfwEvidenceEsc(data.narrative) + '</div>' : '') +
+        '</div></div>';
+};
+
+var xfwRenderOrganizationalContextPanel = function (data) {
+    if (!data || !data.summary) {
+        return xfwEvidenceNoData(xfwEvidenceEmptyMessages.organizational_context);
+    }
+    var html = '<div class="xfw-evidence-section">' +
+        '<h5>Executive Summary&trade;</h5>' +
+        '<div class="xfw-evidence-text">' + xfwEvidenceEsc(data.summary).replace(/\n/g, '<br>') + '</div>';
+    if (data.company_name || data.year) {
+        html += '<p class="xfw-muted" style="margin-top:.75rem">' +
+            [data.company_name, data.year].filter(Boolean).map(xfwEvidenceEsc).join(' &middot; ') + '</p>';
+    }
+    html += '</div>';
+    return html;
+};
+
 var xfwRenderEvidencePanel = function (key, data) {
     data = data || xfwEvidenceEmptyDefaults();
     if (key === 'previous_meetings') {
@@ -948,6 +1104,12 @@ var xfwRenderEvidencePanel = function (key, data) {
     }
     if (key === 'development_tools') {
         return xfwRenderDevelopmentToolsPanel(data.development_tools || []);
+    }
+    if (key === 'qbr_priorities') {
+        return xfwRenderQbrPrioritiesPanel(data.qbr_priorities || null);
+    }
+    if (key === 'organizational_context') {
+        return xfwRenderOrganizationalContextPanel(data.organizational_context || null);
     }
     return xfwEvidenceNoData(xfwEvidenceEmptyMessages.default);
 };

@@ -4,8 +4,10 @@ namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
 use App\Models\Arr;
+use App\Models\ArrAiSynthesis;
 use App\Models\CompanyGroup;
 use App\Models\CompanyGroupDetail;
+use App\Services\OneOnOneCompanyGroupSyncService;
 use Illuminate\Http\Request;
 
 /**
@@ -141,6 +143,55 @@ class ArrController extends Controller
         ]);
 
         return response()->json(['success' => true, 'data' => ['id' => $arr->id]]);
+    }
+
+    /**
+     * Executive Summary™ from the most recent ARR belonging to a 1-on-1
+     * leader/employee pair's organization — feeds the "Organizational
+     * Context" evidence card in the 1-on-1 wizard's Step 1. Read-only,
+     * AI-synthesized text only; returns null (not an error) when the
+     * organization has no ARR yet, or the ARR has no synthesis yet (ARR's
+     * AI Strategic Renewal Synthesis generation isn't wired up yet).
+     */
+    public function executiveSummaryForPair(Request $request, OneOnOneCompanyGroupSyncService $groupSync)
+    {
+        $leaderUserId = (int) $request->query('leader_user_id');
+        $employeeUserId = (int) $request->query('employee_user_id');
+        if ($leaderUserId < 1 || $employeeUserId < 1) {
+            return response()->json(['success' => true, 'data' => null]);
+        }
+
+        $group = $groupSync->findGroupForPair($leaderUserId, $employeeUserId);
+        if ($group === null) {
+            return response()->json(['success' => true, 'data' => null]);
+        }
+
+        $arr = Arr::query()
+            ->where('company_id', $group->company_id)
+            ->orderByDesc('year')
+            ->first();
+        if ($arr === null) {
+            return response()->json(['success' => true, 'data' => null]);
+        }
+
+        $synthesis = ArrAiSynthesis::query()
+            ->where('arr_id', $arr->id)
+            ->orderByDesc('id')
+            ->first();
+        $summary = $synthesis?->synthesis['executive_summary'] ?? null;
+        if (! is_string($summary) || trim($summary) === '') {
+            return response()->json(['success' => true, 'data' => null]);
+        }
+
+        return response()->json([
+            'success' => true,
+            'data' => [
+                'summary' => $summary,
+                'company_name' => $group->company?->title,
+                'year' => $arr->year,
+                'status' => $arr->status,
+            ],
+        ]);
     }
 
     /** Single ARR + the requesting user's access flag. */

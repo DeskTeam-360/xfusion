@@ -486,6 +486,7 @@ Route::prefix('v1')->middleware('fusion.api')->group(function () {
     // Primary prefix: /qbrs. /qbr kept for consistency with ARP's dual-prefix pattern.
     $registerQbrRoutes = function (): void {
         Route::get('/leadable-companies', [QbrController::class, 'leadableCompanies']);
+        Route::get('/readiness-summary-for-pair', [QbrController::class, 'readinessSummaryForPair']);
         Route::get('/list', [QbrController::class, 'index']);
         Route::post('/', [QbrController::class, 'store']);
         Route::post('/{qbr}/evidence/generate', [QbrController::class, 'generateEvidence']);
@@ -528,6 +529,7 @@ Route::prefix('v1')->middleware('fusion.api')->group(function () {
     // Primary prefix: /arrs. /arr kept for consistency with ARP's dual-prefix pattern.
     $registerArrRoutes = function (): void {
         Route::get('/leadable-groups', [ArrController::class, 'leadableGroups']);
+        Route::get('/executive-summary-for-pair', [ArrController::class, 'executiveSummaryForPair']);
         Route::get('/list', [ArrController::class, 'index']);
         Route::post('/', [ArrController::class, 'store']);
         Route::get('/{arr}/group-members', [ArrController::class, 'groupMembers']);
