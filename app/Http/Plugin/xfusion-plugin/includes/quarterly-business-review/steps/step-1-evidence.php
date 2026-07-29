@@ -33,17 +33,17 @@ function xfqbr_wizard_evidence_init_js(): string
     return <<<'JS'
 (function () {
     var LABELS = {
-        arp_objectives: ['🎯', 'Annual Readiness Plan™ Objectives', 'Progress and alignment to ARP objectives for the year.'],
-        previous_commitments: ['📋', 'Previous Quarterly Commitments', 'Completion status and historical commitment performance.'],
-        individual_insight_trends: ['👤', 'Individual Insight Trends', 'Aggregated themes and sentiment from Individual Insights™.'],
-        one_on_one_summaries: ['🧑‍🤝‍🧑', '1-on-1 Alignment Capture™ Summaries', 'Alignment trends and key themes from 1-on-1 conversations.'],
-        activity_participation: ['📈', 'Activity Participation', 'Participation rates and engagement with learning activities.'],
-        assessment_trends: ['📊', 'Assessment Trends', 'Assessment score trends and development benchmarks.'],
-        tool_usage: ['🛠️', 'Tool Usage', 'Utilization of development tools and resources.'],
-        ai_insight_themes: ['✨', 'AI Insight Themes', 'AI-identified themes and organizational patterns.'],
-        organizational_kpis: ['🏢', 'Organizational KPIs', 'Key performance indicators and target progress.'],
-        operational_metrics: ['⚙️', 'Operational Metrics', 'Operational performance and efficiency metrics.'],
-        historical_qbr_data: ['🕒', 'Historical QBR Data', 'Trends and learnings from previous quarterly reviews.'],
+        arp_objectives: ['<img src="https://sandbox.xperiencefusion.com/wp-content/uploads/2026/07/Annual-Readiness-Plan™-Objectives.svg" alt="Annual Readiness Plan Objectives icon">', 'Annual Readiness Plan™ Objectives', 'Progress and alignment to ARP objectives for the year.'],
+        previous_commitments: ['<img src="https://sandbox.xperiencefusion.com/wp-content/uploads/2026/07/Previous-Quarterly-Commitments.svg" alt="Previous Quarterly Commitments icon">', 'Previous Quarterly Commitments', 'Completion status and historical commitment performance.'],
+        individual_insight_trends: ['<img src="https://sandbox.xperiencefusion.com/wp-content/uploads/2026/07/Individual-Insight-Trends.svg" alt="Individual Insight Trends icon">', 'Individual Insight Trends', 'Aggregated themes and sentiment from Individual Insights™.'],
+        one_on_one_summaries: ['<img src="https://sandbox.xperiencefusion.com/wp-content/uploads/2026/07/1-on-1-Alignment-Capture™-Summaries.svg" alt="1-on-1 Alignment Capture Summaries icon">', '1-on-1 Alignment Capture™ Summaries', 'Alignment trends and key themes from 1-on-1 conversations.'],
+        activity_participation: ['<img src="https://sandbox.xperiencefusion.com/wp-content/uploads/2026/07/Activity-Participation.svg" alt="Activity Participation icon">', 'Activity Participation', 'Participation rates and engagement with learning activities.'],
+        assessment_trends: ['<img src="https://sandbox.xperiencefusion.com/wp-content/uploads/2026/07/Assessment-Trends.svg" alt="Assessment Trends icon">', 'Assessment Trends', 'Assessment score trends and development benchmarks.'],
+        tool_usage: ['<img src="https://sandbox.xperiencefusion.com/wp-content/uploads/2026/07/Tool-Usage.svg" alt="Tool Usage icon">', 'Tool Usage', 'Utilization of development tools and resources.'],
+        ai_insight_themes: ['<img src="https://sandbox.xperiencefusion.com/wp-content/uploads/2026/07/AI-Insight-Themes.svg" alt="AI Insight Themes icon">', 'AI Insight Themes', 'AI-identified themes and organizational patterns.'],
+        organizational_kpis: ['<img src="https://sandbox.xperiencefusion.com/wp-content/uploads/2026/07/Organizational-KPIs.svg" alt="Organizational KPIs icon">', 'Organizational KPIs', 'Key performance indicators and target progress.'],
+        operational_metrics: ['<img src="https://sandbox.xperiencefusion.com/wp-content/uploads/2026/07/Operational-Metrics.svg" alt="Operational Metrics icon">', 'Operational Metrics', 'Operational performance and efficiency metrics.'],
+        historical_qbr_data: ['<img src="https://sandbox.xperiencefusion.com/wp-content/uploads/2026/07/Historical-QBR-Data.svg" alt="Historical QBR Data icon">', 'Historical QBR Data', 'Trends and learnings from previous quarterly reviews.'],
         group: ['👥', 'Group', 'Confirms this QBR is correctly scoped to your company group.'],
     };
     var ORDER = ['arp_objectives', 'previous_commitments', 'individual_insight_trends', 'one_on_one_summaries',
