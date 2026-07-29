@@ -315,8 +315,11 @@ table.xqbr-table.xqbr-table-gaps .xqbr-gap-priority{width:12%;white-space:nowrap
 /* Discussion guide (Step 4) */
 .xqbr-guide-grid{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:.85rem;margin-bottom:1.25rem}
 .xqbr-guide-card{border:1px solid var(--border);border-radius:.5rem;padding:.9rem;background:#fafafa}
-.xqbr-guide-card h4{margin:0 0 .35rem;font-size:14px;color:var(--navy);text-transform:none;letter-spacing:0}
+.xqbr-guide-card h4{margin:0 0 .35rem;font-size:14px;color:var(--navy);text-transform:none;letter-spacing:0;display:flex;align-items:center;gap:.45rem}
+.xqbr-guide-card h4 img{width:20px;height:20px;object-fit:contain;flex-shrink:0;display:block}
 .xqbr-guide-card p{margin:0;font-size:13px;color:var(--muted)}
+.xqbr-heading-with-icon{display:inline-flex;align-items:center;gap:.5rem}
+.xqbr-heading-with-icon img{width:28px;height:28px;object-fit:contain;flex-shrink:0;display:block}
 @media (max-width:1024px){.xqbr-guide-grid{grid-template-columns:repeat(2,minmax(0,1fr))}}
 @media (max-width:480px){.xqbr-guide-grid{grid-template-columns:1fr}}
 

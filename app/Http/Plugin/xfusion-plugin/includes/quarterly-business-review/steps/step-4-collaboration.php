@@ -16,14 +16,14 @@ function xfqbr_wizard_step_collaboration_js(): string
     return <<<'JS'
 collaboration: function () {
     var prompts = [
-        ['🎯', 'Review the Evidence', 'What stands out most from the organizational evidence?'],
-        ['✨', 'AI Assessment Insights', 'What strengths and opportunities should we focus on?'],
-        ['🎯', 'Priority Alignment', 'Are our priorities aligned with our highest impact opportunities?'],
-        ['⚠️', 'Barriers & Challenges', 'What barriers are limiting our progress toward our objectives?'],
-        ['🤝', 'Resource Needs', 'What resources or support do we need to accelerate our progress?'],
-        ['📉', 'Readiness Gaps', 'Where are our largest readiness gaps?'],
-        ['📈', 'Opportunities', 'What opportunities can drive the greatest impact this quarter?'],
-        ['🚩', 'Next Quarter Focus', 'What should be our top focus areas for the upcoming quarter?'],
+        ['<img src="https://sandbox.xperiencefusion.com/wp-content/uploads/2026/07/Review-the-Evidence.svg" alt="Review the Evidence icon">', 'Review the Evidence', 'What stands out most from the organizational evidence?'],
+        ['<img src="https://sandbox.xperiencefusion.com/wp-content/uploads/2026/07/AI-Assessment-Insights.svg" alt="AI Assessment Insights icon">', 'AI Assessment Insights', 'What strengths and opportunities should we focus on?'],
+        ['<img src="https://sandbox.xperiencefusion.com/wp-content/uploads/2026/07/Priority-Alignment.svg" alt="Priority Alignment icon">', 'Priority Alignment', 'Are our priorities aligned with our highest impact opportunities?'],
+        ['<img src="https://sandbox.xperiencefusion.com/wp-content/uploads/2026/07/Barriers-Challenges.svg" alt="Barriers and Challenges icon">', 'Barriers & Challenges', 'What barriers are limiting our progress toward our objectives?'],
+        ['<img src="https://sandbox.xperiencefusion.com/wp-content/uploads/2026/07/Resource-Needs.svg" alt="Resource Needs icon">', 'Resource Needs', 'What resources or support do we need to accelerate our progress?'],
+        ['<img src="https://sandbox.xperiencefusion.com/wp-content/uploads/2026/07/Readiness-Gaps.svg" alt="Readiness Gaps icon">', 'Readiness Gaps', 'Where are our largest readiness gaps?'],
+        ['<img src="https://sandbox.xperiencefusion.com/wp-content/uploads/2026/07/Readiness-Gaps.svg" alt="Opportunities icon">', 'Opportunities', 'What opportunities can drive the greatest impact this quarter?'],
+        ['<img src="https://sandbox.xperiencefusion.com/wp-content/uploads/2026/07/Next-Quarter-Focus.svg" alt="Next Quarter Focus icon">', 'Next Quarter Focus', 'What should be our top focus areas for the upcoming quarter?'],
     ];
     var guideHtml = prompts.map(function (p) {
         return '<div class="xqbr-guide-card"><h4>' + p[0] + ' ' + p[1] + '</h4><p>' + p[2] + '</p></div>';
@@ -32,18 +32,18 @@ collaboration: function () {
     return '<h2 class="xqbr-section-title">Step 4. Leadership Collaboration™</h2>' +
         '<p class="xqbr-section-desc">Review the objective evidence and AI assessment. Discuss key themes, priorities, barriers, resource needs and opportunities. Capture your leadership context and decisions.</p>' +
         '<div class="xqbr-banner">ℹ️ <span>This is your collaborative discussion space. Use the evidence and assessment as input to guide your conversation and capture leadership context.</span></div>' +
-        '<div class="xqbr-card"><h3 style="margin-top:0">Discussion Guide</h3>' +
+        '<div class="xqbr-card"><h3 class="xqbr-heading-with-icon" style="margin-top:0"><img src="https://sandbox.xperiencefusion.com/wp-content/uploads/2026/07/Discussion-Guide.svg" alt="Discussion Guide icon"><span>Discussion Guide</span></h3>' +
         '<p class="xqbr-muted" style="margin-top:-.5rem">Use these prompts to guide your leadership conversation.</p>' +
         '<div class="xqbr-guide-grid">' + guideHtml + '</div></div>' +
 
         '<div class="xqbr-card"><div class="xqbr-row" style="justify-content:space-between">' +
-        '<h3 style="margin:0">Leadership Discussion Notes</h3></div>' +
+        '<h3 class="xqbr-heading-with-icon" style="margin:0"><img src="https://sandbox.xperiencefusion.com/wp-content/uploads/2026/07/Leadership-Discussion-Notes.svg" alt="Leadership Discussion Notes icon"><span>Leadership Discussion Notes</span></h3></div>' +
         '<p class="xqbr-muted" style="margin-top:-.4rem">Capture key discussion points, decisions, and insights from your leadership conversation.</p>' +
         '<textarea class="xqbr-input" id="xqbr-discussion-notes" rows="6" maxlength="20000" placeholder="Start typing your discussion notes here..."></textarea>' +
         '</div>' +
 
         '<div class="xqbr-card"><div class="xqbr-row" style="justify-content:space-between">' +
-        '<h3 style="margin:0">Key Decisions & Takeaways</h3>' +
+        '<h3 class="xqbr-heading-with-icon" style="margin:0"><img src="https://sandbox.xperiencefusion.com/wp-content/uploads/2026/07/Key-Decisions-and-Takeaways.svg" alt="Key Decisions and Takeaways icon"><span>Key Decisions & Takeaways</span></h3>' +
         '<a href="javascript:void(0)" class="xqbr-add-link" id="xqbr-add-decision">+ Add Decision</a>' +
         '</div>' +
         '<p class="xqbr-muted" style="margin-top:-.4rem">Capture the key decisions and takeaways agreed upon by the leadership team.</p>' +
