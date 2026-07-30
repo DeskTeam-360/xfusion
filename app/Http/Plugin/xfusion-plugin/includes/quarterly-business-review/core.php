@@ -27,8 +27,10 @@ var STEPS = [
     { key: 'publish',        label: 'Publish',                             title: 'Step 7. Publish' },
 ];
 
+var iconBase = 'https://sandbox.xperiencefusion.com/wp-content/uploads/2026/07/';
 var SIDEBAR = [
     {
+        aboutIcon: iconBase + 'About-this-step1.svg',
         about: [
             'FUSION automatically gathers comprehensive evidence from across the platform.',
             'This ensures your QBR is based on complete, objective, and up-to-date data.',
@@ -36,18 +38,21 @@ var SIDEBAR = [
         ],
     },
     {
+        aboutIcon: iconBase + 'About-this-step2.svg',
         about: [
             'This step presents the factual organizational evidence for the quarter.',
             'Use this data to understand where the organization stands before reviewing the AI assessment.',
         ],
     },
     {
+        aboutIcon: iconBase + 'About-this-step3.svg',
         about: [
             'AI Organizational Assessment™ provides an objective analysis of your organization\'s current state based on comprehensive evidence.',
             'Review the assessment, indicate your agreement, and add any context the AI should consider before leadership discussion.',
         ],
     },
     {
+        aboutIcon: iconBase + 'About-this-step4.svg',
         about: [
             'This is the primary collaborative portion of the QBR.',
             'Capture your leadership discussion, context, and key decisions.',
@@ -81,9 +86,13 @@ if (root) {
     var navBound = false;
 
     var xqbrSidebarAboutCard = function (cfg) {
+        var iconHtml = cfg.aboutIcon
+            ? '<img class="xqbr-about-step-icon" src="' + cfg.aboutIcon + '" alt="" width="50" height="50">'
+            : '';
         return '<div class="xqbr-card">' +
             '<h4>About This Step</h4>' +
             '<div class="xqbr-about-step">' +
+            iconHtml +
             '<div class="xqbr-about-step-body">' +
             cfg.about.map(function (p) {
                 return '<p class="xqbr-muted">' + p + '</p>';

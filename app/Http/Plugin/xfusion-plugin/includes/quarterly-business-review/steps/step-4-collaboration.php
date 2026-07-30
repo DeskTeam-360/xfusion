@@ -22,7 +22,7 @@ collaboration: function () {
         ['<img src="https://sandbox.xperiencefusion.com/wp-content/uploads/2026/07/Barriers-Challenges.svg" alt="Barriers and Challenges icon">', 'Barriers & Challenges', 'What barriers are limiting our progress toward our objectives?'],
         ['<img src="https://sandbox.xperiencefusion.com/wp-content/uploads/2026/07/Resource-Needs.svg" alt="Resource Needs icon">', 'Resource Needs', 'What resources or support do we need to accelerate our progress?'],
         ['<img src="https://sandbox.xperiencefusion.com/wp-content/uploads/2026/07/Readiness-Gaps.svg" alt="Readiness Gaps icon">', 'Readiness Gaps', 'Where are our largest readiness gaps?'],
-        ['<img src="https://sandbox.xperiencefusion.com/wp-content/uploads/2026/07/Readiness-Gaps.svg" alt="Opportunities icon">', 'Opportunities', 'What opportunities can drive the greatest impact this quarter?'],
+        ['<img src="https://sandbox.xperiencefusion.com/wp-content/uploads/2026/07/Opportunities.svg" alt="Opportunities icon">', 'Opportunities', 'What opportunities can drive the greatest impact this quarter?'],
         ['<img src="https://sandbox.xperiencefusion.com/wp-content/uploads/2026/07/Next-Quarter-Focus.svg" alt="Next Quarter Focus icon">', 'Next Quarter Focus', 'What should be our top focus areas for the upcoming quarter?'],
     ];
     var guideHtml = prompts.map(function (p) {
