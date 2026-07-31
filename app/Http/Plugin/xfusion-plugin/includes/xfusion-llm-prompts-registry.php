@@ -13,6 +13,7 @@ const XFUSION_LLM_PROMPT_SLUG_COR_COACH = 'cor_unified_coach';
 const XFUSION_LLM_PROMPT_SLUG_COR_USER = 'cor_unified_user';
 const XFUSION_LLM_PROMPT_SLUG_OO_BRIEF = 'one_on_one_brief_system';
 const XFUSION_LLM_PROMPT_SLUG_OO_SYNTHESIS = 'one_on_one_synthesis_system';
+const XFUSION_LLM_PROMPT_SLUG_ARP_READINESS_REVIEW = 'arp_readiness_review_system';
 
 /**
  * @return array<string, array{
@@ -67,6 +68,16 @@ function xfusion_llm_prompt_slug_definitions(): array
             'default_files' => array_values(array_filter([
                 $pluginDir . 'prompts/one_on_one_synthesis_system.md',
                 $repoRoot . '/Xfusion-llm/prompts/one_on_one_synthesis_system.md',
+            ])),
+        ],
+        XFUSION_LLM_PROMPT_SLUG_ARP_READINESS_REVIEW => [
+            'title' => __('ARP — AI Readiness Review (system)', 'xfusion'),
+            'menu_title' => __('ARP Readiness Review System', 'xfusion'),
+            'description' => __('System prompt for POST /api/v1/arp/readiness-review (ARP Step 6, via Laravel).', 'xfusion'),
+            'placeholder_hint' => __('Defines the strategic_alignment / readiness_assessment / gaps / priority_alignment / risk_summary / focus_areas JSON output sections for the AI Readiness Review.', 'xfusion'),
+            'default_files' => array_values(array_filter([
+                $pluginDir . 'prompts/arp_readiness_review_system.md',
+                $repoRoot . '/Xfusion-llm/prompts/arp_readiness_review_system.md',
             ])),
         ],
     ]);

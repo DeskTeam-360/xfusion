@@ -4,6 +4,7 @@ namespace App\Services;
 
 use App\Models\Arp;
 use App\Models\ArpAiAssessment;
+use App\Services\WordPressLlmPromptService;
 use Illuminate\Http\Client\RequestException;
 use Illuminate\Support\Facades\Log;
 
@@ -49,13 +50,17 @@ class ArpAiService
         }
 
         $planContext = app(ArpPlanContextService::class)->build($arp);
+        $systemPrompt = app(WordPressLlmPromptService::class)->getActivePrompt(WordPressLlmPromptService::SLUG_ARP_READINESS_REVIEW);
 
         try {
             $response = $this->client()
-                ->post('/api/v1/arp/readiness-review', [
+                ->post('/api/v1/arp/readiness-review', array_filter([
                     'arp_id' => $arp->id,
                     'plan_context' => $planContext,
-                ])
+                    'system_prompt' => $systemPrompt['content'] ?? null,
+                    'prompt_version_id' => $systemPrompt['id'] ?? null,
+                    'prompt_version_label' => $systemPrompt['label'] ?? null,
+                ], static fn ($v) => $v !== null && $v !== ''))
                 ->throw();
 
             $body = $response->json();

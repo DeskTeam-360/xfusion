@@ -19,6 +19,8 @@ class WordPressLlmPromptService
 
     public const SLUG_COR_USER = 'cor_unified_user';
 
+    public const SLUG_ARP_READINESS_REVIEW = 'arp_readiness_review_system';
+
     /**
      * @return array{content: string, id: string, label: string}|null
      */
