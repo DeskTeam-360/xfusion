@@ -197,6 +197,9 @@ function xfarp_wizard_publish_init_js(): string
             if (typeof window.xarRenderCurrentStep === 'function') {
                 window.xarRenderCurrentStep();
             }
+            if (typeof window.xarRefreshVersionHistory === 'function') {
+                window.xarRefreshVersionHistory();
+            }
         }).catch(function () {
             if (publishBtn) {
                 publishBtn.disabled = false;
@@ -243,6 +246,9 @@ function xfarp_wizard_publish_init_js(): string
                         return;
                     }
                     setPublishStatus('Version ' + json.data.version + ' archived.', false);
+                    if (typeof window.xarRefreshVersionHistory === 'function') {
+                        window.xarRefreshVersionHistory();
+                    }
                 }).catch(function () {
                     archiveBtn.disabled = false;
                     setPublishStatus('Archive failed — network error.', true);

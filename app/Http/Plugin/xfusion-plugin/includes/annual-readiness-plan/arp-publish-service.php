@@ -128,24 +128,16 @@ function xarVersionHistoryFormatDate(iso) {
         ' ' + d.toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' });
 }
 
-window.xarInitVersionHistoryCard = function () {
-    var list = document.getElementById('xar-version-history-list');
-    var emptyEl = document.getElementById('xar-version-history-empty');
-    if (!list || !emptyEl || typeof window.xarLoadArpVersions !== 'function') {
+function xarVersionHistoryRenderList(list, emptyEl, versions) {
+    if (!versions || !versions.length) {
+        emptyEl.style.display = '';
+        emptyEl.textContent = 'No versions yet. Archive or publish to create one.';
+        list.innerHTML = '';
         return;
     }
 
-    emptyEl.textContent = 'Loading…';
-    list.innerHTML = '';
-
-    window.xarLoadArpVersions().then(function (versions) {
-        if (!versions || !versions.length) {
-            emptyEl.textContent = 'No versions yet. Archive or publish to create one.';
-            return;
-        }
-
-        emptyEl.style.display = 'none';
-        list.innerHTML = '<ul class="xar-version-history-list">' + versions.map(function (v) {
+    emptyEl.style.display = 'none';
+    list.innerHTML = '<ul class="xar-version-history-list">' + versions.map(function (v) {
             var badgeClass = v.status === 'published' ? 'green' : 'amber';
             var dateLabel = v.published_at ? xarVersionHistoryFormatDate(v.published_at) : xarVersionHistoryFormatDate(v.created_at);
             return '<li>' +
@@ -156,18 +148,47 @@ window.xarInitVersionHistoryCard = function () {
                 '</div></li>';
         }).join('') + '</ul>';
 
-        list.querySelectorAll('.xar-version-view-btn').forEach(function (btn) {
-            btn.addEventListener('click', function (e) {
-                e.preventDefault();
-                var versionId = btn.getAttribute('data-version-id');
-                var url = new URL(window.location.href);
-                url.searchParams.set('version_id', versionId);
-                window.location.href = url.toString();
-            });
+    list.querySelectorAll('.xar-version-view-btn').forEach(function (btn) {
+        btn.addEventListener('click', function (e) {
+            e.preventDefault();
+            var versionId = btn.getAttribute('data-version-id');
+            var url = new URL(window.location.href);
+            url.searchParams.set('version_id', versionId);
+            window.location.href = url.toString();
         });
+    });
+}
+
+window.xarInitVersionHistoryCard = function () {
+    var list = document.getElementById('xar-version-history-list');
+    var emptyEl = document.getElementById('xar-version-history-empty');
+    if (!list || !emptyEl || typeof window.xarLoadArpVersions !== 'function') {
+        return;
+    }
+
+    // Versions only change on Archive/Publish (handled by
+    // window.xarRefreshVersionHistory below) — cache the list across step
+    // changes so switching steps doesn't re-fetch and re-flash "Loading…"
+    // every time the sidebar re-renders.
+    if (window.xarVersionHistoryCache) {
+        xarVersionHistoryRenderList(list, emptyEl, window.xarVersionHistoryCache);
+        return;
+    }
+
+    emptyEl.textContent = 'Loading…';
+    list.innerHTML = '';
+
+    window.xarLoadArpVersions().then(function (versions) {
+        window.xarVersionHistoryCache = versions || [];
+        xarVersionHistoryRenderList(list, emptyEl, versions);
     }).catch(function () {
         emptyEl.textContent = 'Unable to load version history.';
     });
+};
+
+window.xarRefreshVersionHistory = function () {
+    window.xarVersionHistoryCache = null;
+    window.xarInitVersionHistoryCard();
 };
 JS;
 }
