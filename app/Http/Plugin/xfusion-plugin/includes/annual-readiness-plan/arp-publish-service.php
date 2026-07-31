@@ -193,26 +193,72 @@ function xarVersionHistoryCloseModal() {
     if (overlay) overlay.classList.add('xar-hidden');
 }
 
-function xarVersionHistoryRenderTextRows(rows) {
-    if (!rows) return '';
-    var html = '';
-    Object.keys(rows).forEach(function (key) {
-        var value = rows[key];
-        if (value === null || value === undefined || value === '') return;
-        var label = key.replace(/_/g, ' ').replace(/\b\w/g, function (c) { return c.toUpperCase(); });
-        html += '<div class="xar-version-field"><dt>' + xarVersionHistoryEsc(label) + '</dt>' +
-            '<dd>' + xarVersionHistoryEsc(String(value)).replace(/\n/g, '<br>') + '</dd></div>';
-    });
-    return html ? '<dl class="xar-version-fields">' + html + '</dl>' : '<p class="xar-muted">No content recorded.</p>';
+/* Same field labels/order the real Step 1/2/5 forms use, so a version
+   being viewed looks like the actual form instead of a generic key/value
+   dump. Falls back to a Title-Cased version of the key for anything not
+   listed here (forward-compatible with new fields). */
+var XAR_VERSION_FIELD_LABELS = {
+    mission: 'Mission',
+    vision: 'Vision',
+    core_values: 'Core Values (Optional)',
+    organizational_description: 'Organizational Description',
+    business_environment: 'Business Environment',
+    executive_narrative: 'Executive Narrative',
+    future_state_narrative: 'Future State Narrative',
+    future_characteristics: 'Future Organizational Characteristics',
+    desired_culture: 'Desired Organizational Culture',
+    desired_customer_experience: 'Desired Customer Experience',
+    desired_employee_experience: 'Desired Employee Experience',
+    desired_leadership_environment: 'Desired Leadership Environment',
+    assumptions: 'Key Organizational Assumptions',
+    risks: 'Potential Risks',
+    opportunities: 'Potential Opportunities',
+    learning_objectives: 'Learning Objectives',
+    leadership_questions: 'Questions Leadership Intends to Answer',
+};
+
+function xarVersionHistoryFieldLabel(key) {
+    return XAR_VERSION_FIELD_LABELS[key] || key.replace(/_/g, ' ').replace(/\b\w/g, function (c) { return c.toUpperCase(); });
 }
 
-function xarVersionHistoryRenderPriorityList(items, titleKey) {
+/* Read-only rendering of the same .xar-field layout Steps 1/2/5 use for
+   their live textareas — a bordered box showing the saved text instead
+   of an editable control. */
+function xarVersionHistoryRenderTextRows(rows, fieldOrder) {
+    if (!rows) return '';
+    var keys = fieldOrder && fieldOrder.length ? fieldOrder : Object.keys(rows);
+    var html = '';
+    keys.forEach(function (key) {
+        var value = rows[key];
+        if (value === null || value === undefined || value === '') return;
+        html += '<div class="xar-field">' +
+            '<div class="xar-field-head"><h3 class="xar-field-label">' + xarVersionHistoryEsc(xarVersionHistoryFieldLabel(key)) + '</h3></div>' +
+            '<div class="xar-version-readonly-value">' + xarVersionHistoryEsc(String(value)).replace(/\n/g, '<br>') + '</div>' +
+            '</div>';
+    });
+    return html || '<p class="xar-muted">No content recorded.</p>';
+}
+
+/* Read-only rendering of the same .xar-prio-card layout Steps 3/4 use
+   for readiness/strategic priority cards. */
+function xarVersionHistoryRenderPriorityCards(items, config) {
     if (!items || !items.length) {
         return '<p class="xar-muted">None recorded.</p>';
     }
-    return '<ul class="xar-version-list">' + items.map(function (item) {
-        return '<li>' + xarVersionHistoryEsc(item[titleKey] || item.title || item.name || 'Untitled') + '</li>';
-    }).join('') + '</ul>';
+    return '<div class="xar-prio-list">' + items.map(function (item, i) {
+        var fieldsHtml = config.fields.map(function (f) {
+            var value = item[f.key];
+            if (value === null || value === undefined || value === '') return '';
+            return '<div><span class="xar-version-subfield-label">' + xarVersionHistoryEsc(f.label) + '</span>' +
+                '<div class="xar-version-readonly-value xar-version-readonly-value-sm">' + xarVersionHistoryEsc(String(value)).replace(/\n/g, '<br>') + '</div></div>';
+        }).join('');
+        return '<div class="xar-prio-card">' +
+            '<div class="xar-prio-rail"><div class="xar-prio-num">' + (i + 1) + '</div></div>' +
+            '<div class="xar-prio-body">' +
+            '<h3 class="xar-field-label" style="margin-bottom:.65rem">' + xarVersionHistoryEsc(item[config.titleKey] || 'Untitled') + '</h3>' +
+            '<div class="xar-version-subfield-grid">' + fieldsHtml + '</div>' +
+            '</div></div>';
+    }).join('') + '</div>';
 }
 
 function xarVersionHistoryRenderSnapshot(snapshot) {
@@ -223,25 +269,46 @@ function xarVersionHistoryRenderSnapshot(snapshot) {
     var html = '';
 
     html += '<div class="xar-version-section"><h4>Organizational Foundation™</h4>' +
-        xarVersionHistoryRenderTextRows(snapshot.foundation) + '</div>';
+        xarVersionHistoryRenderTextRows(snapshot.foundation, ['mission', 'vision', 'core_values', 'organizational_description', 'business_environment', 'executive_narrative']) + '</div>';
 
     html += '<div class="xar-version-section"><h4>Future State™</h4>' +
-        xarVersionHistoryRenderTextRows(snapshot.future_state) + '</div>';
+        xarVersionHistoryRenderTextRows(snapshot.future_state, ['future_state_narrative', 'future_characteristics', 'desired_culture', 'desired_customer_experience', 'desired_employee_experience', 'desired_leadership_environment']) + '</div>';
 
     html += '<div class="xar-version-section"><h4>Organizational Readiness™ (' +
         ((snapshot.readiness_priorities || []).length) + ')</h4>' +
-        xarVersionHistoryRenderPriorityList(snapshot.readiness_priorities, 'name') + '</div>';
+        xarVersionHistoryRenderPriorityCards(snapshot.readiness_priorities, {
+            titleKey: 'name',
+            fields: [
+                { key: 'cor_capability', label: 'COR Capability™' },
+                { key: 'primary_driver', label: 'Primary Behavioral Driver™' },
+                { key: 'priority_level', label: 'Priority Level' },
+                { key: 'description', label: 'Description' },
+                { key: 'business_rationale', label: 'Business Rationale' },
+                { key: 'expected_impact', label: 'Expected Impact' },
+            ],
+        }) + '</div>';
 
     html += '<div class="xar-version-section"><h4>Strategic Priorities™ (' +
         ((snapshot.strategic_priorities || []).length) + ')</h4>' +
-        xarVersionHistoryRenderPriorityList(snapshot.strategic_priorities, 'title') + '</div>';
+        xarVersionHistoryRenderPriorityCards(snapshot.strategic_priorities, {
+            titleKey: 'title',
+            fields: [
+                { key: 'description', label: 'Description' },
+                { key: 'target_date', label: 'Target Date' },
+                { key: 'success_measures', label: 'Success Measures' },
+                { key: 'status', label: 'Status' },
+            ],
+        }) + '</div>';
 
     html += '<div class="xar-version-section"><h4>Organizational Learning™</h4>' +
-        xarVersionHistoryRenderTextRows(snapshot.learning) + '</div>';
+        xarVersionHistoryRenderTextRows(snapshot.learning, ['assumptions', 'risks', 'opportunities', 'learning_objectives', 'leadership_questions']) + '</div>';
 
     if (snapshot.learnings && snapshot.learnings.length) {
         html += '<div class="xar-version-section"><h4>Learnings (' + snapshot.learnings.length + ')</h4>' +
-            xarVersionHistoryRenderPriorityList(snapshot.learnings, 'title') + '</div>';
+            xarVersionHistoryRenderPriorityCards(snapshot.learnings, {
+                titleKey: 'title',
+                fields: [{ key: 'description', label: 'Description' }],
+            }) + '</div>';
     }
 
     return html;

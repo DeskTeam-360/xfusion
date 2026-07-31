@@ -288,6 +288,15 @@ table.xar-table.xar-table-gaps .xar-gap-priority{width:12%;white-space:nowrap}
 .xar-version-list{margin:0;padding-left:1.2rem}
 .xar-version-list li{margin-bottom:.35rem;font-size:15px}
 
+/* Read-only "looks like the real form" rendering inside the Version
+   History modal — mirrors .xar-field / .xar-prio-card without any
+   interactive controls. */
+.xar-version-readonly-value{width:100%;border:1px solid var(--border);border-radius:.375rem;padding:.65rem .75rem;font-size:16px;background:#fafafa;color:var(--ink);line-height:1.5;box-sizing:border-box;white-space:pre-wrap}
+.xar-version-readonly-value-sm{font-size:14px;padding:.5rem .6rem}
+.xar-version-subfield-label{display:block;font-weight:700;color:var(--navy);font-size:12px;text-transform:uppercase;letter-spacing:.02em;margin:0 0 .25rem}
+.xar-version-subfield-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:.75rem 1rem}
+.xar-version-subfield-grid > div{min-width:0}
+
 /* ── Tablet (≤1024px) ── */
 @media (max-width:1024px){
 #xfarp-wiz h1{font-size:32px}
