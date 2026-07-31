@@ -36,6 +36,7 @@ $xfusion_include_files = [
     'xfusion-llm-prompts-admin.php',
     'xfusion-one-on-one-briefs-admin.php',
     'xfusion-one-on-one-synthesis-admin.php',
+    'xfusion-arp-ai-review-admin.php',
     'xfusion-ai-insights-settings.php',
     'result-evaluation.php',
     'once-popup.php',
