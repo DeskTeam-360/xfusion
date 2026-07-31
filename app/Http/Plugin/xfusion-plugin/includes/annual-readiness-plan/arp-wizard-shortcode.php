@@ -88,6 +88,20 @@ function xfusion_arp_wizard_shortcode($atts = []): string
         $groupMembers = $membersContext['body']['data'];
     }
 
+    // Version History: ?version_id= walks the SAME step forms (Steps 1-5)
+    // pre-filled read-only with a past snapshot, instead of a separate
+    // summary view — reuses the existing view-only lockdown CSS, so no new
+    // "read-only mode" needs to be built.
+    $viewingVersion = null;
+    $versionId = isset($_GET['version_id']) ? absint($_GET['version_id']) : 0;
+    if ($versionId > 0) {
+        $versionContext = xfarp_picker_api_request('GET', "/{$arpId}/versions/{$versionId}", ['user_id' => get_current_user_id()]);
+        if ($versionContext['ok'] && is_array($versionContext['body']['data'] ?? null)) {
+            $viewingVersion = $versionContext['body']['data'];
+            $canEdit = false;
+        }
+    }
+
     $currentUser = wp_get_current_user();
     $ownerName   = $atts['executive_owner'] !== ''
         ? $atts['executive_owner']
@@ -129,6 +143,7 @@ function xfusion_arp_wizard_shortcode($atts = []): string
         'publishedAt'  => $arpData['published_at'] ?? null,
         'canEdit'      => $canEdit,
         'groupMembers' => $groupMembers,
+        'viewingVersion' => $viewingVersion,
     ];
 
     $saveJs      = xfarp_wizard_save_draft_js();
@@ -143,7 +158,13 @@ function xfusion_arp_wizard_shortcode($atts = []): string
     ?>
 <div id="xfarp-wiz"<?php echo $canEdit ? '' : ' data-view-only="1"'; ?>>
 
-    <?php if (! $canEdit) : ?>
+    <?php if ($viewingVersion) : ?>
+    <div class="xar-banner warn" style="margin:1rem 1.75rem 0">
+        &#128065; <span><b>Viewing Version <?php echo esc_html($viewingVersion['version']); ?> (<?php echo esc_html(ucfirst($viewingVersion['status'])); ?>) &mdash; read only.</b>
+        This is a past snapshot of this Annual Readiness Plan™.
+        <a href="<?php echo esc_url(remove_query_arg('version_id')); ?>" class="xar-link" style="color:#8a6d00;text-decoration:underline">Back to current draft</a></span>
+    </div>
+    <?php elseif (! $canEdit) : ?>
     <div class="xar-banner warn" style="margin:1rem 1.75rem 0">
         &#128065; <span><b>View only.</b> You are viewing this Annual Readiness Plan™ as a member. Only leaders of this organization's group can edit or publish it.</span>
     </div>
@@ -211,6 +232,24 @@ function xfusion_arp_wizard_shortcode($atts = []): string
 <script>
 (function () {
 window.XFARP_WIZARD = <?php echo wp_json_encode($wizardConfig); ?>;
+
+// When viewing a past version, short-circuit every step's live-fetch cache
+// with the snapshot data instead — this reuses the exact "already loaded"
+// hooks each step already exposes (xarReadinessLoaded / xarStrategicLoaded /
+// xarDraftCache), so Steps 1-5 render read-only with historical data using
+// their normal rendering code, no separate summary view needed.
+if (window.XFARP_WIZARD.viewingVersion && window.XFARP_WIZARD.viewingVersion.snapshot) {
+    var xarSnap = window.XFARP_WIZARD.viewingVersion.snapshot;
+    window.xarDraftCache = { loaded: true, loading: false, _promise: null, data: {
+        foundation: xarSnap.foundation || {},
+        future_state: xarSnap.future_state || {},
+        learning: xarSnap.learning || {},
+    } };
+    window.xarReadinessCache = xarSnap.readiness_priorities || [];
+    window.xarReadinessLoaded = true;
+    window.xarStrategicCache = xarSnap.strategic_priorities || [];
+    window.xarStrategicLoaded = true;
+}
 <?php
 // publishSvcJs must load BEFORE coreJs: coreJs's initial
 // window.xarBootWizard(false) call renders the sidebar synchronously,

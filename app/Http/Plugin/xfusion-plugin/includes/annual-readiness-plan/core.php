@@ -245,24 +245,21 @@ if (root) {
             return;
         }
         navBound = true;
-        root.querySelector('#xar-next-step').addEventListener('click', function () {
+        var goNextOrPublish = function () {
             if (current === STEPS.length - 1) {
+                if (window.XFARP_WIZARD && window.XFARP_WIZARD.viewingVersion) {
+                    window.alert('You are viewing a past version in read-only mode. Go back to the current draft to publish.');
+                    return;
+                }
                 if (typeof window.xarPublishArp === 'function') {
                     window.xarPublishArp();
                 }
                 return;
             }
             goTo(current + 1);
-        });
-        root.querySelector('#xar-next-step-2').addEventListener('click', function () {
-            if (current === STEPS.length - 1) {
-                if (typeof window.xarPublishArp === 'function') {
-                    window.xarPublishArp();
-                }
-                return;
-            }
-            goTo(current + 1);
-        });
+        };
+        root.querySelector('#xar-next-step').addEventListener('click', goNextOrPublish);
+        root.querySelector('#xar-next-step-2').addEventListener('click', goNextOrPublish);
         root.querySelector('#xar-prev-step').addEventListener('click', function () {
             var prevBtn = root.querySelector('#xar-prev-step');
             if (prevBtn && prevBtn.dataset.action === 'close') {
