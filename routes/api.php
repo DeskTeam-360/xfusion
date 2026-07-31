@@ -456,6 +456,7 @@ Route::prefix('v1')->middleware('fusion.api')->group(function () {
     // Primary prefix: /arps (Laravel is system of record). /arp kept for backward compatibility.
     $registerArpRoutes = function (): void {
         Route::get('/leadable-companies', [ArpController::class, 'leadableCompanies']);
+        Route::get('/readiness-summary-for-pair', [ArpController::class, 'readinessSummaryForPair']);
         Route::get('/list', [ArpController::class, 'index']);
         Route::post('/', [ArpController::class, 'store']);
         Route::get('/{arp}/plan', [ArpController::class, 'getPlan']);

@@ -13,6 +13,7 @@ use App\Models\CompanyGroupDetail;
 use App\Services\ArpAiService;
 use App\Services\ArpEvidenceService;
 use App\Services\ArpPlanService;
+use App\Services\OneOnOneCompanyGroupSyncService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 
@@ -152,6 +153,53 @@ class ArpController extends Controller
             ->values();
 
         return response()->json(['success' => true, 'data' => $members]);
+    }
+
+    /**
+     * AI Readiness Review™ summary from the most recent ARP belonging to a
+     * 1-on-1 leader/employee pair's company group — feeds the "ARP
+     * Priorities" evidence card in the 1-on-1 wizard's Step 1. Read-only;
+     * only the AI-generated readiness figures are exposed, never raw
+     * evidence.
+     */
+    public function readinessSummaryForPair(Request $request, OneOnOneCompanyGroupSyncService $groupSync, ArpAiService $ai)
+    {
+        $leaderUserId = (int) $request->query('leader_user_id');
+        $employeeUserId = (int) $request->query('employee_user_id');
+        if ($leaderUserId < 1 || $employeeUserId < 1) {
+            return response()->json(['success' => true, 'data' => null]);
+        }
+
+        $group = $groupSync->findGroupForPair($leaderUserId, $employeeUserId);
+        if ($group === null) {
+            return response()->json(['success' => true, 'data' => null]);
+        }
+
+        $arp = Arp::query()
+            ->where('company_group_id', $group->id)
+            ->orderByDesc('year')
+            ->first();
+        if ($arp === null) {
+            return response()->json(['success' => true, 'data' => null]);
+        }
+
+        $latest = $ai->latestAssessment($arp);
+        $readiness = is_array($latest?->assessment['readiness_assessment'] ?? null) ? $latest->assessment['readiness_assessment'] : null;
+        if ($readiness === null || ($readiness['score'] ?? null) === null) {
+            return response()->json(['success' => true, 'data' => null]);
+        }
+
+        return response()->json([
+            'success' => true,
+            'data' => [
+                'score' => $readiness['score'],
+                'label' => $readiness['label'] ?? null,
+                'narrative' => $readiness['summary'] ?? null,
+                'group_name' => $group->title,
+                'year' => $arp->year,
+                'status' => $arp->status,
+            ],
+        ]);
     }
 
     /** Version history — newest first. Snapshot bodies excluded from the list (fetch by id if needed). */
