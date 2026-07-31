@@ -263,9 +263,38 @@ window.xarShowVersionModal = function (detail) {
     var meta = '<p class="xar-muted" style="margin-top:-.25rem">' +
         (detail.published_at ? 'Published ' + xarVersionHistoryFormatDate(detail.published_at) : 'Saved ' + xarVersionHistoryFormatDate(detail.created_at)) +
         '</p>';
-    body.innerHTML = meta + xarVersionHistoryRenderSnapshot(detail.snapshot);
+    var fallbackNotice = detail._isLiveFallback
+        ? '<div class="xar-banner warn" style="margin-bottom:1rem"><span class="xar-banner-icon" aria-hidden="true">&#9888;</span>' +
+          '<span>The stored snapshot for this version couldn\'t be loaded, so this shows the <b>current in-progress data</b> instead — it may not exactly match what was saved at publish time.</span></div>'
+        : '';
+    body.innerHTML = meta + fallbackNotice + xarVersionHistoryRenderSnapshot(detail.snapshot);
     overlay.classList.remove('xar-hidden');
 };
+
+/**
+ * Fallback for when the real snapshot endpoint can't be reached (e.g. the
+ * Laravel API hasn't been deployed with it yet): approximates the LATEST
+ * version's content from whatever step data is already loaded in this
+ * wizard session. Only valid for the latest version — older archived
+ * versions can't be reconstructed from current live data.
+ */
+function xarBuildLatestVersionDetailFromCurrentData(versionRow) {
+    return {
+        version: versionRow.version,
+        status: versionRow.status,
+        published_at: versionRow.published_at,
+        created_at: versionRow.created_at,
+        _isLiveFallback: true,
+        snapshot: {
+            foundation: window.xarFoundationCache || null,
+            future_state: window.xarFutureStateCache || null,
+            readiness_priorities: window.xarReadinessCache || [],
+            strategic_priorities: window.xarStrategicCache || [],
+            learning: window.xarLearningCache || null,
+            learnings: [],
+        },
+    };
+}
 
 window.xarInitVersionHistoryCard = function () {
     var list = document.getElementById('xar-version-history-list');
@@ -284,23 +313,29 @@ window.xarInitVersionHistoryCard = function () {
         }
 
         emptyEl.style.display = 'none';
-        list.innerHTML = '<ul class="xar-version-history-list">' + versions.map(function (v) {
+        var versionsById = {};
+        list.innerHTML = '<ul class="xar-version-history-list">' + versions.map(function (v, i) {
+            versionsById[v.id] = v;
             var badgeClass = v.status === 'published' ? 'green' : 'amber';
             var dateLabel = v.published_at ? xarVersionHistoryFormatDate(v.published_at) : xarVersionHistoryFormatDate(v.created_at);
             return '<li>' +
                 '<div class="xar-version-history-row">' +
                 '<span class="xar-badge ' + badgeClass + '" style="font-size:12px">v' + xarVersionHistoryEsc(v.version) + '</span>' +
                 '<span class="xar-muted" style="font-size:12px">' + xarVersionHistoryEsc(dateLabel) + '</span>' +
-                '<button type="button" class="xar-link xar-version-view-btn" data-version-id="' + v.id + '" style="font-size:12px;font-weight:600;color:#5f9a3f;background:none;border:none;cursor:pointer;padding:0;text-decoration:underline">View</button>' +
+                '<button type="button" class="xar-link xar-version-view-btn" data-version-id="' + v.id + '" data-is-latest="' + (i === 0 ? '1' : '0') + '" style="font-size:12px;font-weight:600;color:#5f9a3f;background:none;border:none;cursor:pointer;padding:0;text-decoration:underline">View</button>' +
                 '</div></li>';
         }).join('') + '</ul>';
 
         list.querySelectorAll('.xar-version-view-btn').forEach(function (btn) {
             btn.addEventListener('click', function () {
                 var versionId = parseInt(btn.getAttribute('data-version-id'), 10);
+                var isLatest = btn.getAttribute('data-is-latest') === '1';
                 btn.textContent = 'Loading…';
                 window.xarLoadArpVersionDetail(versionId).then(function (detail) {
                     btn.textContent = 'View';
+                    if (!detail && isLatest) {
+                        detail = xarBuildLatestVersionDetailFromCurrentData(versionsById[versionId]);
+                    }
                     window.xarShowVersionModal(detail);
                 });
             });
