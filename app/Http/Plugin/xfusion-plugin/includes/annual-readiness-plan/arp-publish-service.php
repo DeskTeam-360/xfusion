@@ -291,7 +291,7 @@ window.xarInitVersionHistoryCard = function () {
                 '<div class="xar-version-history-row">' +
                 '<span class="xar-badge ' + badgeClass + '" style="font-size:12px">v' + xarVersionHistoryEsc(v.version) + '</span>' +
                 '<span class="xar-muted" style="font-size:12px">' + xarVersionHistoryEsc(dateLabel) + '</span>' +
-                '<button type="button" class="xar-link xar-version-view-btn" data-version-id="' + v.id + '" style="font-size:12px;background:none;border:none;cursor:pointer;padding:0">View</button>' +
+                '<button type="button" class="xar-link xar-version-view-btn" data-version-id="' + v.id + '" style="font-size:12px;font-weight:600;color:#5f9a3f;background:none;border:none;cursor:pointer;padding:0;text-decoration:underline">View</button>' +
                 '</div></li>';
         }).join('') + '</ul>';
 
