@@ -211,6 +211,36 @@ class ArpController extends Controller
     }
 
     /**
+     * Single version's full snapshot — powers the "Version History" sidebar
+     * card's detail view (Step 7 "Archive Previous Version" / "Publish"
+     * both write a snapshot here; this is the only place to read one back).
+     */
+    public function getVersion(Request $request, Arp $arp, ArpVersion $version)
+    {
+        $userId = (int) $request->query('user_id');
+        if ($userId < 1 || ! $this->memberGroupIds($userId)->contains($arp->company_group_id)) {
+            return response()->json(['success' => false, 'message' => 'You do not have access to this ARP.'], 403);
+        }
+
+        if ((int) $version->arp_id !== $arp->id) {
+            return response()->json(['success' => false, 'message' => 'Version not found for this ARP.'], 404);
+        }
+
+        return response()->json([
+            'success' => true,
+            'data' => [
+                'id' => $version->id,
+                'version' => (string) $version->version,
+                'status' => $version->status,
+                'snapshot' => $version->snapshot,
+                'published_by_user_id' => $version->published_by_user_id,
+                'published_at' => $version->published_at?->toIso8601String(),
+                'created_at' => $version->created_at?->toIso8601String(),
+            ],
+        ]);
+    }
+
+    /**
      * Archive the ARP's CURRENT state as a snapshot without changing its
      * version number or status — used by the "Archive Previous Version"
      * action on the Publish step, which archives the last-saved draft

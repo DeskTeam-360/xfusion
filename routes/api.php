@@ -476,6 +476,7 @@ Route::prefix('v1')->middleware('fusion.api')->group(function () {
         Route::post('/{arp}/readiness-review/context', [ArpController::class, 'saveReadinessReviewContext']);
         Route::get('/{arp}/group-members', [ArpController::class, 'groupMembers']);
         Route::get('/{arp}/versions', [ArpController::class, 'listVersions']);
+        Route::get('/{arp}/versions/{version}', [ArpController::class, 'getVersion']);
         Route::post('/{arp}/archive-version', [ArpController::class, 'archiveVersion']);
         Route::post('/{arp}/publish', [ArpController::class, 'publish']);
         Route::get('/{arp}', [ArpController::class, 'show']);

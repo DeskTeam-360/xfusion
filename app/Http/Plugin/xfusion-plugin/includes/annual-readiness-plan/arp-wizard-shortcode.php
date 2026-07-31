@@ -211,7 +211,20 @@ function xfusion_arp_wizard_shortcode($atts = []): string
 <script>
 (function () {
 window.XFARP_WIZARD = <?php echo wp_json_encode($wizardConfig); ?>;
-<?php echo $panelsJs . "\n\n" . $readinessJs . "\n\n" . $strategicJs . "\n\n" . $learningJs . "\n\n" . $aiReviewJs . "\n\n" . $publishJs . "\n\n" . $coreJs . "\n\n" . $saveJs . "\n\n" . $loadJs . "\n\n" . $planSvcJs . "\n\n" . $readinessSvcJs . "\n\n" . $strategicSvcJs . "\n\n" . $aiReviewSvcJs . "\n\n" . $publishSvcJs; ?>
+<?php
+// publishSvcJs must load BEFORE coreJs: coreJs's initial
+// window.xarBootWizard(false) call renders the sidebar synchronously,
+// which calls window.xarInitVersionHistoryCard() (defined in
+// publishSvcJs) — if that function isn't defined yet on first paint,
+// the Version History card would silently stay stuck on "Loading…"
+// until the user navigates to another step. None of the *SvcJs chunks
+// touch `root`/`document` outside of function bodies, so reordering
+// them ahead of coreJs is safe (same fix applied to the QBR/IRR
+// wizards for an equivalent root-ordering bug).
+echo $panelsJs . "\n\n" . $readinessJs . "\n\n" . $strategicJs . "\n\n" . $learningJs . "\n\n" . $aiReviewJs . "\n\n" . $publishJs . "\n\n"
+    . $planSvcJs . "\n\n" . $readinessSvcJs . "\n\n" . $strategicSvcJs . "\n\n" . $aiReviewSvcJs . "\n\n" . $publishSvcJs . "\n\n"
+    . $coreJs . "\n\n" . $saveJs . "\n\n" . $loadJs;
+?>
 })();
 </script>
     <?php

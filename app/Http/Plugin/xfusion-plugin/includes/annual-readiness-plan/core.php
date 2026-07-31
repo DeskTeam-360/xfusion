@@ -111,13 +111,24 @@ if (root) {
             '</div>';
     };
 
+    var xarSidebarVersionHistoryCard = function () {
+        return '<div class="xar-card" id="xar-version-history-card">' +
+            '<h4>Version History</h4>' +
+            '<p class="xar-muted" id="xar-version-history-empty" style="margin:0">Loading…</p>' +
+            '<div id="xar-version-history-list"></div>' +
+            '</div>';
+    };
+
     var renderSidebar = function () {
         var panels = root.querySelector('#xar-sidebar-panels');
         if (!panels) {
             return;
         }
         var cfg = SIDEBAR[current] || SIDEBAR[0];
-        panels.innerHTML = xarSidebarProgressCard() + xarSidebarAboutCard(cfg);
+        panels.innerHTML = xarSidebarAboutCard(cfg) + xarSidebarVersionHistoryCard() + xarSidebarProgressCard();
+        if (typeof window.xarInitVersionHistoryCard === 'function') {
+            window.xarInitVersionHistoryCard();
+        }
     };
     window.xarRenderSidebar = renderSidebar;
 

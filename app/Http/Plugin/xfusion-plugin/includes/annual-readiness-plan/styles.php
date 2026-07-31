@@ -262,6 +262,32 @@ table.xar-table.xar-table-gaps .xar-gap-priority{width:12%;white-space:nowrap}
 .xar-section-desc{color:var(--muted);margin:0 0 1.25rem}
 .xar-placeholder{padding:2rem 1rem;text-align:center}
 
+/* Version History sidebar card */
+.xar-version-history-list{list-style:none;margin:.5rem 0 0;padding:0}
+.xar-version-history-list li{border-bottom:1px solid var(--border);padding:.5rem 0}
+.xar-version-history-list li:last-child{border-bottom:none;padding-bottom:0}
+.xar-version-history-row{display:flex;align-items:center;gap:.5rem;flex-wrap:wrap}
+.xar-version-history-row .xar-muted{flex:1;min-width:0}
+
+/* Version detail modal */
+.xar-modal-overlay{position:fixed;inset:0;background:rgba(15,23,42,.55);z-index:100000;display:flex;align-items:center;justify-content:center;padding:1.5rem}
+.xar-modal{background:#fff;border-radius:.6rem;max-width:720px;width:100%;max-height:85vh;display:flex;flex-direction:column;box-shadow:0 20px 50px rgba(0,0,0,.25)}
+.xar-modal-head{display:flex;align-items:center;justify-content:space-between;padding:1.1rem 1.4rem;border-bottom:1px solid var(--border)}
+.xar-modal-head h3{margin:0;color:var(--navy);font-size:20px}
+.xar-modal-close{background:none;border:none;font-size:1.6rem;line-height:1;cursor:pointer;color:var(--muted);padding:0 .25rem}
+.xar-modal-close:hover{color:var(--ink)}
+.xar-modal-body{padding:1.4rem;overflow-y:auto}
+.xar-version-section{margin-bottom:1.25rem}
+.xar-version-section:last-child{margin-bottom:0}
+.xar-version-section h4{margin:0 0 .5rem;color:var(--navy);font-size:16px}
+.xar-version-fields{margin:0}
+.xar-version-field{margin-bottom:.75rem}
+.xar-version-field:last-child{margin-bottom:0}
+.xar-version-fields dt{font-weight:700;color:var(--navy);font-size:13px;text-transform:uppercase;letter-spacing:.02em;margin:0 0 .2rem}
+.xar-version-fields dd{margin:0;font-size:15px;color:var(--ink);line-height:1.5}
+.xar-version-list{margin:0;padding-left:1.2rem}
+.xar-version-list li{margin-bottom:.35rem;font-size:15px}
+
 /* ── Tablet (≤1024px) ── */
 @media (max-width:1024px){
 #xfarp-wiz h1{font-size:32px}
