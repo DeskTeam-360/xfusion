@@ -14,6 +14,8 @@ const XFUSION_LLM_PROMPT_SLUG_COR_USER = 'cor_unified_user';
 const XFUSION_LLM_PROMPT_SLUG_OO_BRIEF = 'one_on_one_brief_system';
 const XFUSION_LLM_PROMPT_SLUG_OO_SYNTHESIS = 'one_on_one_synthesis_system';
 const XFUSION_LLM_PROMPT_SLUG_ARP_READINESS_REVIEW = 'arp_readiness_review_system';
+const XFUSION_LLM_PROMPT_SLUG_QBR_ASSESSMENT = 'qbr_assessment_system';
+const XFUSION_LLM_PROMPT_SLUG_QBR_SYNTHESIS = 'qbr_synthesis_system';
 
 /**
  * @return array<string, array{
@@ -78,6 +80,26 @@ function xfusion_llm_prompt_slug_definitions(): array
             'default_files' => array_values(array_filter([
                 $pluginDir . 'prompts/arp_readiness_review_system.md',
                 $repoRoot . '/Xfusion-llm/prompts/arp_readiness_review_system.md',
+            ])),
+        ],
+        XFUSION_LLM_PROMPT_SLUG_QBR_ASSESSMENT => [
+            'title' => __('QBR — AI Organizational Assessment (system)', 'xfusion'),
+            'menu_title' => __('QBR Assessment System', 'xfusion'),
+            'description' => __('System prompt for POST /api/v1/qbr/assessment (QBR Step 3, via Laravel).', 'xfusion'),
+            'placeholder_hint' => __('Defines the overall_readiness / confidence_level / cor_capability_assessment / top_strengths / top_opportunities / emerging_risks / emerging_opportunities JSON output sections.', 'xfusion'),
+            'default_files' => array_values(array_filter([
+                $pluginDir . 'prompts/qbr_assessment_system.md',
+                $repoRoot . '/Xfusion-llm/prompts/qbr_assessment_system.md',
+            ])),
+        ],
+        XFUSION_LLM_PROMPT_SLUG_QBR_SYNTHESIS => [
+            'title' => __('QBR — AI Organizational Synthesis (system)', 'xfusion'),
+            'menu_title' => __('QBR Synthesis System', 'xfusion'),
+            'description' => __('System prompt for POST /api/v1/qbr/synthesis (QBR Step 6, via Laravel).', 'xfusion'),
+            'placeholder_hint' => __('Defines the executive_summary / organizational_readiness_summary / strengths / opportunities / key_risks / quarterly_focus / commitment_summary / recommended_areas_of_attention JSON output sections.', 'xfusion'),
+            'default_files' => array_values(array_filter([
+                $pluginDir . 'prompts/qbr_synthesis_system.md',
+                $repoRoot . '/Xfusion-llm/prompts/qbr_synthesis_system.md',
             ])),
         ],
     ]);

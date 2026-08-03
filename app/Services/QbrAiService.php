@@ -5,6 +5,7 @@ namespace App\Services;
 use App\Models\Qbr;
 use App\Models\QbrAiAssessment;
 use App\Models\QbrAiSynthesis;
+use App\Services\WordPressLlmPromptService;
 use Illuminate\Http\Client\RequestException;
 use Illuminate\Support\Facades\Log;
 
@@ -51,12 +52,17 @@ class QbrAiService
             return null;
         }
 
+        $systemPrompt = app(WordPressLlmPromptService::class)->getActivePrompt(WordPressLlmPromptService::SLUG_QBR_ASSESSMENT);
+
         try {
             $body = $this->client()
-                ->post('/api/v1/qbr/assessment', [
+                ->post('/api/v1/qbr/assessment', array_filter([
                     'qbr_id' => $qbr->id,
                     'evidence' => $evidenceSnapshot,
-                ])
+                    'system_prompt' => $systemPrompt['content'] ?? null,
+                    'prompt_version_id' => $systemPrompt['id'] ?? null,
+                    'prompt_version_label' => $systemPrompt['label'] ?? null,
+                ], static fn ($v) => $v !== null && $v !== ''))
                 ->throw()
                 ->json();
 
@@ -96,12 +102,17 @@ class QbrAiService
             return null;
         }
 
+        $systemPrompt = app(WordPressLlmPromptService::class)->getActivePrompt(WordPressLlmPromptService::SLUG_QBR_SYNTHESIS);
+
         try {
             $body = $this->client()
-                ->post('/api/v1/qbr/synthesis', [
+                ->post('/api/v1/qbr/synthesis', array_filter([
                     'qbr_id' => $qbr->id,
                     'context' => $synthesisContext,
-                ])
+                    'system_prompt' => $systemPrompt['content'] ?? null,
+                    'prompt_version_id' => $systemPrompt['id'] ?? null,
+                    'prompt_version_label' => $systemPrompt['label'] ?? null,
+                ], static fn ($v) => $v !== null && $v !== ''))
                 ->throw()
                 ->json();
 
