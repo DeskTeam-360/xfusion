@@ -18,7 +18,11 @@ publish: function () {
     return '<h2 class="xqbr-section-title">Step 7. Publish</h2>' +
         '<p class="xqbr-section-desc">Review your Quarterly Business Review™ and finalize to make it available across the FUSION platform. Publishing will lock this QBR and make it accessible to downstream dashboards and reports.</p>' +
         '<div class="xqbr-banner">ℹ️ <span>Please review the QBR summary below. Once published, this record cannot be edited. You may create a new QBR for the next quarter.</span></div>' +
-        '<div class="xqbr-card"><h3 style="margin-top:0">QBR Summary Review</h3>' +
+        '<div class="xqbr-card">' +
+        '<div class="xqbr-review-head">' +
+        '<div><h3>QBR Summary Review</h3><p class="xqbr-muted">Quarterly Business Review™ Summary</p></div>' +
+        '<span class="xqbr-review-quarter" id="xqbr-review-quarter"></span>' +
+        '</div>' +
         '<div class="xqbr-review-list" id="xqbr-review-list"></div></div>' +
         '<div id="xqbr-publish-ready-banner"></div>' +
         '<div class="xqbr-card"><h3 style="margin-top:0">Publish Options</h3>' +
@@ -52,11 +56,31 @@ function xfqbr_wizard_publish_init_js(): string
     return <<<'JS'
 (function () {
     var REVIEW_STEPS = [
-        { key: 'evidence', label: 'Organizational Evidence™', steps: 'Steps 1–2', stepIndex: 1 },
-        { key: 'assessment', label: 'AI Organizational Assessment™', steps: 'Step 3', stepIndex: 2 },
-        { key: 'collaboration', label: 'Leadership Collaboration™', steps: 'Step 4', stepIndex: 3 },
-        { key: 'commitments', label: 'Quarterly Commitments™', steps: 'Step 5', stepIndex: 4 },
-        { key: 'synthesis', label: 'AI Organizational Synthesis™', steps: 'Step 6', stepIndex: 5 },
+        {
+            key: 'evidence', label: 'Organizational Evidence™', steps: '1–2', stepIndex: 1,
+            icon: '&#128202;', iconBg: '#e0edff', iconColor: '#2563eb',
+            desc: 'Objective evidence compiled from across the platform for this quarter.',
+        },
+        {
+            key: 'assessment', label: 'AI Organizational Assessment™', steps: '3', stepIndex: 2,
+            icon: '&#10024;', iconBg: '#f3e8ff', iconColor: '#9333ea',
+            desc: 'AI analysis of evidence with organizational assessment and leadership agreement.',
+        },
+        {
+            key: 'collaboration', label: 'Leadership Collaboration™', steps: '4', stepIndex: 3,
+            icon: '&#128172;', iconBg: '#fff1e0', iconColor: '#ea580c',
+            desc: 'Leadership discussion, context, decisions and takeaways captured.',
+        },
+        {
+            key: 'commitments', label: 'Quarterly Commitments™', steps: '5', stepIndex: 4,
+            icon: '&#127919;', iconBg: '#e6f6ea', iconColor: '#16a34a',
+            desc: 'Commitments defined to drive focus and accountability next quarter.',
+        },
+        {
+            key: 'synthesis', label: 'AI Organizational Synthesis™', steps: '6', stepIndex: 5,
+            icon: '&#129504;', iconBg: '#e0f2f4', iconColor: '#0d9488',
+            desc: 'AI-generated organizational readiness synthesis.',
+        },
     ];
 
     function qbrStatus() {
@@ -107,15 +131,25 @@ function xfqbr_wizard_publish_init_js(): string
         list.innerHTML = REVIEW_STEPS.map(function (row) {
             var done = !!progress[row.key];
             return '<button type="button" class="xqbr-review-row xqbr-review-row-link" data-step-index="' + row.stepIndex + '" aria-label="Go to ' + row.label + '">' +
-                '<div class="xqbr-review-left">' +
-                '<span class="xqbr-review-check" style="color:' + (done ? '#16a34a' : '#d97706') + '">' +
-                (done ? '&#10003;' : '&#9675;') + '</span>' +
-                '<div><strong>' + row.label + '</strong>' +
-                '<div class="xqbr-review-status">' + (done ? 'Completed ' : 'Incomplete — ') + row.steps + '</div></div>' +
+                '<span class="xqbr-review-icon" style="background:' + row.iconBg + ';color:' + row.iconColor + '">' + row.icon + '</span>' +
+                '<div class="xqbr-review-body">' +
+                '<strong>' + row.label + '</strong>' +
+                '<p class="xqbr-review-desc">' + row.desc + '</p>' +
                 '</div>' +
-                '<span class="xqbr-review-go" aria-hidden="true">&rarr;</span>' +
+                '<div class="xqbr-review-right">' +
+                '<span class="xqbr-review-badge ' + (done ? 'done' : 'pending') + '">' +
+                '<span class="xqbr-review-check">' + (done ? '&#10003;' : '&#9675;') + '</span>' +
+                (done ? 'Completed' : 'Incomplete') +
+                '</span>' +
+                '<span class="xqbr-review-step">Step ' + row.steps + '</span>' +
+                '</div>' +
                 '</button>';
         }).join('');
+
+        var quarterEl = document.getElementById('xqbr-review-quarter');
+        if (quarterEl) {
+            quarterEl.textContent = (window.XFQBR_WIZARD && window.XFQBR_WIZARD.quarterLabel) ? window.XFQBR_WIZARD.quarterLabel : '';
+        }
     }
 
     function bindReviewNavigation() {

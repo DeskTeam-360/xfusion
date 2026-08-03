@@ -116,6 +116,7 @@ function xfusion_qbr_wizard_shortcode($atts = []): string
         'discussionNotes' => $qbrData['discussion_notes'] ?? '',
         'status'          => $qbrData['status'] ?? 'draft',
         'stepProgress'    => is_array($qbrData['step_progress'] ?? null) ? $qbrData['step_progress'] : new stdClass(),
+        'quarterLabel'    => $quarterLabel,
     ];
 
     ob_start();
