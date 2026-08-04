@@ -186,45 +186,57 @@
                                             @endif
                                         </p>
                                     @else
-                                        <div class="max-h-60 space-y-2 overflow-y-auto rounded border border-border bg-white p-3 [color-scheme:light] dark:[color-scheme:dark] dark:bg-darkgray/30 dark:border-darkborder">
-                                            @foreach($gfFields as $f)
-                                                @php
-                                                    $_id = (int) $f['id'];
-                                                    $isChecked = $this->fieldIsChecked($index, $_id);
-                                                    $fieldWeight = $this->fieldWeight($index, $_id);
-                                                @endphp
-                                                <div wire:key="fld-{{ $index }}-{{ $_id }}"
-                                                     x-data="{ connected: @js($isChecked) }"
-                                                     class="flex items-start gap-3 rounded px-2 py-1 hover:bg-gray-100 dark:hover:bg-darkborder/40">
-                                                    <input type="checkbox"
-                                                           wire:key="fld-cb-{{ $index }}-{{ $_id }}"
-                                                           wire:change="setFieldChecked({{ $index }}, {{ $_id }}, $event.target.checked)"
-                                                           x-on:change="connected = $event.target.checked"
-                                                           :checked="connected"
-                                                           class="mt-1 size-[1.125rem] shrink-0 cursor-pointer appearance-auto rounded border-2 border-gray-600 bg-white accent-blue-600 shadow-sm outline-none ring-offset-2 focus-visible:ring-2 focus-visible:ring-blue-600 dark:border-gray-300 dark:bg-darkgray dark:accent-teal-400 dark:shadow-inner dark:focus-visible:ring-teal-400"/>
-                                                    <span class="min-w-0 flex-1 text-sm text-dark dark:text-white">
-                                                        <strong class="font-medium">{{ $f['label'] }}</strong>
-                                                        @if(($f['type'] ?? '') !== '')
-                                                            <span class="text-xs text-dark/60 dark:text-darklink">({{ $f['type'] }})</span>
-                                                        @endif
-                                                        <span class="text-xs text-dark/60 dark:text-darklink"> · field #{{ $_id }}</span>
-                                                    </span>
-                                                    <div x-show="connected"
-                                                         x-cloak
-                                                         class="flex shrink-0 flex-col items-end gap-0.5">
-                                                        <label for="csg-weight-{{ $index }}-{{ $_id }}" class="text-[10px] font-semibold uppercase tracking-wide text-dark/50 dark:text-darklink">Weight</label>
-                                                        <input id="csg-weight-{{ $index }}-{{ $_id }}"
-                                                               type="number"
-                                                               step="0.01"
-                                                               min="0.01"
-                                                               wire:key="fld-wt-{{ $index }}-{{ $_id }}"
-                                                               wire:blur="setFieldWeight({{ $index }}, {{ $_id }}, $event.target.value)"
-                                                               value="{{ $fieldWeight ?? 1 }}"
-                                                               inputmode="decimal"
-                                                               class="form-control w-[5.5rem] rounded border border-border bg-white px-2 py-1 text-end text-sm tabular-nums text-dark dark:bg-darkgray dark:border-darkborder dark:text-white"/>
-                                                    </div>
+                                        <div x-data="{ q: '' }">
+                                            @if(count($gfFields) > 8)
+                                                <div class="relative mb-2">
+                                                    <input type="search"
+                                                           x-model.debounce.150ms="q"
+                                                           placeholder="Search {{ count($gfFields) }} fields by label or #id…"
+                                                           autocomplete="off"
+                                                           class="form-control w-full rounded border border-border bg-white px-3 py-1.5 text-sm text-dark placeholder:text-muted dark:bg-darkgray dark:border-darkborder dark:text-white dark:placeholder:text-darklink"/>
                                                 </div>
-                                            @endforeach
+                                            @endif
+                                            <div class="max-h-60 space-y-2 overflow-y-auto rounded border border-border bg-white p-3 [color-scheme:light] dark:[color-scheme:dark] dark:bg-darkgray/30 dark:border-darkborder">
+                                                @foreach($gfFields as $f)
+                                                    @php
+                                                        $_id = (int) $f['id'];
+                                                        $isChecked = $this->fieldIsChecked($index, $_id);
+                                                        $fieldWeight = $this->fieldWeight($index, $_id);
+                                                        $searchText = mb_strtolower(trim(($f['label'] ?? '').' '.$_id));
+                                                    @endphp
+                                                    <div wire:key="fld-{{ $index }}-{{ $_id }}"
+                                                         x-data="{ connected: @js($isChecked), label: @js($searchText) }"
+                                                         x-show="!q.trim() || label.includes(q.trim().toLowerCase())"
+                                                         class="flex items-start gap-3 rounded px-2 py-1 hover:bg-gray-100 dark:hover:bg-darkborder/40">
+                                                        <input type="checkbox"
+                                                               wire:key="fld-cb-{{ $index }}-{{ $_id }}"
+                                                               wire:model="blocks.{{ $index }}.field_checked.{{ $_id }}"
+                                                               x-on:change="connected = $event.target.checked"
+                                                               class="mt-1 size-[1.125rem] shrink-0 cursor-pointer appearance-auto rounded border-2 border-gray-600 bg-white accent-blue-600 shadow-sm outline-none ring-offset-2 focus-visible:ring-2 focus-visible:ring-blue-600 dark:border-gray-300 dark:bg-darkgray dark:accent-teal-400 dark:shadow-inner dark:focus-visible:ring-teal-400"/>
+                                                        <span class="min-w-0 flex-1 text-sm text-dark dark:text-white">
+                                                            <strong class="font-medium">{{ $f['label'] }}</strong>
+                                                            @if(($f['type'] ?? '') !== '')
+                                                                <span class="text-xs text-dark/60 dark:text-darklink">({{ $f['type'] }})</span>
+                                                            @endif
+                                                            <span class="text-xs text-dark/60 dark:text-darklink"> · field #{{ $_id }}</span>
+                                                        </span>
+                                                        <div x-show="connected"
+                                                             x-cloak
+                                                             class="flex shrink-0 flex-col items-end gap-0.5">
+                                                            <label for="csg-weight-{{ $index }}-{{ $_id }}" class="text-[10px] font-semibold uppercase tracking-wide text-dark/50 dark:text-darklink">Weight</label>
+                                                            <input id="csg-weight-{{ $index }}-{{ $_id }}"
+                                                                   type="number"
+                                                                   step="0.01"
+                                                                   min="0.01"
+                                                                   wire:key="fld-wt-{{ $index }}-{{ $_id }}"
+                                                                   wire:model="blocks.{{ $index }}.field_weights.{{ $_id }}"
+                                                                   placeholder="{{ $fieldWeight ?? 1 }}"
+                                                                   inputmode="decimal"
+                                                                   class="form-control w-[5.5rem] rounded border border-border bg-white px-2 py-1 text-end text-sm tabular-nums text-dark dark:bg-darkgray dark:border-darkborder dark:text-white"/>
+                                                        </div>
+                                                    </div>
+                                                @endforeach
+                                            </div>
                                         </div>
                                     @endif
                                 </div>
