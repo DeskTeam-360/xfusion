@@ -30,6 +30,25 @@ class ImportCourseScoringCsv extends Command
 
     private const COL_WEIGHT_END = 13;
 
+    /**
+     * Explicit-mapping format (form_id + field_id already resolved by hand,
+     * e.g. exported from a real GF entry) — skips course-title/question
+     * fuzzy matching entirely, so near-duplicate question text can no
+     * longer cause a wrong or NULL field_id match.
+     * Columns: form_id, field_id, Name, Course title, Question, Answer, <10 weight cols>, ...
+     */
+    private const COL_V2_FORM_ID = 0;
+
+    private const COL_V2_FIELD_ID = 1;
+
+    private const COL_V2_COURSE_TITLE = 3;
+
+    private const COL_V2_QUESTION = 4;
+
+    private const COL_V2_WEIGHT_START = 6;
+
+    private const COL_V2_WEIGHT_END = 15;
+
     public function handle(): int
     {
         $listFormId = $this->option('list-fields');
@@ -72,9 +91,27 @@ class ImportCourseScoringCsv extends Command
             return self::FAILURE;
         }
 
+        $explicitMode = isset($header[self::COL_V2_FORM_ID], $header[self::COL_V2_FIELD_ID])
+            && strcasecmp(trim((string) $header[self::COL_V2_FORM_ID]), 'form_id') === 0
+            && strcasecmp(trim((string) $header[self::COL_V2_FIELD_ID]), 'field_id') === 0;
+
+        if ($explicitMode) {
+            $this->info('Detected form_id/field_id columns — using explicit mapping (no title/question matching).');
+        }
+
+        $weightStart = $explicitMode ? self::COL_V2_WEIGHT_START : self::COL_WEIGHT_START;
+        $weightEnd = $explicitMode ? self::COL_V2_WEIGHT_END : self::COL_WEIGHT_END;
+
+        if (count($header) <= $weightEnd) {
+            fclose($handle);
+            $this->error('Header has fewer columns than expected for this format.');
+
+            return self::FAILURE;
+        }
+
         $groupTitles = array_map(
             static fn (string $h): string => trim($h),
-            array_slice($header, self::COL_WEIGHT_START, self::COL_WEIGHT_END - self::COL_WEIGHT_START + 1)
+            array_slice($header, $weightStart, $weightEnd - $weightStart + 1)
         );
 
         if (count($groupTitles) !== 10) {
@@ -85,7 +122,7 @@ class ImportCourseScoringCsv extends Command
         }
 
         $dryRun = (bool) $this->option('dry-run');
-        $formByTitle = $this->buildFormTitleIndex();
+        $formByTitle = $explicitMode ? [] : $this->buildFormTitleIndex();
         $stats = [
             'rows' => 0,
             'details' => 0,
@@ -106,34 +143,55 @@ class ImportCourseScoringCsv extends Command
 
             ++$stats['rows'];
 
-            $courseRaw = trim((string) ($row[self::COL_COURSE_TITLE] ?? ''));
-            $question = trim((string) ($row[self::COL_QUESTION] ?? ''));
+            if ($explicitMode) {
+                $formId = isset($row[self::COL_V2_FORM_ID]) && is_numeric($row[self::COL_V2_FORM_ID])
+                    ? (int) $row[self::COL_V2_FORM_ID] : null;
+                $fieldId = isset($row[self::COL_V2_FIELD_ID]) && is_numeric($row[self::COL_V2_FIELD_ID])
+                    ? (int) $row[self::COL_V2_FIELD_ID] : null;
+                $formTitle = trim((string) ($row[self::COL_V2_COURSE_TITLE] ?? ''));
+                $question = trim((string) ($row[self::COL_V2_QUESTION] ?? ''));
 
-            if ($courseRaw === '') {
-                ++$stats['skipped_field'];
-                $errors[] = "Row {$stats['rows']}: empty course title.";
+                if ($formId === null || $formId < 1) {
+                    ++$stats['null_form_id'];
+                    $errors[] = "Row {$stats['rows']}: missing/invalid form_id.";
+                    $formId = null;
+                }
 
-                continue;
-            }
+                if ($fieldId === null || $fieldId < 1) {
+                    ++$stats['null_field_id'];
+                    $errors[] = "Row {$stats['rows']}: missing/invalid field_id.";
+                    $fieldId = null;
+                }
+            } else {
+                $courseRaw = trim((string) ($row[self::COL_COURSE_TITLE] ?? ''));
+                $question = trim((string) ($row[self::COL_QUESTION] ?? ''));
 
-            $formTitle = $this->normalizeCourseTitle($courseRaw);
-            $formId = $this->resolveFormId($formTitle, $formByTitle);
+                if ($courseRaw === '') {
+                    ++$stats['skipped_field'];
+                    $errors[] = "Row {$stats['rows']}: empty course title.";
 
-            if ($formId === null) {
-                ++$stats['null_form_id'];
-                $errors[] = "Row {$stats['rows']}: GF form not found; importing weights with form_id NULL. Title: [{$formTitle}]";
-            }
+                    continue;
+                }
 
-            $fieldId = null;
-            if ($question !== '' && $formId !== null) {
-                $fieldId = CourseScoringGroup::gfResolveFieldIdByQuestion($formId, $question);
-            }
+                $formTitle = $this->normalizeCourseTitle($courseRaw);
+                $formId = $this->resolveFormId($formTitle, $formByTitle);
 
-            if ($fieldId === null && $question !== '') {
-                ++$stats['null_field_id'];
-                if ($formId !== null) {
-                    $snippet = mb_substr($question, 0, 100);
-                    $errors[] = "Row {$stats['rows']}: field not found on form #{$formId}; importing weights with field_id NULL. Question: {$snippet}".(mb_strlen($question) > 100 ? '…' : '');
+                if ($formId === null) {
+                    ++$stats['null_form_id'];
+                    $errors[] = "Row {$stats['rows']}: GF form not found; importing weights with form_id NULL. Title: [{$formTitle}]";
+                }
+
+                $fieldId = null;
+                if ($question !== '' && $formId !== null) {
+                    $fieldId = CourseScoringGroup::gfResolveFieldIdByQuestion($formId, $question);
+                }
+
+                if ($fieldId === null && $question !== '') {
+                    ++$stats['null_field_id'];
+                    if ($formId !== null) {
+                        $snippet = mb_substr($question, 0, 100);
+                        $errors[] = "Row {$stats['rows']}: field not found on form #{$formId}; importing weights with field_id NULL. Question: {$snippet}".(mb_strlen($question) > 100 ? '…' : '');
+                    }
                 }
             }
 
@@ -143,7 +201,7 @@ class ImportCourseScoringCsv extends Command
                 : 'null:'.md5($formTitle.'|'.$question);
 
             foreach ($groupTitles as $offset => $groupTitle) {
-                $colIndex = self::COL_WEIGHT_START + $offset;
+                $colIndex = $weightStart + $offset;
                 $weightRaw = trim((string) ($row[$colIndex] ?? ''));
                 if ($weightRaw === '') {
                     ++$stats['skipped_weight'];
