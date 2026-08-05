@@ -17,6 +17,7 @@ class ImportCourseScoringCsv extends Command
                             {--dry-run : Parse and report without writing to the database}
                             {--force : Replace existing data without confirmation (use on server)}
                             {--skip-replace : Do not delete existing groups/details before import}
+                            {--replace-form= : Only delete+reimport details for this form_id, leave every other form untouched}
                             {--list-fields= : List GF input fields for a form_id (debug), then exit}';
 
     protected $description = 'Replace course scoring groups from COR Primary Scale Mapping CSV (weights per group column).';
@@ -54,6 +55,19 @@ class ImportCourseScoringCsv extends Command
         $listFormId = $this->option('list-fields');
         if ($listFormId !== null && $listFormId !== '') {
             return $this->listFormFields((int) $listFormId);
+        }
+
+        $replaceFormRaw = $this->option('replace-form');
+        $replaceFormId = ($replaceFormRaw !== null && $replaceFormRaw !== '') ? (int) $replaceFormRaw : null;
+        if ($replaceFormId !== null && $replaceFormId < 1) {
+            $this->error('--replace-form must be a positive form_id.');
+
+            return self::FAILURE;
+        }
+        if ($replaceFormId !== null && $this->option('skip-replace')) {
+            $this->error('--replace-form and --skip-replace cannot be combined.');
+
+            return self::FAILURE;
         }
 
         $path = $this->option('path')
@@ -235,6 +249,21 @@ class ImportCourseScoringCsv extends Command
 
         $stats['details'] = count($pendingDetails);
 
+        if ($replaceFormId !== null) {
+            $otherForms = array_values(array_unique(array_filter(
+                array_map(static fn (array $d) => $d['form_id'], $pendingDetails),
+                static fn ($fid) => $fid !== null && $fid !== $replaceFormId
+            )));
+            if ($otherForms !== []) {
+                $this->error(
+                    '--replace-form='.$replaceFormId.' but this file also contains rows for form_id(s): '
+                    .implode(', ', $otherForms).'. Aborting — re-run without --replace-form, or filter the file first.'
+                );
+
+                return self::FAILURE;
+            }
+        }
+
         $this->table(
             ['Metric', 'Count'],
             collect($stats)->map(fn ($v, $k) => [$k, $v])->values()->all()
@@ -256,14 +285,20 @@ class ImportCourseScoringCsv extends Command
             return self::SUCCESS;
         }
 
-        if (! $this->option('force') && ! $this->confirm('Replace ALL existing course scoring groups and import '.$stats['details'].' details?')) {
+        $confirmMessage = $replaceFormId !== null
+            ? "Delete existing details for form_id {$replaceFormId} only and reimport {$stats['details']} details?"
+            : 'Replace ALL existing course scoring groups and import '.$stats['details'].' details?';
+
+        if (! $this->option('force') && ! $this->confirm($confirmMessage)) {
             $this->info('Aborted. Use --force to skip this prompt.');
 
             return self::SUCCESS;
         }
 
-        DB::transaction(function () use ($pendingDetails, $groupTitles): void {
-            if (! $this->option('skip-replace')) {
+        DB::transaction(function () use ($pendingDetails, $groupTitles, $replaceFormId): void {
+            if ($replaceFormId !== null) {
+                CourseScoringGroupDetail::query()->where('form_id', $replaceFormId)->delete();
+            } elseif (! $this->option('skip-replace')) {
                 CourseScoringGroupDetail::query()->delete();
                 CourseScoringGroupModel::query()->delete();
             }
