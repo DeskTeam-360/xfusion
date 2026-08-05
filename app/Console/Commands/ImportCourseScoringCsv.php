@@ -231,6 +231,16 @@ class ImportCourseScoringCsv extends Command
                     continue;
                 }
 
+                // weight <= 0 means "not connected to this category" (same
+                // convention as the Livewire editor's unchecked checkbox) —
+                // skip it instead of storing a dead row that only adds load
+                // to every scoring/gauge query for no effect.
+                if ((float) $weight <= 0) {
+                    ++$stats['skipped_weight'];
+
+                    continue;
+                }
+
                 $key = "{$groupTitle}|{$formKey}|{$detailKeySuffix}";
                 if (isset($pendingDetails[$key])) {
                     ++$stats['duplicate_key'];
