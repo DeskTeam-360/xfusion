@@ -59,6 +59,35 @@ function xfoo_wizard_ajax_generate_synthesis(): void
     ]);
 }
 
+add_action('wp_ajax_xfoo_wizard_complete_meeting', 'xfoo_wizard_ajax_complete_meeting');
+
+function xfoo_wizard_ajax_complete_meeting(): void
+{
+    check_ajax_referer('xfoo_wizard_save_draft', 'nonce');
+
+    if (! is_user_logged_in()) {
+        wp_send_json_error(['message' => 'Unauthorized.'], 401);
+    }
+
+    $conversationId = isset($_POST['conversation_id']) ? absint($_POST['conversation_id']) : 0;
+    if ($conversationId < 1) {
+        wp_send_json_error(['message' => 'conversation_id is required.'], 422);
+    }
+
+    $result = xfoo_wizard_fusion_api_request('POST', "/conversations/{$conversationId}/status", [], [
+        'user_id' => get_current_user_id(),
+        'status' => 'completed',
+    ]);
+
+    if (! $result['ok']) {
+        $body = is_array($result['body']) ? $result['body'] : [];
+        wp_send_json_error(['message' => $body['message'] ?? $result['error'] ?? 'Failed to complete the meeting.'], 200);
+    }
+
+    $body = is_array($result['body']) ? $result['body'] : [];
+    wp_send_json_success(['data' => $body['data'] ?? null]);
+}
+
 function xfoo_wizard_synthesis_js(): string
 {
     return <<<'JS'
@@ -644,5 +673,49 @@ var initGenerateSynthesisButton = function () {
 };
 
 window.xfwResetSynthesisCache = xfwResetSynthesisCache;
+
+window.xfwCompleteMeeting = function () {
+    var cid = typeof xfwGetActiveConversationId === 'function' ? xfwGetActiveConversationId() : 0;
+    if (!cid || !window.XFW_WIZARD) {
+        return Promise.resolve(null);
+    }
+
+    var btns = [root.querySelector('#xfw-next-step'), root.querySelector('#xfw-next-step-2')];
+    btns.forEach(function (b) { if (b) { b.disabled = true; b.textContent = 'Completing…'; } });
+
+    var body = new URLSearchParams({
+        action: 'xfoo_wizard_complete_meeting',
+        nonce: window.XFW_WIZARD.nonce,
+        conversation_id: String(cid),
+    });
+
+    return fetch(window.XFW_WIZARD.ajaxUrl, {
+        method: 'POST',
+        credentials: 'same-origin',
+        body: body,
+    }).then(function (res) { return res.json(); }).then(function (json) {
+        btns.forEach(function (b) { if (b) { b.disabled = false; } });
+
+        if (!json || !json.success) {
+            var errMsg = (json && json.data && json.data.message) ? json.data.message : 'Unable to complete this meeting. Please try again.';
+            btns.forEach(function (b) { if (b) { b.textContent = 'Complete Meeting'; } });
+            window.alert(errMsg);
+            return null;
+        }
+
+        btns.forEach(function (b) { if (b) { b.textContent = 'Meeting Completed ✓'; b.disabled = true; } });
+        var main = root.querySelector('#xfw-main');
+        if (main) {
+            main.insertAdjacentHTML('afterbegin',
+                '<div class="xfw-banner" style="background:#f0fdf4;border-color:#bbf7d0;color:#166534;margin-bottom:1rem">' +
+                '&#9989; <span><b>Meeting completed.</b> This 1-on-1 is now marked complete and saved to the record.</span></div>');
+        }
+        return json.data;
+    }).catch(function () {
+        btns.forEach(function (b) { if (b) { b.disabled = false; b.textContent = 'Complete Meeting'; } });
+        window.alert('Unable to complete this meeting — network error. Please try again.');
+        return null;
+    });
+};
 JS;
 }

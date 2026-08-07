@@ -339,13 +339,23 @@ if (root) {
         root.scrollIntoView({ behavior: 'smooth', block: 'start' });
     };
 
+    var goNextOrComplete = function () {
+        if (current === STEPS.length - 1) {
+            if (typeof window.xfwCompleteMeeting === 'function') {
+                window.xfwCompleteMeeting();
+            }
+            return;
+        }
+        goTo(current + 1);
+    };
+
     var bindNav = function () {
         if (navBound) {
             return;
         }
         navBound = true;
-        root.querySelector('#xfw-next-step').addEventListener('click', function () { goTo(current + 1); });
-        root.querySelector('#xfw-next-step-2').addEventListener('click', function () { goTo(current + 1); });
+        root.querySelector('#xfw-next-step').addEventListener('click', goNextOrComplete);
+        root.querySelector('#xfw-next-step-2').addEventListener('click', goNextOrComplete);
         root.querySelector('#xfw-prev-step').addEventListener('click', function () { goTo(current - 1); });
     };
 
