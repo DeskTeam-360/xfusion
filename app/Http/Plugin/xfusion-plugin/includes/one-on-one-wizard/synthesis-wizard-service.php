@@ -316,67 +316,67 @@ var xfwEnsureSynthesisModal = function () {
     root.appendChild(modal);
 };
 
-var xfwSynthesisDetailsText = function (sectionKey, sectionData) {
-    if (!sectionData || typeof sectionData !== 'object') {
-        return 'No additional detail is available for this section yet.';
-    }
-    var normalized = xfwSynthesisNormalizeSection(sectionData);
-    var parts = [];
-
-    if (sectionKey === 'alignment_summary') {
-        if (sectionData.score != null && !isNaN(parseFloat(sectionData.score))) {
-            parts.push('Alignment score: ' + parseFloat(sectionData.score) + ' / 5');
-        }
-        if (sectionData.label) {
-            parts.push('Label: ' + String(sectionData.label));
-        }
-    }
-
-    if (sectionKey === 'commitment_summary') {
-        if (normalized.details) {
-            return normalized.details;
-        }
-        if (sectionData.employee_count != null) {
-            parts.push('Employee Commitments: ' + sectionData.employee_count + ' active');
-        }
-        if (sectionData.leader_count != null) {
-            parts.push('Leader Commitments: ' + sectionData.leader_count + ' active');
-        }
-        if (sectionData.open_count != null) {
-            parts.push('Open Commitments: ' + sectionData.open_count + ' total');
-        }
-        return parts.join('\n\n') || 'No additional detail is available for this section yet.';
-    }
-
-    if (normalized.items.length) {
-        parts.push(normalized.items.join('\n\n'));
-    }
-
-    if (normalized.details) {
-        parts.push(normalized.details);
-    }
-
-    return parts.join('\n\n') || 'No additional detail is available for this section yet.';
-};
-
 var xfwOpenSynthesisDetails = function (sectionKey) {
     var synthesis = window.xfwSynthesisCache.data;
     if (!synthesis) {
         return;
     }
     var meta = xfwSynthesisSectionMeta[sectionKey] || { title: 'Details' };
-    var details = xfwSynthesisDetailsText(sectionKey, synthesis[sectionKey]);
+    var sectionData = synthesis[sectionKey];
+    var normalized = xfwSynthesisNormalizeSection(sectionData);
+    var hasObjectData = sectionData && typeof sectionData === 'object';
+
+    var html = '';
+
+    if (sectionKey === 'alignment_summary' && hasObjectData) {
+        if (sectionData.score != null && !isNaN(parseFloat(sectionData.score))) {
+            html += '<p><b>Alignment score:</b> ' + parseFloat(sectionData.score) + ' / 5</p>';
+        }
+        if (sectionData.label) {
+            html += '<p><b>Label:</b> ' + xfwEvidenceEsc(String(sectionData.label)) + '</p>';
+        }
+    }
+
+    if (sectionKey === 'commitment_summary' && hasObjectData) {
+        if (sectionData.employee_count != null) {
+            html += '<p>Employee Commitments: <b>' + sectionData.employee_count + ' active</b></p>';
+        }
+        if (sectionData.leader_count != null) {
+            html += '<p>Leader Commitments: <b>' + sectionData.leader_count + ' active</b></p>';
+        }
+        if (sectionData.open_count != null) {
+            html += '<p>Open Commitments: <b>' + sectionData.open_count + ' total</b></p>';
+        }
+    }
+
+    // Keep the bullet list visible in the modal — same fix as the AI Meeting
+    // Brief details view: don't let a separate `details` narrative replace
+    // the `items` list the card already showed.
+    if (normalized.items.length) {
+        html += '<ul class="xfw-brief-details-list">' + normalized.items.map(function (i) {
+            return '<li>' + xfwEvidenceEsc(i) + '</li>';
+        }).join('') + '</ul>';
+    }
+
+    var itemsJoined = normalized.items.join('\n\n');
+    var narrative = normalized.details && normalized.details.trim() !== itemsJoined.trim()
+        ? normalized.details
+        : '';
+    if (narrative) {
+        html += typeof xfwFormatBriefDetailsHtml === 'function'
+            ? xfwFormatBriefDetailsHtml(narrative)
+            : '<div class="xfw-brief-details-para xfw-evidence-text">' + xfwEvidenceEsc(narrative).replace(/\n/g, '<br>') + '</div>';
+    }
+
+    if (!html) {
+        html = '<p class="xfw-muted">No additional detail is available for this section yet.</p>';
+    }
 
     xfwEnsureSynthesisModal();
     var modal = root.querySelector('#xfw-synthesis-modal');
     root.querySelector('#xfw-synthesis-modal-title').textContent = meta.title;
     var bodyHost = root.querySelector('#xfw-synthesis-modal-body');
-    if (typeof xfwFormatBriefDetailsHtml === 'function') {
-        bodyHost.innerHTML = xfwFormatBriefDetailsHtml(details);
-    } else {
-        bodyHost.innerHTML = '<div class="xfw-brief-details-para xfw-evidence-text">' +
-            xfwEvidenceEsc(details).replace(/\n/g, '<br>') + '</div>';
-    }
+    bodyHost.innerHTML = html;
     modal.classList.remove('xfw-hidden');
 };
 
