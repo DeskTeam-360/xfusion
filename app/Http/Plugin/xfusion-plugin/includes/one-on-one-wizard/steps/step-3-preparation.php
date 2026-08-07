@@ -44,7 +44,7 @@ preparation: function () {
     }
     return '<h2 class="xfw-section-title">Step 3. Shared Preparation™</h2>' +
         '<p class="xfw-section-desc">Both participants complete their preparation independently before the meeting. Your responses help create a more focused, productive, and meaningful conversation.</p>' +
-        '<div class="xfw-banner">ℹ️ <span>You will not see each other\'s preparation until the Alignment Conversation™ (Step 4). Please take a few minutes to complete your section below.</span></div>' +
+        '<div class="xfw-banner">ℹ️ <span>You will not see each other\'s preparation until your 1-on-1 meeting begins. Please take a few minutes to complete your section below.</span></div>' +
         '<div class="xfw-grid-2">' +
         '<div class="xfw-card xfw-prep-col employee">' +
         '<h3>Employee Preparation</h3><p class="xfw-muted">Your reflection to prepare for a productive conversation.</p>' +
@@ -68,7 +68,7 @@ preparation: function () {
         textField('discussion_priorities', 'Top discussion priorities', 1000) +
         '</div>' +
         '</div>' +
-        '<div class="xfw-banner warn" style="margin-top:1rem"><img class="xfw-banner-icon" src="' + iconBase + 'Lock-Icon.svg" alt="" width="40" height="40"> <span><b style="font-size: 24px; font-weight: 800;">Your preparation is private</b>Neither participant\'s preparation is visible to the other until Step 4 (Alignment Conversation™). This ensures an open, honest, and productive conversation.</span></div>';
+        '<div class="xfw-banner warn" style="margin-top:1rem"><img class="xfw-banner-icon" src="' + iconBase + 'Lock-Icon.svg" alt="" width="40" height="40"> <span><b style="font-size: 24px; font-weight: 800;">Your preparation is private</b>Neither participant\'s preparation is visible to the other until your 1-on-1 meeting begins. This ensures an open, honest, and productive conversation.</span></div>';
 }
 JS;
 }

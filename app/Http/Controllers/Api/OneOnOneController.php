@@ -517,7 +517,7 @@ class OneOnOneController extends Controller
     public function getWizardDraft(Request $request, OneOnOneConversation $conversation)
     {
         $scope = (string) $request->query('scope', 'wizard');
-        $access = $this->wizardDraftAccess($request, $conversation, $scope);
+        $access = $this->wizardDraftAccess($request, $conversation, $scope, forRead: true);
         if ($access instanceof \Illuminate\Http\JsonResponse) {
             return $access;
         }
@@ -860,9 +860,14 @@ class OneOnOneController extends Controller
     }
 
     /**
+     * @param  bool  $forRead  True only for the read path (getWizardDraft). Write paths
+     *                         (saveWizardPreparation, saveWizardConversationNotes) must never
+     *                         pass true — a party can always see their own submission, but
+     *                         should only be allowed to see (not edit) the other party's
+     *                         preparation once it's revealed (status=in_progress or later).
      * @return array{user_id: int, roles: list<string>, is_admin: bool, notes_scope?: string}|\Illuminate\Http\JsonResponse
      */
-    private function wizardDraftAccess(Request $request, OneOnOneConversation $conversation, string $scope = 'wizard'): array|\Illuminate\Http\JsonResponse
+    private function wizardDraftAccess(Request $request, OneOnOneConversation $conversation, string $scope = 'wizard', bool $forRead = false): array|\Illuminate\Http\JsonResponse
     {
         $this->mergeJsonPayload($request);
 
@@ -901,6 +906,20 @@ class OneOnOneController extends Controller
 
         if ($isAdmin) {
             return ['user_id' => $userId, 'roles' => OneOnOnePreparation::validRoles(), 'is_admin' => true, 'notes_scope' => 'all'];
+        }
+
+        // Preparation stays private (own role only) until it's revealed —
+        // which happens automatically when the meeting status moves to
+        // in_progress (see updateConversationStatus()) — or the meeting is
+        // completed. Read-only: saveWizardPreparation() never sets
+        // forRead=true, so this never grants write access to the other role.
+        if ($forRead && $scope === 'wizard' && $isParticipant) {
+            $revealed = $conversation->preparations()->where('is_revealed', true)->exists();
+            $completed = $conversation->status === OneOnOneConversation::STATUS_COMPLETED;
+
+            if ($revealed || $completed) {
+                return ['user_id' => $userId, 'roles' => OneOnOnePreparation::validRoles(), 'is_admin' => false, 'notes_scope' => 'all'];
+            }
         }
 
         if ((int) $pair->leader_user_id === $userId) {
