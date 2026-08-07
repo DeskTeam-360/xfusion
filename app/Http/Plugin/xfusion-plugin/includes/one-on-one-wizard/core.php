@@ -188,7 +188,7 @@ if (root) {
             '<div class="xfw-progress-track"><div class="xfw-progress-fill" id="xfw-progress-fill" style="width:' + pct + '%"></div></div>' +
             '<span class="xfw-muted" id="xfw-progress-pct">' + pct + '%</span>' +
             '</div>' +
-            '<p class="xfw-muted" style="margin-top:.6rem">Estimated Completion<br><strong>25 &ndash; 40 minutes</strong></p>' +
+            '<p class="xfw-muted" style="margin-top:.6rem">Estimated Completion<br><strong>40 &ndash; 45 minutes</strong></p>' +
             '</div>';
     };
 
