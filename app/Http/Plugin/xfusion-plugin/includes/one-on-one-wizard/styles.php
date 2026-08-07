@@ -251,6 +251,11 @@ function xfoo_wizard_styles_css(): string
 .xfw-prep-col.employee .xfw-scale-btn.selected{background:var(--green);border-color:var(--green);color:#fff}
 .xfw-prep-col.leader .xfw-scale-btn.selected{background:var(--navy);border-color:var(--navy);color:#fff}
 .xfw-scale-labels{display:flex;justify-content:space-between;font-size:.7rem;color:var(--muted);margin-top:.2rem}
+.xfw-prep-col-locked{opacity:.55;position:relative}
+.xfw-prep-col-locked textarea{background:#f3f4f6;cursor:not-allowed}
+.xfw-scale-btn-disabled{pointer-events:none;cursor:not-allowed;opacity:.7}
+.xfw-prep-lock-badge{margin:-.4rem 0 .9rem;font-size:13px;font-weight:600;color:var(--muted)}
+.xfw-commit-tbody input:disabled,.xfw-commit-tbody select:disabled,.xfw-commit-tbody textarea:disabled{background:#f3f4f6;color:var(--muted);cursor:not-allowed}
 .xfw-textarea-field{margin-bottom:.9rem}
 .xfw-textarea-field label{font-weight:700;font-size:16px;display:flex;justify-content:space-between}
 .xfw-textarea-field label .count{font-weight:400;color:var(--muted);font-size:.72rem}

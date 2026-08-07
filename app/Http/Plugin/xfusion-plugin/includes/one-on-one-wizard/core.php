@@ -107,6 +107,56 @@ if (root) {
     var wizardBooted = false;
     var navBound = false;
 
+    // Employee Preparation is only for the employee, Leader Preparation only
+    // for the leader — same for the Employee/Leader Commitments tables. The
+    // backend already enforces this on save (403 if the role doesn't match),
+    // but the UI let both parties type into either side; lock the side that
+    // isn't theirs so it's clear (and impossible) up front.
+    var xfwIsRoleLocked = function (sectionRole) {
+        var myRole = window.XFW_WIZARD && window.XFW_WIZARD.userRole ? window.XFW_WIZARD.userRole : '';
+        return !!myRole && myRole !== sectionRole;
+    };
+
+    var xfwApplyPreparationRoleLock = function () {
+        ['employee', 'leader'].forEach(function (role) {
+            var col = root.querySelector('.xfw-prep-col.' + role);
+            if (!col) {
+                return;
+            }
+            var locked = xfwIsRoleLocked(role);
+            col.classList.toggle('xfw-prep-col-locked', locked);
+            col.querySelectorAll('textarea').forEach(function (el) { el.disabled = locked; });
+            col.querySelectorAll('.xfw-scale-btn').forEach(function (el) {
+                el.classList.toggle('xfw-scale-btn-disabled', locked);
+            });
+            if (locked && !col.querySelector('.xfw-prep-lock-badge')) {
+                var heading = col.querySelector('h3');
+                if (heading) {
+                    heading.insertAdjacentHTML(
+                        'afterend',
+                        '<p class="xfw-prep-lock-badge">&#128274; Only the ' + role + ' can complete this section.</p>'
+                    );
+                }
+            }
+        });
+    };
+
+    var xfwApplyCommitmentsRoleLock = function () {
+        ['employee', 'leader'].forEach(function (role) {
+            var locked = xfwIsRoleLocked(role);
+            var addBtn = root.querySelector('[data-add-commitment="' + role + '"]');
+            if (addBtn) {
+                addBtn.disabled = locked;
+                addBtn.classList.toggle('xfw-hidden', locked);
+            }
+            root.querySelectorAll('.xfw-commit-tbody[data-role="' + role + '"] input, ' +
+                '.xfw-commit-tbody[data-role="' + role + '"] select, ' +
+                '.xfw-commit-tbody[data-role="' + role + '"] textarea').forEach(function (el) {
+                el.disabled = locked;
+            });
+        });
+    };
+
     var xfwCountCommitments = function () {
         var data = (window.xfwCommitmentsCache && window.xfwCommitmentsCache.data) || { employee: [], leader: [] };
         var isOpen = function (row) {
@@ -304,8 +354,13 @@ if (root) {
             });
         });
 
+        if (STEPS[current].key === 'preparation') {
+            xfwApplyPreparationRoleLock();
+        }
+
         if (STEPS[current].key === 'commitments' && typeof initCommitmentsStep === 'function') {
             initCommitmentsStep();
+            xfwApplyCommitmentsRoleLock();
         }
 
         if (STEPS[current].key === 'evidence' && typeof initEvidenceStep === 'function') {

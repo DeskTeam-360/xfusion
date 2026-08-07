@@ -387,6 +387,9 @@ var commitmentRowHtml = function (role, data) {
 };
 
 var addCommitmentRow = function (role) {
+    if (typeof xfwIsRoleLocked === 'function' && xfwIsRoleLocked(role)) {
+        return;
+    }
     var body = root.querySelector('.xfw-commit-tbody[data-role="' + role + '"]');
     if (!body) {
         return;
@@ -432,6 +435,9 @@ var applyCommitmentsData = function (data, force) {
     }
     renderCommitmentRows('employee', payload.employee || [], force);
     renderCommitmentRows('leader', payload.leader || [], force);
+    if (typeof xfwApplyCommitmentsRoleLock === 'function') {
+        xfwApplyCommitmentsRoleLock();
+    }
     if (typeof window.xfwRenderSidebar === 'function' && typeof STEPS !== 'undefined' && STEPS[current] && STEPS[current].key === 'commitments') {
         window.xfwRenderSidebar();
     }
