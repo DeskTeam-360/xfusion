@@ -210,6 +210,8 @@ function xfoo_wizard_styles_css(): string
 .xfw-brief-details-heading:first-child{margin-top:0}
 .xfw-brief-details-para{margin-bottom:1rem;line-height:1.55;font-size:.95rem}
 .xfw-brief-details-para:last-child{margin-bottom:0}
+.xfw-brief-details-list{margin:0 0 1.25rem;padding-left:1.2rem;font-size:.95rem;line-height:1.55;color:var(--ink)}
+.xfw-brief-details-list li{margin-bottom:.4rem}
 
 /* Insight grid (step 2 / step 6) */
 .xfw-grid-2{display:grid;grid-template-columns:1fr 1fr;gap:1rem}

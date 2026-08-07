@@ -329,12 +329,33 @@ var xfwOpenBriefDetails = function (sectionKey) {
     }
     var meta = xfwBriefSectionMeta[sectionKey] || { title: 'Details' };
     var normalized = xfwBriefNormalizeSection(brief[sectionKey]);
-    var details = normalized.details || normalized.items.join('\n\n') || 'No additional detail is available for this section yet.';
+
+    // The card view already shows `items` as a bullet list — keep it visible
+    // in the modal too instead of replacing it with just the `details`
+    // narrative. Only append `details` below when it's actually distinct
+    // prose (not just the same items rejoined into one string).
+    var itemsJoined = normalized.items.join('\n\n');
+    var narrative = normalized.details && normalized.details.trim() !== itemsJoined.trim()
+        ? normalized.details
+        : '';
+
+    var html = '';
+    if (normalized.items.length) {
+        html += '<ul class="xfw-brief-details-list">' + normalized.items.map(function (i) {
+            return '<li>' + xfwEvidenceEsc(i) + '</li>';
+        }).join('') + '</ul>';
+    }
+    if (narrative) {
+        html += xfwFormatBriefDetailsHtml(narrative);
+    }
+    if (!html) {
+        html = '<p class="xfw-muted">No additional detail is available for this section yet.</p>';
+    }
 
     xfwEnsureBriefModal();
     var modal = root.querySelector('#xfw-brief-modal');
     root.querySelector('#xfw-brief-modal-title').textContent = meta.title;
-    root.querySelector('#xfw-brief-modal-body').innerHTML = xfwFormatBriefDetailsHtml(details);
+    root.querySelector('#xfw-brief-modal-body').innerHTML = html;
     modal.classList.remove('xfw-hidden');
 };
 
