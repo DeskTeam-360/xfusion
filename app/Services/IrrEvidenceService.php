@@ -2,6 +2,8 @@
 
 namespace App\Services;
 
+use App\Models\Arp;
+use App\Models\ArpStrategicPriority;
 use App\Models\CompanyGroupDetail;
 use App\Models\CourseGroup;
 use App\Models\CourseGroupDetail;
@@ -10,6 +12,8 @@ use App\Models\CourseScoringGroup;
 use App\Models\IrrReview;
 use App\Models\OneOnOneCommitment;
 use App\Models\OneOnOneConversation;
+use App\Models\Qbr;
+use App\Models\QbrCommitment;
 use App\Models\ResultEvaluation;
 use App\Models\WpGfEntry;
 use App\Models\WpGfEntryMeta;
@@ -57,6 +61,7 @@ class IrrEvidenceService
         $activities = $this->activityStats($employeeId, $start, $end);
         $tools = $this->toolStats($employeeId, $start, $end);
         $priorSnapshot = $this->priorYearSnapshot($review);
+        $qbrArpPriorities = $this->qbrArpPriorities($review);
 
         $highlights = $this->evidenceHighlights(
             $oneOnOne,
@@ -84,7 +89,8 @@ class IrrEvidenceService
                 $tools,
                 $commitments,
                 $oneOnOne,
-                $scoringBySlug
+                $scoringBySlug,
+                $qbrArpPriorities
             ),
             'individual_insights' => $unifiedInsight,
             'behavioral_driver_trends' => $driverTrends,
@@ -102,7 +108,7 @@ class IrrEvidenceService
             'development_trends' => null,
             'reflection_themes' => null,
             'organizational_alignment' => null,
-            'qbr_arp_priorities' => null,
+            'qbr_arp_priorities' => $qbrArpPriorities,
         ];
     }
 
@@ -660,6 +666,69 @@ class IrrEvidenceService
         return $prior ? ['id' => $prior->id, 'year' => (int) $prior->year, 'status' => $prior->status] : null;
     }
 
+    /**
+     * ARP Strategic Priorities and QBR Commitments individually owned by this
+     * employee, from their company group's plans/reviews in the IRR's year.
+     * Both models carry a direct owner_user_id, so no fuzzy matching needed.
+     *
+     * @return array{arp_strategic_priorities: list<array<string, mixed>>, qbr_commitments: list<array<string, mixed>>}
+     */
+    private function qbrArpPriorities(IrrReview $review): array
+    {
+        $groupId = $review->company_group_id;
+        $employeeId = (int) $review->employee_user_id;
+        $year = (int) $review->year;
+
+        if ($groupId === null || $employeeId < 1) {
+            return ['arp_strategic_priorities' => [], 'qbr_commitments' => []];
+        }
+
+        $arpIds = Arp::query()
+            ->where('company_group_id', $groupId)
+            ->where('year', $year)
+            ->pluck('id');
+
+        $strategicPriorities = $arpIds->isEmpty() ? collect() : ArpStrategicPriority::query()
+            ->whereIn('arp_id', $arpIds)
+            ->where('owner_user_id', $employeeId)
+            ->orderBy('priority_rank')
+            ->get(['id', 'arp_id', 'title', 'status', 'target_date', 'org_kpi'])
+            ->map(fn (ArpStrategicPriority $p) => [
+                'id' => (int) $p->id,
+                'title' => (string) $p->title,
+                'status' => (string) $p->status,
+                'target_date' => $p->target_date,
+                'org_kpi' => $p->org_kpi,
+            ])
+            ->values()
+            ->all();
+
+        $qbrIds = Qbr::query()
+            ->where('company_group_id', $groupId)
+            ->where('year', $year)
+            ->pluck('id');
+
+        $commitments = $qbrIds->isEmpty() ? collect() : QbrCommitment::query()
+            ->whereIn('qbr_id', $qbrIds)
+            ->where('owner_user_id', $employeeId)
+            ->orderBy('priority_rank')
+            ->get(['id', 'qbr_id', 'title', 'status', 'priority', 'due_date'])
+            ->map(fn (QbrCommitment $c) => [
+                'id' => (int) $c->id,
+                'title' => (string) $c->title,
+                'status' => (string) $c->status,
+                'priority' => (string) $c->priority,
+                'due_date' => $c->due_date?->toDateString(),
+            ])
+            ->values()
+            ->all();
+
+        return [
+            'arp_strategic_priorities' => $strategicPriorities,
+            'qbr_commitments' => $commitments,
+        ];
+    }
+
     /** @return list<array{key: string, label: string, available: bool}> */
     private function evidenceSourcesChecklist(
         IrrReview $review,
@@ -669,7 +738,8 @@ class IrrEvidenceService
         array $tools,
         array $commitments,
         array $oneOnOne,
-        array $scoringBySlug
+        array $scoringBySlug,
+        array $qbrArpPriorities
     ): array {
         $hasDrivers = collect(self::BEHAVIORAL_DRIVERS)
             ->keys()
@@ -690,7 +760,7 @@ class IrrEvidenceService
             ['key' => 'tool_usage', 'label' => 'Tool Usage', 'available' => ($tools['submissions'] ?? 0) > 0],
             ['key' => 'organizational_context', 'label' => 'Organizational Context', 'available' => false],
             ['key' => 'one_on_one', 'label' => '1-on-1 Alignment Capture™', 'available' => ($oneOnOne['total'] ?? 0) > 0],
-            ['key' => 'qbr_arp_priorities', 'label' => 'QBR & ARP Priorities', 'available' => false],
+            ['key' => 'qbr_arp_priorities', 'label' => 'QBR & ARP Priorities', 'available' => $qbrArpPriorities['arp_strategic_priorities'] !== [] || $qbrArpPriorities['qbr_commitments'] !== []],
         ];
     }
 }
