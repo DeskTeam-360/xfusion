@@ -311,8 +311,8 @@ function xfusion_arp_ai_review_history_admin_detail_page(int $assessmentId): voi
     echo '<dd>' . esc_html((string) ($row->group_title ?? '—')) . '</dd>';
     echo '<dt>' . esc_html__('Company', 'xfusion') . '</dt>';
     echo '<dd>' . esc_html((string) ($row->company_title ?? '—')) . '</dd>';
-    echo '<dt>' . esc_html__('Created by', 'xfusion') . '</dt>';
-    echo '<dd>' . esc_html($creator) . '</dd>';
+    echo '<dt>' . esc_html__('ARP created by', 'xfusion') . '</dt>';
+    echo '<dd>' . esc_html($creator) . ' <span class="description">(' . esc_html__('the ARP record, not necessarily who ran this AI generation — assessments have no separate author field', 'xfusion') . ')</span></dd>';
     echo '<dt>' . esc_html__('Model', 'xfusion') . '</dt>';
     echo '<dd><code>' . esc_html($model !== '' ? $model : '—') . '</code></dd>';
     echo '<dt>' . esc_html__('Tokens', 'xfusion') . '</dt>';
