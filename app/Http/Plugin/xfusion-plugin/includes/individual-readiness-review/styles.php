@@ -266,6 +266,8 @@ table.xirr-table.xirr-table-gaps .xirr-gap-priority{width:12%;white-space:nowrap
 .xirr-evidence-status{margin-left:auto;font-size:14px;font-weight:600;white-space:nowrap;display:flex;align-items:center;gap:.35rem}
 .xirr-evidence-status.ok{color:var(--green)}
 .xirr-evidence-status.pending{color:var(--muted)}
+.xirr-evidence-status.soon{color:#a8a29e;font-style:italic;font-weight:500}
+.xirr-evidence-row-soon{opacity:.6}
 
 /* Metric cards (Step 2) */
 .xirr-metric-grid{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:1rem;margin-bottom:1rem}

@@ -46,30 +46,39 @@ function xfirr_wizard_evidence_init_js(): string
         one_on_one: ['&#9673;', '1-on-1 Alignment Capture™', 'Key discussion themes and alignment insights'],
         qbr_arp_priorities: ['&#9673;', 'QBR & ARP Priorities', 'Quarterly priorities and strategic objectives alignment'],
     };
+    // Live sources first (backend actually computes these). The two below
+    // are permanently hardcoded unavailable in IrrEvidenceService — no
+    // pipeline exists yet (reflection extraction, org-context tracking) —
+    // kept at the bottom with a distinct label so it's clear they're not
+    // "no data yet" but "not built yet".
     var ORDER = [
         'individual_insights', 'previous_irr', 'activities', 'commitment_completion', 'self_assessments',
-        'behavioral_driver_trends', 'reflection_themes', 'leader_observations', 'tool_usage',
-        'organizational_context', 'one_on_one', 'qbr_arp_priorities'
+        'behavioral_driver_trends', 'leader_observations', 'tool_usage', 'one_on_one', 'qbr_arp_priorities'
     ];
+    var NOT_YET_BUILT = ['reflection_themes', 'organizational_context'];
 
     function renderChecklist(sources) {
         var byKey = {};
         (sources || []).forEach(function (s) { byKey[s.key] = s; });
         var list = document.getElementById('xirr-evidence-list');
         if (!list) return;
-        list.innerHTML = ORDER.map(function (key) {
+
+        function row(key, notYetBuilt) {
             var meta = LABELS[key];
-            var row = byKey[key];
-            var available = row ? row.available : false;
-            var statusClass = available ? 'ok' : 'pending';
-            var statusText = available ? '&#10003; Collected' : 'No data yet';
-            return '<div class="xirr-evidence-row">' +
+            var data = byKey[key];
+            var available = notYetBuilt ? false : (data ? data.available : false);
+            var statusClass = available ? 'ok' : (notYetBuilt ? 'soon' : 'pending');
+            var statusText = available ? '&#10003; Collected' : (notYetBuilt ? 'Coming soon' : 'No data yet');
+            return '<div class="xirr-evidence-row' + (notYetBuilt ? ' xirr-evidence-row-soon' : '') + '">' +
                 '<div class="xirr-evidence-icon">' + meta[0] + '</div>' +
                 '<div><div class="xirr-evidence-title">' + meta[1] + '</div>' +
                 '<div class="xirr-evidence-desc">' + meta[2] + '</div></div>' +
                 '<div class="xirr-evidence-status ' + statusClass + '">' + statusText + '</div>' +
                 '</div>';
-        }).join('');
+        }
+
+        list.innerHTML = ORDER.map(function (key) { return row(key, false); }).join('') +
+            NOT_YET_BUILT.map(function (key) { return row(key, true); }).join('');
     }
 
     window.initEvidenceStep = function () {
