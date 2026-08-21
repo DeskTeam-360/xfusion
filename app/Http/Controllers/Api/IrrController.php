@@ -9,6 +9,7 @@ use App\Models\IrrCommitment;
 use App\Models\IrrEvidenceSnapshot;
 use App\Models\IrrReview;
 use App\Models\User;
+use App\Services\IrrAiService;
 use App\Services\IrrEvidenceService;
 use App\Services\OneOnOneCompanyGroupSyncService;
 use Illuminate\Http\Request;
@@ -184,6 +185,61 @@ class IrrController extends Controller
             'success' => true,
             'data' => $latest->snapshot,
             'captured_at' => $latest->captured_at?->toIso8601String(),
+        ]);
+    }
+
+    /** Step 3: generate AI Development Assessment™ from the latest evidence snapshot. */
+    public function generateAssessment(Request $request, IrrReview $irr, IrrEvidenceService $evidenceService, IrrAiService $ai)
+    {
+        $userId = (int) $request->input('user_id');
+        if (! $this->canEditReview($userId, $irr)) {
+            return $this->forbidden();
+        }
+
+        $latestSnapshot = $irr->evidenceSnapshots()->first();
+        $snapshot = $latestSnapshot?->snapshot ?? $evidenceService->buildSnapshot($irr);
+        $readinessIndicators = $evidenceService->computeReadinessIndicators($irr);
+
+        $assessment = $ai->generateAssessment($irr, $snapshot, $readinessIndicators);
+        if ($assessment === null) {
+            return response()->json([
+                'success' => false,
+                'message' => $ai->getLastError() ?? 'Failed to generate AI Development Assessment.',
+            ], 200);
+        }
+
+        $this->refreshStepProgress($irr, 'assessment', true);
+
+        return response()->json([
+            'success' => true,
+            'data' => [
+                'id' => $assessment->id,
+                'assessment' => $assessment->assessment,
+                'insight_model' => $assessment->insight_model,
+                'generated_at' => $assessment->created_at?->toIso8601String(),
+            ],
+        ]);
+    }
+
+    /** Step 3: latest AI Development Assessment™ (empty until first generated). */
+    public function getAssessment(Request $request, IrrReview $irr, IrrAiService $ai)
+    {
+        $userId = (int) $request->query('user_id');
+        if ($userId < 1 || ! $this->canAccessReview($userId, $irr)) {
+            return $this->forbidden();
+        }
+
+        $latest = $ai->latestAssessment($irr);
+
+        return response()->json([
+            'success' => true,
+            'data' => [
+                'has_assessment' => $latest !== null,
+                'assessment' => $latest?->assessment,
+                'insight_model' => $latest?->insight_model,
+                'generated_at' => $latest?->created_at?->toIso8601String(),
+                'can_edit' => $this->canEditReview($userId, $irr),
+            ],
         ]);
     }
 

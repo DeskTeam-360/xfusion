@@ -656,6 +656,83 @@ class IrrEvidenceService
         return is_array($snap?->snapshot) ? $snap->snapshot : null;
     }
 
+    /**
+     * Step 3 Readiness Indicators™ — scores are always computed here, never
+     * by the LLM (see CLAUDE.md privacy/scoring principle: "AI tidak pernah
+     * menghitung skor"). Maps the six mockup dimensions onto the closest
+     * real, already-scored FUSION dimensions (COR capabilities +
+     * Behavioral Drivers™, both 0-5 scale) instead of a bespoke 0-6 scale
+     * with no underlying data source.
+     *
+     * @return array{self_awareness: ?float, learning_agility: ?float, accountability: ?float, adaptability: ?float, leadership_impact: ?float, future_readiness: ?float, overall_score: ?float, overall_label: string, trend_note: ?string, scale_max: float}
+     */
+    public function computeReadinessIndicators(IrrReview $review): array
+    {
+        $scoringBySlug = $this->scoringAveragesBySlug((int) $review->employee_user_id);
+
+        $map = [
+            'self_awareness' => 'get_real',
+            'learning_agility' => 'drive_growth',
+            'accountability' => 'accountability',
+            'adaptability' => 'foster_grit',
+            'leadership_impact' => 'leadership',
+            'future_readiness' => 'be_intentional',
+        ];
+
+        $scores = [];
+        foreach ($map as $key => $slug) {
+            $scores[$key] = $scoringBySlug[$slug] ?? null;
+        }
+
+        $present = array_filter($scores, fn ($v) => $v !== null);
+        $overall = $present === [] ? null : round(array_sum($present) / count($present), 1);
+
+        $label = 'No data';
+        if ($overall !== null) {
+            $label = $overall >= 4.0 ? 'Strong' : ($overall >= 3.0 ? 'Developing' : 'Needs Attention');
+        }
+
+        $priorOverall = $this->priorReadinessOverallScore($review);
+        $trendNote = null;
+        if ($overall !== null && $priorOverall !== null) {
+            $diff = round($overall - $priorOverall, 1);
+            $trendNote = ($diff >= 0 ? '↑' : '↓').number_format(abs($diff), 1).' vs last year';
+        }
+
+        return array_merge($scores, [
+            'overall_score' => $overall,
+            'overall_label' => $label,
+            'trend_note' => $trendNote,
+            'scale_max' => 5.0,
+        ]);
+    }
+
+    private function priorReadinessOverallScore(IrrReview $review): ?float
+    {
+        $prior = IrrReview::query()
+            ->where('employee_user_id', $review->employee_user_id)
+            ->where('year', (int) $review->year - 1)
+            ->first(['id']);
+
+        if ($prior === null) {
+            return null;
+        }
+
+        $priorAssessment = \App\Models\IrrAiAssessment::query()
+            ->where('review_id', $prior->id)
+            ->orderByDesc('id')
+            ->first(['assessment']);
+
+        if ($priorAssessment === null) {
+            return null;
+        }
+
+        $data = is_array($priorAssessment->assessment) ? $priorAssessment->assessment : [];
+        $ri = $data['readiness_indicators'] ?? [];
+
+        return isset($ri['overall_score']) ? (float) $ri['overall_score'] : null;
+    }
+
     private function previousIrrSummary(IrrReview $review): ?array
     {
         $prior = IrrReview::query()

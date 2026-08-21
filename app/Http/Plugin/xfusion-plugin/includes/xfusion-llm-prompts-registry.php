@@ -16,6 +16,7 @@ const XFUSION_LLM_PROMPT_SLUG_OO_SYNTHESIS = 'one_on_one_synthesis_system';
 const XFUSION_LLM_PROMPT_SLUG_ARP_READINESS_REVIEW = 'arp_readiness_review_system';
 const XFUSION_LLM_PROMPT_SLUG_QBR_ASSESSMENT = 'qbr_assessment_system';
 const XFUSION_LLM_PROMPT_SLUG_QBR_SYNTHESIS = 'qbr_synthesis_system';
+const XFUSION_LLM_PROMPT_SLUG_IRR_ASSESSMENT = 'irr_development_assessment_system';
 
 /**
  * @return array<string, array{
@@ -100,6 +101,16 @@ function xfusion_llm_prompt_slug_definitions(): array
             'default_files' => array_values(array_filter([
                 $pluginDir . 'prompts/qbr_synthesis_system.md',
                 $repoRoot . '/Xfusion-llm/prompts/qbr_synthesis_system.md',
+            ])),
+        ],
+        XFUSION_LLM_PROMPT_SLUG_IRR_ASSESSMENT => [
+            'title' => __('IRR — AI Development Assessment (system)', 'xfusion'),
+            'menu_title' => __('IRR Assessment System', 'xfusion'),
+            'description' => __('System prompt for POST /api/v1/360/development-assessment (IRR Step 3, via Laravel).', 'xfusion'),
+            'placeholder_hint' => __('Defines the behavioral_strengths / development_opportunities / behavioral_pattern_summary / leadership_contributions / organizational_contribution / key_takeaway JSON output sections. Readiness Indicator scores are computed by Laravel and passed in as context — never generate or alter numeric scores.', 'xfusion'),
+            'default_files' => array_values(array_filter([
+                $pluginDir . 'prompts/irr_development_assessment_system.md',
+                $repoRoot . '/Xfusion-llm/prompts/irr_development_assessment_system.md',
             ])),
         ],
     ]);
