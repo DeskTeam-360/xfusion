@@ -15,11 +15,9 @@ function xfirr_wizard_step_evidence_js(): string
 evidence: function () {
     return '<h2 class="xirr-section-title">Step 1. Generate Individual Evidence™</h2>' +
         '<p class="xirr-section-desc">FUSION will automatically compile a complete year of developmental evidence for you.<br>This evidence is gathered from across the platform and will be used to create your AI Development Assessment™.</p>' +
-        '<div class="xirr-banner">&#8505;&#65039; <span>No action is required. The system is collecting and organizing your evidence. You will review this evidence in the next step.</span></div>' +
+        '<div class="xirr-banner">&#8505;&#65039; <span>No action is required. The system is collecting and organizing your evidence. You will review — and can re-collect the latest data — in the next step.</span></div>' +
         '<div class="xirr-card"><h3 style="margin-top:0">Evidence Being Compiled</h3>' +
-        '<div class="xirr-evidence-list" id="xirr-evidence-list"><p class="xirr-muted">Loading evidence sources…</p></div></div>' +
-        '<div class="xirr-card" id="xirr-evidence-generate-card">' +
-        '<button type="button" class="xirr-btn xirr-btn-accent" id="xirr-generate-evidence-btn">Generate Evidence</button>' +
+        '<div class="xirr-evidence-list" id="xirr-evidence-list"><p class="xirr-muted">Loading evidence sources…</p></div>' +
         '<p class="xirr-muted" id="xirr-evidence-status" style="margin-top:.6rem"></p>' +
         '</div>' +
         '<div class="xirr-card"><h4 style="margin-top:0">What\'s Next?</h4>' +
@@ -81,12 +79,12 @@ function xfirr_wizard_evidence_init_js(): string
             NOT_YET_BUILT.map(function (key) { return row(key, true); }).join('');
     }
 
+    // No manual "Generate" trigger here — Laravel's getEvidence() auto-builds
+    // a snapshot on first view if none exists, so this step only ever shows
+    // status. Re-collecting the latest data (re-snapshot) lives on Step 2,
+    // next to the evidence it actually affects.
     window.initEvidenceStep = function () {
-        var btn = document.getElementById('xirr-generate-evidence-btn');
         var statusEl = document.getElementById('xirr-evidence-status');
-        if (window.XFIRR_WIZARD && window.XFIRR_WIZARD.canEdit === false && btn) {
-            btn.style.display = 'none';
-        }
 
         if (typeof window.xfirrLoadEvidence !== 'function') {
             renderChecklist([]);
@@ -98,37 +96,11 @@ function xfirr_wizard_evidence_init_js(): string
         window.xfirrLoadEvidence().then(function (data) {
             if (!data) {
                 renderChecklist([]);
-                if (statusEl) statusEl.textContent = 'No evidence snapshot yet. Click Generate Evidence to compile.';
+                if (statusEl) statusEl.textContent = 'No evidence snapshot yet.';
                 return;
             }
             renderChecklist(data.evidence_sources || []);
             if (statusEl) statusEl.textContent = 'Evidence snapshot loaded.';
-        });
-
-        if (!btn || btn.dataset.wired) return;
-        btn.dataset.wired = '1';
-        btn.addEventListener('click', function () {
-            if (btn.dataset.busy === '1' || typeof window.xfirrGenerateEvidence !== 'function') return;
-            btn.dataset.busy = '1';
-            btn.disabled = true;
-            btn.textContent = 'Generating…';
-            if (statusEl) statusEl.textContent = 'Collecting the most up-to-date data. This may take a few seconds.';
-            window.xfirrGenerateEvidence().then(function (res) {
-                btn.disabled = false;
-                btn.dataset.busy = '';
-                btn.textContent = 'Generate Evidence';
-                if (!res || !res.success) {
-                    if (statusEl) statusEl.textContent = (res && res.message) ? res.message : 'Failed to generate evidence.';
-                    return;
-                }
-                renderChecklist((res.data && res.data.evidence_sources) ? res.data.evidence_sources : []);
-                if (statusEl) statusEl.textContent = '✓ Evidence generation complete.';
-            }).catch(function () {
-                btn.disabled = false;
-                btn.dataset.busy = '';
-                btn.textContent = 'Generate Evidence';
-                if (statusEl) statusEl.textContent = 'Failed to generate evidence.';
-            });
         });
     };
 })();

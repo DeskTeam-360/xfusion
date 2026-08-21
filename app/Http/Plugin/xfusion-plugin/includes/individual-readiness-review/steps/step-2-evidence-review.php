@@ -16,6 +16,11 @@ evidence_review: function () {
     return '<h2 class="xirr-section-title">Step 2. Individual Evidence™</h2>' +
         '<p class="xirr-section-desc">Review the objective developmental evidence collected throughout the year.<br>This evidence reflects your growth, participation, commitments, and contributions.</p>' +
         '<div class="xirr-banner">&#8505;&#65039; <span>This is a fact-based view of your year. AI interpretation and insights will be provided in the next step.</span></div>' +
+        '<div class="xirr-card" id="xirr-evidence-resnapshot-card" style="display:flex;align-items:center;justify-content:space-between;gap:1rem;flex-wrap:wrap">' +
+        '<div><h4 style="margin:0 0 .2rem">Re-collect latest data</h4><p class="xirr-muted" style="margin:0">Refresh this snapshot with the most up-to-date evidence from across the platform.</p></div>' +
+        '<div style="text-align:right"><button type="button" class="xirr-btn xirr-btn-outline" id="xirr-resnapshot-btn">Re-snapshot Evidence</button>' +
+        '<p class="xirr-muted" id="xirr-resnapshot-status" style="margin:.4rem 0 0"></p></div>' +
+        '</div>' +
         '<div id="xirr-evidence-review-body"><p class="xirr-muted">Loading evidence…</p></div>';
 }
 JS;
@@ -159,10 +164,49 @@ function xfirr_wizard_evidence_review_init_js(): string
         return html;
     }
 
+    function bindResnapshotButton(body) {
+        var btn = document.getElementById('xirr-resnapshot-btn');
+        var statusEl = document.getElementById('xirr-resnapshot-status');
+        var card = document.getElementById('xirr-evidence-resnapshot-card');
+        if (!btn) return;
+
+        if (window.XFIRR_WIZARD && window.XFIRR_WIZARD.canEdit === false) {
+            if (card) card.style.display = 'none';
+            return;
+        }
+
+        if (btn.dataset.wired) return;
+        btn.dataset.wired = '1';
+        btn.addEventListener('click', function () {
+            if (btn.dataset.busy === '1' || typeof window.xfirrGenerateEvidence !== 'function') return;
+            btn.dataset.busy = '1';
+            btn.disabled = true;
+            btn.textContent = 'Re-snapshotting…';
+            if (statusEl) statusEl.textContent = 'Collecting the most up-to-date data. This may take a few seconds.';
+            window.xfirrGenerateEvidence().then(function (res) {
+                btn.disabled = false;
+                btn.dataset.busy = '';
+                btn.textContent = 'Re-snapshot Evidence';
+                if (!res || !res.success) {
+                    if (statusEl) statusEl.textContent = (res && res.message) ? res.message : 'Failed to re-snapshot evidence.';
+                    return;
+                }
+                body.innerHTML = renderSnapshot(res.data);
+                if (statusEl) statusEl.textContent = '✓ Evidence re-snapshotted.';
+            }).catch(function () {
+                btn.disabled = false;
+                btn.dataset.busy = '';
+                btn.textContent = 'Re-snapshot Evidence';
+                if (statusEl) statusEl.textContent = 'Failed to re-snapshot evidence — network error.';
+            });
+        });
+    }
+
     window.initEvidenceReviewStep = function () {
         var body = document.getElementById('xirr-evidence-review-body');
         if (!body) return;
         body.innerHTML = '<p class="xirr-muted">Loading evidence…</p>';
+        bindResnapshotButton(body);
 
         if (typeof window.xfirrLoadEvidence !== 'function') {
             body.innerHTML = '<p class="xirr-muted">Evidence service unavailable.</p>';
