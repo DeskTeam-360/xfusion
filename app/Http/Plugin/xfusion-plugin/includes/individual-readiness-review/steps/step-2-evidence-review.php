@@ -33,17 +33,32 @@ function xfirr_wizard_evidence_review_init_js(): string
     function esc(s) { return String(s == null ? '' : s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
     function fmtNum(v, fallback) { return v == null || v === '' ? (fallback || '—') : v; }
 
-    function donut(pct, color, label) {
-        var s = Math.max(0, Math.min(100, Math.round(Number(pct) || 0)));
+    // Multi-segment donut: segments = [{ value, color }]. Center shows the
+    // rate (first segment's share of the total) unless centerOverride is given.
+    function multiDonut(segments, centerLabel, centerOverride) {
+        var total = segments.reduce(function (sum, s) { return sum + (Number(s.value) || 0); }, 0);
+        var arcs = '';
+        if (total > 0) {
+            var cursor = 0;
+            segments.forEach(function (s) {
+                var v = Number(s.value) || 0;
+                if (v <= 0) return;
+                var len = (v / total) * 100;
+                arcs += '<circle class="xirr-donut-value" cx="18" cy="18" r="15.9155" stroke="' + s.color +
+                    '" stroke-dasharray="' + len + ' ' + (100 - len) + '" stroke-dashoffset="' + (-cursor) + '" style="stroke-linecap:butt"></circle>';
+                cursor += len;
+            });
+        }
+        var centerPct = centerOverride != null ? centerOverride : (total > 0 ? Math.round((Number(segments[0].value) || 0) / total * 100) : 0);
         return '<div class="xirr-donut-wrap">' +
             '<div class="xirr-donut-chart">' +
             '<svg class="xirr-donut" viewBox="0 0 36 36" aria-hidden="true">' +
             '<circle class="xirr-donut-track" cx="18" cy="18" r="15.9155"></circle>' +
-            '<circle class="xirr-donut-value" cx="18" cy="18" r="15.9155" stroke="' + color + '" stroke-dasharray="' + s + ' ' + (100 - s) + '"></circle>' +
+            arcs +
             '</svg>' +
-            '<div class="xirr-donut-center"><div class="xirr-donut-score">' + s + '<span>%</span></div></div>' +
+            '<div class="xirr-donut-center"><div class="xirr-donut-score">' + centerPct + '<span>%</span></div></div>' +
             '</div>' +
-            (label ? '<div class="xirr-donut-label">' + esc(label) + '</div>' : '') +
+            (centerLabel ? '<div class="xirr-donut-label">' + esc(centerLabel) + '</div>' : '') +
             '</div>';
     }
 
@@ -151,13 +166,13 @@ function xfirr_wizard_evidence_review_init_js(): string
         var timeline = data.growth_timeline || [];
 
         var participationRows = [
-            { dot: 'green', label: 'Submissions', value: participation.total_submissions || 0 },
-            { dot: 'amber', label: 'Programs active', value: (participation.programs_with_data || 0) + ' / ' + (participation.programs_total || 3) },
+            { dot: 'green', label: 'Active', value: participation.active || 0 },
+            { dot: 'gray', label: 'No activity yet', value: participation.no_activity || 0 },
         ];
         var commitmentRows = [
             { dot: 'green', label: 'Completed', value: commitments.completed || 0 },
-            { dot: 'amber', label: 'In Progress', value: commitments.in_progress || 0 },
-            { dot: 'red', label: 'Overdue', value: commitments.overdue || 0 },
+            { dot: 'blue', label: 'In Progress', value: commitments.in_progress || 0 },
+            { dot: 'amber', label: 'Overdue', value: commitments.overdue || 0 },
             { dot: 'gray', label: 'Not Started', value: commitments.not_started || 0 },
         ];
 
@@ -168,32 +183,50 @@ function xfirr_wizard_evidence_review_init_js(): string
         html += '<div class="xirr-grid-2" style="display:grid;grid-template-columns:1fr 1fr;gap:1rem;margin-bottom:1rem">' +
             '<div class="xirr-card" style="margin-bottom:0"><h4>Development Participation</h4>' +
             '<div style="display:grid;grid-template-columns:auto 1fr;gap:1.25rem;align-items:center">' +
-            donut(participation.rate, '#2f6f3e') + statRows('', participationRows) +
+            multiDonut([
+                { value: participation.active || 0, color: '#16a34a' },
+                { value: participation.no_activity || 0, color: '#e5e7eb' },
+            ], 'Participation Rate', participation.rate) + statRows('', participationRows) +
             '</div></div>' +
             '<div class="xirr-card" style="margin-bottom:0"><h4>Commitment Completion</h4>' +
             '<div style="display:grid;grid-template-columns:auto 1fr;gap:1.25rem;align-items:center">' +
-            donut(commitments.rate, '#2f6f3e') + statRows('', commitmentRows) +
+            multiDonut([
+                { value: commitments.completed || 0, color: '#16a34a' },
+                { value: commitments.in_progress || 0, color: '#2563eb' },
+                { value: commitments.overdue || 0, color: '#ca8a04' },
+                { value: commitments.not_started || 0, color: '#9ca3af' },
+            ], 'Completion Rate', commitments.rate) + statRows('', commitmentRows) +
             '</div></div></div>';
 
-        if (timeline.length) {
-            html += '<div class="xirr-card"><h4>Growth Timeline</h4><div class="xirr-timeline">' +
-                timeline.map(function (q) {
-                    return '<div class="xirr-timeline-item"><div class="xirr-timeline-dot"></div>' +
-                        '<h5>' + esc(q.quarter) + ' Focus</h5>' +
-                        '<p>' + esc(q.focus || '—') + '<br>' + esc(q.period) + '</p>' +
-                        '<p style="margin-top:.35rem;font-weight:600;color:var(--navy)">' + esc(String(q.commitment_count || 0)) + ' Commitments</p></div>';
-                }).join('') + '</div></div>';
-        }
+        if (timeline.length || leaderObs.length) {
+            html += '<div class="xirr-grid-2" style="display:grid;grid-template-columns:1.5fr 1fr;gap:1rem;margin-bottom:1rem">';
 
-        if (leaderObs.length) {
-            html += '<div class="xirr-card"><h4>Leadership Observations</h4><ul class="xirr-check-list">' +
-                leaderObs.map(function (item) {
-                    return '<li>&#128172; ' + esc(item) + '</li>';
-                }).join('') + '</ul></div>';
+            if (timeline.length) {
+                var TIMELINE_ICONS = ['&#127988;', '&#128218;', '&#11088;', '&#127919;'];
+                var TIMELINE_COLORS = ['green', 'green', 'purple', 'amber'];
+                html += '<div class="xirr-card" style="margin-bottom:0"><h4>Growth Timeline</h4><div class="xirr-timeline"><div class="xirr-timeline-track"></div>' +
+                    timeline.map(function (q, i) {
+                        var color = TIMELINE_COLORS[i % TIMELINE_COLORS.length];
+                        return '<div class="xirr-timeline-item">' +
+                            '<div class="xirr-timeline-icon ' + color + '">' + TIMELINE_ICONS[i % TIMELINE_ICONS.length] + '</div>' +
+                            '<h5>' + esc(q.quarter) + ' Focus</h5>' +
+                            '<p>' + esc(q.focus || '—') + '<br>' + esc(q.period) + '</p>' +
+                            '<span class="xirr-timeline-badge">' + esc(String(q.commitment_count || 0)) + ' Commitments</span></div>';
+                    }).join('') + '</div></div>';
+            }
+
+            if (leaderObs.length) {
+                html += '<div class="xirr-card" style="margin-bottom:0"><h4>Leadership Observations</h4><div class="xirr-leader-obs-list">' +
+                    leaderObs.map(function (item) {
+                        return '<div class="xirr-leader-obs-row"><span class="xirr-leader-obs-icon">&#128172;</span><p>' + esc(item) + '</p></div>';
+                    }).join('') + '</div></div>';
+            }
+
+            html += '</div>';
         }
 
         if (selfScores.length) {
-            html += '<div class="xirr-card"><h4>Strength Trends (Self-Assessment)</h4>' +
+            html += '<div class="xirr-card"><h4>Strength Trends</h4>' +
                 selfScores.map(function (s) { return progressRow(s.label, s.score, 5); }).join('') +
                 '</div>';
         }

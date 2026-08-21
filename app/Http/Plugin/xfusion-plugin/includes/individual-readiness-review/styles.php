@@ -216,6 +216,8 @@ select.xirr-input[multiple]{min-height:4.75rem;padding:.35rem}
 @media (max-width:768px){.xirr-driver-trend{grid-template-columns:1fr}}
 .xirr-dot.amber{background:#ca8a04}
 .xirr-dot.red{background:#dc2626}
+.xirr-dot.blue{background:#2563eb}
+.xirr-dot.gray{background:#9ca3af}
 .xirr-table-scroll{overflow-x:auto}
 table.xirr-table{width:100%;border-collapse:collapse;font-size:15px}
 table.xirr-table th{text-align:left;padding:.65rem .75rem;color:var(--muted);font-weight:700;border-bottom:1px solid var(--border);font-size:.75rem;text-transform:uppercase;letter-spacing:.03em}
@@ -383,10 +385,18 @@ table.xirr-table.xirr-table-gaps .xirr-gap-priority{width:12%;white-space:nowrap
 }
 
 /* Growth Timeline / Development Roadmap (Step 2 & Step 6) */
-.xirr-timeline{display:flex;align-items:flex-start;gap:0;position:relative}
+.xirr-timeline{display:flex;align-items:flex-start;gap:0;position:relative;padding-top:4px}
 .xirr-timeline-item{flex:1;position:relative;padding:0 .5rem;text-align:left}
-.xirr-timeline-dot{width:14px;height:14px;border-radius:50%;background:var(--green);margin-bottom:.6rem}
-.xirr-timeline-track{position:absolute;top:6px;left:0;right:0;height:2px;background:var(--border);z-index:0}
+.xirr-timeline-icon{width:36px;height:36px;border-radius:50%;background:#eef4fc;display:flex;align-items:center;justify-content:center;font-size:16px;margin-bottom:.6rem;position:relative;z-index:1}
+.xirr-timeline-icon.green{background:#e6f5ea}
+.xirr-timeline-icon.purple{background:#f3e8ff}
+.xirr-timeline-icon.amber{background:#fef3e2}
+.xirr-timeline-badge{display:inline-block;margin-top:.5rem;padding:.2rem .6rem;border:1px solid var(--border);border-radius:999px;font-size:12px;font-weight:600;color:var(--navy)}
+.xirr-timeline-track{position:absolute;top:22px;left:0;right:0;height:2px;background:var(--border);z-index:0}
+.xirr-leader-obs-list{display:flex;flex-direction:column;gap:.85rem}
+.xirr-leader-obs-row{display:flex;align-items:flex-start;gap:.65rem}
+.xirr-leader-obs-icon{width:28px;height:28px;border-radius:50%;background:#eef4fc;color:var(--navy);display:flex;align-items:center;justify-content:center;font-size:13px;flex-shrink:0}
+.xirr-leader-obs-row p{margin:0;font-size:14px;line-height:1.4;color:var(--ink)}
 .xirr-timeline-item h5{margin:0 0 .2rem;font-size:14px;color:var(--navy)}
 .xirr-timeline-item p{margin:0;font-size:13px;color:var(--muted)}
 .xirr-roadmap-list{display:flex;flex-direction:column;gap:0}

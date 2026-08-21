@@ -467,16 +467,18 @@ class IrrEvidenceService
             ];
         }
 
+        // Only two real states exist per program: at least one submission
+        // ("active") or none ("no_activity") - there's no workflow tracking
+        // that could distinguish "in progress" vs "not started" vs "not
+        // assigned" for these programs, so we don't fabricate those buckets.
         return [
             'rate' => round($programsWithData / count(self::ACTIVITY_PROGRAM_TYPES) * 100, 1),
             'total_submissions' => $totalSubmissions,
             'programs_with_data' => $programsWithData,
             'programs_total' => count(self::ACTIVITY_PROGRAM_TYPES),
             'by_program' => $byProgram,
-            'completed' => $totalSubmissions,
-            'in_progress' => 0,
-            'not_started' => 0,
-            'not_assigned' => null,
+            'active' => $programsWithData,
+            'no_activity' => count(self::ACTIVITY_PROGRAM_TYPES) - $programsWithData,
         ];
     }
 
