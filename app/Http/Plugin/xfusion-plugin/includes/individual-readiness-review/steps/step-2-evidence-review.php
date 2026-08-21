@@ -76,18 +76,72 @@ function xfirr_wizard_evidence_review_init_js(): string
         }).join('') + '</div>';
     }
 
+    var DRIVER_COLORS = {
+        get_real: '#16a34a',
+        be_intentional: '#7c3aed',
+        fill_buckets: '#ea580c',
+        foster_grit: '#f59e0b',
+        drive_growth: '#0891b2',
+    };
+    var MONTH_LABELS = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+
+    // No month-by-month score history exists yet (scores reflect the latest
+    // Gravity Forms submission only, not a time series) - each driver is
+    // drawn as a flat line at its real current value rather than inventing
+    // monthly ups/downs that were never actually measured.
+    function driverTrendChart(drivers) {
+        var withScores = drivers.filter(function (d) { return d.you != null; });
+        if (!withScores.length) {
+            return '<p class="xirr-muted">No behavioral driver scores yet.</p>';
+        }
+
+        var maxScale = 6;
+        var w = 640, h = 220, padL = 28, padR = 12, padT = 10, padB = 24;
+        var plotW = w - padL - padR, plotH = h - padT - padB;
+        var xStep = plotW / (MONTH_LABELS.length - 1);
+        var yFor = function (v) { return padT + plotH - (Math.max(0, Math.min(maxScale, v)) / maxScale) * plotH; };
+
+        var gridLines = '';
+        for (var g = 0; g <= maxScale; g += 2) {
+            var gy = yFor(g);
+            gridLines += '<line x1="' + padL + '" y1="' + gy + '" x2="' + (w - padR) + '" y2="' + gy + '" stroke="#e5e7eb" stroke-width="1"/>' +
+                '<text x="2" y="' + (gy + 4) + '" font-size="10" fill="#9ca3af">' + g + '</text>';
+        }
+
+        var xLabels = MONTH_LABELS.map(function (m, i) {
+            return '<text x="' + (padL + i * xStep) + '" y="' + (h - 6) + '" font-size="10" fill="#9ca3af" text-anchor="middle">' + m + '</text>';
+        }).join('');
+
+        var lines = withScores.map(function (d) {
+            var y = yFor(Number(d.you));
+            var pts = MONTH_LABELS.map(function (_, i) { return (padL + i * xStep) + ',' + y; }).join(' ');
+            var color = DRIVER_COLORS[d.slug] || '#6b7280';
+            return '<polyline points="' + pts + '" fill="none" stroke="' + color + '" stroke-width="2"/>';
+        }).join('');
+
+        var svg = '<svg viewBox="0 0 ' + w + ' ' + h + '" style="width:100%;height:auto">' +
+            gridLines + xLabels + lines + '</svg>';
+
+        var legend = '<div class="xirr-driver-legend">' + withScores.map(function (d) {
+            var color = DRIVER_COLORS[d.slug] || '#6b7280';
+            return '<div class="xirr-driver-legend-row">' +
+                '<span class="xirr-driver-dot" style="background:' + color + '"></span>' +
+                '<span class="xirr-driver-legend-label">' + esc(d.label) + '</span>' +
+                '<span class="xirr-driver-legend-values"><strong>' + fmtNum(d.you) + '</strong><span class="xirr-muted"> / ' + fmtNum(d.org_avg) + ' org avg</span></span>' +
+                '</div>';
+        }).join('') + '</div>';
+
+        return '<p class="xirr-muted" style="margin:0 0 .5rem;font-size:12px">Reflects your current score, held flat across the year — monthly history isn’t tracked yet.</p>' +
+            '<div class="xirr-driver-trend"><div class="xirr-driver-trend-chart">' + svg + '</div>' + legend + '</div>';
+    }
+
     function renderSnapshot(data) {
         if (!data) {
             return '<p class="xirr-muted">No evidence snapshot available. Complete Step 1 first.</p>';
         }
 
         var drivers = (data.behavioral_driver_trends && data.behavioral_driver_trends.drivers) ? data.behavioral_driver_trends.drivers : [];
-        var driverTable = drivers.length ? (
-            '<table class="xirr-table" style="font-size:14px"><thead><tr><th></th><th>You</th><th>Org Avg</th></tr></thead><tbody>' +
-            drivers.map(function (d) {
-                return '<tr><td>' + esc(d.label) + '</td><td><strong>' + fmtNum(d.you) + '</strong></td><td>' + fmtNum(d.org_avg) + '</td></tr>';
-            }).join('') + '</tbody></table>'
-        ) : '<p class="xirr-muted">No behavioral driver scores yet.</p>';
+        var driverTable = driverTrendChart(drivers);
 
         var participation = data.development_participation || {};
         var commitments = data.commitment_completion || {};
