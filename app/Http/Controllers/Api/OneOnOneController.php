@@ -529,10 +529,28 @@ class OneOnOneController extends Controller
             $access['notes_scope'] ?? 'own'
         );
 
+        // Authoritative role for THIS conversation's pairing - derived here,
+        // not client-side. The wizard's own client-side resolver scans every
+        // pair the user belongs to and takes the first one whose conversation
+        // list happens to include this conversation_id; if the user is in
+        // multiple pairs (e.g. leader in one, employee in another), that scan
+        // can settle on the wrong pair and hand back the wrong role, locking
+        // the wizard's Preparation/Commitments sections backwards.
+        $pair = $conversation->oneOnOne;
+        $yourRole = null;
+        if ($pair !== null) {
+            if ((int) $pair->leader_user_id === $access['user_id']) {
+                $yourRole = 'leader';
+            } elseif ((int) $pair->employee_user_id === $access['user_id']) {
+                $yourRole = 'employee';
+            }
+        }
+
         return response()->json([
             'success' => true,
             'data' => array_merge($payload, [
                 'conversation_id' => $conversation->id,
+                'your_role' => $yourRole,
             ]),
         ]);
     }

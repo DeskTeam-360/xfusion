@@ -35,6 +35,7 @@ function xfoo_wizard_ajax_load_draft(): void
         'employee' => $data['employee'],
         'leader' => $data['leader'],
         'conversation' => $data['conversation'],
+        'your_role' => $data['your_role'],
     ]);
 }
 
@@ -172,6 +173,26 @@ var loadWizardDraft = function (force) {
                 window.xfwDraftCache.data = { employee: {}, leader: {}, conversation: {} };
             } else {
                 window.xfwDraftCache.data = json.data;
+                // Laravel resolves the role for THIS conversation's pairing
+                // directly - authoritative, unlike the picker's client-side
+                // scan across every pair the user belongs to (which can pick
+                // the wrong pair if the user is a leader in one pairing and
+                // an employee in another). Correct it here if it disagrees,
+                // and re-apply the Preparation/Commitments role lock so it's
+                // not left showing the wrong side as editable.
+                var authoritativeRole = json.data.your_role;
+                if (authoritativeRole && authoritativeRole !== window.XFW_WIZARD.userRole) {
+                    window.XFW_WIZARD.userRole = authoritativeRole;
+                    if (root) {
+                        root.dataset.userRole = authoritativeRole;
+                    }
+                    if (typeof xfwApplyPreparationRoleLock === 'function') {
+                        xfwApplyPreparationRoleLock();
+                    }
+                    if (typeof xfwApplyCommitmentsRoleLock === 'function') {
+                        xfwApplyCommitmentsRoleLock();
+                    }
+                }
             }
             window.xfwDraftCache.loaded = true;
             return window.xfwDraftCache.data;

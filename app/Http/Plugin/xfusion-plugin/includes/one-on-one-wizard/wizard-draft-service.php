@@ -10,7 +10,7 @@ if (! defined('ABSPATH')) {
 }
 
 /**
- * @return array{employee: array<string, string>, leader: array<string, string>, conversation: array<string, string>}
+ * @return array{employee: array<string, string>, leader: array<string, string>, conversation: array<string, string>, your_role: ?string}
  */
 function xfoo_wizard_load_draft_data(int $conversationId, string $scope = 'wizard'): array
 {
@@ -18,6 +18,7 @@ function xfoo_wizard_load_draft_data(int $conversationId, string $scope = 'wizar
         'employee' => [],
         'leader' => [],
         'conversation' => [],
+        'your_role' => null,
     ];
 
     if ($conversationId < 1) {
@@ -42,10 +43,13 @@ function xfoo_wizard_load_draft_data(int $conversationId, string $scope = 'wizar
     $body = is_array($result['body'] ?? null) ? $result['body'] : [];
     $data = is_array($body['data'] ?? null) ? $body['data'] : [];
 
+    $role = isset($data['your_role']) ? sanitize_key((string) $data['your_role']) : '';
+
     return [
         'employee' => is_array($data['employee'] ?? null) ? $data['employee'] : [],
         'leader' => is_array($data['leader'] ?? null) ? $data['leader'] : [],
         'conversation' => is_array($data['conversation'] ?? null) ? $data['conversation'] : [],
+        'your_role' => in_array($role, ['employee', 'leader'], true) ? $role : null,
     ];
 }
 
