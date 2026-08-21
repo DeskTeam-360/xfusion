@@ -362,9 +362,9 @@ table.xirr-table.xirr-table-gaps .xirr-gap-priority{width:12%;white-space:nowrap
 .xirr-field-desc,.xirr-field textarea{font-size:15px}
 .xirr-prio-card{flex-direction:column;padding:1rem}
 .xirr-prio-rail{flex-direction:row;justify-content:flex-start;gap:.65rem}
-.xirr-prio-body{padding-right:0;padding-top:.25rem}
+.xirr-prio-body{padding-right:2.25rem;padding-top:.25rem}
 .xirr-prio-grid-4{grid-template-columns:1fr}
-.xirr-icon-btn{top:-.25rem;right:-.25rem}
+.xirr-icon-btn{top:.25rem;right:0}
 .xirr-risk-grid{grid-template-columns:1fr}
 .xirr-donut-wrap{width:130px}
 .xirr-donut-chart,.xirr-donut{width:130px;height:130px}
