@@ -521,6 +521,8 @@ Route::prefix('v1')->middleware('fusion.api')->group(function () {
         Route::get('/{irr}/evidence', [IrrController::class, 'getEvidence']);
         Route::post('/{irr}/assessment/generate', [IrrController::class, 'generateAssessment']);
         Route::get('/{irr}/assessment', [IrrController::class, 'getAssessment']);
+        Route::get('/{irr}/conversation-agreement', [IrrController::class, 'getConversationAgreement']);
+        Route::post('/{irr}/conversation-agreement', [IrrController::class, 'saveConversationAgreement']);
         Route::get('/{irr}/commitments', [IrrController::class, 'getCommitments']);
         Route::post('/{irr}/commitments', [IrrController::class, 'saveCommitments']);
         Route::get('/{irr}', [IrrController::class, 'show']);

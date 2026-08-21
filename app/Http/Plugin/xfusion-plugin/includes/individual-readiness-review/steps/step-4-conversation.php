@@ -2,10 +2,12 @@
 /**
  * Step 4 — Development Conversation™.
  *
- * UI-only prototype: static dummy content matching the IRR mockups
- * (focus area icons, conversation guide, tips, notes textarea, and a
- * two-party digital-signature agreement block). No Laravel calls are made
- * from this step for now — notes/signatures are local-only.
+ * Conversation Notes + Conversation Agreement (date + dual digital
+ * signatures) are real: loaded/saved via Laravel
+ * (wp_fusion_360_conversation_agreements). Employee/leader names come from
+ * the review itself. Each party can only sign their own side — enforced
+ * both client-side (button hidden for the other role) and server-side
+ * (403 if the signing user isn't actually that party).
  *
  * @package XFusion
  */
@@ -51,27 +53,7 @@ conversation: function () {
         '<p class="xirr-muted" style="margin:.2rem 0 0">Recommended time for a meaningful conversation.</p>' +
         '</div></div>' +
 
-        '<div class="xirr-card"><h4 style="margin-top:0">Conversation Notes</h4>' +
-        '<p class="xirr-muted" style="margin-top:-.3rem">Capture key takeaways from your discussion.</p>' +
-        '<textarea class="xirr-input" id="xirr-conversation-notes" rows="4" placeholder="Add notes about key insights, agreements, and next steps..."></textarea>' +
-        '<p class="xirr-muted" style="margin:.4rem 0 0;font-size:13px">Notes are private to you and your leader.</p>' +
-        '</div>' +
-
-        '<div class="xirr-card"><h4 style="margin-top:0">Conversation Agreement</h4>' +
-        '<p class="xirr-muted" style="margin-top:-.3rem">We acknowledge this conversation took place on:</p>' +
-        '<div class="xirr-row" style="margin-bottom:1rem"><input type="date" class="xirr-input" id="xirr-agreement-date" style="max-width:12rem"></div>' +
-        '<div class="xirr-signature-row">' +
-        '<div class="xirr-signature-box"><div class="name">Alex Johnson</div><div class="role">Employee</div>' +
-        '<button type="button" class="xirr-btn xirr-btn-outline xirr-btn-sm" id="xirr-sign-employee">&#9999;&#65039; Sign</button>' +
-        '<span class="xirr-signed-badge" id="xirr-signed-employee" style="display:none">&#10003; Signed</span></div>' +
-        '<div class="xirr-signature-box"><div class="name">James Scott</div><div class="role">Leader</div>' +
-        '<button type="button" class="xirr-btn xirr-btn-outline xirr-btn-sm" id="xirr-sign-leader">&#9999;&#65039; Sign</button>' +
-        '<span class="xirr-signed-badge" id="xirr-signed-leader" style="display:none">&#10003; Signed</span></div>' +
-        '</div>' +
-        '<p class="xirr-muted" style="margin:.6rem 0 0;font-size:13px">Digital signatures confirm the conversation occurred. This does not indicate agreement with all content.</p>' +
-        '</div>' +
-
-        '<p class="xirr-muted" style="margin-top:.3rem">Use the <b>Save Draft</b> button below to save your conversation notes and agreement.</p>';
+        '<div id="xirr-conversation-body"><p class="xirr-muted">Loading…</p></div>';
 }
 JS;
 }
@@ -80,19 +62,129 @@ function xfirr_wizard_conversation_init_js(): string
 {
     return <<<'JS'
 (function () {
-    function wireSign(btnId, badgeId) {
-        var btn = document.getElementById(btnId);
-        var badge = document.getElementById(badgeId);
-        if (!btn || !badge) return;
-        btn.addEventListener('click', function () {
-            btn.style.display = 'none';
-            badge.style.display = 'inline-flex';
+    function esc(s) { return String(s == null ? '' : s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
+
+    function signatureBox(role, name, signedAt, signedName, canSign) {
+        var signed = !!signedAt;
+        return '<div class="xirr-signature-box">' +
+            '<div class="name">' + esc(name) + '</div><div class="role">' + (role === 'employee' ? 'Employee' : 'Leader') + '</div>' +
+            (signed
+                ? '<span class="xirr-signed-badge" id="xirr-signed-' + role + '">&#10003; Signed' + (signedName ? ' by ' + esc(signedName) : '') + '</span>'
+                : (canSign
+                    ? '<button type="button" class="xirr-btn xirr-btn-outline xirr-btn-sm" id="xirr-sign-' + role + '">&#9999;&#65039; Sign</button>'
+                    : '<span class="xirr-muted" style="font-size:13px">Awaiting signature</span>')) +
+            '</div>';
+    }
+
+    function renderBody(data) {
+        var yourRole = data.your_role;
+        var employeeName = (window.XFIRR_WIZARD && window.XFIRR_WIZARD.employeeName) || 'Employee';
+        var leaderName = (window.XFIRR_WIZARD && window.XFIRR_WIZARD.managerName) || 'Leader';
+        var canEditNotes = !!(window.XFIRR_WIZARD && window.XFIRR_WIZARD.canEdit) || !!yourRole;
+
+        return '<div class="xirr-card"><h4 style="margin-top:0">Conversation Notes</h4>' +
+            '<p class="xirr-muted" style="margin-top:-.3rem">Capture key takeaways from your discussion.</p>' +
+            '<textarea class="xirr-input" id="xirr-conversation-notes" rows="4" placeholder="Add notes about key insights, agreements, and next steps..."' +
+            (canEditNotes ? '' : ' disabled') + '>' + esc(data.conversation_notes || '') + '</textarea>' +
+            '<p class="xirr-muted" style="margin:.4rem 0 0;font-size:13px">Notes are private to you and your leader.</p>' +
+            '<p class="xirr-muted" id="xirr-conversation-notes-status" style="margin:.3rem 0 0;font-size:13px"></p>' +
+            '</div>' +
+
+            '<div class="xirr-card"><h4 style="margin-top:0">Conversation Agreement</h4>' +
+            '<p class="xirr-muted" style="margin-top:-.3rem">We acknowledge this conversation took place on:</p>' +
+            '<div class="xirr-row" style="margin-bottom:1rem"><input type="date" class="xirr-input" id="xirr-agreement-date" style="max-width:12rem" value="' + esc(data.conversation_date || '') + '"' +
+            (canEditNotes ? '' : ' disabled') + '></div>' +
+            '<div class="xirr-signature-row">' +
+            signatureBox('employee', employeeName, data.employee_signed_at, data.employee_signature_name, yourRole === 'employee') +
+            signatureBox('leader', leaderName, data.leader_signed_at, data.leader_signature_name, yourRole === 'leader') +
+            '</div>' +
+            '<p class="xirr-muted" style="margin:.6rem 0 0;font-size:13px">Digital signatures confirm the conversation occurred. This does not indicate agreement with all content.</p>' +
+            '<p class="xirr-muted" id="xirr-agreement-status" style="margin:.4rem 0 0;font-size:13px"></p>' +
+            '</div>' +
+
+            '<p class="xirr-muted" style="margin-top:.3rem">Use the <b>Save Draft</b> button below to save your conversation notes and agreement date.</p>';
+    }
+
+    function bindInteractions(data) {
+        var notesEl = document.getElementById('xirr-conversation-notes');
+        var notesStatus = document.getElementById('xirr-conversation-notes-status');
+        var agreementStatus = document.getElementById('xirr-agreement-status');
+
+        ['employee', 'leader'].forEach(function (role) {
+            var btn = document.getElementById('xirr-sign-' + role);
+            if (!btn || btn.dataset.wired) return;
+            btn.dataset.wired = '1';
+            btn.addEventListener('click', function () {
+                if (btn.dataset.busy === '1' || typeof window.xfirrSaveConversation !== 'function') return;
+                btn.dataset.busy = '1';
+                btn.disabled = true;
+                btn.textContent = 'Signing…';
+                window.xfirrSaveConversation({ sign_role: role }).then(function (json) {
+                    if (!json || !json.success) {
+                        btn.dataset.busy = '';
+                        btn.disabled = false;
+                        btn.textContent = '✏️ Sign';
+                        if (agreementStatus) agreementStatus.textContent = (json && json.message) ? json.message : 'Failed to sign.';
+                        return;
+                    }
+                    var body = document.getElementById('xirr-conversation-body');
+                    if (body) {
+                        body.innerHTML = renderBody(json.data);
+                        bindInteractions(json.data);
+                    }
+                }).catch(function () {
+                    btn.dataset.busy = '';
+                    btn.disabled = false;
+                    btn.textContent = '✏️ Sign';
+                    if (agreementStatus) agreementStatus.textContent = 'Failed to sign — network error.';
+                });
+            });
         });
+
+        if (notesEl && !notesEl.disabled) {
+            var saveTimer = null;
+            notesEl.addEventListener('blur', function () {
+                if (typeof window.xfirrSaveConversation !== 'function') return;
+                if (notesStatus) notesStatus.textContent = 'Saving…';
+                window.xfirrSaveConversation({ conversation_notes: notesEl.value }).then(function (json) {
+                    if (notesStatus) {
+                        notesStatus.textContent = (json && json.success) ? '✓ Notes saved' : ((json && json.message) || 'Failed to save notes.');
+                    }
+                }).catch(function () {
+                    if (notesStatus) notesStatus.textContent = 'Failed to save notes — network error.';
+                });
+            });
+        }
+
+        var dateEl = document.getElementById('xirr-agreement-date');
+        if (dateEl && !dateEl.disabled) {
+            dateEl.addEventListener('change', function () {
+                if (typeof window.xfirrSaveConversation !== 'function' || !dateEl.value) return;
+                window.xfirrSaveConversation({ conversation_date: dateEl.value });
+            });
+        }
     }
 
     window.initConversationStep = function () {
-        wireSign('xirr-sign-employee', 'xirr-signed-employee');
-        wireSign('xirr-sign-leader', 'xirr-signed-leader');
+        var host = document.getElementById('xirr-conversation-body');
+        if (!host) return;
+        if (typeof window.xfirrLoadConversation !== 'function') {
+            host.innerHTML = '<p class="xirr-muted">Conversation service unavailable.</p>';
+            return;
+        }
+        window.xfirrLoadConversation().then(function (data) {
+            data = data || {};
+            host.innerHTML = renderBody(data);
+            bindInteractions(data);
+        });
+    };
+
+    window.xirrSaveConversationStep = function () {
+        var notesEl = document.getElementById('xirr-conversation-notes');
+        if (!notesEl || typeof window.xfirrSaveConversation !== 'function') {
+            return Promise.resolve({ success: false });
+        }
+        return window.xfirrSaveConversation({ conversation_notes: notesEl.value });
     };
 })();
 JS;

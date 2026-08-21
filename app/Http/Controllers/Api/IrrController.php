@@ -6,6 +6,7 @@ use App\Http\Controllers\Controller;
 use App\Models\CompanyGroup;
 use App\Models\CompanyGroupDetail;
 use App\Models\IrrCommitment;
+use App\Models\IrrConversationAgreement;
 use App\Models\IrrEvidenceSnapshot;
 use App\Models\IrrReview;
 use App\Models\User;
@@ -241,6 +242,97 @@ class IrrController extends Controller
                 'can_edit' => $this->canEditReview($userId, $irr),
             ],
         ]);
+    }
+
+    /** Step 4: shared conversation notes + digital signature status. */
+    public function getConversationAgreement(Request $request, IrrReview $irr)
+    {
+        $userId = (int) $request->query('user_id');
+        if ($userId < 1 || ! $this->canAccessReview($userId, $irr)) {
+            return $this->forbidden();
+        }
+
+        $agreement = IrrConversationAgreement::query()->where('review_id', $irr->id)->first();
+
+        return response()->json([
+            'success' => true,
+            'data' => $this->conversationAgreementPayload($irr, $agreement, $userId),
+        ]);
+    }
+
+    /** Step 4: save conversation notes/date, and/or sign as employee or leader. */
+    public function saveConversationAgreement(Request $request, IrrReview $irr)
+    {
+        $userId = (int) $request->input('user_id');
+        if (! $this->canAccessReview($userId, $irr)) {
+            return $this->forbidden();
+        }
+
+        $data = $request->validate([
+            'conversation_notes' => 'nullable|string',
+            'conversation_date' => 'nullable|date',
+            'sign_role' => 'nullable|in:employee,leader',
+        ]);
+
+        $agreement = IrrConversationAgreement::query()->firstOrNew(['review_id' => $irr->id]);
+        $agreement->review_id = $irr->id;
+
+        if ($request->has('conversation_notes')) {
+            $agreement->conversation_notes = (string) $data['conversation_notes'];
+        }
+        if (! empty($data['conversation_date'])) {
+            $agreement->conversation_date = $data['conversation_date'];
+        }
+
+        if (! empty($data['sign_role'])) {
+            $isEmployee = (int) $irr->employee_user_id === $userId;
+            $isLeader = (int) $irr->manager_user_id === $userId;
+
+            if ($data['sign_role'] === 'employee') {
+                if (! $isEmployee) {
+                    return response()->json(['success' => false, 'message' => 'Only the employee can sign as employee.'], 403);
+                }
+                $agreement->employee_signed_at = now();
+                $agreement->employee_signature_name = $this->userDisplayName($irr->employee);
+            } else {
+                if (! $isLeader) {
+                    return response()->json(['success' => false, 'message' => 'Only the leader can sign as leader.'], 403);
+                }
+                $agreement->leader_signed_at = now();
+                $agreement->leader_signature_name = $this->userDisplayName($irr->manager);
+            }
+        }
+
+        $agreement->save();
+
+        $bothSigned = $agreement->employee_signed_at !== null && $agreement->leader_signed_at !== null;
+        $this->refreshStepProgress($irr, 'conversation', $bothSigned);
+
+        return response()->json([
+            'success' => true,
+            'saved_at' => now()->format('g:i A'),
+            'data' => $this->conversationAgreementPayload($irr, $agreement, $userId),
+        ]);
+    }
+
+    private function conversationAgreementPayload(IrrReview $irr, ?IrrConversationAgreement $agreement, int $userId): array
+    {
+        $yourRole = null;
+        if ((int) $irr->employee_user_id === $userId) {
+            $yourRole = 'employee';
+        } elseif ((int) $irr->manager_user_id === $userId) {
+            $yourRole = 'leader';
+        }
+
+        return [
+            'conversation_notes' => $agreement?->conversation_notes ?? '',
+            'conversation_date' => $agreement?->conversation_date?->toDateString(),
+            'employee_signed_at' => $agreement?->employee_signed_at?->toIso8601String(),
+            'employee_signature_name' => $agreement?->employee_signature_name,
+            'leader_signed_at' => $agreement?->leader_signed_at?->toIso8601String(),
+            'leader_signature_name' => $agreement?->leader_signature_name,
+            'your_role' => $yourRole,
+        ];
     }
 
     /** Step 5: Annual Development Commitments™ — up to 5, ordered by priority_rank. */

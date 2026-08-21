@@ -52,6 +52,10 @@ window.xirrSaveDraft = function () {
         saveFn = window.xirrSaveCommitmentsStep;
     }
 
+    if (stepKey === 'conversation' && typeof window.xirrSaveConversationStep === 'function') {
+        saveFn = window.xirrSaveConversationStep;
+    }
+
     if (!saveFn) {
         xirrUpdateAutosaveLabel('Save Draft is not available for this step yet.', false);
         return Promise.resolve();
