@@ -44,21 +44,26 @@ function xfqbr_wizard_synthesis_init_js(): string
             '</div>';
     }
 
-    function list(items) {
+    function list(items, bulletIcon) {
         return '<ul class="xqbr-check-list">' + items.map(function (i) {
-            return '<li><span class="xqbr-check">&#10003;</span>' + esc(i) + '</li>';
+            var bullet = bulletIcon
+                ? '<img class="xqbr-list-bullet" src="' + bulletIcon + '" alt="" width="20" height="20">'
+                : '<span class="xqbr-check">&#10003;</span>';
+            return '<li>' + bullet + esc(i) + '</li>';
         }).join('') + '</ul>';
     }
 
     function numbered(items) {
-        return '<ol class="xqbr-numbered" style="margin:0;padding-left:1.2rem">' + items.map(function (i) {
-            return '<li style="margin-bottom:.4rem">' + esc(i) + '</li>';
+        return '<ol class="xqbr-numbered">' + items.map(function (i, idx) {
+            return '<li><span class="xqbr-numbered-badge" aria-hidden="true">' + (idx + 1) + '</span><span>' + esc(i) + '</span></li>';
         }).join('') + '</ol>';
     }
 
     function attentionCard(icon, title, desc) {
-        return '<div class="xqbr-activate-card"><div style="font-size:1.5rem">' + icon + '</div><h4>' + esc(title) + '</h4><p>' + esc(desc) + '</p></div>';
+        return '<div class="xqbr-activate-card">' + icon + '<h4>' + esc(title) + '</h4><p>' + esc(desc) + '</p></div>';
     }
+
+    var iconBase = 'https://sandbox.xperiencefusion.com/wp-content/uploads/2026/08/';
 
     window.initSynthesisStep = function () {
         var body = document.getElementById('xqbr-synthesis-body');
@@ -81,31 +86,31 @@ function xfqbr_wizard_synthesis_init_js(): string
             '</div></div></div></div>' +
 
             '<div class="xqbr-grid-2" style="display:grid;grid-template-columns:1fr 1fr;gap:1rem;margin-bottom:1rem">' +
-            '<div class="xqbr-card" style="margin-bottom:0"><h4>Organizational Strengths</h4>' + list([
+            '<div class="xqbr-card" style="margin-bottom:0"><h4 class="xqbr-heading-with-icon"><img src="' + iconBase + 'About-this-step6.svg" alt="Organizational Strengths icon"><span>Organizational Strengths</span></h4>' + list([
                 'Strong leadership bench and emerging leaders.',
                 'Consistent improvement in project delivery efficiency.',
                 'High engagement in development activities.',
                 'Clear strategic direction and aligned priorities.',
                 'Effective cross-functional collaboration on key initiatives.',
             ]) + '</div>' +
-            '<div class="xqbr-card" style="margin-bottom:0"><h4>Organizational Opportunities</h4>' + list([
+            '<div class="xqbr-card" style="margin-bottom:0"><h4 class="xqbr-heading-with-icon"><img src="' + iconBase + 'ORGANIZATIONAL-OPPORTUNITIES.svg" alt="Organizational Opportunities icon"><span>Organizational Opportunities</span></h4>' + list([
                 'Improve communication consistency across teams.',
                 'Increase follow-through on action commitments.',
                 'Strengthen accountability for operational metrics.',
                 'Expand coaching practices across all leaders.',
                 'Improve resource planning and capacity visibility.',
-            ]) + '</div>' +
+            ], iconBase + 'Purple-Star.svg') + '</div>' +
             '</div>' +
 
             '<div class="xqbr-grid-2" style="display:grid;grid-template-columns:1fr 1fr;gap:1rem;margin-bottom:1rem">' +
-            '<div class="xqbr-card" style="margin-bottom:0"><h4>&#9888; Key Risks</h4>' + list([
+            '<div class="xqbr-card" style="margin-bottom:0"><h4 class="xqbr-heading-with-icon"><img src="' + iconBase + 'KEY-RISKS.svg" alt="Key Risks icon"><span>Key Risks</span></h4>' + list([
                 'Resource constraints may impact ability to meet Q3 objectives.',
                 'Inconsistent follow-through on commitments in Operations.',
                 'Communication gaps between field and office teams.',
                 'Dependence on critical individuals in key roles.',
                 'External market factors may impact operational margins.',
-            ]) + '</div>' +
-            '<div class="xqbr-card" style="margin-bottom:0"><h4>Quarterly Focus</h4>' + numbered([
+            ], iconBase + 'Red-Star.svg') + '</div>' +
+            '<div class="xqbr-card" style="margin-bottom:0"><h4 class="xqbr-heading-with-icon"><img src="' + iconBase + 'QUARTERLY-FOCUS.svg" alt="Quarterly Focus icon"><span>Quarterly Focus</span></h4>' + numbered([
                 'Improve project delivery and operational efficiency.',
                 'Strengthen member engagement and communication.',
                 'Enhance safety performance and compliance.',
@@ -114,7 +119,7 @@ function xfqbr_wizard_synthesis_init_js(): string
             ]) + '</div>' +
             '</div>' +
 
-            '<div class="xqbr-card"><h4>Commitment Summary</h4>' +
+            '<div class="xqbr-card"><h4 class="xqbr-heading-with-icon"><img src="' + iconBase + 'COMMITMENT-SUMMARY.svg" alt="Commitment Summary icon"><span>Commitment Summary</span></h4>' +
             '<p class="xqbr-muted" style="margin-top:-.3rem">Five organizational commitments have been established for the upcoming quarter.</p>' +
             '<div class="xqbr-stat-list">' +
             '<div class="xqbr-stat-row"><span class="xqbr-dot green"></span> In Progress <strong>2</strong></div>' +
@@ -123,12 +128,12 @@ function xfqbr_wizard_synthesis_init_js(): string
             '<div class="xqbr-stat-row">Total Commitments <strong>5</strong></div>' +
             '</div></div>' +
 
-            '<div class="xqbr-card"><h4>Recommended Areas of Attention</h4>' +
+            '<div class="xqbr-card"><h4 class="xqbr-heading-with-icon"><img src="' + iconBase + 'RECOMMENDED-AREAS-OF-ATTENTION.svg" alt="Recommended Areas of Attention icon"><span>Recommended Areas of Attention</span></h4>' +
             '<p class="xqbr-muted" style="margin-top:-.3rem">Focus on these areas to improve readiness and reduce risk.</p>' +
             '<div class="xqbr-activate-grid">' +
-            attentionCard('📉', 'Execution', 'Execution score is below target. Focus on follow-through, resource alignment, and timely completion of key initiatives.') +
-            attentionCard('💬', 'Communication', 'Strengthen cross-team communication and ensure consistent information flow across field and office.') +
-            attentionCard('🛡️', 'Accountability', 'Reinforce accountability for metrics, commitments, and outcomes at all levels of the organization.') +
+            attentionCard('<img src="' + iconBase + 'Execution_1.svg" alt="Execution icon">', 'Execution', 'Execution score is below target. Focus on follow-through, resource alignment, and timely completion of key initiatives.') +
+            attentionCard('<img src="' + iconBase + 'Communication_1.svg" alt="Communication icon">', 'Communication', 'Strengthen cross-team communication and ensure consistent information flow across field and office.') +
+            attentionCard('<img src="' + iconBase + 'Accountability_1.svg" alt="Accountability icon">', 'Accountability', 'Reinforce accountability for metrics, commitments, and outcomes at all levels of the organization.') +
             '</div></div>';
     };
 })();

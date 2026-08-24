@@ -30,19 +30,23 @@ function xfirr_wizard_evidence_init_js(): string
 {
     return <<<'JS'
 (function () {
+    var iconBase = 'https://sandbox.xperiencefusion.com/wp-content/uploads/2026/08/';
+    function evidenceIcon(file, alt) {
+        return '<img src="' + iconBase + file + '" alt="' + alt + '">';
+    }
     var LABELS = {
-        individual_insights: ['&#9673;', 'Individual Insights™', 'Behavioral Driver trends, energy patterns and personal insights'],
-        previous_irr: ['&#9673;', 'Previous Individual Readiness Review™', 'Insights, commitments and progress from prior reviews'],
-        activities: ['&#9673;', 'Activities', 'Completed activities and learning engagement throughout the year'],
-        commitment_completion: ['&#9673;', 'Commitment Completion', 'Status of your development commitments'],
-        self_assessments: ['&#9673;', 'Self-Assessments', 'Assessment results and self-ratings over time'],
-        behavioral_driver_trends: ['&#9673;', 'Behavioral Driver Trends', 'Behavioral Driver performance and growth trends'],
-        reflection_themes: ['&#9673;', 'Reflection Themes', 'AI-extracted themes from private reflections and journals'],
-        leader_observations: ['&#9673;', 'Leader Observations', 'Leader feedback and observed behaviors throughout the year'],
-        tool_usage: ['&#9673;', 'Tool Usage', 'Development tools used and key insights generated'],
+        individual_insights: [evidenceIcon('individual-insight-icon.svg', 'Individual Insights icon'), 'Individual Insights™', 'Behavioral Driver trends, energy patterns and personal insights'],
+        previous_irr: [evidenceIcon('Previous-icon.svg', 'Previous Individual Readiness Review icon'), 'Previous Individual Readiness Review™', 'Insights, commitments and progress from prior reviews'],
+        activities: [evidenceIcon('Activities-icon.svg', 'Activities icon'), 'Activities', 'Completed activities and learning engagement throughout the year'],
+        commitment_completion: [evidenceIcon('Commitment-icon.svg', 'Commitment Completion icon'), 'Commitment Completion', 'Status of your development commitments'],
+        self_assessments: [evidenceIcon('Self-Assessment-icon.svg', 'Self-Assessments icon'), 'Self-Assessments', 'Assessment results and self-ratings over time'],
+        behavioral_driver_trends: [evidenceIcon('Behavioral-Driver-icon.svg', 'Behavioral Driver Trends icon'), 'Behavioral Driver Trends', 'Behavioral Driver performance and growth trends'],
+        reflection_themes: [evidenceIcon('Reflection-themes-icon.svg', 'Reflection Themes icon'), 'Reflection Themes', 'AI-extracted themes from private reflections and journals'],
+        leader_observations: [evidenceIcon('Leader-icon.svg', 'Leader Observations icon'), 'Leader Observations', 'Leader feedback and observed behaviors throughout the year'],
+        tool_usage: [evidenceIcon('Tool-Usgae-icon.svg', 'Tool Usage icon'), 'Tool Usage', 'Development tools used and key insights generated'],
         organizational_context: ['&#9673;', 'Organizational Context', 'Organizational events, priorities and context'],
         one_on_one: ['&#9673;', '1-on-1 Alignment Capture™', 'Key discussion themes and alignment insights'],
-        qbr_arp_priorities: ['&#9673;', 'QBR & ARP Priorities', 'Quarterly priorities and strategic objectives alignment'],
+        qbr_arp_priorities: [evidenceIcon('QBR-and-ARP-icon.svg', 'QBR and ARP Priorities icon'), 'QBR & ARP Priorities', 'Quarterly priorities and strategic objectives alignment'],
     };
     // Live sources first (backend actually computes these). The two below
     // are permanently hardcoded unavailable in IrrEvidenceService — no
@@ -69,7 +73,7 @@ function xfirr_wizard_evidence_init_js(): string
             var statusText = available ? '&#10003; Collected' : (notYetBuilt ? 'Coming soon' : 'No data yet');
             return '<div class="xirr-evidence-row' + (notYetBuilt ? ' xirr-evidence-row-soon' : '') + '">' +
                 '<div class="xirr-evidence-icon">' + meta[0] + '</div>' +
-                '<div><div class="xirr-evidence-title">' + meta[1] + '</div>' +
+                '<div class="xirr-evidence-body"><div class="xirr-evidence-title">' + meta[1] + '</div>' +
                 '<div class="xirr-evidence-desc">' + meta[2] + '</div></div>' +
                 '<div class="xirr-evidence-status ' + statusClass + '">' + statusText + '</div>' +
                 '</div>';

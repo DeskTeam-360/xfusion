@@ -27,11 +27,11 @@ publish: function () {
         '<div id="xqbr-publish-ready-banner"></div>' +
         '<div class="xqbr-card"><h3 style="margin-top:0">Publish Options</h3>' +
         '<div class="xqbr-action-grid">' +
-        '<div class="xqbr-action-card"><h4>📄 Save Draft</h4><p>Save progress on Steps 4–5 before publishing. This step has no draft of its own.</p>' +
+        '<div class="xqbr-action-card"><img src="https://sandbox.xperiencefusion.com/wp-content/uploads/2026/08/Save-Draft-Icon.svg" alt="Save Draft icon" width="40" height="40"><h4>Save Draft</h4><p>Save progress on Steps 4–5 before publishing. This step has no draft of its own.</p>' +
         '<button type="button" class="xqbr-btn xqbr-btn-outline" id="xqbr-publish-save">Save Draft</button></div>' +
-        '<div class="xqbr-action-card"><h4>📨 Publish QBR</h4><p>Finalize and publish this QBR. This will lock the record and make it available across the FUSION platform.</p>' +
+        '<div class="xqbr-action-card"><img src="https://sandbox.xperiencefusion.com/wp-content/uploads/2026/08/Publish-QBR-icon.svg" alt="Publish QBR icon" width="40" height="40"><h4>Publish QBR</h4><p>Finalize and publish this QBR. This will lock the record and make it available across the FUSION platform.</p>' +
         '<button type="button" class="xqbr-btn xqbr-btn-accent" id="xqbr-publish-go">Publish QBR</button></div>' +
-        '<div class="xqbr-action-card"><h4>🗄️ Archive</h4><p>Archive this QBR without publishing. This record will be stored but not available to dashboards.</p>' +
+        '<div class="xqbr-action-card"><img src="https://sandbox.xperiencefusion.com/wp-content/uploads/2026/08/Archive-Icon.svg" alt="Archive icon" width="40" height="40"><h4>Archive</h4><p>Archive this QBR without publishing. This record will be stored but not available to dashboards.</p>' +
         '<button type="button" class="xqbr-btn xqbr-btn-outline" id="xqbr-archive-go">Archive QBR</button></div>' +
         '</div>' +
         '<p class="xqbr-muted" id="xqbr-publish-status" style="margin-top:.75rem"></p>' +
@@ -39,12 +39,17 @@ publish: function () {
         '<div class="xqbr-grid-2" style="display:grid;grid-template-columns:1fr 1fr;gap:1rem">' +
         '<div class="xqbr-card" style="margin-bottom:0"><h4>Publish Impact</h4>' +
         '<ul class="xqbr-check-list">' +
-        '<li><span class="xqbr-check">&#10003;</span>Makes this QBR available to all relevant dashboards and reports.</li>' +
-        '<li><span class="xqbr-check">&#10003;</span>Feeds data into the Annual Readiness Review™.</li>' +
-        '<li><span class="xqbr-check">&#10003;</span>Supports organizational learning and trend analysis.</li>' +
+        '<li><img class="xqbr-list-bullet" src="https://sandbox.xperiencefusion.com/wp-content/uploads/2026/08/Make-this-QBR-available-Icon.svg" alt="" width="40" height="40">Makes this QBR available to all relevant dashboards and reports.</li>' +
+        '<li><img class="xqbr-list-bullet" src="https://sandbox.xperiencefusion.com/wp-content/uploads/2026/08/Feed-data-into-the-annual-readiness-review-Icon.svg" alt="" width="40" height="40">Feeds data into the Annual Readiness Review™.</li>' +
+        '<li><img class="xqbr-list-bullet" src="https://sandbox.xperiencefusion.com/wp-content/uploads/2026/08/Support-Organizational-Learning-Icon.svg" alt="" width="40" height="40">Supports organizational learning and trend analysis.</li>' +
         '</ul></div>' +
         '<div class="xqbr-card" style="margin-bottom:0"><h4>QBR Document Preview</h4>' +
+        '<div class="xqbr-doc-preview">' +
+        '<img class="xqbr-doc-preview-icon" src="https://sandbox.xperiencefusion.com/wp-content/uploads/2026/08/QBR-document-preview-Icon.svg" alt="" width="50" height="50">' +
+        '<div class="xqbr-doc-preview-body">' +
+        '<h5 class="xqbr-doc-preview-title">Executive Summary Preview</h5>' +
         '<p class="xqbr-muted">View the full AI Organizational Synthesis™ that will be included in the published QBR.</p>' +
+        '</div></div>' +
         '<button type="button" class="xqbr-btn xqbr-btn-outline xqbr-btn-sm" id="xqbr-preview-btn">View Preview</button></div>' +
         '</div>';
 }
@@ -55,30 +60,31 @@ function xfqbr_wizard_publish_init_js(): string
 {
     return <<<'JS'
 (function () {
+    var iconBase = 'https://sandbox.xperiencefusion.com/wp-content/uploads/2026/08/';
     var REVIEW_STEPS = [
         {
             key: 'evidence', label: 'Organizational Evidence™', steps: '1–2', stepIndex: 1,
-            icon: '&#128202;', iconBg: '#e0edff', iconColor: '#2563eb',
+            icon: iconBase + 'Organizational-Evidence™.svg',
             desc: 'Objective evidence compiled from across the platform for this quarter.',
         },
         {
             key: 'assessment', label: 'AI Organizational Assessment™', steps: '3', stepIndex: 2,
-            icon: '&#10024;', iconBg: '#f3e8ff', iconColor: '#9333ea',
+            icon: iconBase + 'AI-Organizational-Assessment™.svg',
             desc: 'AI analysis of evidence with organizational assessment and leadership agreement.',
         },
         {
             key: 'collaboration', label: 'Leadership Collaboration™', steps: '4', stepIndex: 3,
-            icon: '&#128172;', iconBg: '#fff1e0', iconColor: '#ea580c',
+            icon: iconBase + 'Leadership-Collaboration™.svg',
             desc: 'Leadership discussion, context, decisions and takeaways captured.',
         },
         {
             key: 'commitments', label: 'Quarterly Commitments™', steps: '5', stepIndex: 4,
-            icon: '&#127919;', iconBg: '#e6f6ea', iconColor: '#16a34a',
+            icon: iconBase + 'Quarterly-Commitments™.svg',
             desc: 'Commitments defined to drive focus and accountability next quarter.',
         },
         {
             key: 'synthesis', label: 'AI Organizational Synthesis™', steps: '6', stepIndex: 5,
-            icon: '&#129504;', iconBg: '#e0f2f4', iconColor: '#0d9488',
+            icon: iconBase + 'AI-Organizational-Synthesis™.svg',
             desc: 'AI-generated organizational readiness synthesis.',
         },
     ];
@@ -131,7 +137,7 @@ function xfqbr_wizard_publish_init_js(): string
         list.innerHTML = REVIEW_STEPS.map(function (row) {
             var done = !!progress[row.key];
             return '<button type="button" class="xqbr-review-row xqbr-review-row-link" data-step-index="' + row.stepIndex + '" aria-label="Go to ' + row.label + '">' +
-                '<span class="xqbr-review-icon" style="background:' + row.iconBg + ';color:' + row.iconColor + '">' + row.icon + '</span>' +
+                '<span class="xqbr-review-icon"><img src="' + row.icon + '" alt="" width="40" height="40"></span>' +
                 '<div class="xqbr-review-body">' +
                 '<strong>' + row.label + '</strong>' +
                 '<p class="xqbr-review-desc">' + row.desc + '</p>' +
