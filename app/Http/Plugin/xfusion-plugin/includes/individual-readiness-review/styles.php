@@ -159,6 +159,20 @@ select.xirr-input[multiple]{min-height:4.75rem;padding:.35rem}
 .xirr-banner-icon{flex-shrink:0;line-height:1.2}
 .xirr-btn-sm{padding:.35rem .75rem;font-size:.75rem}
 
+/* Step 1 callouts */
+.xirr-callout{display:flex;gap:.85rem;align-items:center;border-radius:.5rem;padding:1rem 1.15rem;border:1px solid;margin-bottom:.75rem}
+.xirr-callout:last-child{margin-bottom:0}
+.xirr-callout-icon{width:36px;height:36px;border-radius:50%;display:inline-flex;align-items:center;justify-content:center;flex-shrink:0}
+.xirr-callout-icon svg{display:block}
+.xirr-callout-body{min-width:0}
+.xirr-callout-title{margin:0;font-size:16px;font-weight:700;line-height:1.3}
+.xirr-callout-text{margin:.2rem 0 0;font-size:15px;line-height:1.45}
+.xirr-callout-success{background:#f0fdf4;border-color:#bbf7d0;color:#166534}
+.xirr-callout-success .xirr-callout-icon{background:#16a34a;color:#fff}
+.xirr-callout-next{background:#eef4fc;border-color:#bfdbfe;color:#1e3a5f}
+.xirr-callout-next .xirr-callout-icon{background:#e0e7ff;color:#1e2a52}
+.xirr-callout-next .xirr-callout-title{text-transform:uppercase;letter-spacing:.04em;color:var(--navy)}
+
 /* Publish step */
 .xirr-summary-grid{display:grid;grid-template-columns:1fr 1fr;gap:.85rem 1.5rem;margin:0}
 .xirr-summary-item{margin:0}
