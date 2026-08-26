@@ -544,6 +544,7 @@ Route::prefix('v1')->middleware('fusion.api')->group(function () {
         Route::get('/{arr}/group-members', [ArrController::class, 'groupMembers']);
         Route::post('/{arr}/evidence/generate', [ArrController::class, 'generateEvidence']);
         Route::get('/{arr}/evidence', [ArrController::class, 'getEvidence']);
+        Route::get('/{arr}/dashboard', [ArrController::class, 'getDashboard']);
         Route::get('/{arr}', [ArrController::class, 'show']);
     };
     Route::prefix('arrs')->group($registerArrRoutes);

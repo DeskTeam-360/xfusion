@@ -308,6 +308,17 @@ class ArrController extends Controller
         ]);
     }
 
+    /** Step 2: real this-year-vs-last-year comparisons computed on demand (not persisted — always fresh). */
+    public function getDashboard(Request $request, Arr $arr, ArrEvidenceService $evidenceService)
+    {
+        $userId = (int) $request->query('user_id');
+        if ($userId < 1 || ! $this->memberCompanyIds($userId)->contains($arr->company_id)) {
+            return $this->forbidden();
+        }
+
+        return response()->json(['success' => true, 'data' => $evidenceService->buildDashboard($arr)]);
+    }
+
     private function forbidden()
     {
         return response()->json(['success' => false, 'message' => 'You do not have access to this ARR.'], 403);

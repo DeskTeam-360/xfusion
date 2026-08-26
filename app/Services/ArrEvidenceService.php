@@ -295,7 +295,7 @@ class ArrEvidenceService
      *
      * @param  list<int>  $memberIds
      */
-    private function companyScoringAverages(array $memberIds): array
+    private function companyScoringAverages(array $memberIds, ?Carbon $asOf = null): array
     {
         $slugs = array_keys(self::BEHAVIORAL_DRIVERS + self::SELF_ASSESSMENT_KEYS);
         $out = array_fill_keys($slugs, null);
@@ -313,7 +313,7 @@ class ArrEvidenceService
                 if (! array_key_exists($slug, $bySlug)) {
                     continue;
                 }
-                $avg = $this->weightedGroupAverage($group, $userId);
+                $avg = $this->weightedGroupAverage($group, $userId, $asOf);
                 if ($avg !== null) {
                     $bySlug[$slug][] = $avg;
                 }
@@ -328,7 +328,109 @@ class ArrEvidenceService
         return $out;
     }
 
-    private function weightedGroupAverage(CourseScoringGroup $group, int $userId): ?float
+    /**
+     * Step 2 dashboard data — only what's genuinely computable from dated
+     * records: this-year vs last-year COR/Leadership averages (via an
+     * as-of-date cutoff on the same real scoring data used in Step 1), and
+     * this-year vs last-year completion rates for commitments, activity
+     * participation, 1-on-1s and IRRs. Everything else the mockup shows
+     * (quarterly trend lines, sparkline history, Future State Progress,
+     * named ARP objective categories, KPI % deltas, a 2022-2025 historical
+     * bar chart, and narrative "Trend Highlights") has no tracked history
+     * anywhere in FUSION and is returned as null so the wizard step can
+     * show an explicit "not available" note instead of fabricating it.
+     */
+    public function buildDashboard(Arr $arr): array
+    {
+        $companyId = (int) $arr->company_id;
+        $year = (int) $arr->year;
+        $priorYear = $year - 1;
+        $start = Carbon::create($year, 1, 1)->startOfDay();
+        $end = Carbon::create($year, 12, 31)->endOfDay();
+        $priorStart = Carbon::create($priorYear, 1, 1)->startOfDay();
+        $priorEnd = Carbon::create($priorYear, 12, 31)->endOfDay();
+
+        $memberIds = $this->companyMemberUserIds($companyId);
+
+        $currentScores = $this->companyScoringAverages($memberIds, $end);
+        $priorScores = $this->companyScoringAverages($memberIds, $priorEnd);
+
+        $corCapabilityTrend = [];
+        foreach (self::SELF_ASSESSMENT_KEYS as $slug => $label) {
+            $corCapabilityTrend[] = [
+                'slug' => $slug,
+                'label' => $label,
+                'current' => $currentScores[$slug] ?? null,
+                'prior' => $priorScores[$slug] ?? null,
+            ];
+        }
+
+        $arpSummary = $this->arpSummary($companyId, $year);
+        $qbrSummary = $this->qbrSummary($companyId, $year);
+        $oneOnOneSummary = $this->oneOnOneSummary($companyId, $start, $end);
+        $irrSummary = $this->irrSummary($companyId, $year);
+        $priorOneOnOneSummary = $this->oneOnOneSummary($companyId, $priorStart, $priorEnd);
+        $priorIrrSummary = $this->irrSummary($companyId, $priorYear);
+        $priorQbrSummary = $this->qbrSummary($companyId, $priorYear);
+        $priorArpSummary = $this->arpSummary($companyId, $priorYear);
+        $activities = $this->activitiesSummary($memberIds, $start, $end);
+        $priorActivities = $this->activitiesSummary($memberIds, $priorStart, $priorEnd);
+
+        $historicalCommitments = $this->historicalCommitmentsSummary($oneOnOneSummary['one_on_one_ids'], $qbrSummary['qbr_ids'], $irrSummary['irr_ids']);
+        $priorHistoricalCommitments = $this->historicalCommitmentsSummary($priorOneOnOneSummary['one_on_one_ids'], $priorQbrSummary['qbr_ids'], $priorIrrSummary['irr_ids']);
+
+        $operationalKpis = $this->operationalKpisSummary($qbrSummary['qbr_ids']);
+        $organizationalKpis = $this->organizationalKpisSummary($arpSummary['arp_ids']);
+
+        return [
+            'review_period' => ['year' => $year, 'prior_year' => $priorYear],
+            'cor_capability_trend' => $corCapabilityTrend,
+            'leadership_trend' => [
+                'current' => $currentScores['leadership'] ?? null,
+                'prior' => $priorScores['leadership'] ?? null,
+                'scale_max' => 5.0,
+            ],
+            'stat_cards' => [
+                'commitment_completion' => $this->rateStat($historicalCommitments['done'] ?? 0, $historicalCommitments['total'] ?? 0, $priorHistoricalCommitments['done'] ?? 0, $priorHistoricalCommitments['total'] ?? 0),
+                'development_participation' => $this->rateStat($activities['programs_with_data'] ?? 0, $activities['programs_total'] ?? 0, $priorActivities['programs_with_data'] ?? 0, $priorActivities['programs_total'] ?? 0),
+                'one_on_one_alignment' => $this->rateStat($oneOnOneSummary['completed'] ?? 0, $oneOnOneSummary['total'] ?? 0, $priorOneOnOneSummary['completed'] ?? 0, $priorOneOnOneSummary['total'] ?? 0),
+                'irr_completion' => $this->rateStat($irrSummary['published_count'] ?? 0, $irrSummary['count'] ?? 0, $priorIrrSummary['published_count'] ?? 0, $priorIrrSummary['count'] ?? 0),
+            ],
+            'operational_kpis' => $operationalKpis,
+            'organizational_kpis' => $organizationalKpis,
+            // No tracked source anywhere in FUSION yet - never fabricated.
+            // Left null on purpose; the wizard step shows an explicit
+            // "not available" note for each instead of removing the section
+            // or inventing numbers.
+            'unavailable' => [
+                'future_state_progress' => 'No Future State progress-tracking field exists on the ARP record yet.',
+                'arp_objective_progress_by_category' => 'ARP Strategic Priorities have no Financial/Operational/People/Customer category field.',
+                'quarterly_readiness_trends' => 'No quarterly readiness score is captured anywhere; QBRs do not store a composite score.',
+                'behavioral_driver_quarterly_trend' => 'Behavioral Driver scores are captured as a single current value, not a quarterly time series.',
+                'stat_card_sparklines' => 'The stat cards above show real current vs prior-year values, but no quarterly-interval history is tracked for a sparkline.',
+                'kpi_percent_deltas' => 'KPI current values/status are real (see operational_kpis/organizational_kpis) but historical KPI values are not stored, so a % change cannot be computed.',
+                'historical_comparison_2022_2025' => 'No per-year composite readiness score has ever been defined or stored for ARR.',
+                'trend_highlights' => 'These would be AI-authored interpretation, which belongs in Step 3 (Assessment), not Step 1/2 evidence.',
+            ],
+        ];
+    }
+
+    /** @return array{current_rate: float|null, prior_rate: float|null, delta: float|null, current_numerator: int, current_denominator: int} */
+    private function rateStat(int $num, int $den, int $priorNum, int $priorDen): array
+    {
+        $currentRate = $den > 0 ? round(($num / $den) * 100, 1) : null;
+        $priorRate = $priorDen > 0 ? round(($priorNum / $priorDen) * 100, 1) : null;
+
+        return [
+            'current_rate' => $currentRate,
+            'prior_rate' => $priorRate,
+            'delta' => ($currentRate !== null && $priorRate !== null) ? round($currentRate - $priorRate, 1) : null,
+            'current_numerator' => $num,
+            'current_denominator' => $den,
+        ];
+    }
+
+    private function weightedGroupAverage(CourseScoringGroup $group, int $userId, ?Carbon $asOf = null): ?float
     {
         $details = $group->details->filter(
             fn ($d) => (int) $d->form_id > 0 && (int) $d->field_id > 0 && (float) ($d->weight ?? 1.0) > 0
@@ -344,6 +446,7 @@ class ArrEvidenceService
             ->whereIn('form_id', $formIds)
             ->where('created_by', $userId)
             ->whereIn('status', ['active', 'Active', 'ACTIVE'])
+            ->when($asOf !== null, fn ($q) => $q->where('date_created', '<=', $asOf))
             ->select(['id', 'form_id'])
             ->orderByDesc('id')
             ->get()
