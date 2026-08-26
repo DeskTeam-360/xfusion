@@ -23,6 +23,7 @@ if (! defined('ABSPATH')) {
 require_once __DIR__ . '/styles.php';
 require_once __DIR__ . '/arr-picker.php';
 require_once __DIR__ . '/arr-evidence-service.php';
+require_once __DIR__ . '/arr-assessment-service.php';
 require_once __DIR__ . '/core.php';
 require_once __DIR__ . '/steps/step-1-evidence.php';
 require_once __DIR__ . '/steps/step-2-dashboard.php';
@@ -106,12 +107,14 @@ function xfusion_arr_wizard_shortcode($atts = []): string
     $synthesisInitJs      = xfarr_wizard_synthesis_init_js();
     $publishInitJs        = xfarr_wizard_publish_init_js();
     $evidenceSvcJs        = xfarr_wizard_evidence_service_js();
+    $assessmentSvcJs      = xfarr_wizard_assessment_service_js();
 
     $wizardConfig = [
         'ajaxUrl'      => admin_url('admin-ajax.php'),
         'nonce'        => wp_create_nonce('xfarr_wizard'),
         'userId'       => get_current_user_id(),
         'arrId'        => $arrId,
+        'year'         => $year,
         'canEdit'      => $canEdit,
         'groupMembers' => $groupMembers,
         'stepProgress' => is_array($arrData['step_progress'] ?? null) ? $arrData['step_progress'] : new stdClass(),
@@ -214,7 +217,7 @@ window.XFARR_WIZARD = <?php echo wp_json_encode($wizardConfig); ?>;
 echo $panelsJs . "\n\n"
     . $evidenceInitJs . "\n\n" . $dashboardInitJs . "\n\n" . $assessmentInitJs . "\n\n"
     . $reflectionInitJs . "\n\n" . $recommendationsInitJs . "\n\n" . $synthesisInitJs . "\n\n" . $publishInitJs . "\n\n"
-    . $evidenceSvcJs . "\n\n"
+    . $evidenceSvcJs . "\n\n" . $assessmentSvcJs . "\n\n"
     . $coreJs . "\n\n"
     . $saveDraftDispatchJs;
 ?>

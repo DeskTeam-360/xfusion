@@ -18,6 +18,7 @@ const XFUSION_LLM_PROMPT_SLUG_QBR_ASSESSMENT = 'qbr_assessment_system';
 const XFUSION_LLM_PROMPT_SLUG_QBR_SYNTHESIS = 'qbr_synthesis_system';
 const XFUSION_LLM_PROMPT_SLUG_IRR_ASSESSMENT = 'irr_development_assessment_system';
 const XFUSION_LLM_PROMPT_SLUG_IRR_SYNTHESIS = 'irr_development_synthesis_system';
+const XFUSION_LLM_PROMPT_SLUG_ARR_ASSESSMENT = 'arr_annual_assessment_system';
 
 /**
  * @return array<string, array{
@@ -122,6 +123,16 @@ function xfusion_llm_prompt_slug_definitions(): array
             'default_files' => array_values(array_filter([
                 $pluginDir . 'prompts/irr_development_synthesis_system.md',
                 $repoRoot . '/Xfusion-llm/prompts/irr_development_synthesis_system.md',
+            ])),
+        ],
+        XFUSION_LLM_PROMPT_SLUG_ARR_ASSESSMENT => [
+            'title' => __('ARR — AI Annual Readiness Assessment (system)', 'xfusion'),
+            'menu_title' => __('ARR Assessment System', 'xfusion'),
+            'description' => __('System prompt for POST /api/v1/arr/annual-assessment (ARR Step 3, via Laravel).', 'xfusion'),
+            'placeholder_hint' => __('Defines the strategic_risks / strategic_opportunities / emerging_themes / narrative summary JSON output sections. Organizational Readiness / Strategic Alignment / Behavioral Intelligence / COR Capability / Leadership Readiness / Development Trends scores are computed by Laravel and passed in as context — never generate or alter numeric scores.', 'xfusion'),
+            'default_files' => array_values(array_filter([
+                $pluginDir . 'prompts/arr_annual_assessment_system.md',
+                $repoRoot . '/Xfusion-llm/prompts/arr_annual_assessment_system.md',
             ])),
         ],
     ]);

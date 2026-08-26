@@ -4,10 +4,12 @@ namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
 use App\Models\Arr;
+use App\Models\ArrAiAssessment;
 use App\Models\ArrAiSynthesis;
 use App\Models\ArrEvidenceSnapshot;
 use App\Models\CompanyGroup;
 use App\Models\CompanyGroupDetail;
+use App\Services\ArrAiService;
 use App\Services\ArrEvidenceService;
 use App\Services\OneOnOneCompanyGroupSyncService;
 use Illuminate\Http\Request;
@@ -317,6 +319,101 @@ class ArrController extends Controller
         }
 
         return response()->json(['success' => true, 'data' => $evidenceService->buildDashboard($arr)]);
+    }
+
+    /** Step 3: generate a new AI Annual Readiness Assessment™ (always appends a new row). */
+    public function generateAssessment(Request $request, Arr $arr, ArrEvidenceService $evidenceService, ArrAiService $aiService)
+    {
+        $userId = (int) $request->input('user_id');
+        if (! $this->leadableCompanyIds($userId)->contains($arr->company_id)) {
+            return $this->forbidden();
+        }
+
+        $snapshot = $arr->evidenceSnapshots()->first()?->snapshot ?? $evidenceService->buildSnapshot($arr);
+        $readinessIndicators = $evidenceService->computeReadinessIndicators($arr);
+
+        $assessment = $aiService->generateAssessment($arr, $snapshot, $readinessIndicators);
+        if ($assessment === null) {
+            return response()->json(['success' => false, 'message' => $aiService->getLastError() ?? 'Failed to generate assessment.'], 502);
+        }
+
+        $this->refreshStepProgress($arr, 'assessment', true);
+
+        return response()->json(['success' => true, 'data' => $this->assessmentPayload($assessment)]);
+    }
+
+    /** Step 3: latest AI assessment; auto-computes readiness_indicators (real, never persisted stale) even if the assessment row is old. */
+    public function getAssessment(Request $request, Arr $arr, ArrEvidenceService $evidenceService)
+    {
+        $userId = (int) $request->query('user_id');
+        if ($userId < 1 || ! $this->memberCompanyIds($userId)->contains($arr->company_id)) {
+            return $this->forbidden();
+        }
+
+        $assessment = ArrAiAssessment::query()->where('arr_id', $arr->id)->orderByDesc('id')->first();
+        if ($assessment === null) {
+            return response()->json(['success' => true, 'data' => null]);
+        }
+
+        return response()->json(['success' => true, 'data' => $this->assessmentPayload($assessment)]);
+    }
+
+    /** Step 3: Executive Agreement rating on the latest assessment. */
+    public function saveAgreement(Request $request, Arr $arr)
+    {
+        $userId = (int) $request->input('user_id');
+        if (! $this->leadableCompanyIds($userId)->contains($arr->company_id)) {
+            return $this->forbidden();
+        }
+
+        $rating = (string) $request->input('agreement_rating', '');
+        $allowed = ['strongly_agree', 'agree', 'neutral', 'disagree', 'strongly_disagree'];
+        if (! in_array($rating, $allowed, true)) {
+            return response()->json(['success' => false, 'message' => 'Invalid agreement_rating.'], 422);
+        }
+
+        $assessment = ArrAiAssessment::query()->where('arr_id', $arr->id)->orderByDesc('id')->first();
+        if ($assessment === null) {
+            return response()->json(['success' => false, 'message' => 'Generate the AI assessment before recording agreement.'], 422);
+        }
+
+        $assessment->update(['agreement_rating' => $rating]);
+
+        return response()->json(['success' => true]);
+    }
+
+    /** Step 3: Executive Strategic Context free-text on the latest assessment. */
+    public function saveContext(Request $request, Arr $arr)
+    {
+        $userId = (int) $request->input('user_id');
+        if (! $this->leadableCompanyIds($userId)->contains($arr->company_id)) {
+            return $this->forbidden();
+        }
+
+        $context = (string) $request->input('executive_context', '');
+        if (mb_strlen($context) > 2000) {
+            return response()->json(['success' => false, 'message' => 'executive_context must be 2000 characters or fewer.'], 422);
+        }
+
+        $assessment = ArrAiAssessment::query()->where('arr_id', $arr->id)->orderByDesc('id')->first();
+        if ($assessment === null) {
+            return response()->json(['success' => false, 'message' => 'Generate the AI assessment before saving context.'], 422);
+        }
+
+        $assessment->update(['executive_context' => $context]);
+
+        return response()->json(['success' => true]);
+    }
+
+    private function assessmentPayload(ArrAiAssessment $assessment): array
+    {
+        return [
+            'assessment' => $assessment->assessment,
+            'agreement_rating' => $assessment->agreement_rating,
+            'executive_context' => $assessment->executive_context,
+            'insight_model' => $assessment->insight_model,
+            'created_at' => $assessment->created_at?->toIso8601String(),
+        ];
     }
 
     private function forbidden()

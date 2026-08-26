@@ -415,6 +415,64 @@ class ArrEvidenceService
         ];
     }
 
+    /**
+     * Step 3 — the numeric scores shown alongside the AI Annual Readiness
+     * Assessment™. Computed here (never by the LLM) from the same real
+     * scoring data used in Steps 1/2, per CLAUDE.md's "AI never computes
+     * scores" rule. `strategic_alignment` reuses the real "Alignment" COR
+     * capability score as the closest tracked proxy - there is no separate
+     * strategic-alignment metric anywhere in FUSION.
+     */
+    public function computeReadinessIndicators(Arr $arr): array
+    {
+        $companyId = (int) $arr->company_id;
+        $year = (int) $arr->year;
+        $end = Carbon::create($year, 12, 31)->endOfDay();
+        $priorEnd = Carbon::create($year - 1, 12, 31)->endOfDay();
+
+        $memberIds = $this->companyMemberUserIds($companyId);
+        $current = $this->companyScoringAverages($memberIds, $end);
+        $prior = $this->companyScoringAverages($memberIds, $priorEnd);
+
+        $driverSlugs = array_keys(self::BEHAVIORAL_DRIVERS);
+        $capabilitySlugs = array_keys(self::SELF_ASSESSMENT_KEYS);
+        $allSlugs = array_merge($driverSlugs, $capabilitySlugs);
+
+        $currentValues = array_values(array_filter(array_map(fn ($s) => $current[$s] ?? null, $allSlugs), fn ($v) => $v !== null));
+        $priorValues = array_values(array_filter(array_map(fn ($s) => $prior[$s] ?? null, $allSlugs), fn ($v) => $v !== null));
+
+        $orgReadinessScore = $currentValues !== [] ? round(array_sum($currentValues) / count($currentValues), 2) : null;
+        $orgReadinessPrior = $priorValues !== [] ? round(array_sum($priorValues) / count($priorValues), 2) : null;
+
+        $activities = $this->activitiesSummary($memberIds, Carbon::create($year, 1, 1)->startOfDay(), $end);
+        $priorActivities = $this->activitiesSummary($memberIds, Carbon::create($year - 1, 1, 1)->startOfDay(), $priorEnd);
+        $participationRate = $activities['programs_total'] > 0 ? round(($activities['programs_with_data'] / $activities['programs_total']) * 100, 1) : null;
+        $priorParticipationRate = $priorActivities['programs_total'] > 0 ? round(($priorActivities['programs_with_data'] / $priorActivities['programs_total']) * 100, 1) : null;
+
+        $behavioralIntelligence = [];
+        foreach (self::BEHAVIORAL_DRIVERS as $slug => $label) {
+            $behavioralIntelligence[] = ['slug' => $slug, 'label' => $label, 'score' => $current[$slug] ?? null];
+        }
+
+        $corCapabilityAnalysis = [];
+        foreach (self::SELF_ASSESSMENT_KEYS as $slug => $label) {
+            $corCapabilityAnalysis[] = ['slug' => $slug, 'label' => $label, 'score' => $current[$slug] ?? null];
+        }
+
+        return [
+            'scale_max' => 5.0,
+            'organizational_readiness' => ['score' => $orgReadinessScore, 'prior' => $orgReadinessPrior],
+            'strategic_alignment' => ['score' => $current['alignment'] ?? null, 'prior' => $prior['alignment'] ?? null],
+            'behavioral_intelligence' => $behavioralIntelligence,
+            'cor_capability_analysis' => $corCapabilityAnalysis,
+            'leadership_readiness' => ['score' => $current['leadership'] ?? null, 'prior' => $prior['leadership'] ?? null],
+            'development_trends' => ['participation_rate' => $participationRate, 'prior_rate' => $priorParticipationRate],
+            // No quarterly-interval history exists anywhere in FUSION for
+            // any component yet - never fabricated.
+            'readiness_progress_quarterly' => null,
+        ];
+    }
+
     /** @return array{current_rate: float|null, prior_rate: float|null, delta: float|null, current_numerator: int, current_denominator: int} */
     private function rateStat(int $num, int $den, int $priorNum, int $priorDen): array
     {
