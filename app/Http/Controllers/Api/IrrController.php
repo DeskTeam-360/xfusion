@@ -244,6 +244,91 @@ class IrrController extends Controller
         ]);
     }
 
+    /** Step 6: generate AI Development Synthesis™ from evidence, assessment, conversation notes, and commitments. */
+    public function generateSynthesis(Request $request, IrrReview $irr, IrrEvidenceService $evidenceService, IrrAiService $ai)
+    {
+        $userId = (int) $request->input('user_id');
+        if (! $this->canEditReview($userId, $irr)) {
+            return $this->forbidden();
+        }
+
+        $context = $this->synthesisContext($irr, $evidenceService, $ai);
+        $readinessIndicators = $evidenceService->computeReadinessIndicators($irr);
+        $behavioralGrowth = $evidenceService->computeBehavioralGrowth($irr);
+
+        $synthesis = $ai->generateSynthesis($irr, $context, $readinessIndicators, $behavioralGrowth);
+        if ($synthesis === null) {
+            return response()->json([
+                'success' => false,
+                'message' => $ai->getLastError() ?? 'Failed to generate AI Development Synthesis.',
+            ], 200);
+        }
+
+        $this->refreshStepProgress($irr, 'synthesis', true);
+
+        return response()->json([
+            'success' => true,
+            'data' => [
+                'id' => $synthesis->id,
+                'synthesis' => $synthesis->synthesis,
+                'insight_model' => $synthesis->insight_model,
+                'generated_at' => $synthesis->created_at?->toIso8601String(),
+            ],
+        ]);
+    }
+
+    /** Step 6: latest AI Development Synthesis™ (empty until first generated). */
+    public function getSynthesis(Request $request, IrrReview $irr, IrrAiService $ai)
+    {
+        $userId = (int) $request->query('user_id');
+        if ($userId < 1 || ! $this->canAccessReview($userId, $irr)) {
+            return $this->forbidden();
+        }
+
+        $latest = $ai->latestSynthesis($irr);
+
+        return response()->json([
+            'success' => true,
+            'data' => [
+                'has_synthesis' => $latest !== null,
+                'synthesis' => $latest?->synthesis,
+                'insight_model' => $latest?->insight_model,
+                'generated_at' => $latest?->created_at?->toIso8601String(),
+                'can_edit' => $this->canEditReview($userId, $irr),
+            ],
+        ]);
+    }
+
+    /**
+     * @return array<string, mixed>
+     */
+    private function synthesisContext(IrrReview $irr, IrrEvidenceService $evidenceService, IrrAiService $ai): array
+    {
+        $latestSnapshot = $irr->evidenceSnapshots()->first();
+        $evidence = $latestSnapshot?->snapshot ?? $evidenceService->buildSnapshot($irr);
+
+        $assessment = $ai->latestAssessment($irr)?->assessment;
+
+        $agreement = IrrConversationAgreement::query()->where('review_id', $irr->id)->first();
+
+        $commitments = $irr->commitments()->get()->map(fn (IrrCommitment $c) => [
+            'title' => $c->title,
+            'description' => $c->description,
+            'priority' => $c->priority,
+            'success_indicator' => $c->success_indicator,
+            'behavioral_driver' => $c->behavioral_driver,
+            'status' => $c->status,
+            'due_date' => $c->due_date?->format('Y-m-d'),
+        ])->values()->all();
+
+        return [
+            'evidence' => $evidence,
+            'assessment' => $assessment,
+            'conversation_notes' => $agreement?->conversation_notes,
+            'commitments' => $commitments,
+        ];
+    }
+
     /** Step 4: shared conversation notes + digital signature status. */
     public function getConversationAgreement(Request $request, IrrReview $irr)
     {

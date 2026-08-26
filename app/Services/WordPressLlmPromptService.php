@@ -27,6 +27,8 @@ class WordPressLlmPromptService
 
     public const SLUG_IRR_ASSESSMENT = 'irr_development_assessment_system';
 
+    public const SLUG_IRR_SYNTHESIS = 'irr_development_synthesis_system';
+
     /**
      * @return array{content: string, id: string, label: string}|null
      */

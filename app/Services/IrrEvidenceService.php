@@ -659,6 +659,46 @@ class IrrEvidenceService
     }
 
     /**
+     * Step 6 Behavioral Growth Summary™ average — the 5 FUSION Behavioral
+     * Drivers™ (not the 6 Readiness Indicator dimensions), server-computed
+     * for the same reason as computeReadinessIndicators(): never let the
+     * LLM produce this number.
+     *
+     * @return array{average_score: ?float, trend_note: ?string}
+     */
+    public function computeBehavioralGrowth(IrrReview $review): array
+    {
+        $scoringBySlug = $this->scoringAveragesBySlug((int) $review->employee_user_id);
+        $driverScores = array_filter(
+            array_map(fn ($slug) => $scoringBySlug[$slug] ?? null, array_keys(self::BEHAVIORAL_DRIVERS)),
+            fn ($v) => $v !== null
+        );
+
+        $average = $driverScores === [] ? null : round(array_sum($driverScores) / count($driverScores), 2);
+
+        $prior = IrrReview::query()
+            ->where('employee_user_id', $review->employee_user_id)
+            ->where('year', (int) $review->year - 1)
+            ->first(['id']);
+
+        $trendNote = null;
+        if ($average !== null && $prior !== null) {
+            $priorSynthesis = \App\Models\IrrAiSynthesis::query()
+                ->where('review_id', $prior->id)
+                ->orderByDesc('id')
+                ->first(['synthesis']);
+            $priorData = is_array($priorSynthesis?->synthesis) ? $priorSynthesis->synthesis : [];
+            $priorAvg = $priorData['behavioral_growth']['average_score'] ?? null;
+            if ($priorAvg !== null) {
+                $diff = round($average - (float) $priorAvg, 2);
+                $trendNote = ($diff >= 0 ? '↑ ' : '↓ ').number_format(abs($diff), 2).' vs last year';
+            }
+        }
+
+        return ['average_score' => $average, 'trend_note' => $trendNote];
+    }
+
+    /**
      * Step 3 Readiness Indicators™ — scores are always computed here, never
      * by the LLM (see CLAUDE.md privacy/scoring principle: "AI tidak pernah
      * menghitung skor"). Maps the six mockup dimensions onto the closest

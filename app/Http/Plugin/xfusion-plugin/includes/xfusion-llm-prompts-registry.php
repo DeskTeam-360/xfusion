@@ -17,6 +17,7 @@ const XFUSION_LLM_PROMPT_SLUG_ARP_READINESS_REVIEW = 'arp_readiness_review_syste
 const XFUSION_LLM_PROMPT_SLUG_QBR_ASSESSMENT = 'qbr_assessment_system';
 const XFUSION_LLM_PROMPT_SLUG_QBR_SYNTHESIS = 'qbr_synthesis_system';
 const XFUSION_LLM_PROMPT_SLUG_IRR_ASSESSMENT = 'irr_development_assessment_system';
+const XFUSION_LLM_PROMPT_SLUG_IRR_SYNTHESIS = 'irr_development_synthesis_system';
 
 /**
  * @return array<string, array{
@@ -111,6 +112,16 @@ function xfusion_llm_prompt_slug_definitions(): array
             'default_files' => array_values(array_filter([
                 $pluginDir . 'prompts/irr_development_assessment_system.md',
                 $repoRoot . '/Xfusion-llm/prompts/irr_development_assessment_system.md',
+            ])),
+        ],
+        XFUSION_LLM_PROMPT_SLUG_IRR_SYNTHESIS => [
+            'title' => __('IRR — AI Development Synthesis (system)', 'xfusion'),
+            'menu_title' => __('IRR Synthesis System', 'xfusion'),
+            'description' => __('System prompt for the IRR Step 6 AI Development Synthesis (via Laravel).', 'xfusion'),
+            'placeholder_hint' => __('Defines the annual_development_summary / behavioral_growth_summary / strength_summary / opportunity_summary / development_roadmap / recommended_focus_areas / executive_coaching_summary JSON output sections. Readiness score and behavioral growth average are computed by Laravel and passed in as context — never generate or alter numeric scores.', 'xfusion'),
+            'default_files' => array_values(array_filter([
+                $pluginDir . 'prompts/irr_development_synthesis_system.md',
+                $repoRoot . '/Xfusion-llm/prompts/irr_development_synthesis_system.md',
             ])),
         ],
     ]);
