@@ -146,7 +146,7 @@ function xfirr_wizard_commitments_init_js(): string
         var items = cache
             .filter(function (c) { return (c.title || '').trim() !== ''; })
             .map(toApi);
-        return window.xirrSaveCommitments(items);
+        return window.xfirrSaveCommitments(items);
     };
 
     window.initCommitmentsStep = function () {
