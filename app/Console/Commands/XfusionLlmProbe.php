@@ -22,6 +22,13 @@ class XfusionLlmProbe extends Command
             return self::FAILURE;
         }
 
+        // Empty-object fields must be sent as stdClass, not []: PHP can't
+        // distinguish an empty array from an empty dict, and json_encode([])
+        // produces JSON `[]`, which FastAPI/Pydantic rejects for a Dict field
+        // (expects `{}`). This tripped up earlier probe runs with 422s that
+        // looked like connectivity failures but weren't.
+        $emptyObject = new \stdClass();
+
         $checks = [
             'one-on-one meeting-brief' => [
                 '/api/v1/one-on-one/meeting-brief',
@@ -29,15 +36,31 @@ class XfusionLlmProbe extends Command
             ],
             'arp readiness-review' => [
                 '/api/v1/arp/readiness-review',
-                ['arp_id' => 1, 'plan_context' => []],
+                ['arp_id' => 1, 'plan_context' => $emptyObject],
             ],
             'qbr assessment' => [
                 '/api/v1/qbr/assessment',
-                ['qbr_id' => 1, 'evidence' => []],
+                ['qbr_id' => 1, 'evidence' => $emptyObject],
             ],
             'qbr synthesis' => [
                 '/api/v1/qbr/synthesis',
-                ['qbr_id' => 1, 'context' => []],
+                ['qbr_id' => 1, 'context' => $emptyObject],
+            ],
+            'irr development-assessment' => [
+                '/api/v1/360/development-assessment',
+                ['review_id' => 1, 'evidence' => $emptyObject, 'readiness_indicators' => $emptyObject],
+            ],
+            'irr development-synthesis' => [
+                '/api/v1/360/development-synthesis',
+                ['review_id' => 1, 'context' => $emptyObject],
+            ],
+            'arr annual-assessment' => [
+                '/api/v1/arr/annual-assessment',
+                ['arr_id' => 1, 'evidence' => $emptyObject, 'readiness_indicators' => $emptyObject],
+            ],
+            'arr strategic-renewal-synthesis' => [
+                '/api/v1/arr/strategic-renewal-synthesis',
+                ['arr_id' => 1, 'context' => $emptyObject],
             ],
         ];
 
