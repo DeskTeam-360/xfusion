@@ -555,6 +555,8 @@ Route::prefix('v1')->middleware('fusion.api')->group(function () {
         Route::post('/{arr}/recommendations', [ArrController::class, 'saveRecommendations']);
         Route::post('/{arr}/synthesis/generate', [ArrController::class, 'generateSynthesis']);
         Route::get('/{arr}/synthesis', [ArrController::class, 'getSynthesis']);
+        Route::post('/{arr}/publish', [ArrController::class, 'publish']);
+        Route::post('/{arr}/archive', [ArrController::class, 'archive']);
         Route::get('/{arr}', [ArrController::class, 'show']);
     };
     Route::prefix('arrs')->group($registerArrRoutes);

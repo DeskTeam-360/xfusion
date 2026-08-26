@@ -27,6 +27,7 @@ require_once __DIR__ . '/arr-assessment-service.php';
 require_once __DIR__ . '/arr-reflection-service.php';
 require_once __DIR__ . '/arr-recommendations-service.php';
 require_once __DIR__ . '/arr-synthesis-service.php';
+require_once __DIR__ . '/arr-publish-service.php';
 require_once __DIR__ . '/arr-save-draft.php';
 require_once __DIR__ . '/core.php';
 require_once __DIR__ . '/steps/step-1-evidence.php';
@@ -115,6 +116,7 @@ function xfusion_arr_wizard_shortcode($atts = []): string
     $reflectionSvcJs      = xfarr_wizard_reflection_service_js();
     $recommendationsSvcJs = xfarr_wizard_recommendations_service_js();
     $synthesisSvcJs       = xfarr_wizard_synthesis_service_js();
+    $publishSvcJs         = xfarr_wizard_publish_service_js();
     $saveDraftJs          = xfarr_wizard_save_draft_js();
 
     $wizardConfig = [
@@ -124,6 +126,7 @@ function xfusion_arr_wizard_shortcode($atts = []): string
         'arrId'        => $arrId,
         'year'         => $year,
         'canEdit'      => $canEdit,
+        'status'       => $status,
         'groupMembers' => $groupMembers,
         'stepProgress' => is_array($arrData['step_progress'] ?? null) ? $arrData['step_progress'] : new stdClass(),
     ];
@@ -212,7 +215,7 @@ echo $panelsJs . "\n\n"
     . $evidenceInitJs . "\n\n" . $dashboardInitJs . "\n\n" . $assessmentInitJs . "\n\n"
     . $reflectionInitJs . "\n\n" . $recommendationsInitJs . "\n\n" . $synthesisInitJs . "\n\n" . $publishInitJs . "\n\n"
     . $evidenceSvcJs . "\n\n" . $assessmentSvcJs . "\n\n" . $reflectionSvcJs . "\n\n"
-    . $recommendationsSvcJs . "\n\n" . $synthesisSvcJs . "\n\n"
+    . $recommendationsSvcJs . "\n\n" . $synthesisSvcJs . "\n\n" . $publishSvcJs . "\n\n"
     . $coreJs . "\n\n"
     . $saveDraftJs;
 ?>

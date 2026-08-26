@@ -650,6 +650,61 @@ class ArrController extends Controller
         ];
     }
 
+    private const PUBLISH_REQUIRED_STEPS = ['evidence', 'assessment', 'reflection', 'recommendations', 'synthesis'];
+
+    /** Step 7: lock the ARR and mark it published. Requires every prior step's progress flag. */
+    public function publish(Request $request, Arr $arr)
+    {
+        $userId = (int) $request->input('user_id');
+        if (! $this->leadableCompanyIds($userId)->contains($arr->company_id)) {
+            return $this->forbidden();
+        }
+
+        if ($arr->status === Arr::STATUS_PUBLISHED) {
+            return response()->json(['success' => false, 'message' => 'This Annual Readiness Review™ is already published.'], 422);
+        }
+
+        $progress = is_array($arr->step_progress) ? $arr->step_progress : [];
+        $missing = array_values(array_filter(self::PUBLISH_REQUIRED_STEPS, fn ($step) => empty($progress[$step])));
+
+        if ($missing !== []) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Complete all steps before publishing. Missing: '.implode(', ', $missing).'.',
+            ], 422);
+        }
+
+        $arr->update([
+            'status' => Arr::STATUS_PUBLISHED,
+            'published_at' => now(),
+        ]);
+
+        return response()->json([
+            'success' => true,
+            'data' => [
+                'status' => $arr->status,
+                'published_at' => $arr->published_at?->toIso8601String(),
+            ],
+        ]);
+    }
+
+    /** Step 7: archive the ARR as a historical record without publishing. Reversible — just a status change. */
+    public function archive(Request $request, Arr $arr)
+    {
+        $userId = (int) $request->input('user_id');
+        if (! $this->leadableCompanyIds($userId)->contains($arr->company_id)) {
+            return $this->forbidden();
+        }
+
+        if ($arr->status === Arr::STATUS_PUBLISHED) {
+            return response()->json(['success' => false, 'message' => 'This Annual Readiness Review™ is already published and cannot be archived.'], 422);
+        }
+
+        $arr->update(['status' => Arr::STATUS_ARCHIVED]);
+
+        return response()->json(['success' => true, 'data' => ['status' => $arr->status]]);
+    }
+
     private function forbidden()
     {
         return response()->json(['success' => false, 'message' => 'You do not have access to this ARR.'], 403);
