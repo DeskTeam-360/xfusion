@@ -7,6 +7,7 @@ use App\Models\Arr;
 use App\Models\ArrAiAssessment;
 use App\Models\ArrAiSynthesis;
 use App\Models\ArrEvidenceSnapshot;
+use App\Models\ArrExecutiveReflection;
 use App\Models\CompanyGroup;
 use App\Models\CompanyGroupDetail;
 use App\Services\ArrAiService;
@@ -403,6 +404,79 @@ class ArrController extends Controller
         $assessment->update(['executive_context' => $context]);
 
         return response()->json(['success' => true]);
+    }
+
+    private const REFLECTION_TEXT_FIELDS = [
+        'organizational_learning',
+        'readiness_progression',
+        'strategic_assumptions',
+        'organizational_barriers',
+        'organizational_strengths',
+        'leadership_effectiveness',
+        'resource_allocation',
+        'future_opportunities',
+        'conversation_notes',
+    ];
+
+    /** Step 4: load the executive reflection (one row per ARR). */
+    public function getReflection(Request $request, Arr $arr)
+    {
+        $userId = (int) $request->query('user_id');
+        if ($userId < 1 || ! $this->memberCompanyIds($userId)->contains($arr->company_id)) {
+            return $this->forbidden();
+        }
+
+        $reflection = ArrExecutiveReflection::query()->where('arr_id', $arr->id)->first();
+
+        return response()->json(['success' => true, 'data' => $reflection ? $this->reflectionPayload($reflection) : null]);
+    }
+
+    /** Step 4: upsert the executive reflection (unique on arr_id). Only the fields sent are updated. */
+    public function saveReflection(Request $request, Arr $arr)
+    {
+        $userId = (int) $request->input('user_id');
+        if (! $this->leadableCompanyIds($userId)->contains($arr->company_id)) {
+            return $this->forbidden();
+        }
+
+        $data = [];
+        foreach (self::REFLECTION_TEXT_FIELDS as $field) {
+            if (! $request->has($field)) {
+                continue;
+            }
+            $value = (string) $request->input($field, '');
+            if (mb_strlen($value) > 4000) {
+                return response()->json(['success' => false, 'message' => "{$field} must be 4000 characters or fewer."], 422);
+            }
+            $data[$field] = $value;
+        }
+
+        if ($data === []) {
+            return response()->json(['success' => false, 'message' => 'No fields to save.'], 422);
+        }
+
+        $data['author_user_id'] = $userId;
+
+        $reflection = ArrExecutiveReflection::query()->updateOrCreate(['arr_id' => $arr->id], $data);
+
+        $this->refreshStepProgress($arr, 'reflection', true);
+
+        return response()->json([
+            'success' => true,
+            'data' => $this->reflectionPayload($reflection),
+            'saved_at' => $reflection->updated_at?->toIso8601String(),
+        ]);
+    }
+
+    private function reflectionPayload(ArrExecutiveReflection $reflection): array
+    {
+        $payload = ['arr_id' => (int) $reflection->arr_id];
+        foreach (self::REFLECTION_TEXT_FIELDS as $field) {
+            $payload[$field] = $reflection->{$field};
+        }
+        $payload['updated_at'] = $reflection->updated_at?->toIso8601String();
+
+        return $payload;
     }
 
     private function assessmentPayload(ArrAiAssessment $assessment): array

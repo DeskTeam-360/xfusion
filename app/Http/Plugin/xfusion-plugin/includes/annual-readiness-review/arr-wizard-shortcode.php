@@ -24,6 +24,8 @@ require_once __DIR__ . '/styles.php';
 require_once __DIR__ . '/arr-picker.php';
 require_once __DIR__ . '/arr-evidence-service.php';
 require_once __DIR__ . '/arr-assessment-service.php';
+require_once __DIR__ . '/arr-reflection-service.php';
+require_once __DIR__ . '/arr-save-draft.php';
 require_once __DIR__ . '/core.php';
 require_once __DIR__ . '/steps/step-1-evidence.php';
 require_once __DIR__ . '/steps/step-2-dashboard.php';
@@ -108,6 +110,8 @@ function xfusion_arr_wizard_shortcode($atts = []): string
     $publishInitJs        = xfarr_wizard_publish_init_js();
     $evidenceSvcJs        = xfarr_wizard_evidence_service_js();
     $assessmentSvcJs      = xfarr_wizard_assessment_service_js();
+    $reflectionSvcJs      = xfarr_wizard_reflection_service_js();
+    $saveDraftJs          = xfarr_wizard_save_draft_js();
 
     $wizardConfig = [
         'ajaxUrl'      => admin_url('admin-ajax.php'),
@@ -119,23 +123,6 @@ function xfusion_arr_wizard_shortcode($atts = []): string
         'groupMembers' => $groupMembers,
         'stepProgress' => is_array($arrData['step_progress'] ?? null) ? $arrData['step_progress'] : new stdClass(),
     ];
-
-    // UI-only prototype: "Save Draft" is a local no-op for now — it just
-    // confirms visually. No Laravel calls are made from any step yet.
-    $saveDraftDispatchJs = <<<'JS'
-window.xarrSaveDraft = function () {
-    var status = document.getElementById('xarr-autosave-status');
-    if (status) {
-        var now = new Date();
-        var time = now.toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' });
-        status.innerHTML = '<span class="xarr-autosave-check" aria-hidden="true">&#10003;</span> Draft autosaved ' + time + ' (UI shell — not yet connected).';
-    }
-};
-['#xarr-save-draft', '#xarr-save-draft-2'].forEach(function (sel) {
-    var btn = document.querySelector(sel);
-    if (btn) btn.addEventListener('click', window.xarrSaveDraft);
-});
-JS;
 
     ob_start();
     ?>
@@ -214,12 +201,15 @@ window.XFARR_WIZARD = <?php echo wp_json_encode($wizardConfig); ?>;
 // isn't defined yet on first paint, the Evidence Sources checklist would
 // silently never populate until the user navigates away and back. Same
 // root-ordering bug fixed in the ARP/QBR/IRR wizards.
+// saveDraftJs must come AFTER coreJs: it reads coreJs's `root`/`current`/
+// `STEPS` vars (all function-scoped `var`s in this same IIFE) to dispatch
+// the Save Draft click to the current step's real save function.
 echo $panelsJs . "\n\n"
     . $evidenceInitJs . "\n\n" . $dashboardInitJs . "\n\n" . $assessmentInitJs . "\n\n"
     . $reflectionInitJs . "\n\n" . $recommendationsInitJs . "\n\n" . $synthesisInitJs . "\n\n" . $publishInitJs . "\n\n"
-    . $evidenceSvcJs . "\n\n" . $assessmentSvcJs . "\n\n"
+    . $evidenceSvcJs . "\n\n" . $assessmentSvcJs . "\n\n" . $reflectionSvcJs . "\n\n"
     . $coreJs . "\n\n"
-    . $saveDraftDispatchJs;
+    . $saveDraftJs;
 ?>
 })();
 </script>

@@ -549,6 +549,8 @@ Route::prefix('v1')->middleware('fusion.api')->group(function () {
         Route::get('/{arr}/assessment', [ArrController::class, 'getAssessment']);
         Route::post('/{arr}/assessment/agreement', [ArrController::class, 'saveAgreement']);
         Route::post('/{arr}/assessment/context', [ArrController::class, 'saveContext']);
+        Route::get('/{arr}/reflection', [ArrController::class, 'getReflection']);
+        Route::post('/{arr}/reflection', [ArrController::class, 'saveReflection']);
         Route::get('/{arr}', [ArrController::class, 'show']);
     };
     Route::prefix('arrs')->group($registerArrRoutes);

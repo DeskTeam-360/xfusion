@@ -69,6 +69,11 @@ class Arr extends Model
         return $this->hasMany(ArrAiAssessment::class, 'arr_id')->orderByDesc('id');
     }
 
+    public function executiveReflection()
+    {
+        return $this->hasOne(ArrExecutiveReflection::class, 'arr_id');
+    }
+
     public function renewalRecommendations()
     {
         return $this->hasMany(ArrRenewalRecommendation::class, 'arr_id')->orderBy('priority_rank');
