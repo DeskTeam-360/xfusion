@@ -329,6 +329,43 @@ class IrrController extends Controller
         ];
     }
 
+    /** Step 7: lock the review and mark it published. */
+    public function publish(Request $request, IrrReview $irr)
+    {
+        $userId = (int) $request->input('user_id');
+        if (! $this->canEditReview($userId, $irr)) {
+            return $this->forbidden();
+        }
+
+        if ($irr->status === IrrReview::STATUS_PUBLISHED) {
+            return response()->json(['success' => false, 'message' => 'This review is already published.'], 422);
+        }
+
+        $progress = is_array($irr->step_progress) ? $irr->step_progress : [];
+        $requiredSteps = ['evidence', 'assessment', 'conversation', 'commitments', 'synthesis'];
+        $missing = array_values(array_filter($requiredSteps, fn ($step) => empty($progress[$step])));
+
+        if ($missing !== []) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Complete all steps before publishing. Missing: '.implode(', ', $missing).'.',
+            ], 422);
+        }
+
+        $irr->update([
+            'status' => IrrReview::STATUS_PUBLISHED,
+            'published_at' => now(),
+        ]);
+
+        return response()->json([
+            'success' => true,
+            'data' => [
+                'status' => $irr->status,
+                'published_at' => $irr->published_at?->toIso8601String(),
+            ],
+        ]);
+    }
+
     /** Step 4: shared conversation notes + digital signature status. */
     public function getConversationAgreement(Request $request, IrrReview $irr)
     {

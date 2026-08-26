@@ -24,6 +24,7 @@ require_once __DIR__ . '/irr-assessment-service.php';
 require_once __DIR__ . '/irr-conversation-service.php';
 require_once __DIR__ . '/irr-commitments-service.php';
 require_once __DIR__ . '/irr-synthesis-service.php';
+require_once __DIR__ . '/irr-publish-service.php';
 require_once __DIR__ . '/irr-save-draft.php';
 require_once __DIR__ . '/core.php';
 require_once __DIR__ . '/steps/step-1-evidence.php';
@@ -111,6 +112,7 @@ function xfusion_irr_wizard_shortcode($atts = []): string
     $conversationSvcJs = xfirr_wizard_conversation_service_js();
     $commitmentsSvcJs  = xfirr_wizard_commitments_service_js();
     $synthesisSvcJs    = xfirr_wizard_synthesis_service_js();
+    $publishSvcJs      = xfirr_wizard_publish_service_js();
     $saveDraftJs       = xfirr_wizard_save_draft_js();
 
     $wizardConfig = [
@@ -192,7 +194,7 @@ window.XFIRR_WIZARD = <?php echo wp_json_encode($wizardConfig); ?>;
 echo $panelsJs . "\n\n"
     . $evidenceInitJs . "\n\n" . $evidenceReviewInitJs . "\n\n" . $assessmentInitJs . "\n\n"
     . $conversationInitJs . "\n\n" . $commitmentsInitJs . "\n\n" . $synthesisInitJs . "\n\n" . $publishInitJs . "\n\n"
-    . $evidenceSvcJs . "\n\n" . $assessmentSvcJs . "\n\n" . $conversationSvcJs . "\n\n" . $commitmentsSvcJs . "\n\n" . $synthesisSvcJs . "\n\n"
+    . $evidenceSvcJs . "\n\n" . $assessmentSvcJs . "\n\n" . $conversationSvcJs . "\n\n" . $commitmentsSvcJs . "\n\n" . $synthesisSvcJs . "\n\n" . $publishSvcJs . "\n\n"
     // coreJs must come BEFORE saveDraftJs: coreJs assigns
     // `var root = document.getElementById('xfirr-wiz')`, and saveDraftJs's
     // bottom block calls root.querySelector(...) immediately at parse
