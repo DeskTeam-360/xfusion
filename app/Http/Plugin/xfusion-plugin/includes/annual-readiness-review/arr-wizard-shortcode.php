@@ -22,6 +22,7 @@ if (! defined('ABSPATH')) {
 
 require_once __DIR__ . '/styles.php';
 require_once __DIR__ . '/arr-picker.php';
+require_once __DIR__ . '/arr-evidence-service.php';
 require_once __DIR__ . '/core.php';
 require_once __DIR__ . '/steps/step-1-evidence.php';
 require_once __DIR__ . '/steps/step-2-dashboard.php';
@@ -104,9 +105,11 @@ function xfusion_arr_wizard_shortcode($atts = []): string
     $recommendationsInitJs = xfarr_wizard_recommendations_init_js();
     $synthesisInitJs      = xfarr_wizard_synthesis_init_js();
     $publishInitJs        = xfarr_wizard_publish_init_js();
+    $evidenceSvcJs        = xfarr_wizard_evidence_service_js();
 
     $wizardConfig = [
         'ajaxUrl'      => admin_url('admin-ajax.php'),
+        'nonce'        => wp_create_nonce('xfarr_wizard'),
         'userId'       => get_current_user_id(),
         'arrId'        => $arrId,
         'canEdit'      => $canEdit,
@@ -202,9 +205,17 @@ JS;
 (function () {
 window.XFARR_WIZARD = <?php echo wp_json_encode($wizardConfig); ?>;
 <?php
-echo $panelsJs . "\n\n" . $coreJs . "\n\n"
+// coreJs must come AFTER every *InitJs/*SvcJs chunk: coreJs's initial
+// window.xarrBootWizard(false) call renders Step 1 synchronously, which
+// calls window.initEvidenceStep() (defined in evidenceInitJs) — if that
+// isn't defined yet on first paint, the Evidence Sources checklist would
+// silently never populate until the user navigates away and back. Same
+// root-ordering bug fixed in the ARP/QBR/IRR wizards.
+echo $panelsJs . "\n\n"
     . $evidenceInitJs . "\n\n" . $dashboardInitJs . "\n\n" . $assessmentInitJs . "\n\n"
     . $reflectionInitJs . "\n\n" . $recommendationsInitJs . "\n\n" . $synthesisInitJs . "\n\n" . $publishInitJs . "\n\n"
+    . $evidenceSvcJs . "\n\n"
+    . $coreJs . "\n\n"
     . $saveDraftDispatchJs;
 ?>
 })();

@@ -297,6 +297,8 @@ table.xarr-table.xarr-table-gaps .xarr-gap-priority{width:12%;white-space:nowrap
 .xarr-evidence-status{margin-left:auto;font-size:14px;font-weight:600;white-space:nowrap;display:flex;align-items:center;gap:.35rem}
 .xarr-evidence-status.ok{color:var(--green)}
 .xarr-evidence-status.pending{color:var(--muted)}
+.xarr-evidence-status.soon{color:#a8a29e;font-style:italic;font-weight:500}
+.xarr-evidence-row-soon{opacity:.6}
 
 /* Metric cards (Step 2) */
 .xarr-metric-grid{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:1rem;margin-bottom:1rem}

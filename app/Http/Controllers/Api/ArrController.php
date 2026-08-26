@@ -5,8 +5,10 @@ namespace App\Http\Controllers\Api;
 use App\Http\Controllers\Controller;
 use App\Models\Arr;
 use App\Models\ArrAiSynthesis;
+use App\Models\ArrEvidenceSnapshot;
 use App\Models\CompanyGroup;
 use App\Models\CompanyGroupDetail;
+use App\Services\ArrEvidenceService;
 use App\Services\OneOnOneCompanyGroupSyncService;
 use Illuminate\Http\Request;
 
@@ -254,6 +256,68 @@ class ArrController extends Controller
             ->values();
 
         return response()->json(['success' => true, 'data' => $members]);
+    }
+
+    /** Step 1: build and persist annual organization-wide evidence snapshot. */
+    public function generateEvidence(Request $request, Arr $arr, ArrEvidenceService $evidenceService)
+    {
+        $userId = (int) $request->input('user_id');
+        if (! $this->leadableCompanyIds($userId)->contains($arr->company_id)) {
+            return $this->forbidden();
+        }
+
+        $snapshot = $evidenceService->buildSnapshot($arr);
+        $row = ArrEvidenceSnapshot::create([
+            'arr_id' => $arr->id,
+            'snapshot' => $snapshot,
+            'captured_at' => now(),
+        ]);
+
+        $this->refreshStepProgress($arr, 'evidence', true);
+
+        return response()->json([
+            'success' => true,
+            'data' => $snapshot,
+            'captured_at' => $row->captured_at?->toIso8601String(),
+        ]);
+    }
+
+    /** Step 2: latest evidence snapshot; auto-build on first view if none exists. */
+    public function getEvidence(Request $request, Arr $arr, ArrEvidenceService $evidenceService)
+    {
+        $userId = (int) $request->query('user_id');
+        if ($userId < 1 || ! $this->memberCompanyIds($userId)->contains($arr->company_id)) {
+            return $this->forbidden();
+        }
+
+        $latest = $arr->evidenceSnapshots()->first();
+        if ($latest === null) {
+            $snapshot = $evidenceService->buildSnapshot($arr);
+            $latest = ArrEvidenceSnapshot::create([
+                'arr_id' => $arr->id,
+                'snapshot' => $snapshot,
+                'captured_at' => now(),
+            ]);
+            $this->refreshStepProgress($arr, 'evidence', true);
+        }
+
+        return response()->json([
+            'success' => true,
+            'data' => $latest->snapshot,
+            'captured_at' => $latest->captured_at?->toIso8601String(),
+        ]);
+    }
+
+    private function forbidden()
+    {
+        return response()->json(['success' => false, 'message' => 'You do not have access to this ARR.'], 403);
+    }
+
+    private function refreshStepProgress(Arr $arr, string $step, bool $complete): void
+    {
+        $progress = is_array($arr->step_progress) ? $arr->step_progress : [];
+        $progress[$step] = $complete;
+        $arr->update(['step_progress' => $progress]);
     }
 
     /** Company ids where the user leads at least one group. */
