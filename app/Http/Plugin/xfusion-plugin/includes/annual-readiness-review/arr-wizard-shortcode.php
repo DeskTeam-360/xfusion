@@ -25,6 +25,8 @@ require_once __DIR__ . '/arr-picker.php';
 require_once __DIR__ . '/arr-evidence-service.php';
 require_once __DIR__ . '/arr-assessment-service.php';
 require_once __DIR__ . '/arr-reflection-service.php';
+require_once __DIR__ . '/arr-recommendations-service.php';
+require_once __DIR__ . '/arr-synthesis-service.php';
 require_once __DIR__ . '/arr-save-draft.php';
 require_once __DIR__ . '/core.php';
 require_once __DIR__ . '/steps/step-1-evidence.php';
@@ -111,6 +113,8 @@ function xfusion_arr_wizard_shortcode($atts = []): string
     $evidenceSvcJs        = xfarr_wizard_evidence_service_js();
     $assessmentSvcJs      = xfarr_wizard_assessment_service_js();
     $reflectionSvcJs      = xfarr_wizard_reflection_service_js();
+    $recommendationsSvcJs = xfarr_wizard_recommendations_service_js();
+    $synthesisSvcJs       = xfarr_wizard_synthesis_service_js();
     $saveDraftJs          = xfarr_wizard_save_draft_js();
 
     $wizardConfig = [
@@ -208,6 +212,7 @@ echo $panelsJs . "\n\n"
     . $evidenceInitJs . "\n\n" . $dashboardInitJs . "\n\n" . $assessmentInitJs . "\n\n"
     . $reflectionInitJs . "\n\n" . $recommendationsInitJs . "\n\n" . $synthesisInitJs . "\n\n" . $publishInitJs . "\n\n"
     . $evidenceSvcJs . "\n\n" . $assessmentSvcJs . "\n\n" . $reflectionSvcJs . "\n\n"
+    . $recommendationsSvcJs . "\n\n" . $synthesisSvcJs . "\n\n"
     . $coreJs . "\n\n"
     . $saveDraftJs;
 ?>

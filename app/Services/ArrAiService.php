@@ -4,6 +4,7 @@ namespace App\Services;
 
 use App\Models\Arr;
 use App\Models\ArrAiAssessment;
+use App\Models\ArrAiSynthesis;
 use Illuminate\Http\Client\RequestException;
 use Illuminate\Support\Facades\Log;
 
@@ -85,6 +86,63 @@ class ArrAiService
             ]);
         } catch (\Throwable $e) {
             $this->recordFailure($e, '/api/v1/arr/annual-assessment', (int) $arr->id);
+
+            return null;
+        }
+    }
+
+    public function latestSynthesis(Arr $arr): ?ArrAiSynthesis
+    {
+        return ArrAiSynthesis::query()->where('arr_id', $arr->id)->orderByDesc('id')->first();
+    }
+
+    /**
+     * Step 6 — AI Strategic Renewal Synthesis™. Always appends a new row.
+     *
+     * @param  array<string, mixed>  $context  evidence, assessment, executive_reflection, recommendations
+     */
+    public function generateSynthesis(Arr $arr, array $context): ?ArrAiSynthesis
+    {
+        $this->lastError = null;
+
+        if (! $this->isConfigured()) {
+            $this->lastError = 'XFUSION_LLM_API_URL / XFUSION_LLM_API_KEY are not configured in Laravel .env.';
+
+            return null;
+        }
+
+        $systemPrompt = app(WordPressLlmPromptService::class)->getActivePrompt(WordPressLlmPromptService::SLUG_ARR_SYNTHESIS);
+
+        try {
+            $body = $this->client()
+                ->post('/api/v1/arr/strategic-renewal-synthesis', array_filter([
+                    'arr_id' => $arr->id,
+                    'context' => $context,
+                    'system_prompt' => $systemPrompt['content'] ?? null,
+                    'prompt_version_id' => $systemPrompt['id'] ?? null,
+                    'prompt_version_label' => $systemPrompt['label'] ?? null,
+                ], static fn ($v) => $v !== null && $v !== ''))
+                ->throw()
+                ->json();
+
+            $synthesisPayload = $body['synthesis'] ?? $body;
+            if (! is_array($synthesisPayload)) {
+                $this->lastError = 'LLM returned an invalid synthesis payload.';
+
+                return null;
+            }
+
+            return ArrAiSynthesis::create([
+                'arr_id' => $arr->id,
+                'synthesis' => $synthesisPayload,
+                'insight_model' => $body['model'] ?? null,
+                'tokens_used' => (int) ($body['tokens_used'] ?? 0),
+                'cost_usd' => (float) ($body['cost_usd'] ?? 0),
+                'prompt_version_id' => $systemPrompt['id'] ?? null,
+                'prompt_version_label' => $systemPrompt['label'] ?? null,
+            ]);
+        } catch (\Throwable $e) {
+            $this->recordFailure($e, '/api/v1/arr/strategic-renewal-synthesis', (int) $arr->id);
 
             return null;
         }

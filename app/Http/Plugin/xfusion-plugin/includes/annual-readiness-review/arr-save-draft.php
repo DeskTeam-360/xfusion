@@ -50,6 +50,10 @@ window.xarrSaveDraft = function () {
         saveFn = window.xarrSaveReflectionStep;
     }
 
+    if (stepKey === 'recommendations' && typeof window.xarrSaveRecommendationsStep === 'function') {
+        saveFn = window.xarrSaveRecommendationsStep;
+    }
+
     if (!saveFn) {
         xarrUpdateAutosaveLabel('Save Draft is not available for this step yet.', false);
         return Promise.resolve();

@@ -19,6 +19,7 @@ const XFUSION_LLM_PROMPT_SLUG_QBR_SYNTHESIS = 'qbr_synthesis_system';
 const XFUSION_LLM_PROMPT_SLUG_IRR_ASSESSMENT = 'irr_development_assessment_system';
 const XFUSION_LLM_PROMPT_SLUG_IRR_SYNTHESIS = 'irr_development_synthesis_system';
 const XFUSION_LLM_PROMPT_SLUG_ARR_ASSESSMENT = 'arr_annual_assessment_system';
+const XFUSION_LLM_PROMPT_SLUG_ARR_SYNTHESIS = 'arr_strategic_renewal_synthesis_system';
 
 /**
  * @return array<string, array{
@@ -133,6 +134,16 @@ function xfusion_llm_prompt_slug_definitions(): array
             'default_files' => array_values(array_filter([
                 $pluginDir . 'prompts/arr_annual_assessment_system.md',
                 $repoRoot . '/Xfusion-llm/prompts/arr_annual_assessment_system.md',
+            ])),
+        ],
+        XFUSION_LLM_PROMPT_SLUG_ARR_SYNTHESIS => [
+            'title' => __('ARR — AI Strategic Renewal Synthesis (system)', 'xfusion'),
+            'menu_title' => __('ARR Synthesis System', 'xfusion'),
+            'description' => __('System prompt for POST /api/v1/arr/strategic-renewal-synthesis (ARR Step 6, via Laravel).', 'xfusion'),
+            'placeholder_hint' => __('Defines the annual_organizational_learning_summary / readiness_progress_summary / behavioral_intelligence_summary / leadership_intelligence_summary / strategic_intelligence_summary / strategic_renewal_summary / recommended_future_focus / executive_summary JSON output sections. Synthesizes evidence, the Step 3 assessment, the Step 4 executive reflection, and the Step 5 recommendations — never generate or alter any numeric score.', 'xfusion'),
+            'default_files' => array_values(array_filter([
+                $pluginDir . 'prompts/arr_strategic_renewal_synthesis_system.md',
+                $repoRoot . '/Xfusion-llm/prompts/arr_strategic_renewal_synthesis_system.md',
             ])),
         ],
     ]);

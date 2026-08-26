@@ -8,12 +8,15 @@ use App\Models\ArrAiAssessment;
 use App\Models\ArrAiSynthesis;
 use App\Models\ArrEvidenceSnapshot;
 use App\Models\ArrExecutiveReflection;
+use App\Models\ArrRenewalRecommendation;
 use App\Models\CompanyGroup;
 use App\Models\CompanyGroupDetail;
+use App\Models\User;
 use App\Services\ArrAiService;
 use App\Services\ArrEvidenceService;
 use App\Services\OneOnOneCompanyGroupSyncService;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
 
 /**
  * ARR picker bridge for the WordPress [fusion_arr_wizard] shortcode.
@@ -477,6 +480,163 @@ class ArrController extends Controller
         $payload['updated_at'] = $reflection->updated_at?->toIso8601String();
 
         return $payload;
+    }
+
+    /** Step 5: Strategic Renewal Recommendations™, ordered by priority_rank. */
+    public function getRecommendations(Request $request, Arr $arr)
+    {
+        $userId = (int) $request->query('user_id');
+        if ($userId < 1 || ! $this->memberCompanyIds($userId)->contains($arr->company_id)) {
+            return $this->forbidden();
+        }
+
+        return response()->json([
+            'success' => true,
+            'data' => $arr->renewalRecommendations()->get()->map(fn (ArrRenewalRecommendation $r) => $this->recommendationPayload($r))->values(),
+        ]);
+    }
+
+    /** Step 5 save — replace-all semantics, same pattern as IRR/QBR/ARP commitments. No hard cap: starts at 1, can grow. */
+    public function saveRecommendations(Request $request, Arr $arr)
+    {
+        $userId = (int) $request->input('user_id');
+        if (! $this->leadableCompanyIds($userId)->contains($arr->company_id)) {
+            return $this->forbidden();
+        }
+
+        $data = $request->validate([
+            'items' => 'present|array|max:50',
+            'items.*.title' => 'nullable|string|max:255',
+            'items.*.description' => 'nullable|string',
+            'items.*.priority' => 'nullable|in:high,medium,low',
+            'items.*.executive_owner_user_id' => 'nullable|integer',
+            'items.*.cor_capability' => 'nullable|in:alignment,accountability,communication,leadership,execution',
+            'items.*.behavioral_driver' => 'nullable|in:get_real,fill_buckets,be_intentional,foster_grit,drive_growth',
+            'items.*.expected_organizational_impact' => 'nullable|string',
+            'items.*.recommended_timeline' => 'nullable|in:q1,q2,q3,q4,fy,multi_year',
+            'items.*.status' => 'nullable|in:proposed,accepted,rejected,carried_to_arp',
+        ]);
+
+        DB::transaction(function () use ($arr, $data) {
+            ArrRenewalRecommendation::where('arr_id', $arr->id)->delete();
+            foreach (array_values($data['items']) as $index => $item) {
+                $ownerId = filter_var($item['executive_owner_user_id'] ?? null, FILTER_VALIDATE_INT);
+                ArrRenewalRecommendation::create([
+                    'arr_id' => $arr->id,
+                    'title' => $item['title'] ?? '',
+                    'description' => $item['description'] ?? null,
+                    'priority' => $item['priority'] ?? 'medium',
+                    'executive_owner_user_id' => $ownerId !== false ? $ownerId : null,
+                    'cor_capability' => $item['cor_capability'] ?? null,
+                    'behavioral_driver' => $item['behavioral_driver'] ?? null,
+                    'expected_organizational_impact' => $item['expected_organizational_impact'] ?? null,
+                    'recommended_timeline' => $item['recommended_timeline'] ?? null,
+                    'status' => $item['status'] ?? 'proposed',
+                    'priority_rank' => $index,
+                ]);
+            }
+        });
+
+        $this->refreshStepProgress($arr, 'recommendations', true);
+
+        return response()->json([
+            'success' => true,
+            'data' => $arr->renewalRecommendations()->get()->map(fn (ArrRenewalRecommendation $r) => $this->recommendationPayload($r))->values(),
+            'saved_at' => now()->toIso8601String(),
+        ]);
+    }
+
+    private function recommendationPayload(ArrRenewalRecommendation $r): array
+    {
+        return [
+            'id' => $r->id,
+            'title' => $r->title,
+            'description' => $r->description,
+            'priority' => $r->priority,
+            'executive_owner_user_id' => $r->executive_owner_user_id,
+            'cor_capability' => $r->cor_capability,
+            'behavioral_driver' => $r->behavioral_driver,
+            'expected_organizational_impact' => $r->expected_organizational_impact,
+            'recommended_timeline' => $r->recommended_timeline,
+            'status' => $r->status,
+            'priority_rank' => $r->priority_rank,
+        ];
+    }
+
+    /** Step 6: generate a new AI Strategic Renewal Synthesis™ (always appends a new row). */
+    public function generateSynthesis(Request $request, Arr $arr, ArrEvidenceService $evidenceService, ArrAiService $aiService)
+    {
+        $userId = (int) $request->input('user_id');
+        if (! $this->leadableCompanyIds($userId)->contains($arr->company_id)) {
+            return $this->forbidden();
+        }
+
+        $context = $this->synthesisContext($arr, $evidenceService, $aiService);
+
+        $synthesis = $aiService->generateSynthesis($arr, $context);
+        if ($synthesis === null) {
+            return response()->json(['success' => false, 'message' => $aiService->getLastError() ?? 'Failed to generate synthesis.'], 502);
+        }
+
+        $this->refreshStepProgress($arr, 'synthesis', true);
+
+        return response()->json([
+            'success' => true,
+            'data' => [
+                'synthesis' => $synthesis->synthesis,
+                'insight_model' => $synthesis->insight_model,
+                'generated_at' => $synthesis->created_at?->toIso8601String(),
+            ],
+        ]);
+    }
+
+    /** Step 6: latest AI Strategic Renewal Synthesis™ (empty until first generated). */
+    public function getSynthesis(Request $request, Arr $arr, ArrAiService $aiService)
+    {
+        $userId = (int) $request->query('user_id');
+        if ($userId < 1 || ! $this->memberCompanyIds($userId)->contains($arr->company_id)) {
+            return $this->forbidden();
+        }
+
+        $latest = $aiService->latestSynthesis($arr);
+
+        return response()->json([
+            'success' => true,
+            'data' => [
+                'has_synthesis' => $latest !== null,
+                'synthesis' => $latest?->synthesis,
+                'insight_model' => $latest?->insight_model,
+                'generated_at' => $latest?->created_at?->toIso8601String(),
+                'can_edit' => $this->leadableCompanyIds($userId)->contains($arr->company_id),
+            ],
+        ]);
+    }
+
+    /** @return array<string, mixed> */
+    private function synthesisContext(Arr $arr, ArrEvidenceService $evidenceService, ArrAiService $aiService): array
+    {
+        $evidence = $arr->evidenceSnapshots()->first()?->snapshot ?? $evidenceService->buildSnapshot($arr);
+        $assessment = $aiService->latestAssessment($arr)?->assessment;
+        $reflection = ArrExecutiveReflection::query()->where('arr_id', $arr->id)->first();
+
+        $recommendations = $arr->renewalRecommendations()->get()->map(fn (ArrRenewalRecommendation $r) => [
+            'title' => $r->title,
+            'description' => $r->description,
+            'priority' => $r->priority,
+            'executive_owner_name' => optional(User::find($r->executive_owner_user_id))->display_name,
+            'cor_capability' => $r->cor_capability,
+            'behavioral_driver' => $r->behavioral_driver,
+            'expected_organizational_impact' => $r->expected_organizational_impact,
+            'recommended_timeline' => $r->recommended_timeline,
+            'status' => $r->status,
+        ])->values()->all();
+
+        return [
+            'evidence' => $evidence,
+            'assessment' => $assessment,
+            'executive_reflection' => $reflection ? $this->reflectionPayload($reflection) : null,
+            'recommendations' => $recommendations,
+        ];
     }
 
     private function assessmentPayload(ArrAiAssessment $assessment): array
