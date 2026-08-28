@@ -260,6 +260,18 @@ if (root) {
             }
             return 'Please complete your preparation before continuing.';
         }
+        if (stepKey === 'brief') {
+            return 'Please generate the AI Meeting Brief™ before continuing.';
+        }
+        if (stepKey === 'conversation') {
+            return 'Please add your conversation notes before continuing.';
+        }
+        if (stepKey === 'commitments') {
+            return 'Please add at least one commitment before continuing.';
+        }
+        if (stepKey === 'synthesis') {
+            return 'Please generate the AI Meeting Synthesis™ before completing the meeting.';
+        }
         return 'Please complete this step before continuing.';
     };
 
