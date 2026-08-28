@@ -566,21 +566,33 @@ if (root) {
 
     var goTo = function (i) {
         var target = Math.max(0, Math.min(STEPS.length - 1, i));
+        var leavingKey = STEPS[current].key;
+        var isNewGround = target > current && target > furthestStepIndex;
 
-        if (target > current && target > furthestStepIndex) {
-            if (target > current + 1) {
-                // Can't skip over steps that haven't been reached yet.
-                return;
-            }
-            var leavingKey = STEPS[current].key;
+        // Preparation is re-checked every time it's left forward, even if
+        // this conversation's furthestStepIndex already sits past it - that
+        // stored value can be stale (e.g. reached under an older, looser
+        // rule, or the other party's submission genuinely didn't exist yet
+        // when it was first unlocked). Its completeness depends on another
+        // person's action and must never be trusted as permanently settled.
+        var mustRecheck = isNewGround || (target > current && leavingKey === 'preparation');
+
+        if (isNewGround && target > current + 1) {
+            // Can't skip over steps that haven't been reached yet.
+            return;
+        }
+
+        if (mustRecheck) {
             xfwShowStepMessage('Checking…', false);
             xfwCheckStepComplete(leavingKey).then(function (ok) {
                 if (!ok) {
                     xfwShowStepMessage(xfwStepBlockedMessage(leavingKey), true);
                     return;
                 }
-                furthestStepIndex = Math.max(furthestStepIndex, target);
-                xfwPersistFurthestStep(target);
+                if (isNewGround) {
+                    furthestStepIndex = Math.max(furthestStepIndex, target);
+                    xfwPersistFurthestStep(target);
+                }
                 xfwCommitGoTo(target);
             });
             return;
