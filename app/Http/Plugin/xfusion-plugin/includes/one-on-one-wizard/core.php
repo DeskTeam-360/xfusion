@@ -345,14 +345,14 @@ if (root) {
 
     var xfwSidebarAboutCard = function (cfg) {
         return '<div class="xfw-card">' +
-            '<h4>About This Step</h4>' +
-            '<div class="xfw-about-step">' +
-            '<img class="xfw-about-step-icon" src="' + cfg.aboutIcon + '" alt="" width="40" height="40">' +
+            '<h4 class="xfw-about-step-heading">' +
+            '<img class="xfw-about-step-icon" src="' + cfg.aboutIcon + '" alt="" width="28" height="28">' +
+            '<span>About This Step</span></h4>' +
             '<div class="xfw-about-step-body">' +
             cfg.about.map(function (p) {
                 return '<p class="xfw-muted">' + p + '</p>';
             }).join('') +
-            '</div></div></div>';
+            '</div></div>';
     };
 
     var xfwSidebarProgressCard = function () {
@@ -409,12 +409,30 @@ if (root) {
             '</div></div>';
     };
 
+    // Real lookup (Laravel resolves the next non-cancelled conversation in
+    // this pairing scheduled/held after the current one) - not the current
+    // meeting's own date relabeled as "next", and not a dead "#" link.
     var xfwSidebarNextCard = function (cfg) {
-        var dateEl = root.querySelector('#xfw-si-date');
-        var dateText = (dateEl && dateEl.textContent && dateEl.textContent !== '—') ? dateEl.textContent : 'your next meeting';
-        var lines = (cfg.nextText || []).map(function (t) {
-            return '<p class="xfw-muted">' + t.replace('{date}', dateText) + '</p>';
-        }).join('');
+        var next = (window.xfwDraftCache && window.xfwDraftCache.data) ? window.xfwDraftCache.data.next_conversation : null;
+        var body;
+        if (next && next.scheduled_at) {
+            var d = new Date(next.scheduled_at);
+            var dateText = isNaN(d.getTime()) ? 'an upcoming date' : d.toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: 'numeric' });
+            var lines = (cfg.nextText || []).map(function (t) {
+                return '<p class="xfw-muted">' + t.replace('{date}', dateText) + '</p>';
+            }).join('');
+            var url;
+            try {
+                url = new URL(window.location.href);
+                url.searchParams.set('conversation_id', String(next.id));
+                url = url.toString();
+            } catch (e) {
+                url = '#';
+            }
+            body = lines + '<a href="' + url + '" class="xfw-link">' + (cfg.nextLink || 'View Upcoming Meeting') + ' &rarr;</a>';
+        } else {
+            body = '<p class="xfw-muted">No upcoming 1-on-1 is scheduled yet. Your open commitments will still carry forward as evidence whenever the next meeting is set up.</p>';
+        }
         return '<div class="xfw-card">' +
             '<h4>What\'s Next?</h4>' +
             '<div class="xfw-help-card">' +
@@ -422,8 +440,7 @@ if (root) {
             '<svg viewBox="0 0 24 24" width="40" height="40" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">' +
             '<path d="M21 12a9 9 0 1 1-2.6-6.4"/><polyline points="21 3 21 9 15 9"/></svg>' +
             '</div>' +
-            '<div class="xfw-help-body">' + lines +
-            '<a href="#" class="xfw-link">' + (cfg.nextLink || 'View Upcoming Meeting') + ' &rarr;</a>' +
+            '<div class="xfw-help-body">' + body +
             '</div></div></div>';
     };
 
@@ -443,6 +460,13 @@ if (root) {
         } else if (cfg.middle === 'progress-first') {
             html += xfwSidebarProgressCard();
             html += xfwSidebarNextCard(cfg);
+            if (!(window.xfwDraftCache && window.xfwDraftCache.loaded) && typeof loadWizardDraft === 'function') {
+                loadWizardDraft().then(function () {
+                    if (STEPS[current] && SIDEBAR[current] && SIDEBAR[current].middle === 'progress-first') {
+                        renderSidebar();
+                    }
+                });
+            }
         } else {
             html += xfwSidebarProgressCard();
             html += xfwSidebarHelpCard(cfg);

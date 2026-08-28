@@ -51,6 +51,7 @@ function xfoo_wizard_load_draft_data(int $conversationId, string $scope = 'wizar
         'conversation' => is_array($data['conversation'] ?? null) ? $data['conversation'] : [],
         'your_role' => in_array($role, ['employee', 'leader'], true) ? $role : null,
         'last_step' => isset($data['last_step']) ? sanitize_key((string) $data['last_step']) : null,
+        'next_conversation' => is_array($data['next_conversation'] ?? null) ? $data['next_conversation'] : null,
     ];
 }
 

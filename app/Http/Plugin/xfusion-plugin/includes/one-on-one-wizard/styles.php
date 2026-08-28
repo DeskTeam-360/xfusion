@@ -62,8 +62,9 @@ function xfoo_wizard_styles_css(): string
 .xfw-card{background:#fff;border:1px solid var(--border);border-radius:.5rem;padding:1.1rem 1.25rem;margin-bottom:1rem}
 .xfw-card h4{margin:0 0 .6rem;text-transform:uppercase;letter-spacing:.04em;color:var(--navy);font-weight:500}
 .xfw-card h3{margin:0 0 .4rem;font-size:.95rem;color:var(--navy)}
-.xfw-about-step,.xfw-help-card{display:flex;gap:.85rem;align-items:flex-start}
-.xfw-about-step-icon{width:50px;height:50px;flex-shrink:0;display:block;object-fit:contain;margin-top:.15rem}
+.xfw-help-card{display:flex;gap:.85rem;align-items:flex-start}
+.xfw-about-step-heading{display:flex;align-items:center;gap:.5rem}
+.xfw-about-step-icon{width:22px;height:22px;flex-shrink:0;display:block;object-fit:contain}
 .xfw-about-step-body,.xfw-help-body{min-width:0;flex:1}
 .xfw-about-step-body .xfw-muted{margin:0 0 .65rem}
 .xfw-about-step-body .xfw-muted:last-child{margin-bottom:0}

@@ -546,12 +546,34 @@ class OneOnOneController extends Controller
             }
         }
 
+        $nextConversation = null;
+        if ($pair !== null) {
+            $afterDate = $conversation->scheduled_at ?? $conversation->held_at ?? now();
+            $next = $pair->conversations()
+                ->where('id', '!=', $conversation->id)
+                ->whereNotIn('status', [OneOnOneConversation::STATUS_CANCELLED])
+                ->where(function ($q) use ($afterDate) {
+                    $q->where('scheduled_at', '>', $afterDate)
+                        ->orWhere('held_at', '>', $afterDate);
+                })
+                ->orderBy('scheduled_at')
+                ->first(['id', 'scheduled_at']);
+
+            if ($next !== null) {
+                $nextConversation = [
+                    'id' => $next->id,
+                    'scheduled_at' => $next->scheduled_at?->toIso8601String(),
+                ];
+            }
+        }
+
         return response()->json([
             'success' => true,
             'data' => array_merge($payload, [
                 'conversation_id' => $conversation->id,
                 'your_role' => $yourRole,
                 'last_step' => $conversation->last_step,
+                'next_conversation' => $nextConversation,
             ]),
         ]);
     }

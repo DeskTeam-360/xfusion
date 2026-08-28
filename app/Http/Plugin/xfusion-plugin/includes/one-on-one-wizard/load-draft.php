@@ -37,6 +37,7 @@ function xfoo_wizard_ajax_load_draft(): void
         'conversation' => $data['conversation'],
         'your_role' => $data['your_role'],
         'last_step' => $data['last_step'],
+        'next_conversation' => $data['next_conversation'] ?? null,
     ]);
 }
 
