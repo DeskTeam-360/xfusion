@@ -289,7 +289,16 @@ if (root) {
         if (!key || typeof window.xfwSaveWizardStep !== 'function') {
             return;
         }
-        window.xfwSaveWizardStep(key);
+        // Surface a failure instead of swallowing it silently - a save that
+        // never actually reaches the server (missing DB column, stale
+        // deploy, auth issue) previously looked identical to success, and
+        // reopening the wizard always fell back to Step 1 with no clue why.
+        window.xfwSaveWizardStep(key).then(function (json) {
+            if (!json || !json.success) {
+                var msg = (json && json.message) ? json.message : 'Could not save your progress — you may resume at Step 1 next time.';
+                xfwShowStepMessage(msg, true);
+            }
+        });
     };
 
     // Called once per conversation after its wizard draft loads (see
