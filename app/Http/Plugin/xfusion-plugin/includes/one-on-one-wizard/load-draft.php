@@ -36,7 +36,32 @@ function xfoo_wizard_ajax_load_draft(): void
         'leader' => $data['leader'],
         'conversation' => $data['conversation'],
         'your_role' => $data['your_role'],
+        'last_step' => $data['last_step'],
     ]);
+}
+
+add_action('wp_ajax_xfoo_wizard_save_step', 'xfoo_wizard_ajax_save_step');
+
+function xfoo_wizard_ajax_save_step(): void
+{
+    check_ajax_referer('xfoo_wizard_save_draft', 'nonce');
+
+    if (! is_user_logged_in()) {
+        wp_send_json_error(['message' => 'Unauthorized.'], 401);
+    }
+
+    $conversationId = isset($_POST['conversation_id']) ? absint($_POST['conversation_id']) : 0;
+    $step = isset($_POST['step']) ? sanitize_key(wp_unslash($_POST['step'])) : '';
+    if ($conversationId < 1 || $step === '') {
+        wp_send_json_error(['message' => 'conversation_id and step are required.'], 422);
+    }
+
+    $result = xfoo_wizard_save_step_to_laravel($conversationId, $step);
+    if (is_wp_error($result)) {
+        wp_send_json_error(['message' => $result->get_error_message()], 422);
+    }
+
+    wp_send_json_success(['last_step' => $step]);
 }
 
 /**
@@ -224,6 +249,24 @@ var applyDraftForCurrentStep = function () {
 
 window.xfwOnDraftLoaded = function () {
     applyDraftForCurrentStep();
+    if (typeof window.xfwResumeToLastStep === 'function' && window.xfwDraftCache && window.xfwDraftCache.data) {
+        window.xfwResumeToLastStep(window.xfwDraftCache.data.last_step);
+    }
+};
+
+window.xfwSaveWizardStep = function (step) {
+    if (!window.XFW_WIZARD || !window.XFW_WIZARD.conversationId || !step) {
+        return Promise.resolve(null);
+    }
+    var body = new URLSearchParams({
+        action: 'xfoo_wizard_save_step',
+        nonce: window.XFW_WIZARD.nonce,
+        conversation_id: String(window.XFW_WIZARD.conversationId),
+        step: step,
+    });
+    return fetch(window.XFW_WIZARD.ajaxUrl, { method: 'POST', credentials: 'same-origin', body: body })
+        .then(function (res) { return res.json(); })
+        .catch(function () { return null; });
 };
 
 if (root && typeof xfwInitMeetingGate === 'function' && !root.dataset.meetingGateInit) {

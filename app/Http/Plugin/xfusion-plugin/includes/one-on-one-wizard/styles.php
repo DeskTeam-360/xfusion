@@ -51,6 +51,7 @@ function xfoo_wizard_styles_css(): string
 .xfw-step.done .xfw-step-line{background:var(--green)}
 .xfw-step:last-child .xfw-step-line{display:none}
 .xfw-step-underline{height:3px;background:var(--green);margin-top:.75rem;border-radius:2px}
+.xfw-step.locked{cursor:not-allowed;opacity:.55}
 
 /* Layout */
 .xfw-body{display:flex;gap:1.5rem;padding:1.5rem 1.75rem;align-items:flex-start}

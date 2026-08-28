@@ -106,6 +106,12 @@ if (root) {
     var current = 0;
     var wizardBooted = false;
     var navBound = false;
+    // Furthest step this session has unlocked for the active conversation -
+    // every step must be populated before the wizard allows moving past it.
+    // Backed by wp_fusion_one_on_one_conversations.last_step so reopening
+    // the wizard resumes here instead of restarting at Step 1.
+    var furthestStepIndex = 0;
+    var resumedForConversationId = 0;
 
     // Employee Preparation is only for the employee, Leader Preparation only
     // for the leader — same for the Employee/Leader Commitments tables. The
@@ -155,6 +161,111 @@ if (root) {
                 el.disabled = locked;
             });
         });
+    };
+
+    // Whether the given step's required content has been populated. Steps
+    // 1/2/6 are AI/system-generated (complete once their data has loaded);
+    // Preparation only checks the current user's own side (the other side
+    // is role-locked and may genuinely lag); Conversation only requires the
+    // shared general notes field (the 6 per-topic notes are explicitly
+    // optional in the UI copy); Commitments requires at least one
+    // commitment on the current user's own side.
+    var xfwIsStepComplete = function (stepKey) {
+        if (stepKey === 'evidence') {
+            return true;
+        }
+        if (stepKey === 'brief') {
+            return !!(window.xfwBriefCache && window.xfwBriefCache.loaded && window.xfwBriefCache.data);
+        }
+        if (stepKey === 'preparation') {
+            var myRole = (window.XFW_WIZARD && window.XFW_WIZARD.userRole) || '';
+            if (!myRole) {
+                return true;
+            }
+            var col = root.querySelector('.xfw-prep-col.' + myRole);
+            if (!col) {
+                return true;
+            }
+            var fields = col.querySelectorAll('[data-field]');
+            for (var i = 0; i < fields.length; i++) {
+                var f = fields[i];
+                if (f.dataset.type === 'scale' && !f.querySelector('.xfw-scale-btn.selected')) {
+                    return false;
+                }
+                if (f.dataset.type === 'textarea') {
+                    var ta = f.querySelector('textarea');
+                    if (!ta || !ta.value.trim()) {
+                        return false;
+                    }
+                }
+            }
+            return true;
+        }
+        if (stepKey === 'conversation') {
+            var generalField = root.querySelector('.xfw-textarea-field[data-field="general"] textarea');
+            return !!(generalField && generalField.value.trim());
+        }
+        if (stepKey === 'commitments') {
+            var myRole2 = (window.XFW_WIZARD && window.XFW_WIZARD.userRole) || '';
+            if (!myRole2) {
+                return true;
+            }
+            var data = (window.xfwCommitmentsCache && window.xfwCommitmentsCache.data) || { employee: [], leader: [] };
+            return (data[myRole2] || []).length > 0;
+        }
+        if (stepKey === 'synthesis') {
+            return !!(window.xfwSynthesisCache && window.xfwSynthesisCache.loaded && window.xfwSynthesisCache.data);
+        }
+        return true;
+    };
+
+    var xfwShowStepMessage = function (text, isError) {
+        var status = root.querySelector('.xfw-autosave');
+        if (!status) {
+            return;
+        }
+        status.textContent = text;
+        status.style.color = isError ? '#dc2626' : '';
+    };
+
+    var xfwPersistFurthestStep = function (idx) {
+        var key = STEPS[idx] && STEPS[idx].key;
+        if (!key || typeof window.xfwSaveWizardStep !== 'function') {
+            return;
+        }
+        window.xfwSaveWizardStep(key);
+    };
+
+    // Called once per conversation after its wizard draft loads (see
+    // load-draft.php's xfwOnDraftLoaded) to jump to the furthest step
+    // already reached, and unlock everything up to it.
+    window.xfwResumeToLastStep = function (lastStepKey) {
+        var cid = (window.XFW_WIZARD && window.XFW_WIZARD.conversationId) || 0;
+        if (!cid || resumedForConversationId === cid) {
+            return;
+        }
+        resumedForConversationId = cid;
+        if (!lastStepKey) {
+            return;
+        }
+        var idx = -1;
+        for (var i = 0; i < STEPS.length; i++) {
+            if (STEPS[i].key === lastStepKey) {
+                idx = i;
+                break;
+            }
+        }
+        if (idx < 0) {
+            return;
+        }
+        if (idx > furthestStepIndex) {
+            furthestStepIndex = idx;
+        }
+        if (idx > current) {
+            goTo(idx);
+        } else {
+            renderSteps();
+        }
     };
 
     var xfwCountCommitments = function () {
@@ -279,6 +390,9 @@ if (root) {
         var el = root.querySelector('#xfw-steps-inner');
         el.innerHTML = STEPS.map(function (s, i) {
             var cls = i === current ? 'active' : (i < current ? 'done' : '');
+            if (i > furthestStepIndex) {
+                cls += ' locked';
+            }
             var label = s.label.split('\n').join('<br>');
             return '<div class="xfw-step ' + cls + '" data-step="' + i + '">' +
                 '<div class="xfw-step-line"></div>' +
@@ -387,7 +501,22 @@ if (root) {
     };
 
     var goTo = function (i) {
-        current = Math.max(0, Math.min(STEPS.length - 1, i));
+        var target = Math.max(0, Math.min(STEPS.length - 1, i));
+
+        if (target > current && target > furthestStepIndex) {
+            if (target > current + 1) {
+                // Can't skip over steps that haven't been reached yet.
+                return;
+            }
+            if (!xfwIsStepComplete(STEPS[current].key)) {
+                xfwShowStepMessage('Please complete this step before continuing.', true);
+                return;
+            }
+            furthestStepIndex = target;
+            xfwPersistFurthestStep(target);
+        }
+
+        current = target;
         renderSteps();
         renderSidebar();
         renderMain();
@@ -396,6 +525,10 @@ if (root) {
 
     var goNextOrComplete = function () {
         if (current === STEPS.length - 1) {
+            if (!xfwIsStepComplete(STEPS[current].key)) {
+                xfwShowStepMessage('Please complete this step before continuing.', true);
+                return;
+            }
             if (typeof window.xfwCompleteMeeting === 'function') {
                 window.xfwCompleteMeeting();
             }
@@ -417,6 +550,8 @@ if (root) {
     window.xfwBootWizard = function (resetStep) {
         if (resetStep) {
             current = 0;
+            furthestStepIndex = 0;
+            resumedForConversationId = 0;
         }
         bindNav();
         if (!wizardBooted) {

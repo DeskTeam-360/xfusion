@@ -50,7 +50,38 @@ function xfoo_wizard_load_draft_data(int $conversationId, string $scope = 'wizar
         'leader' => is_array($data['leader'] ?? null) ? $data['leader'] : [],
         'conversation' => is_array($data['conversation'] ?? null) ? $data['conversation'] : [],
         'your_role' => in_array($role, ['employee', 'leader'], true) ? $role : null,
+        'last_step' => isset($data['last_step']) ? sanitize_key((string) $data['last_step']) : null,
     ];
+}
+
+/**
+ * Persist the furthest wizard step this conversation has unlocked, so
+ * reopening resumes there instead of restarting at Step 1.
+ *
+ * @return true|WP_Error
+ */
+function xfoo_wizard_save_step_to_laravel(int $conversationId, string $step)
+{
+    $body = ['user_id' => get_current_user_id(), 'step' => $step];
+
+    if (current_user_can('manage_options')) {
+        $body['wizard_admin'] = true;
+    }
+
+    $result = xfoo_wizard_fusion_api_request(
+        'POST',
+        "/conversations/{$conversationId}/wizard-draft/step",
+        [],
+        $body
+    );
+
+    if (! $result['ok']) {
+        $msg = is_array($result['body']) ? ($result['body']['message'] ?? 'Save failed.') : ($result['error'] ?? 'Save failed.');
+
+        return new WP_Error('step_save_failed', (string) $msg);
+    }
+
+    return true;
 }
 
 /**

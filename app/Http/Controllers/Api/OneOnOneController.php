@@ -551,8 +551,40 @@ class OneOnOneController extends Controller
             'data' => array_merge($payload, [
                 'conversation_id' => $conversation->id,
                 'your_role' => $yourRole,
+                'last_step' => $conversation->last_step,
             ]),
         ]);
+    }
+
+    private const WIZARD_STEP_KEYS = ['evidence', 'brief', 'preparation', 'conversation', 'commitments', 'synthesis'];
+
+    /**
+     * Wizard — persist the furthest step this conversation's wizard has
+     * unlocked, so reopening resumes there instead of always starting over
+     * at Step 1. Only ever moves forward — a lower/earlier step is ignored
+     * so one participant browsing back doesn't regress the other's resume
+     * point.
+     */
+    public function saveWizardStep(Request $request, OneOnOneConversation $conversation)
+    {
+        $access = $this->wizardDraftAccess($request, $conversation, 'wizard');
+        if ($access instanceof \Illuminate\Http\JsonResponse) {
+            return $access;
+        }
+
+        $step = (string) $request->input('step', '');
+        if (! in_array($step, self::WIZARD_STEP_KEYS, true)) {
+            return response()->json(['success' => false, 'message' => 'Invalid step.'], 422);
+        }
+
+        $currentIndex = array_search($conversation->last_step, self::WIZARD_STEP_KEYS, true);
+        $newIndex = array_search($step, self::WIZARD_STEP_KEYS, true);
+
+        if ($currentIndex === false || $newIndex > $currentIndex) {
+            $conversation->update(['last_step' => $step]);
+        }
+
+        return response()->json(['success' => true, 'data' => ['last_step' => $conversation->last_step]]);
     }
 
     /** Wizard — save preparation for one or both roles (slug => value maps). */
