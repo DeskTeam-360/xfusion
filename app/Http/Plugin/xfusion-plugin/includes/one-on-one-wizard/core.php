@@ -219,6 +219,50 @@ if (root) {
         return true;
     };
 
+    // Preparation content stays private until reveal (CLAUDE.md privacy
+    // principle), so completion here can never be read from the DOM for the
+    // other role - only a submitted/not-submitted flag is fetched, via the
+    // same endpoint the picker already uses for status badges. Never fetches
+    // or exposes the other role's actual answers.
+    var xfwPrepStatusCache = { data: null };
+
+    var xfwFetchPrepStatus = function () {
+        var cid = (window.XFW_WIZARD && window.XFW_WIZARD.conversationId) || 0;
+        if (!cid || typeof xfwOoCall !== 'function') {
+            return Promise.resolve(null);
+        }
+        return xfwOoCall('xfusion_oo_preparation_status', { conversation_id: String(cid) })
+            .then(function (res) { return (res && res.success) ? res.data : null; })
+            .catch(function () { return null; });
+    };
+
+    // Async-capable completeness check. Every step resolves synchronously
+    // except Preparation, which also needs a fresh server check that BOTH
+    // Employee and Leader have submitted before the wizard may advance.
+    var xfwCheckStepComplete = function (stepKey) {
+        if (stepKey !== 'preparation') {
+            return Promise.resolve(xfwIsStepComplete(stepKey));
+        }
+        if (!xfwIsStepComplete('preparation')) {
+            return Promise.resolve(false);
+        }
+        return xfwFetchPrepStatus().then(function (data) {
+            xfwPrepStatusCache.data = data;
+            return !!(data && data.employee_submitted && data.leader_submitted);
+        });
+    };
+
+    var xfwStepBlockedMessage = function (stepKey) {
+        if (stepKey === 'preparation') {
+            var data = xfwPrepStatusCache.data;
+            if (data && !(data.employee_submitted && data.leader_submitted)) {
+                return 'Both Employee and Leader must complete their preparation before continuing.';
+            }
+            return 'Please complete your preparation before continuing.';
+        }
+        return 'Please complete this step before continuing.';
+    };
+
     var xfwShowStepMessage = function (text, isError) {
         var status = root.querySelector('.xfw-autosave');
         if (!status) {
@@ -500,6 +544,14 @@ if (root) {
         }
     };
 
+    var xfwCommitGoTo = function (target) {
+        current = target;
+        renderSteps();
+        renderSidebar();
+        renderMain();
+        root.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    };
+
     var goTo = function (i) {
         var target = Math.max(0, Math.min(STEPS.length - 1, i));
 
@@ -508,30 +560,35 @@ if (root) {
                 // Can't skip over steps that haven't been reached yet.
                 return;
             }
-            if (!xfwIsStepComplete(STEPS[current].key)) {
-                xfwShowStepMessage('Please complete this step before continuing.', true);
-                return;
-            }
-            furthestStepIndex = target;
-            xfwPersistFurthestStep(target);
+            var leavingKey = STEPS[current].key;
+            xfwShowStepMessage('Checking…', false);
+            xfwCheckStepComplete(leavingKey).then(function (ok) {
+                if (!ok) {
+                    xfwShowStepMessage(xfwStepBlockedMessage(leavingKey), true);
+                    return;
+                }
+                furthestStepIndex = Math.max(furthestStepIndex, target);
+                xfwPersistFurthestStep(target);
+                xfwCommitGoTo(target);
+            });
+            return;
         }
 
-        current = target;
-        renderSteps();
-        renderSidebar();
-        renderMain();
-        root.scrollIntoView({ behavior: 'smooth', block: 'start' });
+        xfwCommitGoTo(target);
     };
 
     var goNextOrComplete = function () {
         if (current === STEPS.length - 1) {
-            if (!xfwIsStepComplete(STEPS[current].key)) {
-                xfwShowStepMessage('Please complete this step before continuing.', true);
-                return;
-            }
-            if (typeof window.xfwCompleteMeeting === 'function') {
-                window.xfwCompleteMeeting();
-            }
+            var lastKey = STEPS[current].key;
+            xfwCheckStepComplete(lastKey).then(function (ok) {
+                if (!ok) {
+                    xfwShowStepMessage(xfwStepBlockedMessage(lastKey), true);
+                    return;
+                }
+                if (typeof window.xfwCompleteMeeting === 'function') {
+                    window.xfwCompleteMeeting();
+                }
+            });
             return;
         }
         goTo(current + 1);
