@@ -9,6 +9,7 @@ defined('ABSPATH') || exit;
 
 $xfusion_include_files = [
     'course-scoring-group-gauge-shortcode.php',
+    'tool-library-shortcode.php',
     'one-on-one-shortcode.php',
     'one-on-one-wizard/one-on-one-wizard-shortcode.php',
     'annual-readiness-plan/arp-db-migration.php',

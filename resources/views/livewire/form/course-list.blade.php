@@ -7,6 +7,22 @@
 
     <x-select title="Gravity Form" model="gfFormId" :options="$optionWpGfForm"/>
 
+    <x-input title="Icon (Tool Library catalog)" model="icon"/>
+    <p class="-mt-2 mb-3 text-xs text-gray-500">Icon URL or emoji shown on the Tool Library catalog card for this tool.</p>
+
+    <div class="mt-3">
+        <span class="block text-sm font-bold dark:text-light">COR Organizational Capabilities</span>
+        <p class="mt-1 text-xs text-gray-500">Which capabilities does this tool address? Shown as tags on the Tool Library catalog card.</p>
+        <div class="mt-2 flex flex-wrap gap-4">
+            @foreach ($optionCapability as $cap)
+                <label class="flex items-center gap-2 text-sm dark:text-light">
+                    <input type="checkbox" value="{{ $cap['value'] }}" wire:model="capabilityTags">
+                    {{ $cap['title'] }}
+                </label>
+            @endforeach
+        </div>
+    </div>
+
     <div class="mt-3">
         <span class="block text-sm font-bold dark:text-light">
             LMS topic (LearnDash)

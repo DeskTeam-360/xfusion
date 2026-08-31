@@ -2,6 +2,7 @@
 
 namespace App\Livewire\Form;
 
+use App\Models\CourseScoringGroup;
 use App\Models\Tag;
 use App\Models\WpGfForm;
 use App\Models\WpPost;
@@ -27,6 +28,15 @@ class CourseList extends Component
     public $repeatEntry = 0;
 
     public $legacy = 0;
+
+    /** @var string|null Icon shown in the Tool Library catalog card for this tool */
+    public $icon = null;
+
+    /** @var array<int, array{value: int, title: string}> the 5 COR Organizational Capabilities, from wp_course_scoring_groups */
+    public $optionCapability;
+
+    /** @var array<int> selected wp_course_scoring_groups.id values (Tool Library capability tags) */
+    public $capabilityTags = [];
 
     /** @var int|null wp_posts.ID for LearnDash topic (post_type sfwd-topic) */
     public $lmsTopicId = null;
@@ -79,6 +89,12 @@ class CourseList extends Component
         foreach (WpGfForm::get() as $item) {
             $this->optionWpGfForm [] = ['value' => $item->id, 'title' =>$item->id.' - '. $item->title];
         }
+
+        $this->optionCapability = [];
+        foreach (CourseScoringGroup::whereIn('title', self::COR_CAPABILITY_TITLES)->orderByRaw("FIELD(title, '".implode("','", self::COR_CAPABILITY_TITLES)."')")->get() as $group) {
+            $this->optionCapability[] = ['value' => $group->id, 'title' => $group->title];
+        }
+
         if ($this->dataId != null) {
             $data = \App\Models\CourseList::find($this->dataId);
             $this->url = $data->url;
@@ -92,9 +108,14 @@ class CourseList extends Component
             $this->repeatEntry = $data->repeat_entry;
             $this->legacy = $data->legacy;
             $this->lmsTopicId = $data->lms_topic_id;
+            $this->icon = $data->icon;
+            $this->capabilityTags = $data->corCapabilityTags->pluck('id')->toArray();
             $this->refreshLmsTopicLabel();
         }
     }
+
+    /** The 5 COR Organizational Capabilities, in wp_course_scoring_groups - canonical source, not redefined elsewhere. */
+    private const COR_CAPABILITY_TITLES = ['Alignment', 'Accountability', 'Communication', 'Leadership', 'Execution'];
 
     public function updatedLmsTopicSearch(string $value): void
     {
@@ -181,7 +202,7 @@ class CourseList extends Component
             $this->courseTagNext = null;
         }
 
-        \App\Models\CourseList::create([
+        $courseList = \App\Models\CourseList::create([
             'url' => $this->url,
             'page_title' => $this->pageTitle,
             'course_title' => $this->courseTitle,
@@ -193,7 +214,10 @@ class CourseList extends Component
             'url_next' => $this->urlNext,
             'repeat_entry' => $this->repeatEntry,
             'legacy' => $this->legacy,
+            'icon' => $this->icon,
         ]);
+        $courseList->corCapabilityTags()->sync($this->capabilityTags);
+
         $this->dispatch('swal:alert', data: [
             'icon' => 'success',
             'title' => 'Successfully added course',
@@ -217,7 +241,8 @@ class CourseList extends Component
         }
 
 
-        \App\Models\CourseList::find($this->dataId)->update([
+        $courseList = \App\Models\CourseList::find($this->dataId);
+        $courseList->update([
             'url' => $this->url,
             'page_title' => $this->pageTitle,
             'course_title' => $this->courseTitle,
@@ -229,7 +254,10 @@ class CourseList extends Component
             'url_next' => $this->urlNext,
             'repeat_entry' => $this->repeatEntry,
             'legacy' => $this->legacy,
+            'icon' => $this->icon,
         ]);
+        $courseList->corCapabilityTags()->sync($this->capabilityTags);
+
         $this->dispatch('swal:alert', data: [
             'icon' => 'success',
             'title' => 'successfully changed the course',

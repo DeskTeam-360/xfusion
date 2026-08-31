@@ -17,7 +17,7 @@ class CourseGroup extends Model
 
     protected $table = 'wp_course_groups';
 
-    protected $fillable = ['title', 'sub_title', 'type', 'chart'];
+    protected $fillable = ['title', 'sub_title', 'type', 'chart', 'icon', 'tools'];
 
     public function courseGroupDetails()
     {

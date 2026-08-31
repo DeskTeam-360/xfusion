@@ -11,6 +11,7 @@ class CourseGroup extends Component
     public $subTitle='';
     public $type='';
     public $tools=0;
+    public $icon='';
     public $dataId;
 public $optionCourseTitle;
 public $optionCourseType;
@@ -44,6 +45,8 @@ public $courseLists;
             $this->title = $data->title;
             $this->subTitle = $data->sub_title;
             $this->type = $data->type;
+            $this->tools = $data->tools;
+            $this->icon = $data->icon;
         }
     }
 
@@ -55,6 +58,7 @@ public $courseLists;
             'title' => $this->title,
             'sub_title' => $this->subTitle,
             'type' => $this->type,
+            'icon' => $this->icon,
         ]);
 
         foreach($this->courseLists as $cl){
@@ -80,7 +84,8 @@ public $courseLists;
             'title' => $this->title,
             'sub_title' => $this->subTitle,
             'type' => $this->type,
-            'tools'=>$this->tools
+            'tools'=>$this->tools,
+            'icon' => $this->icon,
         ]);
 
         \App\Models\CourseGroupDetail::where('course_group_id', $this->dataId)->delete();
