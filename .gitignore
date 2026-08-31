@@ -17,6 +17,9 @@ public_html/hot
 
 storage/*.key
 .env
+
+# Local reference documents (specs, workbooks) - not part of the app
+/knowledge/
 Homestead.yaml
 Homestead.json
 /.vagrant
