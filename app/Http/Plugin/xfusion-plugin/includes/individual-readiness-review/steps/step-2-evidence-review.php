@@ -62,14 +62,40 @@ function xfirr_wizard_evidence_review_init_js(): string
             '</div>';
     }
 
-    function progressRow(label, value, max) {
+    function progressRow(label, value, max, fillClass) {
         max = max || 5;
         if (value == null) return '';
         var pct = Math.round((Number(value) / max) * 100);
+        var fill = 'xirr-progress-fill' + (fillClass ? ' ' + fillClass : '');
         return '<div class="xirr-align-row xirr-progress-row">' +
             '<div class="xirr-align-label">' + esc(label) + '</div>' +
-            '<div class="xirr-progress-track"><div class="xirr-progress-fill" style="width:' + pct + '%"></div></div>' +
+            '<div class="xirr-progress-track"><div class="' + fill + '" style="width:' + pct + '%"></div></div>' +
             '<div class="xirr-progress-pct">' + Number(value).toFixed(1) + '</div>' +
+            '</div>';
+    }
+
+    function trendItems(source, fallback) {
+        var list = Array.isArray(source) ? source : (source && Array.isArray(source.items) ? source.items : []);
+        if (!list.length) return fallback.slice();
+        return list.map(function (s) {
+            if (typeof s === 'string') return { label: s, score: null };
+            return { label: s.label || s.title || '', score: s.score != null ? s.score : s.value };
+        }).filter(function (s) { return s.label; });
+    }
+
+    function alignmentItems(source, fallback) {
+        var list = Array.isArray(source) ? source : (source && Array.isArray(source.items) ? source.items : []);
+        if (!list.length) return fallback.slice();
+        return list.map(function (s) {
+            return typeof s === 'string' ? s : (s.text || s.label || s.title || '');
+        }).filter(Boolean);
+    }
+
+    function trendCard(title, bodyHtml, linkLabel) {
+        return '<div class="xirr-card xirr-trend-card">' +
+            '<h4>' + esc(title) + '</h4>' +
+            bodyHtml +
+            '<span class="xirr-link xirr-trend-link">' + esc(linkLabel) + ' →</span>' +
             '</div>';
     }
 
@@ -91,11 +117,18 @@ function xfirr_wizard_evidence_review_init_js(): string
         }).join('') + '</div>';
     }
 
+    var DRIVER_ICONS = {
+        get_real: 'https://sandbox.xperiencefusion.com/wp-content/uploads/2026/08/Get-Real.svg',
+        be_intentional: 'https://sandbox.xperiencefusion.com/wp-content/uploads/2026/08/Be-Intentional.svg',
+        fill_buckets: 'https://sandbox.xperiencefusion.com/wp-content/uploads/2026/08/Fill-Buckets.svg',
+        foster_grit: 'https://sandbox.xperiencefusion.com/wp-content/uploads/2026/08/Foster-Grit.svg',
+        drive_growth: 'https://sandbox.xperiencefusion.com/wp-content/uploads/2026/08/Drive-Growth.svg',
+    };
     var DRIVER_COLORS = {
         get_real: '#16a34a',
-        be_intentional: '#7c3aed',
-        fill_buckets: '#ea580c',
-        foster_grit: '#f59e0b',
+        be_intentional: '#2563eb',
+        fill_buckets: '#7c3aed',
+        foster_grit: '#ea580c',
         drive_growth: '#0891b2',
     };
     var MONTH_LABELS = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
@@ -138,9 +171,13 @@ function xfirr_wizard_evidence_review_init_js(): string
             gridLines + xLabels + lines + '</svg>';
 
         var legend = '<div class="xirr-driver-legend">' + withScores.map(function (d) {
+            var icon = DRIVER_ICONS[d.slug];
             var color = DRIVER_COLORS[d.slug] || '#6b7280';
+            var mark = icon
+                ? '<img class="xirr-driver-icon" src="' + icon + '" alt="' + esc(d.label) + '">'
+                : '<span class="xirr-driver-dot" style="background:' + color + '"></span>';
             return '<div class="xirr-driver-legend-row">' +
-                '<span class="xirr-driver-dot" style="background:' + color + '"></span>' +
+                mark +
                 '<span class="xirr-driver-legend-label">' + esc(d.label) + '</span>' +
                 '<span class="xirr-driver-legend-values"><strong>' + fmtNum(d.you) + '</strong><span class="xirr-muted"> / ' + fmtNum(d.org_avg) + ' org avg</span></span>' +
                 '</div>';
@@ -164,6 +201,25 @@ function xfirr_wizard_evidence_review_init_js(): string
         var selfScores = (data.self_assessment_scores || []).filter(function (s) { return s.score != null; });
         var leaderObs = data.leader_observations || [];
         var timeline = data.growth_timeline || [];
+        var DEFAULT_DEV_TRENDS = [
+            { label: 'Strategic Thinking', score: 3.8 },
+            { label: 'Delegation', score: 3.7 },
+            { label: 'Change Leadership', score: 3.6 },
+            { label: 'Coaching', score: 3.5 },
+            { label: 'Influencing', score: 3.6 },
+        ];
+        var DEFAULT_ALIGNMENT = [
+            'High alignment with team and organizational priorities',
+            'Actively contributes to QBR and ARP objectives',
+            'Demonstrates values and behaviors consistently',
+        ];
+        var ALIGN_ICONS = [
+            'https://sandbox.xperiencefusion.com/wp-content/uploads/2026/08/ORGANIZATIONAL-ALIGNMENT-1.svg',
+            'https://sandbox.xperiencefusion.com/wp-content/uploads/2026/08/ORGANIZATIONAL-ALIGNMENT-2.svg',
+            'https://sandbox.xperiencefusion.com/wp-content/uploads/2026/08/ORGANIZATIONAL-ALIGNMENT-1.svg',
+        ];
+        var developmentTrends = trendItems(data.development_trends, DEFAULT_DEV_TRENDS);
+        var alignmentPoints = alignmentItems(data.organizational_alignment, DEFAULT_ALIGNMENT);
 
         var participationRows = [
             { dot: 'green', label: 'Active', value: participation.active || 0 },
@@ -202,13 +258,18 @@ function xfirr_wizard_evidence_review_init_js(): string
             html += '<div class="xirr-grid-2" style="display:grid;grid-template-columns:1.5fr 1fr;gap:1rem;margin-bottom:1rem">';
 
             if (timeline.length) {
-                var TIMELINE_ICONS = ['&#127988;', '&#128218;', '&#11088;', '&#127919;'];
-                var TIMELINE_COLORS = ['green', 'green', 'purple', 'amber'];
+                var TIMELINE_ICONS = [
+                    'https://sandbox.xperiencefusion.com/wp-content/uploads/2026/08/Q1-FOCUS.svg',
+                    'https://sandbox.xperiencefusion.com/wp-content/uploads/2026/08/Q2-FOCUS.svg',
+                    'https://sandbox.xperiencefusion.com/wp-content/uploads/2026/08/Q3-FOCUS.svg',
+                    'https://sandbox.xperiencefusion.com/wp-content/uploads/2026/08/Q4-FOCUS.svg',
+                ];
                 html += '<div class="xirr-card" style="margin-bottom:0"><h4>Growth Timeline</h4><div class="xirr-timeline"><div class="xirr-timeline-track"></div>' +
                     timeline.map(function (q, i) {
-                        var color = TIMELINE_COLORS[i % TIMELINE_COLORS.length];
+                        var qMatch = String(q.quarter || '').match(/Q([1-4])/i);
+                        var idx = qMatch ? (parseInt(qMatch[1], 10) - 1) : (i % TIMELINE_ICONS.length);
                         return '<div class="xirr-timeline-item">' +
-                            '<div class="xirr-timeline-icon ' + color + '">' + TIMELINE_ICONS[i % TIMELINE_ICONS.length] + '</div>' +
+                            '<div class="xirr-timeline-icon"><img src="' + TIMELINE_ICONS[idx] + '" alt="' + esc(q.quarter || 'Q' + (idx + 1)) + ' Focus icon"></div>' +
                             '<h5>' + esc(q.quarter) + ' Focus</h5>' +
                             '<p>' + esc(q.focus || '—') + '<br>' + esc(q.period) + '</p>' +
                             '<span class="xirr-timeline-badge">' + esc(String(q.commitment_count || 0)) + ' Commitments</span></div>';
@@ -218,18 +279,30 @@ function xfirr_wizard_evidence_review_init_js(): string
             if (leaderObs.length) {
                 html += '<div class="xirr-card" style="margin-bottom:0"><h4>Leadership Observations</h4><div class="xirr-leader-obs-list">' +
                     leaderObs.map(function (item) {
-                        return '<div class="xirr-leader-obs-row"><span class="xirr-leader-obs-icon">&#128172;</span><p>' + esc(item) + '</p></div>';
+                        return '<div class="xirr-leader-obs-row"><span class="xirr-leader-obs-icon"><img src="https://sandbox.xperiencefusion.com/wp-content/uploads/2026/08/Leadership-Observations.svg" alt=""></span><p>' + esc(item) + '</p></div>';
                     }).join('') + '</div></div>';
             }
 
             html += '</div>';
         }
 
-        if (selfScores.length) {
-            html += '<div class="xirr-card"><h4>Strength Trends</h4>' +
-                selfScores.map(function (s) { return progressRow(s.label, s.score, 5); }).join('') +
-                '</div>';
-        }
+        var strengthBody = selfScores.length
+            ? '<div class="xirr-align-list">' + selfScores.map(function (s) { return progressRow(s.label, s.score, 5); }).join('') + '</div>'
+            : '<p class="xirr-muted" style="margin:0">No self-assessment scores yet.</p>';
+        var developmentBody = '<div class="xirr-align-list">' + developmentTrends.map(function (s) {
+            return progressRow(s.label, s.score, 5, 'xirr-progress-fill-blue');
+        }).join('') + '</div>';
+        var alignmentBody = '<div class="xirr-align-points">' + alignmentPoints.map(function (text, i) {
+            return '<div class="xirr-align-point"><span class="xirr-align-point-icon" aria-hidden="true">' +
+                '<img src="' + ALIGN_ICONS[i % ALIGN_ICONS.length] + '" alt="">' +
+                '</span><p>' + esc(text) + '</p></div>';
+        }).join('') + '</div>';
+
+        html += '<div class="xirr-trend-grid">' +
+            trendCard('Strength Trends', strengthBody, 'View strength details') +
+            trendCard('Development Trends', developmentBody, 'View development details') +
+            trendCard('Organizational Alignment', alignmentBody, 'View alignment details') +
+            '</div>';
 
         html += '<div class="xirr-card"><h4>Evidence Highlights</h4><div class="xirr-metric-grid">' +
             statCard('Activities Completed', highlights.activities_completed || 0, highlights.activities_completed_trend) +
@@ -240,9 +313,7 @@ function xfirr_wizard_evidence_review_init_js(): string
 
         var pending = [];
         if (data.behavioral_driver_monthly == null) pending.push('Monthly driver trend chart');
-        if (data.development_trends == null) pending.push('Development Trends (Strategic Thinking, Delegation, …)');
         if (data.reflection_themes == null) pending.push('Reflection Themes');
-        if (data.organizational_alignment == null) pending.push('Organizational Alignment narrative');
         if (data.qbr_arp_priorities == null) pending.push('QBR & ARP priority linkage');
         if (pending.length) {
             html += '<div class="xirr-banner" style="margin-top:1rem">&#8505;&#65039; <span><strong>Coming soon:</strong> ' + esc(pending.join('; ')) + '</span></div>';
