@@ -31,6 +31,8 @@ public $courseLists;
             ['value'=>'revitalize','title'=>'Revitalize'],
             ['value'=>'sustain','title'=>'Sustain'],
             ['value'=>'transform','title'=>'Transform'],
+            ['value'=>'personal_development','title'=>'Personal Development'],
+            ['value'=>'leadership_development','title'=>'Leadership Development'],
         ];
 
         $this->optionCourseTitle = [];
