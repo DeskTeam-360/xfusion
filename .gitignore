@@ -20,6 +20,10 @@ storage/*.key
 
 # Local reference documents (specs, workbooks) - not part of the app
 /knowledge/
+
+# Plugin zip exports sitting next to the real (tracked) source in
+# app/Http/Plugin/xfusion-plugin/ - these are just local packaging output.
+/app/Http/Plugin/*.zip
 Homestead.yaml
 Homestead.json
 /.vagrant
