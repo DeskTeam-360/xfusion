@@ -793,4 +793,129 @@ add_filter("get_search_form", "disable_search_form_homepage");
 
 // Ultimate Member — [xfusion_um_profile_courses] : includes/um-profile-courses*.php (muat via includes/load.php).
 
+/**
+ * Shortcode [leadership_checkbox a=1 ac=0 c=1 l=1 e=0]
+ *
+ * a  Alignment (green), ac Accountability (orange), c Communication (blue),
+ * l  Leadership (red), e Execution (purple). 1 = checked, 0 = unchecked.
+ */
+function xfusion_leadership_checkbox_items(): array
+{
+    return [
+        'a' => [
+            'label' => 'Alignment',
+            'color' => '#4caf50',
+        ],
+        'ac' => [
+            'label' => 'Accountability',
+            'color' => '#f5a623',
+        ],
+        'c' => [
+            'label' => 'Communication',
+            'color' => '#3b82f6',
+        ],
+        'l' => [
+            'label' => 'Leadership',
+            'color' => '#e53935',
+        ],
+        'e' => [
+            'label' => 'Execution',
+            'color' => '#9b59b6',
+        ],
+    ];
+}
+
+function xfusion_leadership_checkbox_is_checked($value): bool
+{
+    $normalized = strtolower(trim((string) $value));
+
+    return in_array($normalized, ['1', 'true', 'yes', 'on'], true);
+}
+
+function xfusion_leadership_checkbox_styles(): string
+{
+    static $printed = false;
+    if ($printed) {
+        return '';
+    }
+    $printed = true;
+
+    return <<<'CSS'
+<style id="xfusion-leadership-checkbox-css">
+.xfusion-leadership-checkboxes{
+    display:inline-flex;
+    align-items:center;
+    gap:6px;
+    vertical-align:middle;
+    line-height:0;
+}
+.xfusion-leadership-cb{
+    width:22px;
+    height:22px;
+    border-radius:4px;
+    display:inline-flex;
+    align-items:center;
+    justify-content:center;
+    box-sizing:border-box;
+    flex-shrink:0;
+}
+.xfusion-leadership-cb.is-checked{
+    background:var(--xf-cb-color);
+    background-image:linear-gradient(180deg,rgba(255,255,255,.25) 0%,rgba(255,255,255,0) 48%,rgba(0,0,0,.14) 100%);
+    box-shadow:0 1px 2px rgba(0,0,0,.35),inset 0 1px 0 rgba(255,255,255,.38);
+}
+.xfusion-leadership-cb.is-unchecked{
+    background:transparent;
+    border:2px solid rgba(210,224,240,.78);
+    box-shadow:inset 0 0 0 1px rgba(0,0,0,.18);
+}
+.xfusion-leadership-cb svg{
+    width:13px;
+    height:13px;
+    display:block;
+}
+</style>
+CSS;
+}
+
+function xfusion_leadership_checkbox_shortcode($atts = []): string
+{
+    $atts = shortcode_atts(
+        [
+            'a' => '0',
+            'ac' => '0',
+            'c' => '0',
+            'l' => '0',
+            'e' => '0',
+        ],
+        $atts,
+        'leadership_checkbox'
+    );
+
+    $checkSvg = '<svg viewBox="0 0 16 16" aria-hidden="true" focusable="false"><path fill="none" stroke="#fff" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round" d="M3 8.3l3.3 3.3L13.2 4.4"/></svg>';
+
+    $boxes = '';
+    foreach (xfusion_leadership_checkbox_items() as $key => $item) {
+        $checked = xfusion_leadership_checkbox_is_checked($atts[$key] ?? '0');
+        $stateLabel = $checked ? 'checked' : 'unchecked';
+        $class = $checked ? 'is-checked' : 'is-unchecked';
+        $inner = $checked ? $checkSvg : '';
+
+        $boxes .= sprintf(
+            '<span class="xfusion-leadership-cb %1$s" style="--xf-cb-color:%2$s" title="%3$s" aria-label="%3$s: %4$s" role="img">%5$s</span>',
+            esc_attr($class),
+            esc_attr($item['color']),
+            esc_attr($item['label']),
+            esc_attr($stateLabel),
+            $inner
+        );
+    }
+
+    return xfusion_leadership_checkbox_styles()
+        . '<span class="xfusion-leadership-checkboxes" role="group" aria-label="COR organization capabilities">'
+        . $boxes
+        . '</span>';
+}
+
+add_shortcode('leadership_checkbox', 'xfusion_leadership_checkbox_shortcode');
 
