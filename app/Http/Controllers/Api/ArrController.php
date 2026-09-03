@@ -247,11 +247,18 @@ class ArrController extends Controller
 
         $groupIds = CompanyGroup::query()->where('company_id', $arr->company_id)->pluck('id');
 
+        // whereHas('user') would try to compile a single SQL statement
+        // spanning two different DB connections (this model's default
+        // `mysql` connection vs. User's Corcel `wordpress` connection),
+        // which fails with "table 'users' doesn't exist" - Eloquent can't
+        // combine connections in one query, so the exists-subquery runs
+        // unprefixed under `mysql`. Eager-load instead (a separate query,
+        // correctly scoped to User's own connection) and filter afterward.
         $members = CompanyGroupDetail::query()
             ->whereIn('company_group_id', $groupIds)
-            ->whereHas('user')
             ->with('user:ID,display_name,user_nicename')
             ->get()
+            ->filter(fn (CompanyGroupDetail $d) => $d->user !== null)
             ->map(fn (CompanyGroupDetail $d) => [
                 'id' => (int) $d->user_id,
                 'name' => $d->user?->display_name ?: $d->user?->user_nicename,

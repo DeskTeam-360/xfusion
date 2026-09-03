@@ -138,11 +138,18 @@ class ArpController extends Controller
             return response()->json(['success' => false, 'message' => 'You do not have access to this ARP.'], 403);
         }
 
+        // whereHas('user') would try to compile a single SQL statement
+        // spanning two different DB connections (this model's default
+        // `mysql` connection vs. User's Corcel `wordpress` connection),
+        // which fails with "table 'users' doesn't exist" - Eloquent can't
+        // combine connections in one query, so the exists-subquery runs
+        // unprefixed under `mysql`. Eager-load instead (a separate query,
+        // correctly scoped to User's own connection) and filter afterward.
         $members = CompanyGroupDetail::query()
             ->where('company_group_id', $arp->company_group_id)
-            ->whereHas('user')
             ->with('user:ID,display_name,user_nicename')
             ->get()
+            ->filter(fn (CompanyGroupDetail $d) => $d->user !== null)
             ->map(fn (CompanyGroupDetail $d) => [
                 'id' => (int) $d->user_id,
                 'name' => $d->user?->display_name ?: $d->user?->user_nicename,
