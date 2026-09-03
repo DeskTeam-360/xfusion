@@ -149,10 +149,13 @@ select.xar-input[multiple]{min-height:4.75rem;padding:.35rem}
 .xar-owner-field .xar-input{flex:1}
 .xar-avatar{width:32px;height:32px;border-radius:50%;background:var(--navy);color:#fff;display:inline-flex;align-items:center;justify-content:center;font-size:11px;font-weight:700;flex-shrink:0}
 
-/* Multi-select checkbox list (Executive Owner, Related Group(s)) */
-.xar-multiselect{border:1px solid var(--border);border-radius:.375rem;background:#fff;max-height:9rem;overflow-y:auto;padding:.4rem .5rem}
+/* Multi-select checkbox chips (Executive Owner(s), Related Group(s)) - a
+   full-width row of wrapping pill checkboxes reads much better than a
+   cramped, narrow scrollable list squeezed into a 4-col grid cell. */
+.xar-multiselect{display:flex;flex-wrap:wrap;gap:.5rem .6rem;padding:.15rem 0}
 .xar-multiselect-empty{color:var(--muted);font-size:13px;padding:.2rem 0}
-.xar-multiselect-opt{display:flex;align-items:center;gap:.45rem;padding:.25rem 0;font-size:14px;cursor:pointer}
+.xar-multiselect-opt{display:flex;align-items:center;gap:.4rem;padding:.4rem .75rem;font-size:14px;cursor:pointer;border:1px solid var(--border);border-radius:999px;background:#fff;transition:border-color .15s ease,background .15s ease}
+.xar-multiselect-opt:has(input:checked){border-color:var(--green);background:#f0f7ea;color:var(--navy);font-weight:600}
 .xar-multiselect-opt input{margin:0;cursor:pointer}
 
 /* Info icon on field labels */

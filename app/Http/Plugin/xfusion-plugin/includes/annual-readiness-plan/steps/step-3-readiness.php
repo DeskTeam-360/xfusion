@@ -136,6 +136,8 @@ function xfarp_wizard_readiness_init_js(): string
             field('Description', false, '<textarea class="xar-input" rows="3" data-key="description" placeholder="Describe this readiness priority...">' + escHtml(item.description) + '</textarea>') +
             field('Business Rationale', false, '<textarea class="xar-input" rows="3" data-key="business_rationale" placeholder="Why does this matter?...">' + escHtml(item.business_rationale) + '</textarea>') +
             field('Secondary Behavioral Driver™', false, '<select class="xar-input" data-key="secondary_driver">' + opts(DRIVERS, item.secondary_driver) + '</select>') +
+            '</div>' +
+            '<div class="xar-prio-grid xar-prio-grid-1">' +
             multiCheckboxField('Executive Owner(s)', true, 'executive_owner_user_ids', OWNERS, item.executive_owner_user_ids, 'No group members found') +
             '</div>' +
             '<div class="xar-prio-grid xar-prio-grid-1">' +
