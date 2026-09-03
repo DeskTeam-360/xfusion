@@ -187,7 +187,7 @@ function xfarr_render_picker_gate(): string
                     '<td><span class="' + badgeClass + '">' + escHtml((a.status || '').replace(/_/g, ' ')) + '</span></td>' +
                     '<td>' + escHtml(a.executive_owner_name || '—') + '</td>' +
                     '<td>' + accessBadge + '</td>' +
-                    '<td><a href="javascript:void(0)" class="xarr-link" data-open="' + a.id + '">Open &rarr;</a></td></tr>';
+                    '<td><button type="button" class="xarr-btn xarr-btn-outline xarr-btn-sm" data-open="' + a.id + '">Open &rarr;</button></td></tr>';
             });
             html += '</tbody></table></div>';
         }

@@ -194,7 +194,7 @@ function xfqbr_render_picker_gate(): string
                 html += '<tr><td>' + escHtml(q.company_name) + '</td><td>' + quarterLabel(q.quarter) + ' ' + escHtml(q.year) + '</td>' +
                     '<td><span class="' + badgeClass + '">' + escHtml(q.status) + '</span></td>' +
                     '<td>' + accessBadge + '</td>' +
-                    '<td><a href="javascript:void(0)" class="xqbr-link" data-open="' + q.id + '">Open &rarr;</a></td></tr>';
+                    '<td><button type="button" class="xqbr-btn xqbr-btn-outline xqbr-btn-sm" data-open="' + q.id + '">Open &rarr;</button></td></tr>';
             });
             html += '</tbody></table></div>';
         }

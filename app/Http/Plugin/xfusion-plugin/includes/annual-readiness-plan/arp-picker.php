@@ -185,7 +185,7 @@ function xfarp_render_picker_gate(): string
                 html += '<tr><td>' + escHtml(a.company_name) + '</td><td>' + escHtml(a.year) + '</td>' +
                     '<td><span class="' + badgeClass + '">' + escHtml(a.status) + '</span></td>' +
                     '<td>' + accessBadge + '</td>' +
-                    '<td><a href="javascript:void(0)" class="xar-link" data-open="' + a.id + '">Open &rarr;</a></td></tr>';
+                    '<td><button type="button" class="xar-btn xar-btn-outline xar-btn-sm" data-open="' + a.id + '">Open &rarr;</button></td></tr>';
             });
             html += '</tbody></table></div>';
         }

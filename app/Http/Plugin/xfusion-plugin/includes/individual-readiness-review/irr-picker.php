@@ -205,7 +205,7 @@ function xfirr_render_picker_gate(): string
                 '<td>' + escHtml(r.year) + '</td>' +
                 '<td>' + escHtml(r.group_name) + '</td>' +
                 '<td><span class="' + statusBadgeClass(r.status) + '">' + escHtml(statusLabel(r.status)) + '</span><br>' + access + '</td>' +
-                '<td><a href="javascript:void(0)" class="xirr-link" data-open="' + r.id + '">Open &rarr;</a></td>' +
+                '<td><button type="button" class="xirr-btn xirr-btn-outline xirr-btn-sm" data-open="' + r.id + '">Open &rarr;</button></td>' +
                 '</tr>';
         });
         html += '</tbody></table></div>';
