@@ -78,12 +78,21 @@ function xfusion_arp_wizard_shortcode($atts = []): string
         }
     }
 
-    // Real company-group roster for the Executive Owner dropdowns on Steps 3
-    // and 4 — replaces the previous hardcoded name list.
+    // Real company-group roster for the Executive Owner multi-selects on
+    // Steps 3 and 4 — replaces the previous hardcoded name list.
     $groupMembers = [];
     $membersContext = xfarp_picker_api_request('GET', "/{$arpId}/group-members", ['user_id' => get_current_user_id()]);
     if ($membersContext['ok'] && is_array($membersContext['body']['data'] ?? null)) {
         $groupMembers = $membersContext['body']['data'];
+    }
+
+    // Real groups in this ARP's company, for Step 4's "Related Group(s)"
+    // multi-select — replaces the previous hardcoded pseudo-scope list
+    // (all_leaders, operations, ...) that never referenced a real group.
+    $companyGroups = [];
+    $groupsContext = xfarp_picker_api_request('GET', "/{$arpId}/groups", ['user_id' => get_current_user_id()]);
+    if ($groupsContext['ok'] && is_array($groupsContext['body']['data'] ?? null)) {
+        $companyGroups = $groupsContext['body']['data'];
     }
 
     // Version History: ?version_id= walks the SAME step forms (Steps 1-5)
@@ -141,6 +150,7 @@ function xfusion_arp_wizard_shortcode($atts = []): string
         'publishedAt'  => $arpData['published_at'] ?? null,
         'canEdit'      => $canEdit,
         'groupMembers' => $groupMembers,
+        'companyGroups' => $companyGroups,
         'viewingVersion' => $viewingVersion,
     ];
 

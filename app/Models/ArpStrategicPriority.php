@@ -24,7 +24,7 @@ class ArpStrategicPriority extends Model
         'readiness_priority_id',
         'title',
         'description',
-        'owner_user_id',
+        'owner_user_ids',
         'target_date',
         'success_measures',
         'org_kpi',
@@ -33,6 +33,11 @@ class ArpStrategicPriority extends Model
         'kpi',
         'status',
         'priority_rank',
+    ];
+
+    protected $casts = [
+        'owner_user_ids' => 'array',
+        'related_groups' => 'array',
     ];
 
     public function arp()

@@ -164,7 +164,7 @@ class ArpPlanService
                 ->map(fn (ArpReadinessPriority $p) => $p->only([
                     'name', 'cor_capability', 'primary_driver', 'secondary_driver',
                     'priority_level', 'description', 'business_rationale',
-                    'executive_owner_user_id', 'expected_impact', 'priority_rank',
+                    'executive_owner_user_ids', 'expected_impact', 'priority_rank',
                 ]))
                 ->values()
                 ->all(),
@@ -175,7 +175,7 @@ class ArpPlanService
                 ->get()
                 ->map(function (ArpStrategicPriority $p) {
                     $row = $p->only([
-                        'title', 'description', 'owner_user_id', 'target_date',
+                        'title', 'description', 'owner_user_ids', 'target_date',
                         'success_measures', 'org_kpi', 'readiness_indicator',
                         'related_groups', 'status', 'priority_rank',
                     ]);

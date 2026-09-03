@@ -29,12 +29,17 @@ function xfarp_wizard_strategic_init_js(): string
 (function () {
     // Executive Owner options come from this ARP's company group roster
     // (Laravel /api/v1/arps/{arp}/group-members) - every member of the
-    // group, not just leaders, and not a hardcoded name list.
+    // group, not just leaders, and not a hardcoded name list. Multi-select:
+    // a strategic priority can have more than one Executive Owner.
     var OWNERS = ((window.XFARP_WIZARD && window.XFARP_WIZARD.groupMembers) || []).map(function (m) {
-        var name = m.name || ('User #' + m.id);
-        var parts = name.trim().split(/\s+/).filter(Boolean);
-        var initials = ((parts[0] || '')[0] || '') + ((parts.length > 1 ? parts[parts.length - 1] : '')[0] || '');
-        return { value: String(m.id), label: name, initials: initials.toUpperCase() || '—' };
+        return { value: String(m.id), label: m.name || ('User #' + m.id) };
+    });
+    // Related Group(s) options are the real groups in this ARP's company
+    // (Laravel /api/v1/arps/{arp}/groups) - replaces the old hardcoded
+    // pseudo-scope list (all_leaders, operations, ...) that never actually
+    // referenced a real wp_company_groups row.
+    var GROUPS = ((window.XFARP_WIZARD && window.XFARP_WIZARD.companyGroups) || []).map(function (g) {
+        return { value: String(g.id), label: g.name || ('Group #' + g.id) };
     });
     var ORG_KPIS = [
         { value: 'leadership_effectiveness', label: 'Leadership Effectiveness Index' },
@@ -49,13 +54,6 @@ function xfarp_wizard_strategic_init_js(): string
         { value: 'commitment_completion', label: 'Commitment Completion Rate' },
         { value: 'cross_team_alignment', label: 'Cross-Team Alignment Index' },
         { value: 'execution_velocity', label: 'Execution Velocity' },
-    ];
-    var GROUPS = [
-        { value: 'all_leaders', label: 'All Leaders' },
-        { value: 'operations', label: 'Operations' },
-        { value: 'all_employees', label: 'All Employees' },
-        { value: 'sales', label: 'Sales' },
-        { value: 'product', label: 'Product' },
     ];
 
     function ensureCache() {
@@ -85,54 +83,6 @@ function xfarp_wizard_strategic_init_js(): string
         }).join('');
     }
 
-    function ownerOpts(selected) {
-        // Reloaded data comes back from Laravel as a JSON number
-        // (executive_owner_user_id is a BIGINT column), while OWNERS' own
-        // values are always strings (String(m.id)) - normalize both sides
-        // or a previously-saved owner never shows as selected again.
-        selected = selected == null ? '' : String(selected);
-        var blank = '<option value=""' + (selected ? '' : ' selected') + '>' +
-            (OWNERS.length ? '— Select group member —' : 'No group members found') + '</option>';
-        return blank + OWNERS.map(function (o) {
-            return '<option value="' + o.value + '"' + (o.value === selected ? ' selected' : '') + '>' + o.label + '</option>';
-        }).join('');
-    }
-
-    function ownerInitials(value) {
-        var normalized = value == null ? '' : String(value);
-        var found = OWNERS.filter(function (o) { return o.value === normalized; })[0];
-        return found ? found.initials : '—';
-    }
-
-    function groupOptions(selected) {
-        if (Array.isArray(selected)) {
-            selected = selected[0] || '';
-        }
-        return opts(GROUPS, selected || 'all_leaders');
-    }
-
-    function emptyItem() {
-        var readiness = window.xarReadinessCache || [];
-        return {
-            title: '',
-            related_readiness: readiness[0] ? readiness[0].name : '',
-            executive_owner: OWNERS.length ? OWNERS[0].value : '',
-            target_date: '',
-            description: '',
-            success_measures: '',
-            org_kpi: 'leadership_effectiveness',
-            readiness_indicator: 'leadership_bench',
-            related_groups: 'all_leaders',
-        };
-    }
-
-    function field(label, required, control) {
-        return '<div class="xar-form-field">' +
-            '<label>' + label + (required ? ' <span class="xar-req">*</span>' : '') + '</label>' +
-            control +
-            '</div>';
-    }
-
     function escAttr(s) {
         return String(s || '')
             .replace(/&/g, '&amp;')
@@ -145,6 +95,42 @@ function xfarp_wizard_strategic_init_js(): string
             .replace(/&/g, '&amp;')
             .replace(/</g, '&lt;')
             .replace(/>/g, '&gt;');
+    }
+
+    function field(label, required, control) {
+        return '<div class="xar-form-field">' +
+            '<label>' + label + (required ? ' <span class="xar-req">*</span>' : '') + '</label>' +
+            control +
+            '</div>';
+    }
+
+    /** A checkbox-list multi-select field, e.g. Executive Owner(s) / Related Group(s). */
+    function multiCheckboxField(label, required, key, options, selected, emptyLabel) {
+        var selectedSet = {};
+        (Array.isArray(selected) ? selected : []).forEach(function (v) { selectedSet[String(v)] = true; });
+        var body = options.length
+            ? options.map(function (o) {
+                var checked = selectedSet[String(o.value)] ? ' checked' : '';
+                return '<label class="xar-multiselect-opt"><input type="checkbox" value="' + escAttr(o.value) + '"' + checked + '> ' + escHtml(o.label) + '</label>';
+            }).join('')
+            : '<div class="xar-multiselect-empty">' + escHtml(emptyLabel || 'No options available') + '</div>';
+
+        return field(label, required, '<div class="xar-multiselect" data-key-array="' + key + '">' + body + '</div>');
+    }
+
+    function emptyItem() {
+        var readiness = window.xarReadinessCache || [];
+        return {
+            title: '',
+            related_readiness: readiness[0] ? readiness[0].name : '',
+            executive_owner_user_ids: [],
+            target_date: '',
+            description: '',
+            success_measures: '',
+            org_kpi: 'leadership_effectiveness',
+            readiness_indicator: 'leadership_bench',
+            related_groups: [],
+        };
     }
 
     function cardHtml(item, index) {
@@ -160,11 +146,7 @@ function xfarp_wizard_strategic_init_js(): string
             '<div class="xar-prio-grid xar-prio-grid-4">' +
             field('Title', true, '<input type="text" class="xar-input" data-key="title" value="' + escAttr(item.title) + '" placeholder="Enter strategic priority title...">') +
             field('Related Readiness Priority', true, '<select class="xar-input" data-key="related_readiness">' + readinessOptions(item.related_readiness) + '</select>') +
-            field('Executive Owner', true,
-                '<div class="xar-owner-field">' +
-                '<span class="xar-avatar" data-owner-avatar>' + ownerInitials(item.executive_owner) + '</span>' +
-                '<select class="xar-input" data-key="executive_owner">' + ownerOpts(item.executive_owner) + '</select>' +
-                '</div>') +
+            multiCheckboxField('Executive Owner(s)', true, 'executive_owner_user_ids', OWNERS, item.executive_owner_user_ids, 'No group members found') +
             field('Target Completion Date', true, '<input type="date" class="xar-input" data-key="target_date" value="' + escAttr(item.target_date) + '">') +
             '</div>' +
             '<div class="xar-prio-grid xar-prio-grid-4">' +
@@ -174,7 +156,7 @@ function xfarp_wizard_strategic_init_js(): string
             field('Related Readiness Indicator(s)', false, '<select class="xar-input" data-key="readiness_indicator">' + opts(READINESS_INDICATORS, item.readiness_indicator) + '</select>') +
             '</div>' +
             '<div class="xar-prio-grid xar-prio-grid-4">' +
-            field('Related Group(s)', false, '<select class="xar-input" data-key="related_groups">' + groupOptions(item.related_groups) + '</select>') +
+            multiCheckboxField('Related Group(s)', false, 'related_groups', GROUPS, item.related_groups, 'No groups found in this company') +
             '</div>' +
             '</div></div>';
     }
@@ -186,6 +168,11 @@ function xfarp_wizard_strategic_init_js(): string
             var item = emptyItem();
             card.querySelectorAll('[data-key]').forEach(function (el) {
                 item[el.getAttribute('data-key')] = el.value;
+            });
+            card.querySelectorAll('[data-key-array]').forEach(function (group) {
+                var key = group.getAttribute('data-key-array');
+                var checked = group.querySelectorAll('input[type="checkbox"]:checked');
+                item[key] = Array.prototype.map.call(checked, function (cb) { return cb.value; });
             });
             next.push(item);
         });
@@ -219,17 +206,13 @@ function xfarp_wizard_strategic_init_js(): string
         list.querySelectorAll('[data-key]').forEach(function (el) {
             el.addEventListener('change', function () {
                 collectFromDom(list);
-                if (el.getAttribute('data-key') === 'executive_owner') {
-                    var wrap = el.closest('.xar-owner-field');
-                    if (wrap) {
-                        var badge = wrap.querySelector('[data-owner-avatar]');
-                        if (badge) {
-                            badge.textContent = ownerInitials(el.value);
-                        }
-                    }
-                }
             });
             el.addEventListener('input', function () {
+                collectFromDom(list);
+            });
+        });
+        list.querySelectorAll('[data-key-array] input[type="checkbox"]').forEach(function (cb) {
+            cb.addEventListener('change', function () {
                 collectFromDom(list);
             });
         });

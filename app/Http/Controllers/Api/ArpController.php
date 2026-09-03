@@ -162,6 +162,29 @@ class ArpController extends Controller
     }
 
     /**
+     * Every group in this ARP's company — used to populate the
+     * "Related Group(s)" multi-select on Step 4 (Strategic Priorities)
+     * instead of a hardcoded pseudo-scope list (all_leaders, etc).
+     */
+    public function companyGroups(Request $request, Arp $arp)
+    {
+        $userId = (int) $request->query('user_id');
+        if ($userId < 1 || ! $this->memberCompanyIds($userId)->contains($arp->company_id)) {
+            return response()->json(['success' => false, 'message' => 'You do not have access to this ARP.'], 403);
+        }
+
+        $groups = CompanyGroup::query()
+            ->where('company_id', $arp->company_id)
+            ->orderBy('title')
+            ->get(['id', 'title']);
+
+        return response()->json([
+            'success' => true,
+            'data' => $groups->map(fn (CompanyGroup $g) => ['id' => $g->id, 'name' => $g->title])->values(),
+        ]);
+    }
+
+    /**
      * AI Readiness Review™ summary from the most recent ARP belonging to a
      * 1-on-1 leader/employee pair's organization — feeds the "ARP
      * Priorities" evidence card in the 1-on-1 wizard's Step 1. Read-only;
@@ -523,7 +546,8 @@ class ArpController extends Controller
             'items.*.priority_level' => 'nullable|string|max:20',
             'items.*.description' => 'nullable|string',
             'items.*.business_rationale' => 'nullable|string',
-            'items.*.executive_owner_user_id' => 'nullable',
+            'items.*.executive_owner_user_ids' => 'nullable|array',
+            'items.*.executive_owner_user_ids.*' => 'nullable',
             'items.*.expected_impact' => 'nullable|string',
         ]);
 
@@ -531,10 +555,12 @@ class ArpController extends Controller
             ArpReadinessPriority::where('arp_id', $arp->id)->delete();
 
             foreach (array_values($data['items']) as $index => $item) {
-                // executive_owner_user_id must be a real wp_users.ID — the UI
-                // still ships a dummy name list (see step-3-readiness.php),
-                // so anything non-numeric is dropped rather than stored.
-                $ownerId = filter_var($item['executive_owner_user_id'] ?? null, FILTER_VALIDATE_INT);
+                // Each id must be a real wp_users.ID — anything non-numeric
+                // is dropped rather than stored.
+                $ownerIds = array_values(array_filter(array_map(
+                    fn ($id) => filter_var($id, FILTER_VALIDATE_INT),
+                    $item['executive_owner_user_ids'] ?? []
+                ), fn ($id) => $id !== false));
 
                 ArpReadinessPriority::create([
                     'arp_id' => $arp->id,
@@ -545,7 +571,7 @@ class ArpController extends Controller
                     'priority_level' => $item['priority_level'] ?? 'medium',
                     'description' => $item['description'] ?? null,
                     'business_rationale' => $item['business_rationale'] ?? null,
-                    'executive_owner_user_id' => $ownerId !== false ? $ownerId : null,
+                    'executive_owner_user_ids' => $ownerIds,
                     'expected_impact' => $item['expected_impact'] ?? null,
                     'priority_rank' => $index,
                 ]);
@@ -597,13 +623,15 @@ class ArpController extends Controller
             'items' => 'present|array',
             'items.*.title' => 'nullable|string|max:255',
             'items.*.related_readiness' => 'nullable|string',
-            'items.*.executive_owner_user_id' => 'nullable',
+            'items.*.executive_owner_user_ids' => 'nullable|array',
+            'items.*.executive_owner_user_ids.*' => 'nullable',
             'items.*.target_date' => 'nullable|string',
             'items.*.description' => 'nullable|string',
             'items.*.success_measures' => 'nullable|string',
             'items.*.org_kpi' => 'nullable|string|max:80',
             'items.*.readiness_indicator' => 'nullable|string|max:80',
-            'items.*.related_groups' => 'nullable|string|max:80',
+            'items.*.related_groups' => 'nullable|array',
+            'items.*.related_groups.*' => 'nullable',
         ]);
 
         $readinessByName = ArpReadinessPriority::where('arp_id', $arp->id)
@@ -614,7 +642,14 @@ class ArpController extends Controller
             ArpStrategicPriority::where('arp_id', $arp->id)->delete();
 
             foreach (array_values($data['items']) as $index => $item) {
-                $ownerId = filter_var($item['executive_owner_user_id'] ?? null, FILTER_VALIDATE_INT);
+                $ownerIds = array_values(array_filter(array_map(
+                    fn ($id) => filter_var($id, FILTER_VALIDATE_INT),
+                    $item['executive_owner_user_ids'] ?? []
+                ), fn ($id) => $id !== false));
+                $groupIds = array_values(array_filter(array_map(
+                    fn ($id) => filter_var($id, FILTER_VALIDATE_INT),
+                    $item['related_groups'] ?? []
+                ), fn ($id) => $id !== false));
                 $readinessName = $item['related_readiness'] ?? null;
                 $readinessId = $readinessName !== null ? ($readinessByName->get($readinessName)?->id) : null;
                 $targetDate = ! empty($item['target_date']) ? $item['target_date'] : null;
@@ -624,12 +659,12 @@ class ArpController extends Controller
                     'readiness_priority_id' => $readinessId,
                     'title' => $item['title'] ?? '',
                     'description' => $item['description'] ?? null,
-                    'owner_user_id' => $ownerId !== false ? $ownerId : null,
+                    'owner_user_ids' => $ownerIds,
                     'target_date' => $targetDate,
                     'success_measures' => $item['success_measures'] ?? null,
                     'org_kpi' => $item['org_kpi'] ?? null,
                     'readiness_indicator' => $item['readiness_indicator'] ?? null,
-                    'related_groups' => $item['related_groups'] ?? null,
+                    'related_groups' => $groupIds,
                     'status' => ArpStrategicPriority::STATUS_NOT_STARTED,
                     'priority_rank' => $index,
                 ]);

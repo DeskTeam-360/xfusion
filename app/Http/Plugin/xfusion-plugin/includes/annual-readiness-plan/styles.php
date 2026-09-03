@@ -149,6 +149,12 @@ select.xar-input[multiple]{min-height:4.75rem;padding:.35rem}
 .xar-owner-field .xar-input{flex:1}
 .xar-avatar{width:32px;height:32px;border-radius:50%;background:var(--navy);color:#fff;display:inline-flex;align-items:center;justify-content:center;font-size:11px;font-weight:700;flex-shrink:0}
 
+/* Multi-select checkbox list (Executive Owner, Related Group(s)) */
+.xar-multiselect{border:1px solid var(--border);border-radius:.375rem;background:#fff;max-height:9rem;overflow-y:auto;padding:.4rem .5rem}
+.xar-multiselect-empty{color:var(--muted);font-size:13px;padding:.2rem 0}
+.xar-multiselect-opt{display:flex;align-items:center;gap:.45rem;padding:.25rem 0;font-size:14px;cursor:pointer}
+.xar-multiselect-opt input{margin:0;cursor:pointer}
+
 /* Info icon on field labels */
 .xar-info-icon{display:inline-flex;align-items:center;justify-content:center;width:16px;height:16px;border-radius:50%;border:1.5px solid var(--muted);color:var(--muted);font-size:10px;font-weight:700;font-style:normal;vertical-align:middle;margin-left:.25rem;text-transform:none;letter-spacing:0}
 

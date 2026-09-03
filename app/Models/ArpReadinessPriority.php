@@ -20,9 +20,13 @@ class ArpReadinessPriority extends Model
         'priority_level',
         'description',
         'business_rationale',
-        'executive_owner_user_id',
+        'executive_owner_user_ids',
         'expected_impact',
         'priority_rank',
+    ];
+
+    protected $casts = [
+        'executive_owner_user_ids' => 'array',
     ];
 
     public function arp()

@@ -69,14 +69,7 @@ window.xarLoadReadinessDraft = function () {
             if (!json || !json.success || !Array.isArray(json.data)) {
                 return null;
             }
-            // Reverse of the remap in xarSaveReadinessDraft — the UI's
-            // select uses data-key="executive_owner".
-            return json.data.map(function (item) {
-                var copy = Object.assign({}, item);
-                copy.executive_owner = copy.executive_owner_user_id;
-                delete copy.executive_owner_user_id;
-                return copy;
-            });
+            return json.data;
         })
         .catch(function () { return null; });
 };
@@ -85,16 +78,7 @@ window.xarSaveReadinessDraft = function () {
     if (!window.XFARP_WIZARD || !window.XFARP_WIZARD.arpId) {
         return Promise.reject(new Error('No ARP selected.'));
     }
-    // step-3-readiness.php's UI uses data-key="executive_owner" (a real
-    // wp_users.ID, from the group's leader roster - see OWNERS array there).
-    // Laravel's column is executive_owner_user_id; remap here so the UI's
-    // own field naming can stay independent of the DB column name.
-    var items = (window.xarReadinessCache || []).map(function (item) {
-        var copy = Object.assign({}, item);
-        copy.executive_owner_user_id = copy.executive_owner;
-        delete copy.executive_owner;
-        return copy;
-    });
+    var items = window.xarReadinessCache || [];
     var payload = new URLSearchParams();
     payload.set('action', 'xfarp_readiness_save');
     payload.set('nonce', window.XFARP_WIZARD.nonce);

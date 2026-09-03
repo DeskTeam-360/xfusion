@@ -48,12 +48,10 @@ function xfarp_wizard_readiness_init_js(): string
     ];
     // Executive Owner options come from this ARP's company group roster
     // (Laravel /api/v1/arps/{arp}/group-members) - every member of the
-    // group, not just leaders, and not a hardcoded name list.
+    // group, not just leaders, and not a hardcoded name list. Multi-select:
+    // a readiness priority can have more than one Executive Owner.
     var OWNERS = ((window.XFARP_WIZARD && window.XFARP_WIZARD.groupMembers) || []).map(function (m) {
-        var name = m.name || ('User #' + m.id);
-        var parts = name.trim().split(/\s+/).filter(Boolean);
-        var initials = ((parts[0] || '')[0] || '') + ((parts.length > 1 ? parts[parts.length - 1] : '')[0] || '');
-        return { value: String(m.id), label: name, initials: initials.toUpperCase() || '—' };
+        return { value: String(m.id), label: m.name || ('User #' + m.id) };
     });
 
     function ensureCache() {
@@ -69,24 +67,39 @@ function xfarp_wizard_readiness_init_js(): string
         }).join('');
     }
 
-    function ownerOpts(selected) {
-        // Reloaded data comes back from Laravel as a JSON number
-        // (executive_owner_user_id is a BIGINT column), while OWNERS' own
-        // values are always strings (String(m.id)) and a freshly-picked
-        // <select>'s .value is also always a string - normalize both sides
-        // or a previously-saved owner never shows as selected again.
-        selected = selected == null ? '' : String(selected);
-        var blank = '<option value=""' + (selected ? '' : ' selected') + '>' +
-            (OWNERS.length ? '— Select group member —' : 'No group members found') + '</option>';
-        return blank + OWNERS.map(function (o) {
-            return '<option value="' + o.value + '"' + (o.value === selected ? ' selected' : '') + '>' + o.label + '</option>';
-        }).join('');
+    function escAttr(s) {
+        return String(s || '')
+            .replace(/&/g, '&amp;')
+            .replace(/"/g, '&quot;')
+            .replace(/</g, '&lt;');
     }
 
-    function ownerInitials(value) {
-        var normalized = value == null ? '' : String(value);
-        var found = OWNERS.filter(function (o) { return o.value === normalized; })[0];
-        return found ? found.initials : '—';
+    function escHtml(s) {
+        return String(s || '')
+            .replace(/&/g, '&amp;')
+            .replace(/</g, '&lt;')
+            .replace(/>/g, '&gt;');
+    }
+
+    function field(label, required, control) {
+        return '<div class="xar-form-field">' +
+            '<label>' + label + (required ? ' <span class="xar-req">*</span>' : '') + '</label>' +
+            control +
+            '</div>';
+    }
+
+    /** A checkbox-list multi-select field, e.g. Executive Owner(s). */
+    function multiCheckboxField(label, required, key, options, selected, emptyLabel) {
+        var selectedSet = {};
+        (Array.isArray(selected) ? selected : []).forEach(function (v) { selectedSet[String(v)] = true; });
+        var body = options.length
+            ? options.map(function (o) {
+                var checked = selectedSet[String(o.value)] ? ' checked' : '';
+                return '<label class="xar-multiselect-opt"><input type="checkbox" value="' + escAttr(o.value) + '"' + checked + '> ' + escHtml(o.label) + '</label>';
+            }).join('')
+            : '<div class="xar-multiselect-empty">' + escHtml(emptyLabel || 'No options available') + '</div>';
+
+        return field(label, required, '<div class="xar-multiselect" data-key-array="' + key + '">' + body + '</div>');
     }
 
     function emptyItem() {
@@ -98,16 +111,9 @@ function xfarp_wizard_readiness_init_js(): string
             description: '',
             business_rationale: '',
             secondary_driver: 'drive_growth',
-            executive_owner: OWNERS.length ? OWNERS[0].value : '',
+            executive_owner_user_ids: [],
             expected_impact: '',
         };
-    }
-
-    function field(label, required, control) {
-        return '<div class="xar-form-field">' +
-            '<label>' + label + (required ? ' <span class="xar-req">*</span>' : '') + '</label>' +
-            control +
-            '</div>';
     }
 
     function cardHtml(item, index) {
@@ -130,30 +136,12 @@ function xfarp_wizard_readiness_init_js(): string
             field('Description', false, '<textarea class="xar-input" rows="3" data-key="description" placeholder="Describe this readiness priority...">' + escHtml(item.description) + '</textarea>') +
             field('Business Rationale', false, '<textarea class="xar-input" rows="3" data-key="business_rationale" placeholder="Why does this matter?...">' + escHtml(item.business_rationale) + '</textarea>') +
             field('Secondary Behavioral Driver™', false, '<select class="xar-input" data-key="secondary_driver">' + opts(DRIVERS, item.secondary_driver) + '</select>') +
-            field('Executive Owner', true,
-                '<div class="xar-owner-field">' +
-                '<span class="xar-avatar" data-owner-avatar>' + ownerInitials(item.executive_owner) + '</span>' +
-                '<select class="xar-input" data-key="executive_owner">' + ownerOpts(item.executive_owner) + '</select>' +
-                '</div>') +
+            multiCheckboxField('Executive Owner(s)', true, 'executive_owner_user_ids', OWNERS, item.executive_owner_user_ids, 'No group members found') +
             '</div>' +
             '<div class="xar-prio-grid xar-prio-grid-1">' +
             field('Expected Organizational Impact', false, '<textarea class="xar-input" rows="2" data-key="expected_impact" placeholder="What organizational impact do you expect?...">' + escHtml(item.expected_impact) + '</textarea>') +
             '</div>' +
             '</div></div>';
-    }
-
-    function escAttr(s) {
-        return String(s || '')
-            .replace(/&/g, '&amp;')
-            .replace(/"/g, '&quot;')
-            .replace(/</g, '&lt;');
-    }
-
-    function escHtml(s) {
-        return String(s || '')
-            .replace(/&/g, '&amp;')
-            .replace(/</g, '&lt;')
-            .replace(/>/g, '&gt;');
     }
 
     function collectFromDom(list) {
@@ -163,6 +151,11 @@ function xfarp_wizard_readiness_init_js(): string
             var item = emptyItem();
             card.querySelectorAll('[data-key]').forEach(function (el) {
                 item[el.getAttribute('data-key')] = el.value;
+            });
+            card.querySelectorAll('[data-key-array]').forEach(function (group) {
+                var key = group.getAttribute('data-key-array');
+                var checked = group.querySelectorAll('input[type="checkbox"]:checked');
+                item[key] = Array.prototype.map.call(checked, function (cb) { return cb.value; });
             });
             next.push(item);
         });
@@ -196,17 +189,13 @@ function xfarp_wizard_readiness_init_js(): string
         list.querySelectorAll('[data-key]').forEach(function (el) {
             el.addEventListener('change', function () {
                 collectFromDom(list);
-                if (el.getAttribute('data-key') === 'executive_owner') {
-                    var avatar = el.closest('.xar-owner-field');
-                    if (avatar) {
-                        var badge = avatar.querySelector('[data-owner-avatar]');
-                        if (badge) {
-                            badge.textContent = ownerInitials(el.value);
-                        }
-                    }
-                }
             });
             el.addEventListener('input', function () {
+                collectFromDom(list);
+            });
+        });
+        list.querySelectorAll('[data-key-array] input[type="checkbox"]').forEach(function (cb) {
+            cb.addEventListener('change', function () {
                 collectFromDom(list);
             });
         });
