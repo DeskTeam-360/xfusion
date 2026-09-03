@@ -902,13 +902,13 @@ window.xfwInitMeetingPicker = function () {
         return;
     }
     if (allEl) {
-        allEl.innerHTML = '<p class="xfw-muted">Loading meetings…</p>';
+        allEl.innerHTML = '<div class="xfw-spinner-row"><span class="xfw-spinner"></span> Loading meetings…</div>';
     }
     if (convEl) {
         convEl.classList.add('xfw-hidden');
         convEl.innerHTML = '';
     }
-    pairsEl.innerHTML = '<p class="xfw-muted">Loading groups…</p>';
+    pairsEl.innerHTML = '<div class="xfw-spinner-row"><span class="xfw-spinner"></span> Loading groups…</div>';
 
     xfwOoCall('xfusion_oo_meeting_dashboard').then(function (res) {
         if (!res || !res.success || !res.data) {
