@@ -36,11 +36,12 @@ use Illuminate\Support\Facades\DB;
 class ArrController extends Controller
 {
     /**
-     * Groups the given user leads, with their parent company for display —
-     * same shape as ArpController::leadableCompanies(). The "create new
-     * ARR" form picks a group (per the client's direction that this stay
-     * per-group like ARP), and store() resolves company_id from it; the
-     * underlying ARR row itself is still one-per-company-per-year.
+     * Groups the given user leads, with their parent company for display.
+     * The "create new ARR" form picks a group (per the client's direction
+     * for this one), and store() resolves company_id from it; the
+     * underlying ARR row itself is still one-per-company-per-year. ARP's
+     * own picker instead shows real companies directly (see
+     * ArpController::leadableCompanies()) — the two diverged on this UX.
      */
     public function leadableGroups(Request $request)
     {

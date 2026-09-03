@@ -31,7 +31,11 @@ use Illuminate\Support\Facades\DB;
  */
 class ArpController extends Controller
 {
-    /** Groups the given user leads, with their parent company name for display. */
+    /**
+     * Distinct companies the given user leads (via any group). ARP is
+     * company-scoped, so the "create new ARP" dropdown shows real company
+     * names, not the group used to establish leadership.
+     */
     public function leadableCompanies(Request $request)
     {
         $userId = (int) $request->query('user_id');
@@ -39,24 +43,21 @@ class ArpController extends Controller
             return response()->json(['success' => false, 'message' => 'user_id is required'], 422);
         }
 
-        $groups = CompanyGroupDetail::query()
+        $companies = CompanyGroupDetail::query()
             ->where('user_id', $userId)
             ->where('status', CompanyGroup::STATUS_LEADER)
             ->whereHas('companyGroup')
-            ->with('companyGroup:id,company_id,title', 'companyGroup.company:id,title')
+            ->with('companyGroup.company:id,title')
             ->get()
-            ->pluck('companyGroup')
+            ->pluck('companyGroup.company')
             ->filter()
             ->unique('id')
+            ->sortBy('title')
             ->values();
 
         return response()->json([
             'success' => true,
-            'data' => $groups->map(fn ($g) => [
-                'id' => $g->id,
-                'name' => $g->title . ($g->company ? ' (' . $g->company->title . ')' : ''),
-                'company_id' => $g->company_id,
-            ]),
+            'data' => $companies->map(fn ($c) => ['id' => $c->id, 'name' => $c->title]),
         ]);
     }
 
@@ -369,33 +370,26 @@ class ArpController extends Controller
     }
 
     /**
-     * Create (or resume) the ARP for the year, scoped via a group the user
-     * leads. company_id is resolved from company_group_id server-side — the
-     * client never sends company_id directly. If one already exists for
-     * this company+year, return the existing record instead of erroring —
-     * the picker resumes it.
+     * Create (or resume) the ARP for the year, directly by company_id —
+     * ARP is company-scoped, so the picker offers real companies (see
+     * leadableCompanies()), not a group. If one already exists for this
+     * company+year, return the existing record instead of erroring — the
+     * picker resumes it.
      */
     public function store(Request $request)
     {
         $userId = (int) $request->input('user_id');
         $data = $request->validate([
-            'company_group_id' => 'required|integer|min:1',
+            'company_id' => 'required|integer|min:1',
             'year' => 'required|integer|min:2000|max:2100',
             'title' => 'nullable|string|max:255',
         ]);
 
-        $group = CompanyGroupDetail::query()
-            ->where('user_id', $userId)
-            ->where('company_group_id', $data['company_group_id'])
-            ->where('status', CompanyGroup::STATUS_LEADER)
-            ->with('companyGroup:id,company_id')
-            ->first();
+        $companyId = (int) $data['company_id'];
 
-        if ($userId < 1 || ! $group || ! $group->companyGroup) {
-            return response()->json(['success' => false, 'message' => 'You do not lead this group.'], 403);
+        if ($userId < 1 || ! $this->leadableCompanyIds($userId)->contains($companyId)) {
+            return response()->json(['success' => false, 'message' => 'You do not lead a group in this company.'], 403);
         }
-
-        $companyId = $group->companyGroup->company_id;
 
         $existing = Arp::where('company_id', $companyId)->where('year', $data['year'])->first();
         if ($existing) {
