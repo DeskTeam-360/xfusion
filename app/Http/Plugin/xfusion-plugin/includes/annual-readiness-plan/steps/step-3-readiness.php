@@ -46,9 +46,12 @@ function xfarp_wizard_readiness_init_js(): string
         { value: 'medium', label: 'Medium' },
         { value: 'low', label: 'Low' },
     ];
-    // Executive Owner options come from this ARP's company group roster
-    // (Laravel /api/v1/arps/{arp}/group-members) — not a hardcoded name list.
-    var OWNERS = ((window.XFARP_WIZARD && window.XFARP_WIZARD.groupMembers) || []).map(function (m) {
+    // Executive Owner options are the leaders of this ARP's company group
+    // (Laravel /api/v1/arps/{arp}/group-members, filtered to is_leader) - not
+    // every member, and not a hardcoded name list.
+    var OWNERS = ((window.XFARP_WIZARD && window.XFARP_WIZARD.groupMembers) || []).filter(function (m) {
+        return !!m.is_leader;
+    }).map(function (m) {
         var name = m.name || ('User #' + m.id);
         var parts = name.trim().split(/\s+/).filter(Boolean);
         var initials = ((parts[0] || '')[0] || '') + ((parts.length > 1 ? parts[parts.length - 1] : '')[0] || '');
@@ -69,15 +72,22 @@ function xfarp_wizard_readiness_init_js(): string
     }
 
     function ownerOpts(selected) {
+        // Reloaded data comes back from Laravel as a JSON number
+        // (executive_owner_user_id is a BIGINT column), while OWNERS' own
+        // values are always strings (String(m.id)) and a freshly-picked
+        // <select>'s .value is also always a string - normalize both sides
+        // or a previously-saved owner never shows as selected again.
+        selected = selected == null ? '' : String(selected);
         var blank = '<option value=""' + (selected ? '' : ' selected') + '>' +
-            (OWNERS.length ? '— Select group member —' : 'No group members found') + '</option>';
+            (OWNERS.length ? '— Select leader —' : 'No leaders found in this group') + '</option>';
         return blank + OWNERS.map(function (o) {
             return '<option value="' + o.value + '"' + (o.value === selected ? ' selected' : '') + '>' + o.label + '</option>';
         }).join('');
     }
 
     function ownerInitials(value) {
-        var found = OWNERS.filter(function (o) { return o.value === value; })[0];
+        var normalized = value == null ? '' : String(value);
+        var found = OWNERS.filter(function (o) { return o.value === normalized; })[0];
         return found ? found.initials : '—';
     }
 

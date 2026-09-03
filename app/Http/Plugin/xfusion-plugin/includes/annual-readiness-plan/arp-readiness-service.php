@@ -85,10 +85,10 @@ window.xarSaveReadinessDraft = function () {
     if (!window.XFARP_WIZARD || !window.XFARP_WIZARD.arpId) {
         return Promise.reject(new Error('No ARP selected.'));
     }
-    // step-3-readiness.php's UI uses data-key="executive_owner" (currently a
-    // dummy name slug, not a real wp_users.ID — see OWNERS array there).
-    // Laravel's column is executive_owner_user_id; remap here so a future
-    // real-owner-picker only needs to change the UI, not this bridge.
+    // step-3-readiness.php's UI uses data-key="executive_owner" (a real
+    // wp_users.ID, from the group's leader roster - see OWNERS array there).
+    // Laravel's column is executive_owner_user_id; remap here so the UI's
+    // own field naming can stay independent of the DB column name.
     var items = (window.xarReadinessCache || []).map(function (item) {
         var copy = Object.assign({}, item);
         copy.executive_owner_user_id = copy.executive_owner;
