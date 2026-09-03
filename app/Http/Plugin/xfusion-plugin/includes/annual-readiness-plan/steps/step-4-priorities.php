@@ -27,12 +27,10 @@ function xfarp_wizard_strategic_init_js(): string
 {
     return <<<'JS'
 (function () {
-    // Executive Owner options are the leaders of this ARP's company group
-    // (Laravel /api/v1/arps/{arp}/group-members, filtered to is_leader) - not
-    // every member, and not a hardcoded name list.
-    var OWNERS = ((window.XFARP_WIZARD && window.XFARP_WIZARD.groupMembers) || []).filter(function (m) {
-        return !!m.is_leader;
-    }).map(function (m) {
+    // Executive Owner options come from this ARP's company group roster
+    // (Laravel /api/v1/arps/{arp}/group-members) - every member of the
+    // group, not just leaders, and not a hardcoded name list.
+    var OWNERS = ((window.XFARP_WIZARD && window.XFARP_WIZARD.groupMembers) || []).map(function (m) {
         var name = m.name || ('User #' + m.id);
         var parts = name.trim().split(/\s+/).filter(Boolean);
         var initials = ((parts[0] || '')[0] || '') + ((parts.length > 1 ? parts[parts.length - 1] : '')[0] || '');
@@ -94,7 +92,7 @@ function xfarp_wizard_strategic_init_js(): string
         // or a previously-saved owner never shows as selected again.
         selected = selected == null ? '' : String(selected);
         var blank = '<option value=""' + (selected ? '' : ' selected') + '>' +
-            (OWNERS.length ? '— Select leader —' : 'No leaders found in this group') + '</option>';
+            (OWNERS.length ? '— Select group member —' : 'No group members found') + '</option>';
         return blank + OWNERS.map(function (o) {
             return '<option value="' + o.value + '"' + (o.value === selected ? ' selected' : '') + '>' + o.label + '</option>';
         }).join('');
