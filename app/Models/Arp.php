@@ -19,7 +19,6 @@ class Arp extends Model
 
     protected $fillable = [
         'company_id',
-        'company_group_id',
         'year',
         'title',
         'mission',
@@ -69,12 +68,6 @@ class Arp extends Model
     public function company()
     {
         return $this->belongsTo(Company::class, 'company_id');
-    }
-
-    /** The real scoping unit — one ARP per group per year. */
-    public function companyGroup()
-    {
-        return $this->belongsTo(CompanyGroup::class, 'company_group_id');
     }
 
     public function creator()

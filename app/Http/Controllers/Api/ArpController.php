@@ -20,14 +20,14 @@ use Illuminate\Support\Facades\DB;
 /**
  * ARP picker bridge for the WordPress [fusion_arp_wizard] shortcode.
  *
- * Business rule: one ARP exists per (company GROUP, calendar year) —
- * enforced by the `arp_group_year_uq` unique key on wp_fusion_arps.
- * `company_group_id` is the real scoping key; `company_id` is kept as a
- * denormalized copy (from the group's company) purely for display/joins,
- * since a company can have several groups (e.g. Operations, Sales) each
- * running their own ARP. Only users who lead the specific group
- * (wp_company_group_details.status = leader) may edit/publish that group's
- * ARP; any member of the group may view it read-only.
+ * Business rule: one ARP exists per (company, calendar year) — enforced by
+ * the `arp_company_year_uq` unique key on wp_fusion_arps. ARP is
+ * organization-wide rather than scoped to a single company group: any user
+ * who leads at least one company group may create/edit that company's ARP;
+ * any member of any group in the company may view it read-only. The
+ * "create new ARP" form still picks a group (leader-identification UX),
+ * and store() resolves company_id from it, but the underlying ARP row
+ * itself is one-per-company-per-year — same pattern as ARR.
  */
 class ArpController extends Controller
 {
@@ -60,7 +60,7 @@ class ArpController extends Controller
         ]);
     }
 
-    /** ARPs for groups this user belongs to (any role), newest year first. */
+    /** ARPs for companies this user belongs to (any role, via any group), newest year first. */
     public function index(Request $request)
     {
         $userId = (int) $request->query('user_id');
@@ -68,39 +68,38 @@ class ArpController extends Controller
             return response()->json(['success' => false, 'message' => 'user_id is required'], 422);
         }
 
-        // Members see the ARPs of any group they belong to (view-only);
+        // Members see the ARPs of any company they belong to (view-only);
         // leaders additionally get edit rights, flagged per-row via can_edit.
-        $memberGroupIds = $this->memberGroupIds($userId);
-        if ($memberGroupIds->isEmpty()) {
+        $memberCompanyIds = $this->memberCompanyIds($userId);
+        if ($memberCompanyIds->isEmpty()) {
             return response()->json(['success' => true, 'data' => [], 'has_access' => false]);
         }
 
-        $leadableGroupIds = $this->leadableGroupIds($userId);
+        $leadableCompanyIds = $this->leadableCompanyIds($userId);
 
         $arps = Arp::query()
-            ->whereIn('company_group_id', $memberGroupIds)
-            ->with(['company:id,title', 'companyGroup:id,title'])
+            ->whereIn('company_id', $memberCompanyIds)
+            ->with(['company:id,title'])
             ->orderByDesc('year')
             ->get();
 
         return response()->json([
             'success' => true,
             'has_access' => true,
-            'can_create' => $leadableGroupIds->isNotEmpty(),
+            'can_create' => $leadableCompanyIds->isNotEmpty(),
             'data' => $arps->map(fn (Arp $a) => [
                 'id' => $a->id,
                 'company_id' => $a->company_id,
-                'company_group_id' => $a->company_group_id,
-                'company_name' => $a->companyGroup?->title ?? $a->company?->title,
+                'company_name' => $a->company?->title,
                 'year' => $a->year,
                 'title' => $a->title,
                 'status' => $a->status,
-                'can_edit' => $leadableGroupIds->contains($a->company_group_id),
+                'can_edit' => $leadableCompanyIds->contains($a->company_id),
             ]),
         ]);
     }
 
-    /** Single ARP + the requesting user's group name. */
+    /** Single ARP + the requesting user's company name. */
     public function show(Request $request, Arp $arp)
     {
         $userId = (int) $request->query('user_id');
@@ -110,9 +109,7 @@ class ArpController extends Controller
             'data' => [
                 'id' => $arp->id,
                 'company_id' => $arp->company_id,
-                'company_group_id' => $arp->company_group_id,
                 'company_name' => $arp->company?->title,
-                'group_name' => $arp->companyGroup?->title,
                 'year' => $arp->year,
                 'title' => $arp->title,
                 'status' => $arp->status,
@@ -121,22 +118,24 @@ class ArpController extends Controller
                 'updated_at' => $arp->updated_at?->toIso8601String(),
                 'published_at' => $arp->published_at?->toIso8601String(),
                 'step_progress' => $arp->step_progress ?? app(ArpPlanService::class)->computeStepProgress($arp),
-                'can_edit' => $this->leadableGroupIds($userId)->contains($arp->company_group_id),
+                'can_edit' => $this->leadableCompanyIds($userId)->contains($arp->company_id),
             ],
         ]);
     }
 
     /**
-     * Members of this ARP's company group — used to populate the
-     * Executive Owner dropdown on Steps 3 (Readiness Priorities) and 4
+     * Members across every group in this ARP's company — used to populate
+     * the Executive Owner dropdown on Steps 3 (Readiness Priorities) and 4
      * (Strategic Priorities) instead of a hardcoded name list.
      */
     public function groupMembers(Request $request, Arp $arp)
     {
         $userId = (int) $request->query('user_id');
-        if ($userId < 1 || ! $this->memberGroupIds($userId)->contains($arp->company_group_id)) {
+        if ($userId < 1 || ! $this->memberCompanyIds($userId)->contains($arp->company_id)) {
             return response()->json(['success' => false, 'message' => 'You do not have access to this ARP.'], 403);
         }
+
+        $groupIds = CompanyGroup::query()->where('company_id', $arp->company_id)->pluck('id');
 
         // whereHas('user') would try to compile a single SQL statement
         // spanning two different DB connections (this model's default
@@ -146,7 +145,7 @@ class ArpController extends Controller
         // unprefixed under `mysql`. Eager-load instead (a separate query,
         // correctly scoped to User's own connection) and filter afterward.
         $members = CompanyGroupDetail::query()
-            ->where('company_group_id', $arp->company_group_id)
+            ->whereIn('company_group_id', $groupIds)
             ->with('user:ID,display_name,user_nicename')
             ->get()
             ->filter(fn (CompanyGroupDetail $d) => $d->user !== null)
@@ -164,7 +163,7 @@ class ArpController extends Controller
 
     /**
      * AI Readiness Review™ summary from the most recent ARP belonging to a
-     * 1-on-1 leader/employee pair's company group — feeds the "ARP
+     * 1-on-1 leader/employee pair's organization — feeds the "ARP
      * Priorities" evidence card in the 1-on-1 wizard's Step 1. Read-only;
      * only the AI-generated readiness figures are exposed, never raw
      * evidence.
@@ -183,7 +182,7 @@ class ArpController extends Controller
         }
 
         $arp = Arp::query()
-            ->where('company_group_id', $group->id)
+            ->where('company_id', $group->company_id)
             ->orderByDesc('year')
             ->first();
         if ($arp === null) {
@@ -202,7 +201,7 @@ class ArpController extends Controller
                 'score' => $readiness['score'],
                 'label' => $readiness['label'] ?? null,
                 'narrative' => $readiness['summary'] ?? null,
-                'group_name' => $group->title,
+                'company_name' => $group->company?->title,
                 'year' => $arp->year,
                 'status' => $arp->status,
             ],
@@ -225,7 +224,7 @@ class ArpController extends Controller
     public function getVersion(Request $request, Arp $arp, ArpVersion $version)
     {
         $userId = (int) $request->query('user_id');
-        if ($userId < 1 || ! $this->memberGroupIds($userId)->contains($arp->company_group_id)) {
+        if ($userId < 1 || ! $this->memberCompanyIds($userId)->contains($arp->company_id)) {
             return response()->json(['success' => false, 'message' => 'You do not have access to this ARP.'], 403);
         }
 
@@ -256,7 +255,7 @@ class ArpController extends Controller
     public function archiveVersion(Request $request, Arp $arp)
     {
         $userId = (int) $request->input('user_id');
-        if ($userId < 1 || ! $this->leadableGroupIds($userId)->contains($arp->company_group_id)) {
+        if ($userId < 1 || ! $this->leadableCompanyIds($userId)->contains($arp->company_id)) {
             return response()->json(['success' => false, 'message' => 'You do not lead this ARP\'s company group.'], 403);
         }
 
@@ -285,7 +284,7 @@ class ArpController extends Controller
     public function publish(Request $request, Arp $arp)
     {
         $userId = (int) $request->input('user_id');
-        if ($userId < 1 || ! $this->leadableGroupIds($userId)->contains($arp->company_group_id)) {
+        if ($userId < 1 || ! $this->leadableCompanyIds($userId)->contains($arp->company_id)) {
             return response()->json(['success' => false, 'message' => 'You do not lead this ARP\'s company group.'], 403);
         }
 
@@ -332,7 +331,7 @@ class ArpController extends Controller
 
         return [
             'arp' => $arp->only([
-                'id', 'company_id', 'company_group_id', 'year', 'title',
+                'id', 'company_id', 'year', 'title',
                 'mission', 'vision', 'core_values', 'organizational_description',
                 'business_environment', 'executive_narrative', 'status', 'version',
             ]),
@@ -347,8 +346,11 @@ class ArpController extends Controller
     }
 
     /**
-     * Create a new ARP. If one already exists for this group+year, return
-     * the existing record instead of erroring — the picker resumes it.
+     * Create (or resume) the ARP for the year, scoped via a group the user
+     * leads. company_id is resolved from company_group_id server-side — the
+     * client never sends company_id directly. If one already exists for
+     * this company+year, return the existing record instead of erroring —
+     * the picker resumes it.
      */
     public function store(Request $request)
     {
@@ -359,23 +361,26 @@ class ArpController extends Controller
             'title' => 'nullable|string|max:255',
         ]);
 
-        if ($userId < 1 || ! $this->leadableGroupIds($userId)->contains((int) $data['company_group_id'])) {
+        $group = CompanyGroupDetail::query()
+            ->where('user_id', $userId)
+            ->where('company_group_id', $data['company_group_id'])
+            ->where('status', CompanyGroup::STATUS_LEADER)
+            ->with('companyGroup:id,company_id')
+            ->first();
+
+        if ($userId < 1 || ! $group || ! $group->companyGroup) {
             return response()->json(['success' => false, 'message' => 'You do not lead this group.'], 403);
         }
 
-        $group = CompanyGroup::find($data['company_group_id']);
-        if (! $group) {
-            return response()->json(['success' => false, 'message' => 'Group not found.'], 404);
-        }
+        $companyId = $group->companyGroup->company_id;
 
-        $existing = Arp::where('company_group_id', $data['company_group_id'])->where('year', $data['year'])->first();
+        $existing = Arp::where('company_id', $companyId)->where('year', $data['year'])->first();
         if ($existing) {
             return response()->json(['success' => true, 'data' => $existing, 'already_existed' => true]);
         }
 
         $arp = Arp::create([
-            'company_id' => $group->company_id,
-            'company_group_id' => $group->id,
+            'company_id' => $companyId,
             'year' => $data['year'],
             'title' => $data['title'] ?? ('ARP ' . $data['year']),
             'status' => Arp::STATUS_DRAFT,
@@ -389,7 +394,7 @@ class ArpController extends Controller
     public function getPlan(Request $request, Arp $arp)
     {
         $userId = (int) $request->query('user_id');
-        if ($userId < 1 || ! $this->memberGroupIds($userId)->contains($arp->company_group_id)) {
+        if ($userId < 1 || ! $this->memberCompanyIds($userId)->contains($arp->company_id)) {
             return response()->json(['success' => false, 'message' => 'You do not have access to this ARP.'], 403);
         }
 
@@ -418,7 +423,7 @@ class ArpController extends Controller
     public function saveFoundation(Request $request, Arp $arp)
     {
         $userId = (int) $request->input('user_id');
-        if ($userId < 1 || ! $this->leadableGroupIds($userId)->contains($arp->company_group_id)) {
+        if ($userId < 1 || ! $this->leadableCompanyIds($userId)->contains($arp->company_id)) {
             return response()->json(['success' => false, 'message' => 'You do not lead this ARP\'s company group.'], 403);
         }
 
@@ -445,7 +450,7 @@ class ArpController extends Controller
     public function saveFutureState(Request $request, Arp $arp)
     {
         $userId = (int) $request->input('user_id');
-        if ($userId < 1 || ! $this->leadableGroupIds($userId)->contains($arp->company_group_id)) {
+        if ($userId < 1 || ! $this->leadableCompanyIds($userId)->contains($arp->company_id)) {
             return response()->json(['success' => false, 'message' => 'You do not lead this ARP\'s company group.'], 403);
         }
 
@@ -472,7 +477,7 @@ class ArpController extends Controller
     public function saveLearning(Request $request, Arp $arp)
     {
         $userId = (int) $request->input('user_id');
-        if ($userId < 1 || ! $this->leadableGroupIds($userId)->contains($arp->company_group_id)) {
+        if ($userId < 1 || ! $this->leadableCompanyIds($userId)->contains($arp->company_id)) {
             return response()->json(['success' => false, 'message' => 'You do not lead this ARP\'s company group.'], 403);
         }
 
@@ -505,7 +510,7 @@ class ArpController extends Controller
     public function saveReadinessPriorities(Request $request, Arp $arp)
     {
         $userId = (int) $request->input('user_id');
-        if ($userId < 1 || ! $this->leadableGroupIds($userId)->contains($arp->company_group_id)) {
+        if ($userId < 1 || ! $this->leadableCompanyIds($userId)->contains($arp->company_id)) {
             return response()->json(['success' => false, 'message' => 'You do not lead this ARP\'s company group.'], 403);
         }
 
@@ -584,7 +589,7 @@ class ArpController extends Controller
     public function saveStrategicPriorities(Request $request, Arp $arp)
     {
         $userId = (int) $request->input('user_id');
-        if ($userId < 1 || ! $this->leadableGroupIds($userId)->contains($arp->company_group_id)) {
+        if ($userId < 1 || ! $this->leadableCompanyIds($userId)->contains($arp->company_id)) {
             return response()->json(['success' => false, 'message' => 'You do not lead this ARP\'s company group.'], 403);
         }
 
@@ -640,7 +645,7 @@ class ArpController extends Controller
     public function getReadinessReview(Request $request, Arp $arp)
     {
         $userId = (int) $request->query('user_id');
-        if ($userId < 1 || ! $this->memberGroupIds($userId)->contains($arp->company_group_id)) {
+        if ($userId < 1 || ! $this->memberCompanyIds($userId)->contains($arp->company_id)) {
             return response()->json(['success' => false, 'message' => 'You do not have access to this ARP.'], 403);
         }
 
@@ -657,7 +662,7 @@ class ArpController extends Controller
                 'leadership_context' => (string) ($latest?->leadership_context ?? ''),
                 'insight_model' => $latest?->insight_model,
                 'generated_at' => $latest?->created_at?->toIso8601String(),
-                'can_edit' => $this->leadableGroupIds($userId)->contains($arp->company_group_id),
+                'can_edit' => $this->leadableCompanyIds($userId)->contains($arp->company_id),
             ],
         ]);
     }
@@ -666,7 +671,7 @@ class ArpController extends Controller
     public function generateReadinessReview(Request $request, Arp $arp)
     {
         $userId = (int) $request->input('user_id');
-        if ($userId < 1 || ! $this->leadableGroupIds($userId)->contains($arp->company_group_id)) {
+        if ($userId < 1 || ! $this->leadableCompanyIds($userId)->contains($arp->company_id)) {
             return response()->json(['success' => false, 'message' => 'You do not lead this ARP\'s company group.'], 403);
         }
 
@@ -711,7 +716,7 @@ class ArpController extends Controller
     public function saveReadinessReviewContext(Request $request, Arp $arp)
     {
         $userId = (int) $request->input('user_id');
-        if ($userId < 1 || ! $this->leadableGroupIds($userId)->contains($arp->company_group_id)) {
+        if ($userId < 1 || ! $this->leadableCompanyIds($userId)->contains($arp->company_id)) {
             return response()->json(['success' => false, 'message' => 'You do not lead this ARP\'s company group.'], 403);
         }
 
@@ -733,26 +738,30 @@ class ArpController extends Controller
         ]);
     }
 
-    /** Groups the user leads. */
-    private function leadableGroupIds(int $userId)
+    /** Company ids where the user leads at least one group. */
+    private function leadableCompanyIds(int $userId)
     {
         return CompanyGroupDetail::query()
             ->where('user_id', $userId)
             ->where('status', CompanyGroup::STATUS_LEADER)
             ->whereHas('companyGroup')
-            ->pluck('company_group_id')
+            ->with('companyGroup:id,company_id')
+            ->get()
+            ->pluck('companyGroup.company_id')
             ->filter()
             ->unique()
             ->values();
     }
 
-    /** Groups the user belongs to, regardless of role — view-only access. */
-    private function memberGroupIds(int $userId)
+    /** Company ids where the user belongs to at least one group (any role). */
+    private function memberCompanyIds(int $userId)
     {
         return CompanyGroupDetail::query()
             ->where('user_id', $userId)
             ->whereHas('companyGroup')
-            ->pluck('company_group_id')
+            ->with('companyGroup:id,company_id')
+            ->get()
+            ->pluck('companyGroup.company_id')
             ->filter()
             ->unique()
             ->values();

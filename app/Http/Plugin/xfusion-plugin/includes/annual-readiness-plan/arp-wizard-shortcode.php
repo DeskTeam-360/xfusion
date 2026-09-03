@@ -59,16 +59,14 @@ function xfusion_arp_wizard_shortcode($atts = []): string
 
     $atts['arp_id'] = (string) $arpId;
 
-    // Fetch real ARP context from Laravel — the "Organization" field shown in
-    // the sidebar should be the leader's company GROUP name, not the parent
-    // company title (ARP is scoped per-company, but leaders think in terms
-    // of the group they run).
+    // Fetch real ARP context from Laravel — ARP is company-scoped (like
+    // ARR), so the "Organization" field is simply the company name.
     $arpContext = xfarp_picker_api_request('GET', "/{$arpId}", ['user_id' => get_current_user_id()]);
     $arpData    = [];
     $canEdit    = false;
     if ($arpContext['ok'] && is_array($arpContext['body']['data'] ?? null)) {
         $arpData = $arpContext['body']['data'];
-        $atts['organization'] = $arpData['group_name'] ?? $arpData['company_name'] ?? $atts['organization'];
+        $atts['organization'] = $arpData['company_name'] ?? $atts['organization'];
         $atts['plan_year']    = (string) ($arpData['year'] ?? $atts['plan_year']);
         $atts['status']       = ucfirst((string) ($arpData['status'] ?? $atts['status']));
         $atts['company_id']   = (string) ($arpData['company_id'] ?? $atts['company_id']);

@@ -21,7 +21,7 @@ class ArpEvidenceService
             'evidence_date' => now()->toDateString(),
             'metadata' => [
                 'arp_id' => $arp->id,
-                'company_group_id' => $arp->company_group_id,
+                'company_id' => $arp->company_id,
                 'year' => $arp->year,
                 'version' => (string) $version->version,
                 'readiness_count' => ArpReadinessPriority::query()->where('arp_id', $arp->id)->count(),
@@ -40,7 +40,7 @@ class ArpEvidenceService
             'evidence_date' => now()->toDateString(),
             'metadata' => [
                 'arp_id' => $arp->id,
-                'company_group_id' => $arp->company_group_id,
+                'company_id' => $arp->company_id,
                 'year' => $arp->year,
                 'version' => (string) $version->version,
             ],
@@ -59,7 +59,7 @@ class ArpEvidenceService
             'evidence_date' => now()->toDateString(),
             'metadata' => [
                 'arp_id' => $arp->id,
-                'company_group_id' => $arp->company_group_id,
+                'company_id' => $arp->company_id,
                 'year' => $arp->year,
                 'insight_model' => $assessment->insight_model,
                 'tokens_used' => (int) $assessment->tokens_used,

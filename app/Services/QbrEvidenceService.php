@@ -173,15 +173,16 @@ class QbrEvidenceService
         );
     }
 
-    /** % completion of the active ARP's strategic priorities for this group. */
+    /** % completion of the active ARP's strategic priorities for this group's company. ARP is company-scoped, QBR stays group-scoped. */
     private function qbrObjectivesProgress(Qbr $qbr): array
     {
-        if ($qbr->company_group_id === null) {
+        $companyId = $qbr->companyGroup?->company_id;
+        if ($companyId === null) {
             return ['progress' => null, 'objective_count' => 0, 'objectives' => []];
         }
 
         $arp = Arp::query()
-            ->where('company_group_id', $qbr->company_group_id)
+            ->where('company_id', $companyId)
             ->orderByDesc('year')
             ->first();
 
@@ -670,7 +671,7 @@ class QbrEvidenceService
             || ($toolUtilization['total_tools'] ?? 0) > 0;
 
         return [
-            ['key' => 'arp_objectives', 'label' => 'Annual Readiness Plan™ Objectives', 'available' => Arp::where('company_group_id', $qbr->company_group_id)->exists()],
+            ['key' => 'arp_objectives', 'label' => 'Annual Readiness Plan™ Objectives', 'available' => $group !== null && Arp::where('company_id', $group->company_id)->exists()],
             ['key' => 'previous_commitments', 'label' => 'Previous Quarterly Commitments', 'available' => $qbr->previousQuarter() !== null],
             ['key' => 'individual_insight_trends', 'label' => 'Individual Insight Trends', 'available' => true],
             ['key' => 'one_on_one_summaries', 'label' => '1-on-1 Alignment Capture™ Summaries', 'available' => $oneOnOneSummaries !== []],

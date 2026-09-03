@@ -7,6 +7,13 @@
  *
  * Bump XFUSION_ARP_DB_VERSION when schema changes; dbDelta adds missing columns/indexes.
  *
+ * NOTE: this schema (company_id + arp_company_year_uq, no
+ * company_group_id) is company-scoped, matching the current ARP business
+ * rule (see database/sql/wp_fusion_arp_scope_to_company.sql and
+ * app/Http/Controllers/Api/ArpController.php). This file never had a
+ * group-scoped variant added even during the period the real schema was
+ * temporarily group-scoped, so no further change is needed here.
+ *
  * @package XFusion
  */
 
