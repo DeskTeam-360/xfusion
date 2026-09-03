@@ -17,7 +17,7 @@ evidence: function () {
         '<p class="xqbr-section-desc">FUSION automatically gathers evidence from across the platform for the current review period. This evidence provides the foundation for leadership analysis and decision-making.</p>' +
         '<div class="xqbr-banner">ℹ️ <span>Evidence is system generated and read-only. No manual entry is required. The data below represents the current review period.</span></div>' +
         '<div class="xqbr-card"><h3 style="margin-top:0">Evidence Sources</h3>' +
-        '<p class="xqbr-muted" style="margin-top:-.5rem">The platform is automatically pulling evidence from the following sources:</p>' +
+        '<p class="xqbr-muted" style="margin-top:-.5rem">The platform is automatically pulling evidence from the following sources. Click any source to view its details.</p>' +
         '<div class="xqbr-evidence-list" id="xqbr-evidence-list"></div>' +
         '</div>' +
         '<div class="xqbr-card" id="xqbr-evidence-generate-card">' +
@@ -50,6 +50,145 @@ function xfqbr_wizard_evidence_init_js(): string
         'activity_participation', 'assessment_trends', 'tool_usage', 'ai_insight_themes',
         'organizational_kpis', 'operational_metrics', 'historical_qbr_data'];
 
+    var DRIVER_LABELS = {
+        get_real: 'Get Real™', fill_buckets: 'Fill Buckets™', be_intentional: 'Be Intentional™',
+        foster_grit: 'Foster Grit™', drive_growth: 'Drive Growth™',
+    };
+    var CAPABILITY_LABELS = {
+        alignment: 'Alignment', accountability: 'Accountability', communication: 'Communication',
+        leadership: 'Leadership', execution: 'Execution',
+    };
+
+    function esc(s) {
+        if (s == null) return '';
+        return String(s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+    }
+
+    function noData(msg) {
+        return '<p class="xqbr-evidence-empty">' + esc(msg) + '</p>';
+    }
+
+    function pct(v) {
+        return (v === null || v === undefined) ? '—' : (v + '%');
+    }
+
+    function formatDate(iso) {
+        if (!iso) return '—';
+        var d = new Date(iso);
+        if (isNaN(d.getTime())) return '—';
+        return d.toLocaleDateString(undefined, { year: 'numeric', month: 'short', day: 'numeric' });
+    }
+
+    function renderPanel(key, snap) {
+        snap = snap || {};
+        if (key === 'arp_objectives') {
+            var op = snap.qbr_objectives_progress || {};
+            if (!op.objective_count) return noData('No Annual Readiness Plan™ strategic priorities are available for this organization yet.');
+            var oItems = (op.objectives || []).map(function (o) {
+                return '<li>' + esc(o.title) + ' — <span class="xqbr-muted">' + esc(String(o.status || '').replace(/_/g, ' ')) + '</span></li>';
+            }).join('');
+            return '<dl class="xqbr-evidence-dl"><dt>Overall Progress</dt><dd>' + pct(op.progress) + '</dd></dl>' +
+                '<ul class="xqbr-evidence-list-plain">' + oItems + '</ul>';
+        }
+        if (key === 'previous_commitments') {
+            var cc = snap.commitment_completion || {};
+            if (!cc.total) return noData('No commitments were recorded for the previous quarter.');
+            return '<dl class="xqbr-evidence-dl"><dt>Completion Rate</dt><dd>' + pct(cc.rate) + '</dd>' +
+                '<dt>Completed</dt><dd>' + cc.done + ' of ' + cc.total + '</dd></dl>';
+        }
+        if (key === 'individual_insight_trends') {
+            var driverRows = snap.behavioral_driver_trends || [];
+            if (!driverRows.length) return noData('No behavioral driver data is available yet.');
+            var dItems = driverRows.map(function (r) {
+                return '<li>' + esc(DRIVER_LABELS[r.driver] || r.driver) + ' — ' + Math.round((r.coverage_rate || 0) * 100) + '% coverage</li>';
+            }).join('');
+            return '<ul class="xqbr-evidence-list-plain">' + dItems + '</ul>';
+        }
+        if (key === 'one_on_one_summaries') {
+            var summaries = snap.one_on_one_summaries || [];
+            if (!summaries.length) return noData('No completed 1-on-1 meeting summaries are available for this period.');
+            return summaries.map(function (r) {
+                var ms = r.meeting_summary || {};
+                var items = (ms.items || []).map(function (i) { return '<li>' + esc(i) + '</li>'; }).join('');
+                return '<dl class="xqbr-evidence-dl" style="margin-bottom:.75rem"><dt>' + esc(formatDate(r.held_at)) + '</dt><dd>' +
+                    (items ? ('<ul class="xqbr-evidence-list-plain">' + items + '</ul>') : '') +
+                    (ms.details ? ('<div>' + esc(ms.details) + '</div>') : '') + '</dd></dl>';
+            }).join('');
+        }
+        if (key === 'activity_participation') {
+            var ap = snap.activity_participation || {};
+            if (!ap.total_members) return noData('No group members were found for activity participation.');
+            return '<dl class="xqbr-evidence-dl"><dt>Participation Rate</dt><dd>' + pct(ap.rate) + '</dd>' +
+                '<dt>Participated</dt><dd>' + ap.participated + ' of ' + ap.total_members + '</dd></dl>';
+        }
+        if (key === 'assessment_trends') {
+            var ac = snap.assessment_completion || {};
+            if (!ac.total_members) return noData('No group members were found for assessment tracking.');
+            return '<dl class="xqbr-evidence-dl"><dt>Assessment Completion</dt><dd>' + pct(ac.rate) + '</dd>' +
+                '<dt>Evaluated</dt><dd>' + ac.evaluated + ' of ' + ac.total_members + '</dd></dl>';
+        }
+        if (key === 'tool_usage') {
+            var tu = snap.tool_utilization || {};
+            if (!tu.total_tools) return noData('No development tools are configured for this group yet.');
+            return '<dl class="xqbr-evidence-dl"><dt>Utilization Rate</dt><dd>' + pct(tu.rate) + '</dd>' +
+                '<dt>Members Submitted</dt><dd>' + tu.members_submitted + ' of ' + tu.total_members + '</dd></dl>';
+        }
+        if (key === 'ai_insight_themes') {
+            var caps = snap.cor_capability_trends || [];
+            var available = caps.some(function (c) { return c.score !== null; });
+            if (!available) return noData('No AI evaluation data is available for this group yet.');
+            var cItems = caps.map(function (c) {
+                return '<li>' + esc(CAPABILITY_LABELS[c.capability] || c.capability) + ' — ' + c.score + ' / 5</li>';
+            }).join('');
+            return '<ul class="xqbr-evidence-list-plain">' + cItems + '</ul>';
+        }
+        if (key === 'organizational_kpis' || key === 'operational_metrics') {
+            var kpis = snap.kpis || [];
+            if (!kpis.length) return noData('No KPIs have been added for this quarter yet.');
+            var kItems = kpis.map(function (k) {
+                return '<li>' + esc(k.name) + ': ' + esc(k.current) + ' / ' + esc(k.target) + ' <span class="xqbr-muted">(' + esc(k.status) + ')</span></li>';
+            }).join('');
+            return '<ul class="xqbr-evidence-list-plain">' + kItems + '</ul>';
+        }
+        if (key === 'historical_qbr_data') {
+            if (!snap.review_period) return noData('No previous quarter data is available yet.');
+            return '<dl class="xqbr-evidence-dl"><dt>Readiness Trend vs Previous Quarter</dt><dd>' + esc(snap.overall_readiness_trend || 'No prior data') + '</dd></dl>';
+        }
+        return noData('No data is available for this section yet.');
+    }
+
+    var lastSnapshot = null;
+
+    function bindAccordions() {
+        var list = document.getElementById('xqbr-evidence-list');
+        if (!list) return;
+        list.querySelectorAll('.xqbr-evidence-row').forEach(function (row) {
+            row.addEventListener('click', function () { toggleRow(row); });
+            row.addEventListener('keydown', function (e) {
+                if (e.key !== 'Enter' && e.key !== ' ') return;
+                e.preventDefault();
+                toggleRow(row);
+            });
+        });
+    }
+
+    function toggleRow(row) {
+        var item = row.closest('.xqbr-evidence-item');
+        var panel = item ? item.querySelector('.xqbr-evidence-panel') : null;
+        if (!panel) return;
+        var isOpen = item.classList.contains('open');
+        if (isOpen) {
+            item.classList.remove('open');
+            panel.classList.add('xqbr-hidden');
+            row.setAttribute('aria-expanded', 'false');
+            return;
+        }
+        item.classList.add('open');
+        panel.classList.remove('xqbr-hidden');
+        row.setAttribute('aria-expanded', 'true');
+        panel.innerHTML = renderPanel(row.dataset.key, lastSnapshot);
+    }
+
     function renderChecklist(sources) {
         var byKey = {};
         (sources || []).forEach(function (s) { byKey[s.key] = s; });
@@ -61,25 +200,17 @@ function xfqbr_wizard_evidence_init_js(): string
             var available = row ? row.available : false;
             var statusClass = available ? 'ok' : 'pending';
             var statusText = available ? '&#10003; Pulling data' : 'No data yet';
-            return '<div class="xqbr-evidence-row">' +
+            return '<div class="xqbr-evidence-item" data-key="' + key + '">' +
+                '<div class="xqbr-evidence-row" role="button" tabindex="0" aria-expanded="false" data-key="' + key + '">' +
                 '<div class="xqbr-evidence-icon">' + meta[0] + '</div>' +
                 '<div><div class="xqbr-evidence-title">' + meta[1] + '</div><div class="xqbr-evidence-desc">' + meta[2] + '</div></div>' +
                 '<div class="xqbr-evidence-status ' + statusClass + '">' + statusText + '</div>' +
+                '</div>' +
+                '<div class="xqbr-evidence-panel xqbr-hidden"></div>' +
                 '</div>';
         }).join('');
+        bindAccordions();
     }
-
-    // TEMPORARY: Steps 1–3 render static dummy data while the real Laravel
-    // evidence/assessment aggregation is being debugged (some sources were
-    // returning empty for real groups). The Laravel endpoints and
-    // window.xqbrLoadEvidence / xqbrGenerateEvidence are untouched — only
-    // this step's init stops calling them for now. Revert by restoring the
-    // fetch-based version once data issues are resolved.
-    var DUMMY_SOURCES = ['arp_objectives', 'previous_commitments', 'individual_insight_trends', 'one_on_one_summaries',
-        'activity_participation', 'assessment_trends', 'tool_usage', 'ai_insight_themes',
-        'organizational_kpis', 'operational_metrics', 'historical_qbr_data'].map(function (key) {
-        return { key: key, available: true };
-    });
 
     window.initEvidenceStep = function () {
         var btn = document.getElementById('xqbr-generate-evidence-btn');
@@ -88,8 +219,15 @@ function xfqbr_wizard_evidence_init_js(): string
             btn.style.display = 'none';
         }
 
-        renderChecklist(DUMMY_SOURCES);
-        if (statusEl) statusEl.textContent = 'All evidence is current through today (dummy data).';
+        renderChecklist([]);
+
+        window.xqbrLoadEvidence().then(function (data) {
+            if (data && data.evidence_sources) {
+                lastSnapshot = data;
+                renderChecklist(data.evidence_sources);
+                if (statusEl) statusEl.textContent = 'Evidence already generated for this quarter. Click Generate Evidence to refresh it.';
+            }
+        });
 
         if (btn) {
             btn.addEventListener('click', function () {
@@ -99,13 +237,23 @@ function xfqbr_wizard_evidence_init_js(): string
                 btn.textContent = 'Generating…';
                 if (statusEl) statusEl.textContent = 'Collecting the most up-to-date data. This may take a few seconds.';
 
-                setTimeout(function () {
+                window.xqbrGenerateEvidence().then(function (res) {
                     btn.disabled = false;
                     btn.dataset.busy = '';
                     btn.textContent = 'Generate Evidence';
-                    renderChecklist(DUMMY_SOURCES);
-                    if (statusEl) statusEl.textContent = '✓ Evidence generation complete (dummy data).';
-                }, 600);
+                    if (!res || !res.success) {
+                        if (statusEl) statusEl.textContent = (res && res.message) ? res.message : 'Failed to generate evidence.';
+                        return;
+                    }
+                    lastSnapshot = res.data;
+                    renderChecklist(res.data.evidence_sources);
+                    if (statusEl) statusEl.textContent = '✓ Evidence generation complete — captured ' + (res.captured_at || 'just now') + '.';
+                }).catch(function () {
+                    btn.disabled = false;
+                    btn.dataset.busy = '';
+                    btn.textContent = 'Generate Evidence';
+                    if (statusEl) statusEl.textContent = 'Failed to generate evidence — network error.';
+                });
             });
         }
     };

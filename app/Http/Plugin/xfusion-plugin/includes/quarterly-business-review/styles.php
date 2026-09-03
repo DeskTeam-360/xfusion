@@ -310,14 +310,22 @@ table.xqbr-table.xqbr-table-gaps .xqbr-gap-priority{width:12%;white-space:nowrap
 
 /* Evidence checklist (Step 1) */
 .xqbr-evidence-list{display:flex;flex-direction:column}
-.xqbr-evidence-row{display:flex;align-items:center;gap:.85rem;padding:.85rem 0;border-bottom:1px solid var(--border)}
-.xqbr-evidence-row:last-child{border-bottom:none}
+.xqbr-evidence-item{border-bottom:1px solid var(--border)}
+.xqbr-evidence-item:last-child{border-bottom:none}
+.xqbr-evidence-row{display:flex;align-items:center;gap:.85rem;padding:.85rem 0;cursor:pointer;user-select:none}
+.xqbr-evidence-row:focus{outline:2px solid var(--green);outline-offset:-2px}
 .xqbr-evidence-icon{width:36px;height:36px;border-radius:50%;background:#eef4fc;color:var(--navy);display:flex;align-items:center;justify-content:center;font-size:1rem;flex-shrink:0}
 .xqbr-evidence-title{font-weight:700;font-size:15px}
 .xqbr-evidence-desc{color:var(--muted);font-size:14px}
 .xqbr-evidence-status{margin-left:auto;font-size:14px;font-weight:600;white-space:nowrap;display:flex;align-items:center;gap:.35rem}
 .xqbr-evidence-status.ok{color:var(--green)}
 .xqbr-evidence-status.pending{color:var(--muted)}
+.xqbr-evidence-panel{padding:0 0 1rem calc(36px + .85rem)}
+.xqbr-evidence-empty{color:var(--muted);font-size:14px;margin:0}
+.xqbr-evidence-dl{margin:0;display:flex;flex-direction:column;gap:.5rem}
+.xqbr-evidence-dl dt{font-weight:700;font-size:13px;color:var(--muted);text-transform:uppercase;letter-spacing:.02em}
+.xqbr-evidence-dl dd{margin:.15rem 0 0;font-size:15px}
+.xqbr-evidence-list-plain{margin:0;padding-left:1.1rem;font-size:14px;display:flex;flex-direction:column;gap:.3rem}
 
 /* Metric cards (Step 2) */
 .xqbr-metric-grid{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:1rem;margin-bottom:1rem}
