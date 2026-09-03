@@ -304,8 +304,10 @@ table.xfw-table select.xfw-input{padding:.35rem .4rem}
 
 /* Follow-up items (step 6) */
 .xfw-followup{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:1rem}
-.xfw-followup-item{display:flex;align-items:flex-start;gap:.5rem;font-size:18px;line-height:1.45;color:var(--ink)}
-.xfw-followup-item img{flex-shrink:0;margin-top:.15rem}
+.xfw-followup-item{display:flex;align-items:center;gap:.6rem;font-size:18px;line-height:1.4;color:var(--ink)}
+.xfw-followup-icon{width:32px;height:32px;flex-shrink:0;display:flex;align-items:center;justify-content:center}
+.xfw-followup-icon img{width:100%;height:100%;object-fit:contain;display:block}
+.xfw-followup-text{min-width:0}
 
 /* Footer nav */
 .xfw-footer{display:flex;align-items:center;justify-content:space-between;padding:1rem 1.75rem;border-top:1px solid var(--border);background:#fff;flex-wrap:wrap;gap:.75rem}

@@ -264,8 +264,8 @@ var xfwSynthesisFollowupBody = function (raw) {
     var items = normalized.items.length ? normalized.items : ['No follow-up recommendations yet.'];
     return '<div class="xfw-followup">' + items.map(function (item, index) {
         var icon = xfwSynthesisFollowupIcons[index % xfwSynthesisFollowupIcons.length];
-        return '<div class="xfw-followup-item"><img src="' + icon + '" alt="" width="50" height="50"> ' +
-            xfwEvidenceEsc(item) + '</div>';
+        return '<div class="xfw-followup-item"><span class="xfw-followup-icon"><img src="' + icon + '" alt=""></span>' +
+            '<span class="xfw-followup-text">' + xfwEvidenceEsc(item) + '</span></div>';
     }).join('') + '</div>';
 };
 
@@ -708,8 +708,13 @@ window.xfwCompleteMeeting = function () {
         if (main) {
             main.insertAdjacentHTML('afterbegin',
                 '<div class="xfw-banner" style="background:#f0fdf4;border-color:#bbf7d0;color:#166534;margin-bottom:1rem">' +
-                '&#9989; <span><b>Meeting completed.</b> This 1-on-1 is now marked complete and saved to the record.</span></div>');
+                '&#9989; <span><b>Meeting completed.</b> This 1-on-1 is now marked complete and saved to the record. Returning to your meetings…</span></div>');
         }
+        setTimeout(function () {
+            if (typeof window.xfooBackToMeetingPicker === 'function') {
+                window.xfooBackToMeetingPicker();
+            }
+        }, 1500);
         return json.data;
     }).catch(function () {
         btns.forEach(function (b) { if (b) { b.disabled = false; b.textContent = 'Complete Meeting'; } });
