@@ -692,6 +692,11 @@ class ArpController extends Controller
                 'insight_model' => $latest?->insight_model,
                 'generated_at' => $latest?->created_at?->toIso8601String(),
                 'can_edit' => $this->leadableCompanyIds($userId)->contains($arp->company_id),
+                // Steps 1-5 stay freely navigable (just draft saves) - this
+                // is the one hard requirement, surfaced here so the UI can
+                // disable Generate and show what's missing before the user
+                // even clicks it.
+                'missing_requirements' => app(ArpPlanService::class)->readyForAiReviewIssues($arp),
             ],
         ]);
     }
@@ -702,6 +707,15 @@ class ArpController extends Controller
         $userId = (int) $request->input('user_id');
         if ($userId < 1 || ! $this->leadableCompanyIds($userId)->contains($arp->company_id)) {
             return response()->json(['success' => false, 'message' => 'You do not lead this ARP\'s company group.'], 403);
+        }
+
+        $missing = app(ArpPlanService::class)->readyForAiReviewIssues($arp);
+        if ($missing !== []) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Complete these required fields before generating the AI Readiness Review: '.implode(' ', $missing),
+                'missing_requirements' => $missing,
+            ], 422);
         }
 
         $ai = app(ArpAiService::class);

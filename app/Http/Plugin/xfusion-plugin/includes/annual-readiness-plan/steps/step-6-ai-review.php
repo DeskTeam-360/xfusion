@@ -19,6 +19,7 @@ ai_review: function () {
         '<span class="xar-banner-icon" aria-hidden="true">ℹ️</span>' +
         '<span>This is AI-generated analysis based on the information you have provided in Steps 1-5. These insights are for consideration only. Leadership adds context in the section below.</span>' +
         '</div>' +
+        '<div id="xar-ai-missing-requirements" style="display:none"></div>' +
         '<div class="xar-card xar-ai-generate-bar" id="xar-ai-generate-bar">' +
         '<div class="xar-row" style="justify-content:space-between;align-items:center;flex-wrap:wrap;gap:.75rem">' +
         '<div>' +
@@ -211,13 +212,32 @@ function xfarp_wizard_ai_review_init_js(): string
         var hasAssessment = !!(data && data.has_assessment && data.assessment);
         root.innerHTML = hasAssessment ? window.xarRenderAiAssessment(data.assessment) : '';
 
+        var missing = (data && Array.isArray(data.missing_requirements)) ? data.missing_requirements : [];
+        var missingBox = document.getElementById('xar-ai-missing-requirements');
+        if (missingBox) {
+            if (missing.length) {
+                missingBox.style.display = 'block';
+                missingBox.innerHTML = '<div class="xar-banner warn">' +
+                    '<span class="xar-banner-icon" aria-hidden="true">&#9888;&#65039;</span>' +
+                    '<div><strong>Complete these required fields before generating the AI Readiness Review:</strong>' +
+                    '<ul class="xar-check-list" style="margin-top:.4rem">' +
+                    missing.map(function (m) { return '<li>' + esc(m) + '</li>'; }).join('') +
+                    '</ul></div></div>';
+            } else {
+                missingBox.style.display = 'none';
+                missingBox.innerHTML = '';
+            }
+        }
+
         btn.textContent = hasAssessment ? 'Regenerate AI Insights' : 'Generate AI Insights';
-        btn.disabled = !canEdit;
+        btn.disabled = !canEdit || missing.length > 0;
 
         if (hint) {
-            hint.textContent = hasAssessment
-                ? 'Review the AI analysis below. Regenerate after updating Steps 1–5.'
-                : 'Generate AI insights from your completed Steps 1–5.';
+            hint.textContent = missing.length
+                ? 'Complete the required fields above before generating.'
+                : (hasAssessment
+                    ? 'Review the AI analysis below. Regenerate after updating Steps 1–5.'
+                    : 'Generate AI insights from your completed Steps 1–5.');
         }
 
         if (meta) {
@@ -271,7 +291,7 @@ function xfarp_wizard_ai_review_init_js(): string
         }
 
         btn.addEventListener('click', function () {
-            if (generateBusy || !window.XFARP_WIZARD || !window.XFARP_WIZARD.canEdit) {
+            if (generateBusy || btn.disabled || !window.XFARP_WIZARD || !window.XFARP_WIZARD.canEdit) {
                 return;
             }
             if (typeof window.xarGenerateAiReview !== 'function') {

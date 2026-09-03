@@ -225,7 +225,28 @@ if (root) {
     };
 
     var goTo = function (i) {
-        current = Math.max(0, Math.min(STEPS.length - 1, i));
+        var target = Math.max(0, Math.min(STEPS.length - 1, i));
+
+        // Steps 1-5 stay freely navigable (just draft saves) - the one hard
+        // stop is reaching Step 7 (Publish) without ever having generated
+        // the AI Readiness Review in Step 6. Checked here (not just on the
+        // Next button) so clicking the step-7 circle directly can't skip it.
+        var isPublishStep = STEPS[target] && STEPS[target].key === 'publish';
+        // Prefer the freshest client-side signal (set once Step 6 has been
+        // visited/generated this session), but fall back to the
+        // server-computed flag loaded at page load - otherwise a fresh
+        // page load that jumps straight to Step 7 without ever visiting
+        // Step 6 this session would wrongly block an ARP that already has
+        // a real AI review from an earlier session.
+        var aiReviewDone = (window.xarAiReviewCache && typeof window.xarAiReviewCache.has_assessment === 'boolean')
+            ? window.xarAiReviewCache.has_assessment
+            : !!(window.XFARP_WIZARD && window.XFARP_WIZARD.stepProgress && window.XFARP_WIZARD.stepProgress.ai_review);
+        if (isPublishStep && target !== current && !aiReviewDone) {
+            window.alert('Generate the AI Readiness Review™ (Step 6) before continuing to Publish.');
+            return;
+        }
+
+        current = target;
         renderSteps();
         renderSidebar();
         renderMain();

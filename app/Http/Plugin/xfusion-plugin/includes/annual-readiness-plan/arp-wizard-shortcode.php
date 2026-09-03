@@ -152,6 +152,7 @@ function xfusion_arp_wizard_shortcode($atts = []): string
         'groupMembers' => $groupMembers,
         'companyGroups' => $companyGroups,
         'viewingVersion' => $viewingVersion,
+        'stepProgress' => is_array($arpData['step_progress'] ?? null) ? $arpData['step_progress'] : new stdClass(),
     ];
 
     $saveJs      = xfarp_wizard_save_draft_js();

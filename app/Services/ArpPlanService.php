@@ -143,7 +143,7 @@ class ArpPlanService
      */
     public function aiPlanContext(Arp $arp): array
     {
-        $arp->loadMissing(['company:id,title', 'companyGroup:id,title']);
+        $arp->loadMissing(['company:id,title']);
 
         return [
             'arp' => [
@@ -151,7 +151,7 @@ class ArpPlanService
                 'title' => $arp->title,
                 'year' => $arp->year,
                 'status' => $arp->status,
-                'company_name' => $arp->companyGroup?->title ?? $arp->company?->title,
+                'company_name' => $arp->company?->title,
                 'mission' => $arp->mission,
                 'vision' => $arp->vision,
             ],
@@ -233,5 +233,84 @@ class ArpPlanService
         $fresh->update(['step_progress' => $this->computeStepProgress($fresh)]);
 
         return $fresh->fresh();
+    }
+
+    /** @var list<string> Foundation fields with a required (*) marker in step-1-foundation.php. */
+    private const FOUNDATION_REQUIRED = ['mission', 'vision', 'organizational_description', 'business_environment', 'executive_narrative'];
+
+    /**
+     * Steps 1-5 required-field gate for Step 6 (AI Readiness Review™).
+     * Steps 1-5 themselves stay freely navigable (they're just draft saves),
+     * but generating the AI review needs real input to analyze - this is
+     * the one hard stop, checked server-side so it can never be bypassed by
+     * skipping straight to Step 6.
+     *
+     * @return list<string> Human-readable missing items; empty = ready.
+     */
+    public function readyForAiReviewIssues(Arp $arp): array
+    {
+        $issues = [];
+
+        $foundation = $this->foundationValues($arp);
+        foreach (self::FOUNDATION_REQUIRED as $field) {
+            if (trim((string) ($foundation[$field] ?? '')) === '') {
+                $issues[] = 'Step 1 (Organizational Foundation™): '.ucwords(str_replace('_', ' ', $field)).' is required.';
+            }
+        }
+
+        $future = $this->futureStateValues($arp);
+        if (trim((string) ($future['future_state_narrative'] ?? '')) === '') {
+            $issues[] = 'Step 2 (Future State™): Future State Narrative is required.';
+        }
+
+        $readiness = ArpReadinessPriority::query()->where('arp_id', $arp->id)->orderBy('priority_rank')->get();
+        if ($readiness->isEmpty()) {
+            $issues[] = 'Step 3 (Organizational Readiness™): add at least one readiness priority.';
+        } else {
+            foreach ($readiness as $index => $p) {
+                $n = $index + 1;
+                if (trim((string) $p->name) === '') {
+                    $issues[] = "Step 3, Priority {$n}: Priority Name is required.";
+                }
+                if (trim((string) $p->cor_capability) === '') {
+                    $issues[] = "Step 3, Priority {$n}: COR Capability™ is required.";
+                }
+                if (trim((string) $p->primary_driver) === '') {
+                    $issues[] = "Step 3, Priority {$n}: Primary Behavioral Driver™ is required.";
+                }
+                if (trim((string) $p->priority_level) === '') {
+                    $issues[] = "Step 3, Priority {$n}: Priority Level is required.";
+                }
+                if (empty($p->executive_owner_user_ids)) {
+                    $issues[] = "Step 3, Priority {$n}: at least one Executive Owner is required.";
+                }
+            }
+        }
+
+        $strategic = ArpStrategicPriority::query()->where('arp_id', $arp->id)->orderBy('priority_rank')->get();
+        if ($strategic->isEmpty()) {
+            $issues[] = 'Step 4 (Strategic Priorities™): add at least one strategic priority.';
+        } else {
+            foreach ($strategic as $index => $p) {
+                $n = $index + 1;
+                if (trim((string) $p->title) === '') {
+                    $issues[] = "Step 4, Priority {$n}: Title is required.";
+                }
+                if ($p->readiness_priority_id === null) {
+                    $issues[] = "Step 4, Priority {$n}: Related Readiness Priority is required.";
+                }
+                if ($p->target_date === null) {
+                    $issues[] = "Step 4, Priority {$n}: Target Completion Date is required.";
+                }
+                if (trim((string) $p->success_measures) === '') {
+                    $issues[] = "Step 4, Priority {$n}: Success Measures is required.";
+                }
+                if (empty($p->owner_user_ids)) {
+                    $issues[] = "Step 4, Priority {$n}: at least one Executive Owner is required.";
+                }
+            }
+        }
+
+        return $issues;
     }
 }
