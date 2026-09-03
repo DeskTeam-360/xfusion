@@ -66,6 +66,8 @@ window.xqbrSaveDraft = function () {
         saveFn = window.xqbrSaveCollaborationStep;
     } else if (stepKey === 'commitments' && typeof window.xqbrSaveCommitmentsStep === 'function') {
         saveFn = window.xqbrSaveCommitmentsStep;
+    } else if (stepKey === 'assessment' && typeof window.xqbrSaveAssessmentContext === 'function') {
+        saveFn = window.xqbrSaveAssessmentContext;
     }
 
     if (!saveFn) {

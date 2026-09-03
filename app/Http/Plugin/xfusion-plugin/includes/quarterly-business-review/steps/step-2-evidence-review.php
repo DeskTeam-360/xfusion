@@ -2,9 +2,6 @@
 /**
  * Step 2 — Organizational Evidence™ (review dashboard).
  *
- * UI-only prototype: all data below is static dummy content matching the
- * QBR mockups. No Laravel calls are made from this step for now.
- *
  * @package XFusion
  */
 
@@ -19,7 +16,7 @@ evidence_review: function () {
     return '<h2 class="xqbr-section-title">Step 2. Organizational Evidence™</h2>' +
         '<p class="xqbr-section-desc">Review the objective evidence for the current review period. This data is pulled from across the platform and provides the factual foundation for leadership analysis and discussion.</p>' +
         '<div class="xqbr-banner">ℹ️ <span>This is objective evidence only. Interpretation and assessment will be provided in Step 3 by AI.</span></div>' +
-        '<div id="xqbr-evidence-review-body"></div>';
+        '<div id="xqbr-evidence-review-body"><div class="xqbr-spinner-row"><span class="xqbr-spinner"></span> Loading organizational evidence…</div></div>';
 }
 JS;
 }
@@ -29,6 +26,17 @@ function xfqbr_wizard_evidence_review_init_js(): string
     return <<<'JS'
 (function () {
     function esc(s) { return String(s == null ? '' : s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
+    function pct(v) { return (v === null || v === undefined) ? '—' : v; }
+
+    var DRIVER_LABELS = {
+        get_real: 'Get Real™', fill_buckets: 'Fill Buckets™', be_intentional: 'Be Intentional™',
+        foster_grit: 'Foster Grit™', drive_growth: 'Drive Growth™',
+    };
+    var CAPABILITY_LABELS = {
+        alignment: 'Alignment', accountability: 'Accountability', communication: 'Communication',
+        leadership: 'Leadership', execution: 'Execution',
+    };
+    var OBJECTIVE_STATUS_WEIGHT = { done: 100, in_progress: 50, at_risk: 25, not_started: 0 };
 
     // RPM-style semicircle gauge (0–100), same visual language as the
     // Course Scoring Overview gauges elsewhere in FUSION (red/amber/green
@@ -42,7 +50,7 @@ function xfqbr_wizard_evidence_review_init_js(): string
         return 'M ' + p1.x.toFixed(2) + ' ' + p1.y.toFixed(2) + ' A 75 75 0 0 1 ' + p2.x.toFixed(2) + ' ' + p2.y.toFixed(2);
     }
     function rpmGauge(value, zoneLabel, zoneColor) {
-        var v = Math.max(0, Math.min(100, value));
+        var v = Math.max(0, Math.min(100, value || 0));
         var needleDeg = -90 + (v / 100) * 180;
         return '<div style="text-align:center">' +
             '<svg viewBox="0 0 220 130" style="width:100%;max-width:220px">' +
@@ -55,181 +63,146 @@ function xfqbr_wizard_evidence_review_init_js(): string
             '<g transform="rotate(' + needleDeg + ' 110 110)"><line x1="110" y1="112" x2="110" y2="36" stroke="#1f2937" stroke-width="4" stroke-linecap="round"/></g>' +
             '<circle cx="110" cy="110" r="7" fill="#1f2937"/><circle cx="110" cy="110" r="4" fill="#fff"/>' +
             '</svg>' +
-            '<p style="font-size:1.4rem;font-weight:800;color:#1e2a52;margin:.25rem 0 0">' + v + '<span style="font-size:1rem;font-weight:400;color:#6b7280">/100</span></p>' +
+            '<p style="font-size:1.4rem;font-weight:800;color:#1e2a52;margin:.25rem 0 0">' + (value === null || value === undefined ? '—' : value) + '<span style="font-size:1rem;font-weight:400;color:#6b7280">/100</span></p>' +
             '<p style="font-size:.85rem;font-weight:600;color:' + zoneColor + ';margin:0">' + esc(zoneLabel) + '</p>' +
             '</div>';
     }
 
     function donut(score, max, label, color) {
-        var s = Math.max(0, Math.min(100, Math.round((score / max) * 100)));
+        var v = (score === null || score === undefined) ? 0 : score;
+        var s = Math.max(0, Math.min(100, Math.round((v / max) * 100)));
         return '<div class="xqbr-donut-wrap">' +
             '<div class="xqbr-donut-chart">' +
             '<svg class="xqbr-donut" viewBox="0 0 36 36" aria-hidden="true">' +
             '<circle class="xqbr-donut-track" cx="18" cy="18" r="15.9155"></circle>' +
             '<circle class="xqbr-donut-value" cx="18" cy="18" r="15.9155" stroke="' + color + '" stroke-dasharray="' + s + ' ' + (100 - s) + '"></circle>' +
             '</svg>' +
-            '<div class="xqbr-donut-center"><div class="xqbr-donut-score">' + score + '<span>/' + max + '</span></div></div>' +
+            '<div class="xqbr-donut-center"><div class="xqbr-donut-score">' + (score === null || score === undefined ? '—' : score) + '<span>/' + max + '</span></div></div>' +
             '</div>' +
             '<div class="xqbr-donut-label">' + esc(label) + '</div>' +
             '</div>';
     }
 
-    function statCard(label, value, unit, trend) {
-        var trendHtml = trend ? '<div class="xqbr-metric-trend ' + trend.dir + '">' +
-            (trend.dir === 'up' ? '&#8593;' : '&#8595;') + ' ' + trend.text + '</div>' : '';
-        return '<div class="xqbr-metric-card"><div class="xqbr-metric-label">' + label + '</div>' +
-            '<div class="xqbr-metric-value">' + value + '<span class="unit">' + unit + '</span></div>' + trendHtml + '</div>';
+    function statCard(label, value, unit) {
+        var display = (value === null || value === undefined) ? '—' : value;
+        return '<div class="xqbr-metric-card"><div class="xqbr-metric-label">' + esc(label) + '</div>' +
+            '<div class="xqbr-metric-value">' + display + (value === null || value === undefined ? '' : '<span class="unit">' + unit + '</span>') + '</div></div>';
     }
 
     function kpiRow(k) {
-        var cls = k.good ? 'up' : 'down';
+        var dot = k.status === 'on_track' ? 'green' : (k.status === 'off_track' ? 'red' : 'amber');
         return '<tr><td>' + esc(k.name) + '</td><td>' + esc(k.current) + '</td><td>' + esc(k.target) + '</td>' +
-            '<td><span class="xqbr-dot ' + k.dot + '"></span></td>' +
-            '<td class="xqbr-metric-trend ' + cls + '" style="margin:0">' + esc(k.trend) + '</td></tr>';
+            '<td><span class="xqbr-dot ' + dot + '"></span> ' + esc((k.status || '').replace(/_/g, ' ')) + '</td>' +
+            '<td>' + esc(k.trend || '—') + '</td></tr>';
     }
 
-    function goalRow(name, pct) {
+    function goalRow(name, statusPct, statusLabel) {
         return '<div class="xqbr-align-row xqbr-progress-row">' +
             '<span class="xqbr-align-label">' + esc(name) + '</span>' +
-            '<div class="xqbr-progress-track"><div class="xqbr-progress-fill" style="width:' + pct + '%"></div></div>' +
-            '<strong class="xqbr-progress-pct">' + pct + '%</strong>' +
+            '<div class="xqbr-progress-track"><div class="xqbr-progress-fill" style="width:' + statusPct + '%"></div></div>' +
+            '<strong class="xqbr-progress-pct">' + esc(statusLabel) + '</strong>' +
             '</div>';
     }
 
-    function capabilityRow(label, score, trend) {
+    function coverageRow(label, ratePct) {
         return '<div class="xqbr-align-row xqbr-progress-row">' +
             '<span class="xqbr-align-label">' + esc(label) + '</span>' +
-            '<div class="xqbr-progress-track"><div class="xqbr-progress-fill" style="width:' + (score / 5 * 100) + '%"></div></div>' +
-            '<strong class="xqbr-progress-pct">' + score.toFixed(1) + ' <span class="xqbr-metric-trend ' + (trend >= 0 ? 'up' : 'down') + '" style="display:inline">' + (trend >= 0 ? '↑' : '↓') + Math.abs(trend).toFixed(1) + '</span></strong>' +
+            '<div class="xqbr-progress-track"><div class="xqbr-progress-fill" style="width:' + ratePct + '%"></div></div>' +
+            '<strong class="xqbr-progress-pct">' + ratePct + '%</strong>' +
             '</div>';
     }
 
-    // Simple inline SVG line chart — width 100%, viewBox 0 0 400 180.
-    // series: [{ label, color, values: [n,n,n] }], months: ['Apr','May','Jun']
-    function lineChart(series, months, yMax) {
-        var W = 400, H = 160, padL = 30, padR = 10, padT = 10, padB = 24;
-        var plotW = W - padL - padR, plotH = H - padT - padB;
-        var stepX = plotW / (months.length - 1);
-
-        function xy(i, v) {
-            var x = padL + i * stepX;
-            var y = padT + plotH - (v / yMax) * plotH;
-            return x.toFixed(1) + ',' + y.toFixed(1);
-        }
-
-        var gridLines = '';
-        [0, 0.25, 0.5, 0.75, 1].forEach(function (f) {
-            var y = padT + plotH - f * plotH;
-            gridLines += '<line x1="' + padL + '" y1="' + y + '" x2="' + (W - padR) + '" y2="' + y + '" stroke="#e5e7eb" stroke-width="1"/>';
-        });
-
-        var axisLabels = months.map(function (m, i) {
-            var x = padL + i * stepX;
-            return '<text x="' + x + '" y="' + (H - 6) + '" text-anchor="middle" font-size="10" fill="#9ca3af">' + m + '</text>';
-        }).join('');
-
-        var lines = series.map(function (s) {
-            var pts = s.values.map(function (v, i) { return xy(i, v); }).join(' ');
-            var dots = s.values.map(function (v, i) {
-                var parts = xy(i, v).split(',');
-                return '<circle cx="' + parts[0] + '" cy="' + parts[1] + '" r="3" fill="' + s.color + '"/>';
-            }).join('');
-            return '<polyline points="' + pts + '" fill="none" stroke="' + s.color + '" stroke-width="2"/>' + dots;
-        }).join('');
-
-        var legend = series.map(function (s) {
-            return '<span style="display:inline-flex;align-items:center;gap:.3rem;margin-right:1rem;font-size:12px;color:#374151">' +
-                '<span style="width:10px;height:10px;border-radius:50%;background:' + s.color + ';display:inline-block"></span>' + esc(s.label) + '</span>';
-        }).join('');
-
-        return '<div>' +
-            '<svg viewBox="0 0 ' + W + ' ' + H + '" style="width:100%;max-width:420px;height:auto">' + gridLines + lines + axisLabels + '</svg>' +
-            '<div style="margin-top:.4rem">' + legend + '</div>' +
+    function capabilityRow(label, score) {
+        var pct = score === null || score === undefined ? 0 : (score / 5 * 100);
+        return '<div class="xqbr-align-row xqbr-progress-row">' +
+            '<span class="xqbr-align-label">' + esc(label) + '</span>' +
+            '<div class="xqbr-progress-track"><div class="xqbr-progress-fill" style="width:' + pct + '%"></div></div>' +
+            '<strong class="xqbr-progress-pct">' + (score === null || score === undefined ? '—' : score.toFixed(1)) + '</strong>' +
             '</div>';
     }
 
-    window.initEvidenceReviewStep = function () {
+    function render(evidence, kpis) {
         var body = document.getElementById('xqbr-evidence-review-body');
         if (!body) return;
+        evidence = evidence || {};
+        kpis = kpis || [];
 
-        var kpis = [
-            { name: 'Revenue Growth', current: '$4.2M', target: '$4.5M', trend: '-3%', good: false, dot: 'amber' },
-            { name: 'Customer Retention', current: '92%', target: '90%', trend: '+2%', good: true, dot: 'green' },
-            { name: 'Project On-Time Delivery', current: '88%', target: '90%', trend: '-2%', good: false, dot: 'amber' },
-            { name: 'Safety Incident Rate', current: '1.2', target: '1.0', trend: '+0.2', good: false, dot: 'amber' },
-            { name: 'Employee Engagement', current: '78%', target: '80%', trend: '-2%', good: false, dot: 'amber' },
-            { name: 'Cost per Project', current: '$12.4K', target: '$12.0K', trend: '+3%', good: false, dot: 'amber' },
-        ];
+        var readinessScore = evidence.overall_readiness_score;
+        var readinessLabel = readinessScore === null || readinessScore === undefined ? 'No data'
+            : (readinessScore >= 70 ? 'Strong' : (readinessScore >= 50 ? 'Moderate Strength' : 'Needs Attention'));
+        var readinessColor = readinessScore === null || readinessScore === undefined ? '#9ca3af'
+            : (readinessScore >= 70 ? '#16a34a' : (readinessScore >= 50 ? '#ca8a04' : '#dc2626'));
+
+        var objectives = (evidence.qbr_objectives_progress || {}).objectives || [];
+        var driverTrends = evidence.behavioral_driver_trends || [];
+        var capTrends = evidence.cor_capability_trends || [];
+        var readiness = evidence.readiness_indicators || {};
 
         body.innerHTML =
             '<div class="xqbr-card"><h3 style="margin-top:0">Organizational Evidence Summary</h3>' +
             '<div style="display:grid;grid-template-columns:auto 1fr 1fr;gap:1.5rem;align-items:center;margin-bottom:1.25rem">' +
-            rpmGauge(72, 'Moderate Strength', '#ca8a04') +
+            rpmGauge(readinessScore, readinessLabel, readinessColor) +
             '<div class="xqbr-metric-grid" style="grid-template-columns:1fr 1fr">' +
-            statCard('1-on-1 Completion Rate', 81, '%', { dir: 'up', text: '7% vs last quarter' }) +
-            statCard('Activity Participation', 76, '%', { dir: 'up', text: '5% vs last quarter' }) +
-            statCard('Assessment Completion', 74, '%', { dir: 'up', text: '9% vs last quarter' }) +
-            statCard('Tool Utilization Rate', 69, '%', { dir: 'up', text: '11% vs last quarter' }) +
+            statCard('1-on-1 Completion Rate', pct((evidence.one_on_one_completion || {}).rate), '%') +
+            statCard('Activity Participation', pct((evidence.activity_participation || {}).rate), '%') +
+            statCard('Assessment Completion', pct((evidence.assessment_completion || {}).rate), '%') +
+            statCard('Tool Utilization Rate', pct((evidence.tool_utilization || {}).rate), '%') +
             '</div>' +
             '<div style="display:flex;gap:1.5rem;justify-content:center">' +
-            donut(68, 100, 'QBR Objectives Progress (↑8%)', '#2563eb') +
-            donut(63, 100, 'Commitment Completion (↑12%)', '#ca8a04') +
+            donut((evidence.qbr_objectives_progress || {}).progress, 100, 'QBR Objectives Progress', '#2563eb') +
+            donut((evidence.commitment_completion || {}).rate, 100, 'Commitment Completion', '#ca8a04') +
             '</div>' +
             '</div></div>' +
 
             '<div class="xqbr-grid-2" style="display:grid;grid-template-columns:1fr 1fr;gap:1rem;margin-bottom:1rem;align-items:start">' +
             '<div class="xqbr-card" style="margin-bottom:0"><h3 style="margin-top:0">KPI Summary (vs Target)</h3>' +
-            '<div class="xqbr-table-scroll"><table class="xqbr-table"><thead><tr><th>KPI</th><th>Current</th><th>Target</th><th>Status</th><th>Trend</th></tr></thead><tbody>' +
-            kpis.map(kpiRow).join('') +
-            '</tbody></table></div></div>' +
+            (kpis.length
+                ? ('<div class="xqbr-table-scroll"><table class="xqbr-table"><thead><tr><th>KPI</th><th>Current</th><th>Target</th><th>Status</th><th>Trend</th></tr></thead><tbody>' +
+                    kpis.map(kpiRow).join('') + '</tbody></table></div>')
+                : '<p class="xqbr-muted">No KPIs have been added for this quarter yet — add them in Step 1.</p>') +
+            '</div>' +
 
             '<div class="xqbr-card" style="margin-bottom:0"><h3 style="margin-top:0">Goal Progress (QBR Objectives)</h3>' +
             '<div class="xqbr-align-list">' +
-            goalRow('1. Expand Community Solar Program', 75) +
-            goalRow('2. Improve Project Delivery Efficiency', 62) +
-            goalRow('3. Strengthen Member Engagement', 80) +
-            goalRow('4. Optimize Operational Costs', 55) +
-            goalRow('5. Build Leadership Bench Strength', 70) +
+            (objectives.length
+                ? objectives.map(function (o) {
+                    return goalRow(o.title, OBJECTIVE_STATUS_WEIGHT[o.status] || 0, String(o.status || '').replace(/_/g, ' '));
+                }).join('')
+                : '<p class="xqbr-muted">No Annual Readiness Plan™ objectives are available for this organization yet.</p>') +
             '</div></div>' +
-            '</div>' +
-
-            '<div class="xqbr-grid-2" style="display:grid;grid-template-columns:1fr 1fr;gap:1rem;margin-bottom:1rem;align-items:start">' +
-            '<div class="xqbr-card" style="margin-bottom:0"><h3 style="margin-top:0">Participation Trends</h3>' +
-            lineChart([
-                { label: 'Activities', color: '#16a34a', values: [55, 65, 75] },
-                { label: '1-on-1s', color: '#2563eb', values: [70, 76, 82] },
-                { label: 'Assessments', color: '#7c3aed', values: [40, 48, 62] },
-            ], ['Apr', 'May', 'Jun'], 100) +
-            '</div>' +
-
-            '<div class="xqbr-card" style="margin-bottom:0"><h3 style="margin-top:0">Behavioral Driver Trends</h3>' +
-            lineChart([
-                { label: 'Get Real', color: '#1e2a52', values: [3.9, 4.0, 4.1] },
-                { label: 'Be Intentional', color: '#7c3aed', values: [3.8, 3.9, 4.0] },
-                { label: 'Fill Buckets', color: '#2563eb', values: [3.2, 3.1, 3.3] },
-                { label: 'Foster Grit', color: '#dc2626', values: [2.9, 3.2, 3.6] },
-                { label: 'Drive Growth', color: '#0891b2', values: [3.0, 3.1, 3.0] },
-            ], ['Apr', 'May', 'Jun'], 5) +
-            '</div>' +
             '</div>' +
 
             '<div class="xqbr-grid-2" style="display:grid;grid-template-columns:1fr 1fr;gap:1rem;align-items:start">' +
             '<div class="xqbr-card" style="margin-bottom:0"><h3 style="margin-top:0">COR Capability Trends</h3>' +
             '<div class="xqbr-align-list">' +
-            capabilityRow('Alignment', 3.8, 0.3) +
-            capabilityRow('Accountability', 3.6, 0.2) +
-            capabilityRow('Communication', 3.7, 0.4) +
-            capabilityRow('Leadership', 3.9, 0.3) +
-            capabilityRow('Execution', 3.5, -0.1) +
+            (capTrends.length
+                ? capTrends.map(function (c) { return capabilityRow(CAPABILITY_LABELS[c.capability] || c.capability, c.score); }).join('')
+                : '<p class="xqbr-muted">No evaluation data is available for this group yet.</p>') +
             '</div></div>' +
 
-            '<div class="xqbr-card" style="margin-bottom:0"><h3 style="margin-top:0">Readiness Indicators</h3>' +
-            '<div class="xqbr-metric-grid" style="grid-template-columns:1fr">' +
-            statCard('People Readiness', 71, '%', { dir: 'up', text: '6 vs last quarter' }) +
-            statCard('Process Readiness', 68, '%', { dir: 'up', text: '5 vs last quarter' }) +
-            statCard('System Readiness', 76, '%', { dir: 'up', text: '7 vs last quarter' }) +
+            '<div class="xqbr-card" style="margin-bottom:0"><h3 style="margin-top:0">Behavioral Driver Trends</h3>' +
+            '<div class="xqbr-align-list">' +
+            (driverTrends.length
+                ? driverTrends.map(function (d) { return coverageRow(DRIVER_LABELS[d.driver] || d.driver, Math.round((d.coverage_rate || 0) * 100)); }).join('')
+                : '<p class="xqbr-muted">No behavioral driver data is available yet.</p>') +
             '</div></div>' +
-            '</div>';
+            '</div>' +
+
+            '<div class="xqbr-card" style="margin-top:1rem"><h3 style="margin-top:0">Readiness Indicators</h3>' +
+            '<div class="xqbr-metric-grid" style="grid-template-columns:repeat(3,1fr)">' +
+            statCard('People Readiness', pct(readiness.people_readiness), '%') +
+            statCard('Process Readiness', pct(readiness.process_readiness), '%') +
+            statCard('System Readiness', pct(readiness.system_readiness), '%') +
+            '</div></div>';
+    }
+
+    window.initEvidenceReviewStep = function () {
+        var body = document.getElementById('xqbr-evidence-review-body');
+        if (body) body.innerHTML = '<div class="xqbr-spinner-row"><span class="xqbr-spinner"></span> Loading organizational evidence…</div>';
+
+        Promise.all([window.xqbrLoadEvidence(), window.xqbrLoadKpis()]).then(function (results) {
+            render(results[0], results[1] || []);
+        });
     };
 })();
 JS;
