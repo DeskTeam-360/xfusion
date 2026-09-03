@@ -143,19 +143,21 @@ function xfarp_wizard_strategic_init_js(): string
             '<a href="#" class="xar-icon-btn xar-prio-delete" data-index="' + index + '" aria-label="Delete strategic priority" role="button">' +
             '<img src="https://sandbox.xperiencefusion.com/wp-content/uploads/2026/07/trash-icon.svg" alt="" width="18" height="18">' +
             '</a>' +
-            '<div class="xar-prio-grid xar-prio-grid-4">' +
+            '<div class="xar-prio-grid xar-prio-grid-3">' +
             field('Title', true, '<input type="text" class="xar-input" data-key="title" value="' + escAttr(item.title) + '" placeholder="Enter strategic priority title...">') +
             field('Related Readiness Priority', true, '<select class="xar-input" data-key="related_readiness">' + readinessOptions(item.related_readiness) + '</select>') +
             field('Target Completion Date', true, '<input type="date" class="xar-input" data-key="target_date" value="' + escAttr(item.target_date) + '">') +
             '</div>' +
-            '<div class="xar-prio-grid xar-prio-grid-1">' +
-            multiCheckboxField('Executive Owner(s)', true, 'executive_owner_user_ids', OWNERS, item.executive_owner_user_ids, 'No group members found') +
-            '</div>' +
-            '<div class="xar-prio-grid xar-prio-grid-4">' +
+            '<div class="xar-prio-grid xar-prio-grid-2">' +
             field('Description', false, '<textarea class="xar-input" rows="3" data-key="description" placeholder="Describe this strategic priority...">' + escHtml(item.description) + '</textarea>') +
             field('Success Measures', true, '<textarea class="xar-input" rows="3" data-key="success_measures" placeholder="How will success be measured?...">' + escHtml(item.success_measures) + '</textarea>') +
+            '</div>' +
+            '<div class="xar-prio-grid xar-prio-grid-2">' +
             field('Related Organizational KPI(s)', false, '<select class="xar-input" data-key="org_kpi">' + opts(ORG_KPIS, item.org_kpi) + '</select>') +
             field('Related Readiness Indicator(s)', false, '<select class="xar-input" data-key="readiness_indicator">' + opts(READINESS_INDICATORS, item.readiness_indicator) + '</select>') +
+            '</div>' +
+            '<div class="xar-prio-grid xar-prio-grid-1">' +
+            multiCheckboxField('Executive Owner(s)', true, 'executive_owner_user_ids', OWNERS, item.executive_owner_user_ids, 'No group members found') +
             '</div>' +
             '<div class="xar-prio-grid xar-prio-grid-1">' +
             multiCheckboxField('Related Group(s)', false, 'related_groups', GROUPS, item.related_groups, 'No groups found in this company') +

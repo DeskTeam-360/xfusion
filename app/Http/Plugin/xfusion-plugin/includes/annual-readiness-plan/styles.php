@@ -139,6 +139,8 @@ select.xar-input[multiple]{min-height:4.75rem;padding:.35rem}
 .xar-prio-grid{display:grid;gap:.85rem 1rem;margin-bottom:.85rem}
 .xar-prio-grid:last-child{margin-bottom:0}
 .xar-prio-grid-1{grid-template-columns:1fr}
+.xar-prio-grid-2{grid-template-columns:repeat(2,minmax(0,1fr))}
+.xar-prio-grid-3{grid-template-columns:repeat(3,minmax(0,1fr))}
 .xar-prio-grid-4{grid-template-columns:repeat(4,minmax(0,1fr))}
 .xar-icon-btn{position:absolute;top:0;right:0;width:32px;height:32px;border:none;background:transparent;color:var(--muted);cursor:pointer;border-radius:.375rem;font-size:1.1rem;line-height:1;padding:0;display:flex;align-items:center;justify-content:center}
 .xar-icon-btn:hover{color:#b91c1c;background:#fef2f2}
@@ -322,7 +324,7 @@ table.xar-table.xar-table-gaps .xar-gap-priority{width:12%;white-space:nowrap}
 .xar-step-line{display:none}
 .xar-step .xar-step-label{font-size:11px;max-width:100%;line-height:1.25}
 .xar-step-underline{width:100%!important;margin-top:.5rem}
-.xar-prio-grid-4{grid-template-columns:repeat(2,minmax(0,1fr))}
+.xar-prio-grid-3,.xar-prio-grid-4{grid-template-columns:repeat(2,minmax(0,1fr))}
 .xar-ai-split{grid-template-columns:1fr;justify-items:center}
 .xar-ai-copy{width:100%}
 .xar-risk-grid{grid-template-columns:repeat(2,minmax(0,1fr))}
@@ -361,7 +363,7 @@ table.xar-table.xar-table-gaps .xar-gap-priority{width:12%;white-space:nowrap}
 .xar-prio-card{flex-direction:column;padding:1rem}
 .xar-prio-rail{flex-direction:row;justify-content:flex-start;gap:.65rem}
 .xar-prio-body{padding-right:0;padding-top:.25rem}
-.xar-prio-grid-4{grid-template-columns:1fr}
+.xar-prio-grid-2,.xar-prio-grid-3,.xar-prio-grid-4{grid-template-columns:1fr}
 .xar-icon-btn{top:-.25rem;right:-.25rem}
 .xar-risk-grid{grid-template-columns:1fr}
 .xar-donut-wrap{width:130px}

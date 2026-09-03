@@ -126,22 +126,24 @@ function xfarp_wizard_readiness_init_js(): string
             '<a href="#" class="xar-icon-btn xar-prio-delete" data-index="' + index + '" aria-label="Delete priority" role="button">' +
             '<img src="https://sandbox.xperiencefusion.com/wp-content/uploads/2026/07/trash-icon.svg" alt="" width="18" height="18">' +
             '</a>' +
-            '<div class="xar-prio-grid xar-prio-grid-4">' +
+            '<div class="xar-prio-grid xar-prio-grid-3">' +
             field('Priority Name', true, '<input type="text" class="xar-input" data-key="name" value="' + escAttr(item.name) + '" placeholder="Enter priority name...">') +
             field('COR Capability™', true, '<select class="xar-input" data-key="cor_capability">' + opts(COR_CAPABILITIES, item.cor_capability) + '</select>') +
-            field('Primary Behavioral Driver™', true, '<select class="xar-input" data-key="primary_driver">' + opts(DRIVERS, item.primary_driver) + '</select>') +
             field('Priority Level', true, '<select class="xar-input" data-key="priority_level">' + opts(LEVELS, item.priority_level) + '</select>') +
             '</div>' +
-            '<div class="xar-prio-grid xar-prio-grid-4">' +
-            field('Description', false, '<textarea class="xar-input" rows="3" data-key="description" placeholder="Describe this readiness priority...">' + escHtml(item.description) + '</textarea>') +
-            field('Business Rationale', false, '<textarea class="xar-input" rows="3" data-key="business_rationale" placeholder="Why does this matter?...">' + escHtml(item.business_rationale) + '</textarea>') +
+            '<div class="xar-prio-grid xar-prio-grid-2">' +
+            field('Primary Behavioral Driver™', true, '<select class="xar-input" data-key="primary_driver">' + opts(DRIVERS, item.primary_driver) + '</select>') +
             field('Secondary Behavioral Driver™', false, '<select class="xar-input" data-key="secondary_driver">' + opts(DRIVERS, item.secondary_driver) + '</select>') +
             '</div>' +
-            '<div class="xar-prio-grid xar-prio-grid-1">' +
-            multiCheckboxField('Executive Owner(s)', true, 'executive_owner_user_ids', OWNERS, item.executive_owner_user_ids, 'No group members found') +
+            '<div class="xar-prio-grid xar-prio-grid-2">' +
+            field('Description', false, '<textarea class="xar-input" rows="3" data-key="description" placeholder="Describe this readiness priority...">' + escHtml(item.description) + '</textarea>') +
+            field('Business Rationale', false, '<textarea class="xar-input" rows="3" data-key="business_rationale" placeholder="Why does this matter?...">' + escHtml(item.business_rationale) + '</textarea>') +
             '</div>' +
             '<div class="xar-prio-grid xar-prio-grid-1">' +
             field('Expected Organizational Impact', false, '<textarea class="xar-input" rows="2" data-key="expected_impact" placeholder="What organizational impact do you expect?...">' + escHtml(item.expected_impact) + '</textarea>') +
+            '</div>' +
+            '<div class="xar-prio-grid xar-prio-grid-1">' +
+            multiCheckboxField('Executive Owner(s)', true, 'executive_owner_user_ids', OWNERS, item.executive_owner_user_ids, 'No group members found') +
             '</div>' +
             '</div></div>';
     }
