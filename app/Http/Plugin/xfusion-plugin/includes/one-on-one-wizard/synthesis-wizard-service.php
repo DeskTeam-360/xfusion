@@ -456,7 +456,7 @@ var xfwRenderSynthesisStep = function () {
     if (!host) {
         return;
     }
-    host.innerHTML = '<p class="xfw-muted">Loading AI Meeting Synthesis\u2026</p>';
+    host.innerHTML = '<div class="xfw-spinner-row"><span class="xfw-spinner"></span> Loading AI Meeting Synthesis\u2026</div>';
     loadWizardSynthesis(true).then(function (synthesis) {
         host.innerHTML = xfwRenderSynthesisPanel(synthesis);
         xfwBindSynthesisDetailsLinks();

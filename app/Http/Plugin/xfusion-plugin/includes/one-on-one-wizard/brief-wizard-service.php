@@ -435,7 +435,7 @@ var xfwRenderBriefStep = function () {
     if (!host) {
         return;
     }
-    host.innerHTML = '<p class="xfw-muted">Loading AI Meeting Brief\u2026</p>';
+    host.innerHTML = '<div class="xfw-spinner-row"><span class="xfw-spinner"></span> Loading AI Meeting Brief\u2026</div>';
     loadWizardBrief(true).then(function (brief) {
         host.innerHTML = xfwRenderBriefPanel(brief);
         xfwBindBriefDetailsLinks();

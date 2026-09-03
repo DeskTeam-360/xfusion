@@ -1302,7 +1302,7 @@ var xfwBindEvidenceAccordions = function () {
             panel.dataset.loaded = '1';
             return;
         }
-        panel.innerHTML = '<p class="xfw-muted">Loading…</p>';
+        panel.innerHTML = '<div class="xfw-spinner-row"><span class="xfw-spinner"></span> Loading…</div>';
         loadWizardEvidence(true).then(function (data) {
             var key = panel.dataset.evidenceKey || '';
             panel.innerHTML = xfwRenderEvidencePanel(key, data);
