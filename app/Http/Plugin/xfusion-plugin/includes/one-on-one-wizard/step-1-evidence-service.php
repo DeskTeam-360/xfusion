@@ -476,6 +476,38 @@ function xfoo_wizard_evidence_arp_priorities(int $conversationId): ?array
 }
 
 /**
+ * Previous Individual Readiness Review™ evidence card: AI Development
+ * Synthesis™ summary (score, label, narrative) from the employee's most
+ * recent published IRR, regardless of which leader ran it. Same
+ * shape/rendering as QBR/ARP priorities. Read-only, AI-synthesized figures only.
+ *
+ * @return array<string, mixed>|null
+ */
+function xfoo_wizard_evidence_previous_irr(int $conversationId): ?array
+{
+    $employeeId = xfoo_wizard_evidence_employee_id_for_conversation($conversationId);
+    if ($employeeId < 1) {
+        return null;
+    }
+
+    if (! function_exists('xfirr_picker_api_request')) {
+        return null;
+    }
+
+    $result = xfirr_picker_api_request('GET', '/readiness-summary-for-employee', [
+        'employee_user_id' => $employeeId,
+    ]);
+
+    if (! $result['ok']) {
+        return null;
+    }
+
+    $data = is_array($result['body']['data'] ?? null) ? $result['body']['data'] : null;
+
+    return $data;
+}
+
+/**
  * Resolve the company group shared by a leader/employee pair — a group
  * where the leader has 'leader' status and the employee is any member.
  * Mirrors OneOnOneCompanyGroupSyncService::findGroupForPair() on the
@@ -602,6 +634,7 @@ function xfoo_wizard_evidence_empty_payload(int $conversationId, int $employeeId
             'commitments' => [],
             'qbr_priorities' => null,
             'arp_priorities' => null,
+            'previous_360' => null,
             'organizational_context' => null,
         ],
         xfoo_wizard_evidence_employee_blocks($employeeId)
@@ -681,6 +714,7 @@ function xfoo_wizard_load_evidence_summary(int $conversationId): array
                 'commitments' => $commitments,
                 'qbr_priorities' => xfoo_wizard_evidence_qbr_priorities($conversationId),
                 'arp_priorities' => xfoo_wizard_evidence_arp_priorities($conversationId),
+                'previous_360' => xfoo_wizard_evidence_previous_irr($conversationId),
                 'organizational_context' => xfoo_wizard_evidence_organizational_context($conversationId),
             ],
             $employeeBlocks
@@ -957,14 +991,12 @@ var xfwEvidenceEmptyMessages = {
     development_tools: 'No development tool submissions are available yet.',
     qbr_priorities: 'No Quarterly Business Review™ has been published for this group yet.',
     arp_priorities: 'No Annual Readiness Plan™ AI Readiness Review has been generated for this group yet.',
+    previous_360: 'No published Individual Readiness Review™ is available for this employee yet.',
     organizational_context: 'No Annual Readiness Review™ Executive Summary is available for this organization yet.',
     default: 'No data is available for this section yet.',
 };
 
 var xfwEvidenceDummyMessages = {
-    qbr_priorities: 'Current Quarterly Business Review\u2122 priorities and progress will appear here once this evidence source is connected.',
-    arp_priorities: 'Annual Readiness Plan\u2122 priorities and strategic context will appear here once this evidence source is connected.',
-    previous_360: 'Most recent Individual Readiness Review\u2122 feedback themes and insights will appear here once this evidence source is connected.',
     organizational_context: 'Role, team, organizational goals, and readiness priorities will appear here once this evidence source is connected.',
 };
 
@@ -1192,6 +1224,21 @@ var xfwRenderArpPrioritiesPanel = function (data) {
         '</div></div>';
 };
 
+var xfwRenderPreviousIrrPanel = function (data) {
+    if (!data || data.score === null || data.score === undefined) {
+        return xfwEvidenceNoData(xfwEvidenceEmptyMessages.previous_360);
+    }
+    var color = '#16a34a';
+    var periodLabel = data.year ? String(data.year) : '';
+    return '<div class="xfw-evidence-section xfw-evidence-readiness">' +
+        xfwEvidenceDonut(data.score, 100, color) +
+        '<div>' +
+        (periodLabel ? '<p class="xfw-muted" style="margin:0 0 .35rem">' + xfwEvidenceEsc(periodLabel) + '</p>' : '') +
+        (data.label ? '<p style="margin:0 0 .5rem"><strong>Readiness:</strong> <span style="color:' + color + '">' + xfwEvidenceEsc(data.label) + '</span></p>' : '') +
+        (data.narrative ? '<div class="xfw-evidence-text">' + xfwEvidenceEsc(data.narrative) + '</div>' : '') +
+        '</div></div>';
+};
+
 var xfwRenderOrganizationalContextPanel = function (data) {
     var hasFields = data && (data.role || data.team || data.organizational_goals || data.readiness_priorities);
     var summary = data && data.executive_summary ? data.executive_summary : null;
@@ -1269,6 +1316,9 @@ var xfwRenderEvidencePanel = function (key, data) {
     }
     if (key === 'arp_priorities') {
         return xfwRenderArpPrioritiesPanel(data.arp_priorities || null);
+    }
+    if (key === 'previous_360') {
+        return xfwRenderPreviousIrrPanel(data.previous_360 || null);
     }
     if (key === 'organizational_context') {
         return xfwRenderOrganizationalContextPanel(data.organizational_context || null);

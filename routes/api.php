@@ -518,6 +518,7 @@ Route::prefix('v1')->middleware('fusion.api')->group(function () {
 
     $registerIrrRoutes = function () {
         Route::get('/picker-dashboard', [IrrController::class, 'pickerDashboard']);
+        Route::get('/readiness-summary-for-employee', [IrrController::class, 'readinessSummaryForEmployee']);
         Route::post('/', [IrrController::class, 'store']);
         Route::post('/{irr}/evidence/generate', [IrrController::class, 'generateEvidence']);
         Route::get('/{irr}/evidence', [IrrController::class, 'getEvidence']);

@@ -57,6 +57,47 @@ class IrrController extends Controller
         ]);
     }
 
+    /**
+     * Previous Individual Readiness Review™ evidence card for the 1-on-1
+     * wizard's Step 1 — most recent published IRR's AI Development
+     * Synthesis™ for this employee (any manager), read-only AI-synthesized
+     * figures only. Same shape/rendering as QBR/ARP priorities.
+     */
+    public function readinessSummaryForEmployee(Request $request, IrrAiService $ai)
+    {
+        $employeeUserId = (int) $request->query('employee_user_id');
+        if ($employeeUserId < 1) {
+            return response()->json(['success' => true, 'data' => null]);
+        }
+
+        $review = IrrReview::query()
+            ->where('employee_user_id', $employeeUserId)
+            ->where('status', IrrReview::STATUS_PUBLISHED)
+            ->orderByDesc('year')
+            ->first();
+        if ($review === null) {
+            return response()->json(['success' => true, 'data' => null]);
+        }
+
+        $latest = $ai->latestSynthesis($review);
+        $synthesis = $latest?->synthesis;
+        $readiness = is_array($synthesis['readiness_indicators'] ?? null) ? $synthesis['readiness_indicators'] : null;
+        if ($synthesis === null || ($readiness['overall_score'] ?? null) === null) {
+            return response()->json(['success' => true, 'data' => null]);
+        }
+
+        return response()->json([
+            'success' => true,
+            'data' => [
+                'score' => $readiness['overall_score'],
+                'label' => $readiness['overall_label'] ?? null,
+                'narrative' => $synthesis['annual_development_summary'] ?? null,
+                'year' => $review->year,
+                'status' => $review->status,
+            ],
+        ]);
+    }
+
     public function show(Request $request, IrrReview $irr)
     {
         $userId = (int) $request->query('user_id');
