@@ -247,9 +247,9 @@ select.xqbr-input[multiple]{min-height:4.75rem;padding:.35rem}
 .xqbr-donut-score span{font-size:.75rem;font-weight:600;color:var(--muted)}
 .xqbr-donut-label{margin-top:.5rem;font-size:.85rem;font-weight:600;color:var(--muted);text-align:center;line-height:1.2}
 .xqbr-check-list{list-style:none;margin:0;padding:0}
-.xqbr-check-list li{display:flex;gap:.55rem;align-items:flex-start;margin-bottom:.45rem;font-size:16px;line-height:1.4;color:var(--ink)}
-.xqbr-check{width:20px;height:20px;border-radius:50%;background:var(--green);color:#fff;display:inline-flex;align-items:center;justify-content:center;font-size:.7rem;font-weight:700;flex-shrink:0;margin-top:.1rem}
-.xqbr-list-bullet{width:40px;height:40px;object-fit:contain;flex-shrink:0;display:block;margin-top:.15rem}
+.xqbr-check-list li{display:flex;gap:.6rem;align-items:center;margin-bottom:.5rem;font-size:16px;line-height:1.4;color:var(--ink)}
+.xqbr-check{width:20px;height:20px;border-radius:50%;background:var(--green);color:#fff;display:inline-flex;align-items:center;justify-content:center;font-size:.7rem;font-weight:700;flex-shrink:0}
+.xqbr-list-bullet{width:20px;height:20px;object-fit:contain;flex-shrink:0;display:block}
 .xqbr-numbered{list-style:none;margin:0;padding:0}
 .xqbr-numbered li{display:flex;gap:.55rem;align-items:flex-start;margin-bottom:.45rem;font-size:16px;line-height:1.4;color:var(--ink)}
 .xqbr-numbered-badge{width:22px;height:22px;border-radius:50%;background:var(--green);color:#fff;display:inline-flex;align-items:center;justify-content:center;font-size:.75rem;font-weight:700;flex-shrink:0;margin-top:.1rem;line-height:1}
