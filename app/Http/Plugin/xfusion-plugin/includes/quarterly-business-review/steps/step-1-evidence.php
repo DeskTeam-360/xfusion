@@ -189,7 +189,7 @@ function xfqbr_wizard_evidence_init_js(): string
         panel.innerHTML = renderPanel(row.dataset.key, lastSnapshot);
     }
 
-    function renderChecklist(sources) {
+    function renderChecklist(sources, loading) {
         var byKey = {};
         (sources || []).forEach(function (s) { byKey[s.key] = s; });
         var list = document.getElementById('xqbr-evidence-list');
@@ -198,8 +198,10 @@ function xfqbr_wizard_evidence_init_js(): string
             var meta = LABELS[key];
             var row = byKey[key];
             var available = row ? row.available : false;
-            var statusClass = available ? 'ok' : 'pending';
-            var statusText = available ? '&#10003; Pulling data' : 'No data yet';
+            var statusClass = loading ? 'pending' : (available ? 'ok' : 'pending');
+            var statusText = loading
+                ? '<span class="xqbr-spinner xqbr-spinner-inline"></span> Pulling data…'
+                : (available ? '&#10003; Pulling data' : 'No data yet');
             return '<div class="xqbr-evidence-item" data-key="' + key + '">' +
                 '<div class="xqbr-evidence-row" role="button" tabindex="0" aria-expanded="false" data-key="' + key + '">' +
                 '<div class="xqbr-evidence-icon">' + meta[0] + '</div>' +
@@ -219,13 +221,15 @@ function xfqbr_wizard_evidence_init_js(): string
             btn.style.display = 'none';
         }
 
-        renderChecklist([]);
+        renderChecklist([], true);
 
         window.xqbrLoadEvidence().then(function (data) {
             if (data && data.evidence_sources) {
                 lastSnapshot = data;
-                renderChecklist(data.evidence_sources);
+                renderChecklist(data.evidence_sources, false);
                 if (statusEl) statusEl.textContent = 'Evidence already generated for this quarter. Click Generate Evidence to refresh it.';
+            } else {
+                renderChecklist([], false);
             }
         });
 
@@ -236,22 +240,25 @@ function xfqbr_wizard_evidence_init_js(): string
                 btn.disabled = true;
                 btn.textContent = 'Generating…';
                 if (statusEl) statusEl.textContent = 'Collecting the most up-to-date data. This may take a few seconds.';
+                renderChecklist((lastSnapshot && lastSnapshot.evidence_sources) || [], true);
 
                 window.xqbrGenerateEvidence().then(function (res) {
                     btn.disabled = false;
                     btn.dataset.busy = '';
                     btn.textContent = 'Generate Evidence';
                     if (!res || !res.success) {
+                        renderChecklist((lastSnapshot && lastSnapshot.evidence_sources) || [], false);
                         if (statusEl) statusEl.textContent = (res && res.message) ? res.message : 'Failed to generate evidence.';
                         return;
                     }
                     lastSnapshot = res.data;
-                    renderChecklist(res.data.evidence_sources);
+                    renderChecklist(res.data.evidence_sources, false);
                     if (statusEl) statusEl.textContent = '✓ Evidence generation complete — captured ' + (res.captured_at || 'just now') + '.';
                 }).catch(function () {
                     btn.disabled = false;
                     btn.dataset.busy = '';
                     btn.textContent = 'Generate Evidence';
+                    renderChecklist((lastSnapshot && lastSnapshot.evidence_sources) || [], false);
                     if (statusEl) statusEl.textContent = 'Failed to generate evidence — network error.';
                 });
             });
