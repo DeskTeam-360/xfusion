@@ -275,6 +275,14 @@ if (root) {
         if (target === current) {
             return;
         }
+        var isPublishStep = STEPS[target] && STEPS[target].key === 'publish';
+        var synthesisDone = (window.xqbrSynthesisCache && typeof window.xqbrSynthesisCache.has_synthesis === 'boolean')
+            ? window.xqbrSynthesisCache.has_synthesis
+            : !!(window.XFQBR_WIZARD && window.XFQBR_WIZARD.stepProgress && window.XFQBR_WIZARD.stepProgress.synthesis);
+        if (isPublishStep && !synthesisDone) {
+            window.alert('Generate the AI Organizational Synthesis™ (Step 6) before continuing to Publish.');
+            return;
+        }
         goToInner(target);
     };
     window.xqbrGoTo = goTo;

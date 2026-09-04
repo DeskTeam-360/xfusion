@@ -80,6 +80,7 @@ function xfqbr_wizard_synthesis_init_js(): string
     var body = null;
 
     function render(data, canEdit) {
+        window.xqbrSynthesisCache = { has_synthesis: true };
         var readiness = data.organizational_readiness_summary || {};
         var confidence = data.confidence_level || {};
         var completeness = data.data_completeness || {};
@@ -175,6 +176,7 @@ function xfqbr_wizard_synthesis_init_js(): string
     }
 
     function renderEmpty(canEdit) {
+        window.xqbrSynthesisCache = { has_synthesis: false };
         body.innerHTML = '<div class="xqbr-card"><h3 style="margin-top:0">AI Organizational Synthesis™</h3>' +
             '<p class="xqbr-muted">No AI Organizational Synthesis has been generated for this quarter yet.</p>' +
             (canEdit ? '<button type="button" class="xqbr-btn xqbr-btn-accent" id="xqbr-generate-synthesis-btn">Generate AI Organizational Synthesis</button>' : '') +
