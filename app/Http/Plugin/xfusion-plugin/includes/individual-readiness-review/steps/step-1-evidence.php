@@ -61,8 +61,8 @@ function xfirr_wizard_evidence_init_js(): string
         reflection_themes: [evidenceIcon('Reflection-themes-icon.svg', 'Reflection Themes icon'), 'Reflection Themes', 'AI-extracted themes from private reflections and journals'],
         leader_observations: [evidenceIcon('Leader-icon.svg', 'Leader Observations icon'), 'Leader Observations', 'Leader feedback and observed behaviors throughout the year'],
         tool_usage: [evidenceIcon('Tool-Usgae-icon.svg', 'Tool Usage icon'), 'Tool Usage', 'Development tools used and key insights generated'],
-        organizational_context: ['&#9673;', 'Organizational Context', 'Organizational events, priorities and context'],
-        one_on_one: ['&#9673;', '1-on-1 Alignment Capture™', 'Key discussion themes and alignment insights'],
+        organizational_context: ['<img src="https://sandbox.xperiencefusion.com/wp-content/uploads/2026/09/organizational-context-icon-orange.svg" alt="Organizational Context icon">', 'Organizational Context', 'Organizational events, priorities and context'],
+        one_on_one: ['<img src="https://sandbox.xperiencefusion.com/wp-content/uploads/2026/09/two-people-talking-icon-green.svg" alt="1-on-1 Alignment Capture icon">', '1-on-1 Alignment Capture™', 'Key discussion themes and alignment insights'],
         qbr_arp_priorities: [evidenceIcon('QBR-and-ARP-icon.svg', 'QBR and ARP Priorities icon'), 'QBR & ARP Priorities', 'Quarterly priorities and strategic objectives alignment'],
     };
     // Live sources first (backend actually computes these). The two below

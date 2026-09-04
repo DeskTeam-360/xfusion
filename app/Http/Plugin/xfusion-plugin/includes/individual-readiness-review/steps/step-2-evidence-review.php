@@ -99,13 +99,16 @@ function xfirr_wizard_evidence_review_init_js(): string
             '</div>';
     }
 
-    function statCard(label, value, trend) {
+    function statCard(label, value, trend, iconUrl) {
         var trendHtml = '';
         if (trend && trend.percent != null) {
             trendHtml = '<div class="xirr-metric-trend up">' +
                 (trend.direction === 'up' ? '&#8593;' : '&#8595;') + ' ' + trend.percent + '% vs last year</div>';
         }
-        return '<div class="xirr-metric-card"><p class="xirr-metric-label">' + esc(label) + '</p>' +
+        var iconHtml = iconUrl
+            ? '<img class="xirr-metric-icon" src="' + iconUrl + '" alt="' + esc(label) + '">'
+            : '';
+        return '<div class="xirr-metric-card"><p class="xirr-metric-label">' + iconHtml + '<span>' + esc(label) + '</span></p>' +
             '<div class="xirr-metric-value">' + esc(String(value)) + '</div>' + trendHtml + '</div>';
     }
 
@@ -305,10 +308,10 @@ function xfirr_wizard_evidence_review_init_js(): string
             '</div>';
 
         html += '<div class="xirr-card"><h4>Evidence Highlights</h4><div class="xirr-metric-grid">' +
-            statCard('Activities Completed', highlights.activities_completed || 0, highlights.activities_completed_trend) +
-            statCard('Commitments Completed', highlights.commitments_completed || '0', highlights.commitments_completed_trend) +
-            statCard('Tools & Resources Used', highlights.tools_used || 0, highlights.tools_used_trend) +
-            statCard('1-on-1s Completed', highlights.one_on_ones_completed || 0, highlights.one_on_ones_completed_trend) +
+            statCard('Activities Completed', highlights.activities_completed || 0, highlights.activities_completed_trend, 'https://sandbox.xperiencefusion.com/wp-content/uploads/2026/09/Activities-Completed.svg') +
+            statCard('Commitments Completed', highlights.commitments_completed || '0', highlights.commitments_completed_trend, 'https://sandbox.xperiencefusion.com/wp-content/uploads/2026/09/Commitment-Completed.svg') +
+            statCard('Tools & Resources Used', highlights.tools_used || 0, highlights.tools_used_trend, 'https://sandbox.xperiencefusion.com/wp-content/uploads/2026/09/Tools-and-Resources-Used.svg') +
+            statCard('1-on-1s Completed', highlights.one_on_ones_completed || 0, highlights.one_on_ones_completed_trend, 'https://sandbox.xperiencefusion.com/wp-content/uploads/2026/09/1on1-Completed.svg') +
             '</div></div>';
 
         var pending = [];

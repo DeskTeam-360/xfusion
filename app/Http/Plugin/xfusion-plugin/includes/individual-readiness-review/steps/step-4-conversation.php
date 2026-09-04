@@ -25,30 +25,36 @@ conversation: function () {
         '<div class="xirr-banner">&#8505;&#65039; <span>Focus on learning, alignment, and development. This is not a performance evaluation.</span></div>' +
 
         '<div class="xirr-card"><h4 style="margin-top:0">Conversation Focus Areas</h4>' +
-        '<div class="xirr-guide-grid" style="grid-template-columns:repeat(6,minmax(0,1fr))">' +
-        [['&#128200;','Review Evidence'],['&#128202;','Discuss Patterns'],['&#10024;','Explore Strengths'],
-         ['&#128161;','Identify Growth Opportunities'],['&#128101;','Align on Support Needs'],['&#127919;','Plan for Future Success']].map(function (f) {
-            return '<div style="text-align:center"><div style="font-size:1.6rem">' + f[0] + '</div><div style="font-size:13px;font-weight:600;color:var(--navy);margin-top:.4rem">' + f[1] + '</div></div>';
+        '<div class="xirr-focus-area-row">' +
+        [
+            ['https://sandbox.xperiencefusion.com/wp-content/uploads/2026/09/Review-Evidence.svg', 'Review Evidence'],
+            ['https://sandbox.xperiencefusion.com/wp-content/uploads/2026/09/Discuss-Patterns.svg', 'Discuss Patterns'],
+            ['https://sandbox.xperiencefusion.com/wp-content/uploads/2026/09/Explore-Strengths.svg', 'Explore Strengths'],
+            ['https://sandbox.xperiencefusion.com/wp-content/uploads/2026/09/Identify-Growth-Opportunities.svg', 'Identify Growth Opportunities'],
+            ['https://sandbox.xperiencefusion.com/wp-content/uploads/2026/09/Align-on-Support-Needs.svg', 'Align on Support Needs'],
+            ['https://sandbox.xperiencefusion.com/wp-content/uploads/2026/09/Plan-for-Future-Success.svg', 'Plan for Future Success']
+        ].map(function (f) {
+            return '<div class="xirr-focus-area-item"><img class="xirr-focus-area-icon" src="' + f[0] + '" alt="' + f[1] + '"><div>' + f[1] + '</div></div>';
         }).join('') + '</div></div>' +
 
         '<div class="xirr-grid-2" style="display:grid;grid-template-columns:1.4fr 1fr;gap:1rem;margin-bottom:1rem">' +
         '<div class="xirr-card" style="margin-bottom:0"><h4 style="margin-top:0">Conversation Guide</h4>' +
-        '<ol style="margin:0;padding-left:1.2rem">' +
-        '<li style="margin-bottom:.6rem"><strong>Review Key Insights</strong><br><span class="xirr-muted">Start with the AI assessment summary and key themes.</span></li>' +
-        '<li style="margin-bottom:.6rem"><strong>Explore Strengths</strong><br><span class="xirr-muted">Discuss what went well and what drove your success.</span></li>' +
-        '<li style="margin-bottom:.6rem"><strong>Discuss Opportunities</strong><br><span class="xirr-muted">Talk through growth areas and potential blind spots.</span></li>' +
-        '<li style="margin-bottom:.6rem"><strong>Assess Alignment</strong><br><span class="xirr-muted">Review alignment with team, organizational, and ARP priorities.</span></li>' +
-        '<li style="margin-bottom:.6rem"><strong>Identify Support Needs</strong><br><span class="xirr-muted">Determine resources, coaching, or tools that will help.</span></li>' +
+        '<ol class="xirr-numbered-list">' +
+        '<li><strong>Review Key Insights</strong><br><span class="xirr-muted">Start with the AI assessment summary and key themes.</span></li>' +
+        '<li><strong>Explore Strengths</strong><br><span class="xirr-muted">Discuss what went well and what drove your success.</span></li>' +
+        '<li><strong>Discuss Opportunities</strong><br><span class="xirr-muted">Talk through growth areas and potential blind spots.</span></li>' +
+        '<li><strong>Assess Alignment</strong><br><span class="xirr-muted">Review alignment with team, organizational, and ARP priorities.</span></li>' +
+        '<li><strong>Identify Support Needs</strong><br><span class="xirr-muted">Determine resources, coaching, or tools that will help.</span></li>' +
         '<li><strong>Look Ahead</strong><br><span class="xirr-muted">Discuss future goals and the path forward.</span></li>' +
         '</ol></div>' +
-        '<div class="xirr-card" style="margin-bottom:0"><h4 style="margin-top:0">Conversation Tips</h4>' +
+        '<div class="xirr-card" style="margin-bottom:0"><h4 class="xirr-heading-with-icon" style="margin-top:0"><img src="https://sandbox.xperiencefusion.com/wp-content/uploads/2026/09/Conversation-Tips.svg" alt="Conversation Tips icon"><span>Conversation Tips</span></h4>' +
         '<ul class="xirr-check-list">' +
-        '<li>Listen actively and ask open-ended questions.</li>' +
-        '<li>Use evidence to support observations.</li>' +
-        '<li>Focus on growth, not gaps.</li>' +
-        '<li>Create a safe space for honesty and reflection.</li>' +
+        '<li><img class="xirr-check-list-icon" src="https://sandbox.xperiencefusion.com/wp-content/uploads/2026/09/Leadership-Contributions-Checkmark.svg" alt=""><span>Listen actively and ask open-ended questions.</span></li>' +
+        '<li><img class="xirr-check-list-icon" src="https://sandbox.xperiencefusion.com/wp-content/uploads/2026/09/Leadership-Contributions-Checkmark.svg" alt=""><span>Use evidence to support observations.</span></li>' +
+        '<li><img class="xirr-check-list-icon" src="https://sandbox.xperiencefusion.com/wp-content/uploads/2026/09/Leadership-Contributions-Checkmark.svg" alt=""><span>Focus on growth, not gaps.</span></li>' +
+        '<li><img class="xirr-check-list-icon" src="https://sandbox.xperiencefusion.com/wp-content/uploads/2026/09/Leadership-Contributions-Checkmark.svg" alt=""><span>Create a safe space for honesty and reflection.</span></li>' +
         '</ul>' +
-        '<h4 style="margin-bottom:.3rem">Duration Guideline</h4>' +
+        '<h4 class="xirr-heading-with-icon" style="margin-bottom:.3rem"><img src="https://sandbox.xperiencefusion.com/wp-content/uploads/2026/09/Duration-Guideline.svg" alt="Duration Guideline icon"><span>Duration Guideline</span></h4>' +
         '<p style="font-weight:700;color:var(--navy);margin:0">30 – 45 minutes</p>' +
         '<p class="xirr-muted" style="margin:.2rem 0 0">Recommended time for a meaningful conversation.</p>' +
         '</div></div>' +

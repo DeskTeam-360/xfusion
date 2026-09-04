@@ -213,7 +213,8 @@ select.xirr-input[multiple]{min-height:4.75rem;padding:.35rem}
 .xirr-donut-score span{font-size:.75rem;font-weight:600;color:var(--muted)}
 .xirr-donut-label{margin-top:.5rem;font-size:.85rem;font-weight:600;color:var(--muted);text-align:center;line-height:1.2}
 .xirr-check-list{list-style:none;margin:0;padding:0}
-.xirr-check-list li{display:flex;gap:.55rem;align-items:flex-start;margin-bottom:.45rem;font-size:16px;line-height:1.4;color:var(--ink)}
+.xirr-check-list li{display:flex;gap:.55rem;align-items:center;margin-bottom:.45rem;font-size:16px;line-height:1.4;color:var(--ink)}
+.xirr-check-list-icon{width:40px;height:40px;object-fit:contain;flex-shrink:0;display:block;margin-top:.15rem}
 .xirr-check{width:20px;height:20px;border-radius:50%;background:var(--green);color:#fff;display:inline-flex;align-items:center;justify-content:center;font-size:.7rem;font-weight:700;flex-shrink:0;margin-top:.1rem}
 .xirr-stat-list{display:flex;flex-direction:column;gap:.55rem}
 .xirr-stat-row{display:flex;align-items:center;gap:.55rem;font-size:16px}
@@ -317,7 +318,8 @@ table.xirr-table.xirr-table-gaps .xirr-gap-priority{width:12%;white-space:nowrap
 /* Metric cards (Step 2) */
 .xirr-metric-grid{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:1rem;margin-bottom:1rem}
 .xirr-metric-card{border:1px solid var(--border);border-radius:.5rem;padding:1rem;background:#fff}
-.xirr-metric-label{color:var(--muted);font-size:13px;text-transform:uppercase;letter-spacing:.03em;margin:0 0 .4rem}
+.xirr-metric-label{display:flex;align-items:center;gap:.5rem;color:var(--muted);font-size:13px;text-transform:uppercase;letter-spacing:.03em;margin:0 0 .4rem}
+.xirr-metric-icon{width:28px;height:28px;object-fit:contain;flex-shrink:0;display:block}
 .xirr-metric-value{font-size:1.6rem;font-weight:800;color:var(--navy);line-height:1}
 .xirr-metric-value .unit{font-size:1rem;font-weight:400;color:var(--muted)}
 .xirr-metric-trend{font-size:13px;font-weight:600;margin-top:.35rem}
@@ -329,10 +331,31 @@ table.xirr-table.xirr-table-gaps .xirr-gap-priority{width:12%;white-space:nowrap
 @media (max-width:480px){.xirr-metric-grid{grid-template-columns:1fr}}
 
 /* Discussion guide (Step 4) */
-.xirr-guide-grid{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:.85rem;margin-bottom:1.25rem}
+.xirr-heading-with-icon{display:flex;align-items:center;gap:.5rem}
+.xirr-heading-with-icon img{width:50px;height:50px;object-fit:contain;flex-shrink:0;display:block}
+.xirr-focus-area-row{display:flex;flex-wrap:wrap;align-items:flex-start;gap:1rem 1.25rem;margin-bottom:.25rem}
+.xirr-focus-area-item{flex:1 1 140px;text-align:center;min-width:120px;max-width:180px}
+.xirr-focus-area-item > div{font-size:13px;font-weight:600;color:var(--navy);margin-top:.4rem}
+.xirr-focus-area-icon{width:44px;height:44px;object-fit:contain;display:block;margin:0 auto}
+.xirr-numbered-list{list-style:none;margin:0;padding:0;counter-reset:xirr-num}
+.xirr-numbered-list > li{position:relative;padding-left:2.15rem;margin-bottom:.75rem;counter-increment:xirr-num}
+.xirr-numbered-list > li:last-child{margin-bottom:0}
+.xirr-numbered-list > li::before{
+    content:counter(xirr-num);
+    position:absolute;left:0;top:.12rem;
+    width:24px;height:24px;border-radius:50%;
+    background:var(--green);color:#fff;
+    font-size:13px;font-weight:700;line-height:24px;text-align:center;
+}
 .xirr-guide-card{border:1px solid var(--border);border-radius:.5rem;padding:.9rem;background:#fafafa}
 .xirr-guide-card h4{margin:0 0 .35rem;font-size:14px;color:var(--navy);text-transform:none;letter-spacing:0}
 .xirr-guide-card p{margin:0;font-size:13px;color:var(--muted)}
+.xirr-guide-grid{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:.85rem;margin-bottom:1.25rem}
+.xirr-structure-row{display:flex;flex-wrap:wrap;justify-content:space-between;align-items:flex-start;gap:1.25rem .75rem}
+.xirr-structure-item{flex:1 1 120px;min-width:110px;max-width:160px;display:flex;flex-direction:column;align-items:center;text-align:center}
+.xirr-structure-item img{width:56px;height:56px;object-fit:contain;display:block;margin-bottom:.55rem}
+.xirr-structure-item-title{font-weight:700;color:var(--navy);font-size:14px;line-height:1.25;margin-bottom:.25rem}
+.xirr-structure-item-desc{font-size:12px;line-height:1.35;color:var(--navy);font-weight:400}
 @media (max-width:1024px){.xirr-guide-grid{grid-template-columns:repeat(2,minmax(0,1fr))}}
 @media (max-width:480px){.xirr-guide-grid{grid-template-columns:1fr}}
 

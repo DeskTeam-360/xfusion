@@ -27,25 +27,31 @@ commitments: function () {
         '</div>' +
         '<div class="xirr-card"><div id="xirr-commitments-list"></div></div>' +
 
-        '<div class="xirr-grid-2" style="display:grid;grid-template-columns:1.3fr 1fr;gap:1rem">' +
-        '<div class="xirr-card" style="margin-bottom:0"><h4 style="margin-top:0">Commitment Structure</h4>' +
+        '<div class="xirr-card"><h4 style="margin-top:0">Commitment Structure</h4>' +
         '<p class="xirr-muted" style="margin-top:-.2rem">Each commitment you create will include the following:</p>' +
-        '<div class="xirr-guide-grid" style="grid-template-columns:repeat(4,minmax(0,1fr))">' +
-        [['Commitment','Clear and actionable development focus'],['Owner','Who is responsible for this commitment'],
-         ['Priority','High, Medium, or Low'],['Target Date','When you aim to achieve this'],
-         ['Success Indicator','How you will measure success'],['Behavioral Driver™','Which driver this commitment strengthens'],
-         ['Org Priority (Optional)','Link to ARP or QBR priority']].map(function (f) {
-            return '<div><div style="font-weight:700;color:var(--navy);font-size:14px">' + f[0] + '</div><div class="xirr-muted" style="font-size:12px">' + f[1] + '</div></div>';
+        '<div class="xirr-structure-row">' +
+        [
+            ['https://sandbox.xperiencefusion.com/wp-content/uploads/2026/09/Commitment.svg', 'Commitment', 'Clear and actionable development focus'],
+            ['https://sandbox.xperiencefusion.com/wp-content/uploads/2026/09/Owner.svg', 'Owner', 'Who is responsible for this commitment'],
+            ['https://sandbox.xperiencefusion.com/wp-content/uploads/2026/09/Priority.svg', 'Priority', 'High, Medium, or Low'],
+            ['https://sandbox.xperiencefusion.com/wp-content/uploads/2026/09/Target-Date.svg', 'Target Date', 'When you aim to achieve this'],
+            ['https://sandbox.xperiencefusion.com/wp-content/uploads/2026/09/Success-Indicator.svg', 'Success Indicator', 'How you will measure success'],
+            ['https://sandbox.xperiencefusion.com/wp-content/uploads/2026/09/Behavioral-Driver%E2%84%A2.svg', 'Behavioral Driver™', 'Which driver this commitment strengthens'],
+            ['https://sandbox.xperiencefusion.com/wp-content/uploads/2026/09/Org-Priority-Optional.svg', 'Org Priority (Optional)', 'Link to ARP or QBR priority']
+        ].map(function (f) {
+            return '<div class="xirr-structure-item"><img src="' + f[0] + '" alt="">' +
+                '<div class="xirr-structure-item-title">' + f[1] + '</div>' +
+                '<div class="xirr-structure-item-desc">' + f[2] + '</div></div>';
         }).join('') + '</div></div>' +
         '<div class="xirr-card" style="margin-bottom:0"><h4 style="margin-top:0">Alignment Guidance</h4>' +
         '<p class="xirr-muted" style="margin-top:-.2rem">Strong commitments are:</p>' +
         '<ul class="xirr-check-list">' +
-        '<li><b>Specific</b> — Clearly define what you will focus on and why it matters.</li>' +
-        '<li><b>Actionable</b> — Describe the key actions you will take.</li>' +
-        '<li><b>Measurable</b> — Include a success indicator that shows progress.</li>' +
-        '<li><b>Aligned</b> — Connect to a Behavioral Driver™ and (optionally) an organizational priority.</li>' +
-        '<li><b>Achievable</b> — Set a realistic target date within the next 12 months.</li>' +
-        '</ul></div></div>';
+        '<li><img class="xirr-check-list-icon" src="https://sandbox.xperiencefusion.com/wp-content/uploads/2026/09/Leadership-Contributions-Checkmark.svg" alt=""><span><b>Specific</b> — Clearly define what you will focus on and why it matters.</span></li>' +
+        '<li><img class="xirr-check-list-icon" src="https://sandbox.xperiencefusion.com/wp-content/uploads/2026/09/Leadership-Contributions-Checkmark.svg" alt=""><span><b>Actionable</b> — Describe the key actions you will take.</span></li>' +
+        '<li><img class="xirr-check-list-icon" src="https://sandbox.xperiencefusion.com/wp-content/uploads/2026/09/Leadership-Contributions-Checkmark.svg" alt=""><span><b>Measurable</b> — Include a success indicator that shows progress.</span></li>' +
+        '<li><img class="xirr-check-list-icon" src="https://sandbox.xperiencefusion.com/wp-content/uploads/2026/09/Leadership-Contributions-Checkmark.svg" alt=""><span><b>Aligned</b> — Connect to a Behavioral Driver™ and (optionally) an organizational priority.</span></li>' +
+        '<li><img class="xirr-check-list-icon" src="https://sandbox.xperiencefusion.com/wp-content/uploads/2026/09/Leadership-Contributions-Checkmark.svg" alt=""><span><b>Achievable</b> — Set a realistic target date within the next 12 months.</span></li>' +
+        '</ul></div>';
 }
 JS;
 }
@@ -117,7 +123,7 @@ function xfirr_wizard_commitments_init_js(): string
 
         if (cache.length === 0) {
             list.innerHTML = '<div style="text-align:center;padding:2.5rem 1rem">' +
-                '<div style="font-size:1.8rem">&#128203;</div>' +
+                '<img src="https://sandbox.xperiencefusion.com/wp-content/uploads/2026/09/No-Commitment-Added-Yet.svg" alt="" style="width:48px;height:48px;object-fit:contain;display:block;margin:0 auto">' +
                 '<p style="font-weight:700;margin:.5rem 0 .2rem">No commitments added yet.</p>' +
                 '<p class="xirr-muted">Click "Add Commitment" above to create your first development commitment.</p></div>';
         } else {

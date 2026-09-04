@@ -34,7 +34,20 @@ function xfirr_wizard_assessment_init_js(): string
 (function () {
     function esc(s) { return String(s == null ? '' : s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
 
-    var ROW_ICONS = ['&#9989;', '&#128101;', '&#9999;&#65039;', '&#10024;', '&#128203;'];
+    var STRENGTH_ICONS = [
+        'https://sandbox.xperiencefusion.com/wp-content/uploads/2026/09/Consistent-Problem-Solver.svg',
+        'https://sandbox.xperiencefusion.com/wp-content/uploads/2026/09/Reliable-Accountable.svg',
+        'https://sandbox.xperiencefusion.com/wp-content/uploads/2026/09/Strong-Operational-Leader.svg',
+        'https://sandbox.xperiencefusion.com/wp-content/uploads/2026/09/Clear-Communicator.svg',
+        'https://sandbox.xperiencefusion.com/wp-content/uploads/2026/09/Adaptable-Resilient.svg',
+    ];
+    var OPPORTUNITY_ICONS = [
+        'https://sandbox.xperiencefusion.com/wp-content/uploads/2026/09/Strategic-Thinking.svg',
+        'https://sandbox.xperiencefusion.com/wp-content/uploads/2026/09/Delegation.svg',
+        'https://sandbox.xperiencefusion.com/wp-content/uploads/2026/09/Change-Leadership.svg',
+        'https://sandbox.xperiencefusion.com/wp-content/uploads/2026/09/Influencing.svg',
+        'https://sandbox.xperiencefusion.com/wp-content/uploads/2026/09/Coaching-Mindset.svg',
+    ];
 
     function point(fraction) {
         var theta = (-90 + fraction * 180) * Math.PI / 180;
@@ -69,13 +82,16 @@ function xfirr_wizard_assessment_init_js(): string
             '</div>';
     }
 
-    function strengthRows(items, defaultLabel) {
+    function strengthRows(items, defaultLabel, iconUrls) {
         if (!items || !items.length) {
             return '<p class="xirr-muted">No items identified yet.</p>';
         }
         return items.map(function (item, i) {
+            var icon = (iconUrls && iconUrls.length)
+                ? '<img src="' + iconUrls[i % iconUrls.length] + '" alt="">'
+                : '';
             return strengthRow(
-                ROW_ICONS[i % ROW_ICONS.length],
+                icon,
                 item.title || '',
                 item.description || '',
                 item.tag_label || defaultLabel,
@@ -95,12 +111,15 @@ function xfirr_wizard_assessment_init_js(): string
             '</div>';
     }
 
-    function bulletList(items, emptyText) {
+    function bulletList(items, emptyText, iconUrl) {
         if (!items || !items.length) {
             return '<p class="xirr-muted">' + esc(emptyText) + '</p>';
         }
+        var iconHtml = iconUrl
+            ? '<img class="xirr-check-list-icon" src="' + iconUrl + '" alt="">'
+            : '';
         return '<ul class="xirr-check-list">' + items.map(function (i) {
-            return '<li>' + esc(i) + '</li>';
+            return '<li>' + iconHtml + '<span>' + esc(i) + '</span></li>';
         }).join('') + '</ul>';
     }
 
@@ -111,10 +130,10 @@ function xfirr_wizard_assessment_init_js(): string
 
         return '<div class="xirr-grid-2" style="display:grid;grid-template-columns:1fr 1fr;gap:1rem;margin-bottom:1rem">' +
             '<div class="xirr-card" style="margin-bottom:0"><h4>Behavioral Strengths™</h4>' +
-            strengthRows(assessment.behavioral_strengths, 'Evidence') +
+            strengthRows(assessment.behavioral_strengths, 'Evidence', STRENGTH_ICONS) +
             '</div>' +
             '<div class="xirr-card" style="margin-bottom:0"><h4>Development Opportunities™</h4>' +
-            strengthRows(assessment.development_opportunities, 'Impact') +
+            strengthRows(assessment.development_opportunities, 'Impact', OPPORTUNITY_ICONS) +
             '</div></div>' +
 
             '<div class="xirr-card"><h4>Behavioral Pattern Summary™</h4>' +
@@ -133,10 +152,10 @@ function xfirr_wizard_assessment_init_js(): string
             progressRow('Adaptability', ri.adaptability, scaleMax) + progressRow('Leadership Impact', ri.leadership_impact, scaleMax) + progressRow('Future Readiness', ri.future_readiness, scaleMax) +
             '</div>' +
             '<div class="xirr-card" style="margin-bottom:0"><h4>Leadership Contributions™</h4>' +
-            bulletList(assessment.leadership_contributions, 'No leadership evidence recorded yet.') +
+            bulletList(assessment.leadership_contributions, 'No leadership evidence recorded yet.', 'https://sandbox.xperiencefusion.com/wp-content/uploads/2026/09/Leadership-Contributions-Checkmark.svg') +
             '</div>' +
             '<div class="xirr-card" style="margin-bottom:0"><h4>Organizational Contribution™</h4>' +
-            bulletList(assessment.organizational_contribution, 'No organizational evidence recorded yet.') +
+            bulletList(assessment.organizational_contribution, 'No organizational evidence recorded yet.', 'https://sandbox.xperiencefusion.com/wp-content/uploads/2026/09/Strong-Operational-Leader.svg') +
             '</div>' +
             '</div>' +
 

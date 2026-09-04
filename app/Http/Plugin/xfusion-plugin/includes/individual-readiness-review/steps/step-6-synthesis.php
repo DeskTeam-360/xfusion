@@ -33,8 +33,17 @@ function xfirr_wizard_synthesis_init_js(): string
 (function () {
     function esc(s) { return String(s == null ? '' : s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
 
-    function summaryCard(icon, title, body, cta) {
-        return '<div class="xirr-card" style="margin-bottom:0"><h4 style="margin-top:0">' + icon + ' ' + esc(title) + '</h4>' +
+    var OPPORTUNITY_ICONS = [
+        'https://sandbox.xperiencefusion.com/wp-content/uploads/2026/09/Strategic-Foresight.svg',
+        'https://sandbox.xperiencefusion.com/wp-content/uploads/2026/09/Delegation_1.svg',
+        'https://sandbox.xperiencefusion.com/wp-content/uploads/2026/09/Change-Leadership_1.svg',
+    ];
+
+    function summaryCard(iconUrl, title, body, cta) {
+        var iconHtml = iconUrl
+            ? '<img src="' + iconUrl + '" alt="">'
+            : '';
+        return '<div class="xirr-card" style="margin-bottom:0"><h4 class="xirr-heading-with-icon" style="margin-top:0">' + iconHtml + '<span>' + esc(title) + '</span></h4>' +
             '<p class="xirr-muted">' + body + '</p>' +
             (cta || '') + '</div>';
     }
@@ -82,19 +91,24 @@ function xfirr_wizard_synthesis_init_js(): string
         var scaleMax = ri.scale_max || 5;
 
         return '<div class="xirr-grid-3" style="display:grid;grid-template-columns:repeat(3,1fr);gap:1rem;margin-bottom:1rem">' +
-            summaryCard('&#128203;', 'Annual Development Summary™', esc(synthesis.annual_development_summary || 'No summary available yet.'), '') +
-            summaryCard('&#128200;', 'Behavioral Growth Summary™', esc(synthesis.behavioral_growth_summary || 'No summary available yet.') +
+            summaryCard('https://sandbox.xperiencefusion.com/wp-content/uploads/2026/09/Annual-Development-Summary.svg', 'Annual Development Summary™', esc(synthesis.annual_development_summary || 'No summary available yet.'), '') +
+            summaryCard('https://sandbox.xperiencefusion.com/wp-content/uploads/2026/09/Behavioral-Growth-Summary.svg', 'Behavioral Growth Summary™', esc(synthesis.behavioral_growth_summary || 'No summary available yet.') +
                 (growth.average_score != null
                     ? '<br><br><strong style="font-size:1.3rem;color:var(--navy)">' + growth.average_score.toFixed(2) + '</strong> Average Score' +
                       (growth.trend_note ? ' <span style="color:#16a34a">' + esc(growth.trend_note) + '</span>' : '')
                     : ''), '') +
-            summaryCard('&#10024;', 'Strength Summary™', esc(strength.title || ''), checkList(strength.items, 'No strengths recorded yet.')) +
+            summaryCard('https://sandbox.xperiencefusion.com/wp-content/uploads/2026/09/Strengths-Summary.svg', 'Strength Summary™', esc(strength.title || ''), checkList(strength.items, 'No strengths recorded yet.')) +
             '</div>' +
 
             '<div class="xirr-grid-3" style="display:grid;grid-template-columns:repeat(3,1fr);gap:1rem;margin-bottom:1rem">' +
-            '<div class="xirr-card" style="margin-bottom:0"><h4 style="margin-top:0">&#128221; Opportunity Summary™</h4>' +
+            '<div class="xirr-card" style="margin-bottom:0"><h4 style="margin-top:0">Opportunity Summary™</h4>' +
             (opportunities.length
-                ? opportunities.map(function (o) { return '<p class="xirr-muted"><b>' + esc(o.title || '') + '</b> — ' + esc(o.description || '') + '</p>'; }).join('')
+                ? '<div class="xirr-align-points">' + opportunities.map(function (o, i) {
+                    return '<div class="xirr-align-point">' +
+                        '<span class="xirr-align-point-icon"><img src="' + OPPORTUNITY_ICONS[i % OPPORTUNITY_ICONS.length] + '" alt=""></span>' +
+                        '<p><b>' + esc(o.title || '') + '</b> — ' + esc(o.description || '') + '</p>' +
+                        '</div>';
+                }).join('') + '</div>'
                 : '<p class="xirr-muted">No opportunities recorded yet.</p>') +
             '</div>' +
             '<div class="xirr-card" style="margin-bottom:0;text-align:center"><h4 style="margin-top:0;text-align:left">Readiness Summary™</h4>' +
