@@ -100,7 +100,7 @@ function xfusion_llm_prompt_slug_definitions(): array
             'title' => __('QBR — AI Organizational Synthesis (system)', 'xfusion'),
             'menu_title' => __('QBR Synthesis System', 'xfusion'),
             'description' => __('System prompt for POST /api/v1/qbr/synthesis (QBR Step 6, via Laravel).', 'xfusion'),
-            'placeholder_hint' => __('Defines the executive_summary / organizational_readiness_summary / strengths / opportunities / key_risks / quarterly_focus / commitment_summary / recommended_areas_of_attention JSON output sections.', 'xfusion'),
+            'placeholder_hint' => __('Defines the executive_summary / organizational_readiness_summary / strengths / opportunities / key_risks / quarterly_focus / recommended_areas_of_attention JSON output sections. Confidence Level, Data Completeness, and Commitment Summary are computed by the system from real data and passed in as context — never generate or alter those numbers.', 'xfusion'),
             'default_files' => array_values(array_filter([
                 $pluginDir . 'prompts/qbr_synthesis_system.md',
                 $repoRoot . '/Xfusion-llm/prompts/qbr_synthesis_system.md',
