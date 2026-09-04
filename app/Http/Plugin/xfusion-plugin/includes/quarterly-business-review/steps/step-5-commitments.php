@@ -63,11 +63,19 @@ function xfqbr_wizard_commitments_init_js(): string
         return html;
     }
 
-    function arpObjectivesDatalist(listId) {
+    function relatedObjectiveOptions(selected) {
         var titles = ['Not related with ARP'].concat(arpObjectiveTitles);
-        return '<datalist id="' + listId + '">' + titles.map(function (t) {
-            return '<option value="' + escAttr(t) + '">';
-        }).join('') + '</datalist>';
+        var value = selected || 'Not related with ARP';
+        var matched = false;
+        var html = titles.map(function (t) {
+            var isSelected = t === value;
+            if (isSelected) matched = true;
+            return '<option value="' + escAttr(t) + '"' + (isSelected ? ' selected' : '') + '>' + esc(t) + '</option>';
+        }).join('');
+        if (!matched) {
+            html = '<option value="' + escAttr(value) + '" selected>' + esc(value) + '</option>' + html;
+        }
+        return html;
     }
 
     function opt(value, label, selected) {
@@ -117,7 +125,6 @@ function xfqbr_wizard_commitments_init_js(): string
         if (item.carried_forward_from_id) {
             cardAttrs += ' data-carried-forward-from-id="' + escAttr(String(item.carried_forward_from_id)) + '"';
         }
-        var objectiveListId = 'xqbr-arp-objectives-' + index;
         return '<div ' + cardAttrs + '>' +
             '<div class="xqbr-prio-rail"><span class="xqbr-prio-num">' + (index + 1) + '</span></div>' +
             '<div class="xqbr-prio-body">' +
@@ -133,8 +140,7 @@ function xfqbr_wizard_commitments_init_js(): string
             '</div></div>' +
             '<div class="xqbr-prio-grid xqbr-prio-grid-3">' +
             '<div class="xqbr-form-field"><label>Related ARP Objective</label>' +
-            '<input class="xqbr-input" data-key="related_arp_objective" value="' + escAttr(item.related_arp_objective) + '" list="' + objectiveListId + '">' +
-            arpObjectivesDatalist(objectiveListId) + '</div>' +
+            '<select class="xqbr-input" data-key="related_arp_objective">' + relatedObjectiveOptions(item.related_arp_objective) + '</select></div>' +
             '<div class="xqbr-form-field"><label>Success Measure</label><input class="xqbr-input" data-key="success_measure" value="' + escAttr(item.success_measure) + '"></div>' +
             '<div class="xqbr-form-field"><label>Due Date</label><input type="date" class="xqbr-input" data-key="due_date" value="' + escAttr(item.due_date) + '"></div>' +
             '</div>' +
