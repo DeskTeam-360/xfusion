@@ -506,6 +506,7 @@ Route::prefix('v1')->middleware('fusion.api')->group(function () {
         Route::post('/{qbr}/discussion-notes', [QbrController::class, 'saveDiscussionNotes']);
         Route::get('/{qbr}/decisions', [QbrController::class, 'getDecisions']);
         Route::post('/{qbr}/decisions', [QbrController::class, 'saveDecisions']);
+        Route::get('/{qbr}/members', [QbrController::class, 'groupMembers']);
         Route::get('/{qbr}/commitments', [QbrController::class, 'getCommitments']);
         Route::post('/{qbr}/commitments', [QbrController::class, 'saveCommitments']);
         Route::get('/{qbr}/synthesis', [QbrController::class, 'getSynthesis']);

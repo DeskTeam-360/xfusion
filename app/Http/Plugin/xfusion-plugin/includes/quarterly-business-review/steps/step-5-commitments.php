@@ -43,15 +43,32 @@ function xfqbr_wizard_commitments_init_js(): string
     var cache = [];
     var userEdited = false;
     var loadState = { qbrId: null, token: 0, fetched: false, loading: false };
-    var STATUS_LABELS = {
-        open: 'Not Started',
-        in_progress: 'In Progress',
-        done: 'Done',
-        carried_forward: 'Carried Forward',
-    };
+    var members = [];
+    var arpObjectiveTitles = [];
 
     function esc(s) { return String(s == null ? '' : s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
     function escAttr(s) { return String(s == null ? '' : s).replace(/&/g,'&amp;').replace(/"/g,'&quot;').replace(/</g,'&lt;'); }
+
+    function ownerOptions(selectedId, legacyName) {
+        var html = '<option value="">— Select owner —</option>';
+        var matched = false;
+        members.forEach(function (m) {
+            var isSelected = String(m.id) === String(selectedId || '');
+            if (isSelected) matched = true;
+            html += '<option value="' + m.id + '"' + (isSelected ? ' selected' : '') + '>' + esc(m.name || ('User #' + m.id)) + '</option>';
+        });
+        if (!matched && legacyName) {
+            html = '<option value="" selected>Unassigned (was: ' + esc(legacyName) + ')</option>' + html;
+        }
+        return html;
+    }
+
+    function arpObjectivesDatalist(listId) {
+        if (!arpObjectiveTitles.length) return '';
+        return '<datalist id="' + listId + '">' + arpObjectiveTitles.map(function (t) {
+            return '<option value="' + escAttr(t) + '">';
+        }).join('') + '</datalist>';
+    }
 
     function opt(value, label, selected) {
         return '<option value="' + value + '"' + (value === selected ? ' selected' : '') + '>' + label + '</option>';
@@ -93,7 +110,6 @@ function xfqbr_wizard_commitments_init_js(): string
     }
 
     function commitmentCard(item, index) {
-        var statusBadge = { open: '', in_progress: 'amber', done: 'green', carried_forward: 'amber' }[item.status] || '';
         var cardAttrs = 'class="xqbr-prio-card" data-index="' + index + '"';
         if (item.id) {
             cardAttrs += ' data-id="' + escAttr(String(item.id)) + '"';
@@ -101,25 +117,26 @@ function xfqbr_wizard_commitments_init_js(): string
         if (item.carried_forward_from_id) {
             cardAttrs += ' data-carried-forward-from-id="' + escAttr(String(item.carried_forward_from_id)) + '"';
         }
+        var objectiveListId = 'xqbr-arp-objectives-' + index;
         return '<div ' + cardAttrs + '>' +
             '<div class="xqbr-prio-rail"><span class="xqbr-prio-num">' + (index + 1) + '</span></div>' +
             '<div class="xqbr-prio-body">' +
             '<a href="javascript:void(0)" class="xqbr-icon-btn xqbr-prio-delete" data-index="' + index + '">✕</a>' +
             '<div class="xqbr-prio-grid xqbr-prio-grid-4">' +
             '<div class="xqbr-form-field"><label>Commitment Title</label><input class="xqbr-input" data-key="title" value="' + escAttr(item.title) + '"></div>' +
-            '<div class="xqbr-form-field"><label>Owner</label><input class="xqbr-input" data-key="owner_name" value="' + escAttr(item.owner_name) + '" placeholder="Name"></div>' +
+            '<div class="xqbr-form-field"><label>Owner</label><select class="xqbr-input" data-key="owner_user_id">' + ownerOptions(item.owner_user_id, item.owner_name) + '</select></div>' +
             '<div class="xqbr-form-field"><label>Priority</label><select class="xqbr-input" data-key="priority">' +
             opt('high', 'High', item.priority) + opt('medium', 'Medium', item.priority) + opt('low', 'Low', item.priority) + '</select></div>' +
             '<div class="xqbr-form-field"><label>Status</label><select class="xqbr-input" data-key="status">' +
             opt('open', 'Not Started', item.status) + opt('in_progress', 'In Progress', item.status) +
             opt('done', 'Done', item.status) + opt('carried_forward', 'Carried Forward', item.status) + '</select>' +
-            (statusBadge ? '<span class="xqbr-badge-pill ' + statusBadge + '" style="margin-top:.35rem;display:inline-block">' + esc(STATUS_LABELS[item.status] || item.status) + '</span>' : '') +
             '</div></div>' +
-            '<div class="xqbr-prio-grid xqbr-prio-grid-4">' +
-            '<div class="xqbr-form-field"><label>Related ARP Objective</label><input class="xqbr-input" data-key="related_arp_objective" value="' + escAttr(item.related_arp_objective) + '"></div>' +
+            '<div class="xqbr-prio-grid xqbr-prio-grid-3">' +
+            '<div class="xqbr-form-field"><label>Related ARP Objective</label>' +
+            '<input class="xqbr-input" data-key="related_arp_objective" value="' + escAttr(item.related_arp_objective) + '" list="' + objectiveListId + '">' +
+            arpObjectivesDatalist(objectiveListId) + '</div>' +
             '<div class="xqbr-form-field"><label>Success Measure</label><input class="xqbr-input" data-key="success_measure" value="' + escAttr(item.success_measure) + '"></div>' +
             '<div class="xqbr-form-field"><label>Due Date</label><input type="date" class="xqbr-input" data-key="due_date" value="' + escAttr(item.due_date) + '"></div>' +
-            '<div class="xqbr-form-field"><label>&nbsp;</label></div>' +
             '</div>' +
             '<div class="xqbr-prio-grid xqbr-prio-grid-1">' +
             '<div class="xqbr-form-field"><label>Description</label><textarea class="xqbr-input" rows="2" data-key="description">' + esc(item.description) + '</textarea></div>' +
@@ -252,6 +269,25 @@ function xfqbr_wizard_commitments_init_js(): string
         });
     }
 
+    function loadMembersAndObjectives() {
+        var membersPromise = (typeof window.xqbrLoadCommitmentMembers === 'function')
+            ? window.xqbrLoadCommitmentMembers()
+            : Promise.resolve([]);
+        var evidencePromise = (typeof window.xqbrLoadEvidence === 'function')
+            ? window.xqbrLoadEvidence()
+            : Promise.resolve(null);
+
+        return Promise.all([membersPromise, evidencePromise]).then(function (results) {
+            members = results[0] || [];
+            var evidence = results[1];
+            var objectives = (evidence && evidence.qbr_objectives_progress && evidence.qbr_objectives_progress.objectives) || [];
+            arpObjectiveTitles = objectives.map(function (o) { return o.title; }).filter(Boolean);
+        }).catch(function () {
+            members = [];
+            arpObjectiveTitles = [];
+        });
+    }
+
     function loadCommitmentsFromApi() {
         if (typeof window.xqbrLoadCommitments !== 'function') {
             return Promise.resolve();
@@ -266,7 +302,9 @@ function xfqbr_wizard_commitments_init_js(): string
         }
         showListLoading('Loading organizational commitments…');
         var token = loadState.token;
-        return window.xqbrLoadCommitments().then(function (rows) {
+        return loadMembersAndObjectives().then(function () {
+            return window.xqbrLoadCommitments();
+        }).then(function (rows) {
             if (token !== loadState.token) {
                 return;
             }

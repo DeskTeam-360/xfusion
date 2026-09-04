@@ -9,6 +9,15 @@ if (! defined('ABSPATH')) {
     exit;
 }
 
+add_action('wp_ajax_xfqbr_commitments_members', function (): void {
+    check_ajax_referer('xfqbr_wizard_save_draft', 'nonce');
+    if (! is_user_logged_in()) {
+        wp_send_json_error(['message' => 'Unauthorized.'], 401);
+    }
+    $qbrId = isset($_GET['qbr_id']) ? absint($_GET['qbr_id']) : 0;
+    xfqbr_picker_send(xfqbr_picker_api_request('GET', "/{$qbrId}/members"));
+});
+
 add_action('wp_ajax_xfqbr_commitments_load', function (): void {
     check_ajax_referer('xfqbr_wizard_save_draft', 'nonce');
     if (! is_user_logged_in()) {
@@ -34,6 +43,20 @@ add_action('wp_ajax_xfqbr_commitments_save', function (): void {
 function xfqbr_wizard_commitments_service_js(): string
 {
     return <<<'JS'
+window.xqbrLoadCommitmentMembers = function () {
+    if (!window.XFQBR_WIZARD || !window.XFQBR_WIZARD.qbrId) {
+        return Promise.resolve([]);
+    }
+    var params = new URLSearchParams();
+    params.set('action', 'xfqbr_commitments_members');
+    params.set('nonce', window.XFQBR_WIZARD.nonce);
+    params.set('qbr_id', String(window.XFQBR_WIZARD.qbrId));
+    return fetch(window.XFQBR_WIZARD.ajaxUrl + '?' + params.toString(), { credentials: 'same-origin' })
+        .then(function (res) { return res.json(); })
+        .then(function (json) { return (json && json.success && Array.isArray(json.data)) ? json.data : []; })
+        .catch(function () { return []; });
+};
+
 window.xqbrLoadCommitments = function () {
     if (!window.XFQBR_WIZARD || !window.XFQBR_WIZARD.qbrId) {
         return Promise.resolve([]);
@@ -75,10 +98,17 @@ window.xqbrCollectCommitments = function () {
         card.querySelectorAll('[data-key]').forEach(function (el) {
             item[el.getAttribute('data-key')] = el.value;
         });
+        var title = (item.title || '').trim();
+        if (title === '') {
+            // Skip rows with no title — nothing to save yet, don't
+            // persist blank/junk placeholder rows.
+            return;
+        }
+        var ownerId = parseInt(item.owner_user_id, 10);
         items.push({
-            title: (item.title || '').trim(),
+            title: title,
             description: (item.description || '').trim() || null,
-            owner_user_id: null,
+            owner_user_id: ownerId > 0 ? ownerId : null,
             owner_name: (item.owner_name || '').trim() || null,
             priority: item.priority || 'medium',
             related_arp_objective: (item.related_arp_objective || '').trim() || null,

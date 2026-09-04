@@ -460,6 +460,33 @@ class QbrController extends Controller
     // Step 5 — Quarterly Commitments™ (max 5, auto carry-forward)
     // -------------------------------------------------------------------
 
+    /** Group roster for the Step 5 Commitment "Owner" picker. */
+    public function groupMembers(Qbr $qbr)
+    {
+        if ($qbr->company_group_id === null) {
+            return response()->json(['success' => true, 'data' => []]);
+        }
+
+        // whereHas('user') would span two DB connections (this model's
+        // default `mysql` connection vs. User's Corcel `wordpress`
+        // connection) and fail — eager-load then filter instead, same
+        // fix as ArpController::groupMembers().
+        $members = CompanyGroupDetail::query()
+            ->where('company_group_id', $qbr->company_group_id)
+            ->with('user:ID,display_name,user_nicename')
+            ->get()
+            ->filter(fn (CompanyGroupDetail $d) => $d->user !== null)
+            ->map(fn (CompanyGroupDetail $d) => [
+                'id' => (int) $d->user_id,
+                'name' => $d->user?->display_name ?: $d->user?->user_nicename,
+            ])
+            ->unique('id')
+            ->sortBy('name')
+            ->values();
+
+        return response()->json(['success' => true, 'data' => $members]);
+    }
+
     public function getCommitments(Qbr $qbr)
     {
         $this->carryForwardIncomplete($qbr);
