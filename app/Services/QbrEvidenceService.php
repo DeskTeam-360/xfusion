@@ -174,7 +174,7 @@ class QbrEvidenceService
     }
 
     /** % completion of the active ARP's strategic priorities for this group's company. ARP is company-scoped, QBR stays group-scoped. */
-    private function qbrObjectivesProgress(Qbr $qbr): array
+    public function qbrObjectivesProgress(Qbr $qbr): array
     {
         $companyId = $qbr->companyGroup?->company_id;
         if ($companyId === null) {

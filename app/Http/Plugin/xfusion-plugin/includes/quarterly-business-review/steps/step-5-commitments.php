@@ -273,15 +273,13 @@ function xfqbr_wizard_commitments_init_js(): string
         var membersPromise = (typeof window.xqbrLoadCommitmentMembers === 'function')
             ? window.xqbrLoadCommitmentMembers()
             : Promise.resolve([]);
-        var evidencePromise = (typeof window.xqbrLoadEvidence === 'function')
-            ? window.xqbrLoadEvidence()
-            : Promise.resolve(null);
+        var objectivesPromise = (typeof window.xqbrLoadArpObjectives === 'function')
+            ? window.xqbrLoadArpObjectives()
+            : Promise.resolve([]);
 
-        return Promise.all([membersPromise, evidencePromise]).then(function (results) {
+        return Promise.all([membersPromise, objectivesPromise]).then(function (results) {
             members = results[0] || [];
-            var evidence = results[1];
-            var objectives = (evidence && evidence.qbr_objectives_progress && evidence.qbr_objectives_progress.objectives) || [];
-            arpObjectiveTitles = objectives.map(function (o) { return o.title; }).filter(Boolean);
+            arpObjectiveTitles = (results[1] || []).map(function (o) { return o.title; }).filter(Boolean);
         }).catch(function () {
             members = [];
             arpObjectiveTitles = [];

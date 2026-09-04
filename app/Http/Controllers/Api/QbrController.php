@@ -487,6 +487,19 @@ class QbrController extends Controller
         return response()->json(['success' => true, 'data' => $members]);
     }
 
+    /**
+     * Latest ARP strategic priority titles for this QBR's company, fresh
+     * every call (not the possibly-stale Step 1 evidence snapshot) — used
+     * by Step 5's Related ARP Objective autocomplete.
+     */
+    public function arpObjectives(Qbr $qbr, QbrEvidenceService $evidenceService)
+    {
+        return response()->json([
+            'success' => true,
+            'data' => $evidenceService->qbrObjectivesProgress($qbr)['objectives'] ?? [],
+        ]);
+    }
+
     public function getCommitments(Qbr $qbr)
     {
         $this->carryForwardIncomplete($qbr);
