@@ -181,10 +181,14 @@ class QbrEvidenceService
             return ['progress' => null, 'objective_count' => 0, 'objectives' => []];
         }
 
+        // Prefer the ARP for this QBR's own year (the one it's actually
+        // reviewing progress against) — fall back to the most recent ARP
+        // only if this company has none for that specific year.
         $arp = Arp::query()
             ->where('company_id', $companyId)
-            ->orderByDesc('year')
-            ->first();
+            ->where('year', $qbr->year)
+            ->first()
+            ?? Arp::query()->where('company_id', $companyId)->orderByDesc('year')->first();
 
         if ($arp === null) {
             return ['progress' => null, 'objective_count' => 0, 'objectives' => []];
