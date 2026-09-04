@@ -128,13 +128,16 @@ window.xqbrCollectCommitments = function () {
             return;
         }
         var ownerId = parseInt(item.owner_user_id, 10);
+        var objectiveChoice = (item.related_arp_objective_choice || '').trim();
+        var objectiveCustom = (item.related_arp_objective_custom || '').trim();
+        var relatedArpObjective = objectiveChoice !== '' ? objectiveChoice : (objectiveCustom || null);
         items.push({
             title: title,
             description: (item.description || '').trim() || null,
             owner_user_id: ownerId > 0 ? ownerId : null,
             owner_name: (item.owner_name || '').trim() || null,
             priority: item.priority || 'medium',
-            related_arp_objective: (item.related_arp_objective || '').trim() || null,
+            related_arp_objective: relatedArpObjective,
             success_measure: (item.success_measure || '').trim() || null,
             due_date: (item.due_date || '').trim() || null,
             status: item.status || 'open',

@@ -23,7 +23,7 @@ commitments: function () {
         '<a href="javascript:void(0)" class="xqbr-add-link" id="xqbr-add-commitment">+ Add Commitment</a>' +
         '</div>' +
         '<p class="xqbr-muted" style="margin-top:-.4rem" id="xqbr-commitment-count"></p>' +
-        '<div id="xqbr-commitments-list"></div>' +
+        '<div id="xqbr-commitments-list" class="xqbr-prio-list"></div>' +
         '</div>' +
         '<div class="xqbr-card"><h4>Commitment Summary</h4><div id="xqbr-commitment-summary"></div></div>' +
         '<div class="xqbr-card" style="background:#fbfaf5">' +
@@ -63,19 +63,29 @@ function xfqbr_wizard_commitments_init_js(): string
         return html;
     }
 
-    function relatedObjectiveOptions(selected) {
-        var titles = ['Not related with ARP'].concat(arpObjectiveTitles);
-        var value = selected || 'Not related with ARP';
-        var matched = false;
-        var html = titles.map(function (t) {
-            var isSelected = t === value;
-            if (isSelected) matched = true;
-            return '<option value="' + escAttr(t) + '"' + (isSelected ? ' selected' : '') + '>' + esc(t) + '</option>';
-        }).join('');
-        if (!matched) {
-            html = '<option value="' + escAttr(value) + '" selected>' + esc(value) + '</option>' + html;
-        }
+    function relatedObjectiveOptions(choice) {
+        var html = '<option value=""' + (choice === '' ? ' selected' : '') + '>Not related with ARP</option>';
+        arpObjectiveTitles.forEach(function (t) {
+            html += '<option value="' + escAttr(t) + '"' + (t === choice ? ' selected' : '') + '>' + esc(t) + '</option>';
+        });
         return html;
+    }
+
+    /**
+     * Split a saved related_arp_objective string into a select choice
+     * (blank = "Not related with ARP", or a real ARP objective title) and
+     * an optional free-text custom note for anything that isn't a real
+     * objective title (legacy free-typed values included).
+     */
+    function classifyRelatedObjective(saved) {
+        var value = saved || '';
+        if (value === '' || value === 'Not related with ARP') {
+            return { choice: '', custom: '' };
+        }
+        if (arpObjectiveTitles.indexOf(value) !== -1) {
+            return { choice: value, custom: '' };
+        }
+        return { choice: '', custom: value };
     }
 
     function opt(value, label, selected) {
@@ -102,6 +112,7 @@ function xfqbr_wizard_commitments_init_js(): string
         if (dueDate && dueDate.length >= 10) {
             dueDate = dueDate.substring(0, 10);
         }
+        var classified = classifyRelatedObjective(row.related_arp_objective);
         return {
             id: row.id || null,
             title: row.title || '',
@@ -109,7 +120,8 @@ function xfqbr_wizard_commitments_init_js(): string
             owner_name: row.owner_name || row.owner_display_name || '',
             owner_user_id: row.owner_user_id || null,
             priority: row.priority || 'medium',
-            related_arp_objective: row.related_arp_objective || '',
+            related_arp_objective_choice: classified.choice,
+            related_arp_objective_custom: classified.custom,
             success_measure: row.success_measure || '',
             due_date: dueDate,
             status: row.status || 'open',
@@ -140,7 +152,11 @@ function xfqbr_wizard_commitments_init_js(): string
             '</div></div>' +
             '<div class="xqbr-prio-grid xqbr-prio-grid-3">' +
             '<div class="xqbr-form-field"><label>Related ARP Objective</label>' +
-            '<select class="xqbr-input" data-key="related_arp_objective">' + relatedObjectiveOptions(item.related_arp_objective) + '</select></div>' +
+            '<select class="xqbr-input" data-key="related_arp_objective_choice">' + relatedObjectiveOptions(item.related_arp_objective_choice) + '</select>' +
+            (item.related_arp_objective_choice === ''
+                ? '<input class="xqbr-input" data-key="related_arp_objective_custom" value="' + escAttr(item.related_arp_objective_custom) + '" placeholder="Optional: describe how this relates" style="margin-top:.4rem">'
+                : '') +
+            '</div>' +
             '<div class="xqbr-form-field"><label>Success Measure</label><input class="xqbr-input" data-key="success_measure" value="' + escAttr(item.success_measure) + '"></div>' +
             '<div class="xqbr-form-field"><label>Due Date</label><input type="date" class="xqbr-input" data-key="due_date" value="' + escAttr(item.due_date) + '"></div>' +
             '</div>' +
@@ -266,7 +282,8 @@ function xfqbr_wizard_commitments_init_js(): string
                 description: '',
                 owner_name: '',
                 priority: 'medium',
-                related_arp_objective: 'Not related with ARP',
+                related_arp_objective_choice: '',
+                related_arp_objective_custom: '',
                 success_measure: '',
                 due_date: '',
                 status: 'open',
