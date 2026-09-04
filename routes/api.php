@@ -445,6 +445,7 @@ Route::prefix('v1')->middleware('fusion.api')->group(function () {
         Route::get('/conversations/{conversation}/notes', [OneOnOneController::class, 'getNotes']);
         Route::post('/conversations/{conversation}/notes', [OneOnOneController::class, 'storeNote']);
         Route::get('/conversations/{conversation}/evidence', [OneOnOneController::class, 'evidence']);
+        Route::get('/conversations/{conversation}/company-employees', [OneOnOneController::class, 'companyEmployees']);
         Route::get('/conversations/{conversation}/commitments', [OneOnOneController::class, 'getCommitments']);
         Route::post('/conversations/{conversation}/commitments', [OneOnOneController::class, 'storeCommitment']);
         Route::patch('/commitments/{commitment}', [OneOnOneController::class, 'updateCommitment']);

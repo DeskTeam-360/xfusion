@@ -4,6 +4,8 @@ namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
 use App\Models\CompanyEmployee;
+use App\Models\CompanyGroup;
+use App\Models\CompanyGroupDetail;
 use App\Models\CourseScoringGroup;
 use App\Models\OneOnOne;
 use App\Models\OneOnOneAiBrief;
@@ -1257,6 +1259,46 @@ class OneOnOneController extends Controller
                 'commitments' => $commitments,
             ],
         ]);
+    }
+
+    /**
+     * Step 5 "Related Employee" picker: every employee across all groups in
+     * this pairing's company, so a leader commitment can reference any
+     * employee in the organization, not just the one in this conversation.
+     */
+    public function companyEmployees(OneOnOneConversation $conversation)
+    {
+        $conversation->loadMissing('oneOnOne');
+        $oneOnOne = $conversation->oneOnOne;
+        if ($oneOnOne === null) {
+            return response()->json(['success' => false, 'message' => 'Pairing not found.'], 404);
+        }
+
+        $group = $this->companyGroupSync->findGroupForPair((int) $oneOnOne->leader_user_id, (int) $oneOnOne->employee_user_id);
+        if ($group === null) {
+            return response()->json(['success' => true, 'data' => []]);
+        }
+
+        $groupIds = CompanyGroup::query()->where('company_id', $group->company_id)->pluck('id');
+
+        // whereHas('user') would span two DB connections (this model's
+        // default `mysql` connection vs. User's Corcel `wordpress`
+        // connection) and fail — eager-load then filter instead, same
+        // fix as ArpController::groupMembers().
+        $employees = CompanyGroupDetail::query()
+            ->whereIn('company_group_id', $groupIds)
+            ->with('user:ID,display_name,user_nicename')
+            ->get()
+            ->filter(fn (CompanyGroupDetail $d) => $d->user !== null)
+            ->map(fn (CompanyGroupDetail $d) => [
+                'id' => (int) $d->user_id,
+                'name' => $d->user?->display_name ?: $d->user?->user_nicename,
+            ])
+            ->unique('id')
+            ->sortBy('name')
+            ->values();
+
+        return response()->json(['success' => true, 'data' => $employees]);
     }
 
     /** Mark conversation held + trigger AI synthesis. */

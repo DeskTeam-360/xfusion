@@ -101,6 +101,28 @@ function xfoo_wizard_get_commitments(int $conversationId): array
 }
 
 /**
+ * Every employee across all groups in this pairing's company, for the
+ * Step 5 "Related Employee" picker on Leader Commitments.
+ *
+ * @return array{success: bool, data?: list<array<string, mixed>>, message?: string}
+ */
+function xfoo_wizard_get_company_employees(int $conversationId): array
+{
+    $result = xfoo_wizard_fusion_api_request('GET', "/conversations/{$conversationId}/company-employees");
+
+    if (! $result['ok']) {
+        $body = is_array($result['body']) ? $result['body'] : [];
+
+        return ['success' => false, 'message' => $result['error'] ?? ($body['message'] ?? 'Failed to load employees.')];
+    }
+
+    $body = is_array($result['body']) ? $result['body'] : [];
+    $rows = $body['data'] ?? [];
+
+    return ['success' => true, 'data' => is_array($rows) ? $rows : []];
+}
+
+/**
  * Normalize one UI row before save.
  *
  * @param  array<string, mixed>  $row
@@ -136,7 +158,13 @@ function xfoo_wizard_normalize_commitment_row(string $ownerRole, array $row): ?a
         'id' => isset($row['id']) ? absint($row['id']) : 0,
         'title' => $title,
         'owner_role' => $ownerRole,
-        'owner_user_id' => get_current_user_id(),
+        // Employee commitments: owner is always the current (employee) user.
+        // Leader commitments: owner_user_id doubles as "Related Employee" —
+        // which employee in the company this leader commitment supports —
+        // so it comes from the row the leader picked, not the current user.
+        'owner_user_id' => $ownerRole === 'leader'
+            ? (isset($row['owner_user_id']) ? (absint($row['owner_user_id']) ?: null) : null)
+            : get_current_user_id(),
         'due_date' => $dueDate !== '' ? $dueDate : null,
         'priority' => $fields['priority'],
         'status' => $status,
@@ -289,6 +317,7 @@ function xfoo_wizard_format_commitments_for_ui(array $rows): array
             'due_date' => xfoo_wizard_format_commitment_due_date($row['due_date'] ?? ''),
             'success_indicator' => xfoo_wizard_commitment_pick_field($row, $meta, 'success_indicator'),
             'status' => xfoo_wizard_commitment_pick_field($row, $meta, 'status', 'open'),
+            'owner_user_id' => (int) ($row['owner_user_id'] ?? 0) ?: null,
         ];
     }
 
@@ -316,6 +345,29 @@ function xfoo_wizard_ajax_get_commitments(): void
     }
 
     wp_send_json_success(xfoo_wizard_format_commitments_for_ui($result['data'] ?? []));
+}
+
+add_action('wp_ajax_xfoo_wizard_get_company_employees', 'xfoo_wizard_ajax_get_company_employees');
+
+function xfoo_wizard_ajax_get_company_employees(): void
+{
+    check_ajax_referer('xfoo_wizard_save_draft', 'nonce');
+
+    if (! is_user_logged_in()) {
+        wp_send_json_error(['message' => 'Unauthorized.'], 401);
+    }
+
+    $conversationId = isset($_GET['conversation_id']) ? absint($_GET['conversation_id']) : 0;
+    if ($conversationId < 1) {
+        wp_send_json_error(['message' => 'conversation_id is required.'], 422);
+    }
+
+    $result = xfoo_wizard_get_company_employees($conversationId);
+    if (! $result['success']) {
+        wp_send_json_error(['message' => $result['message'] ?? 'Failed to load employees.'], 200);
+    }
+
+    wp_send_json_success($result['data'] ?? []);
 }
 
 /**
@@ -370,12 +422,65 @@ var commitmentStatusOptions = function (selected) {
     }).join('');
 };
 
+var xfwCompanyEmployeesCache = { loaded: false, loading: false, data: [], conversationId: 0, _promise: null };
+
+var fetchCompanyEmployees = function (force) {
+    if (!window.XFW_WIZARD) {
+        return Promise.resolve([]);
+    }
+    var cid = typeof xfwGetActiveConversationId === 'function'
+        ? xfwGetActiveConversationId()
+        : parseInt(window.XFW_WIZARD.conversationId, 10);
+    if (!cid) {
+        return Promise.resolve([]);
+    }
+    if (!force && xfwCompanyEmployeesCache.loaded && xfwCompanyEmployeesCache.conversationId === cid) {
+        return Promise.resolve(xfwCompanyEmployeesCache.data);
+    }
+    if (xfwCompanyEmployeesCache.loading && xfwCompanyEmployeesCache.conversationId === cid && xfwCompanyEmployeesCache._promise) {
+        return xfwCompanyEmployeesCache._promise;
+    }
+
+    xfwCompanyEmployeesCache.loading = true;
+    xfwCompanyEmployeesCache.conversationId = cid;
+
+    var url = window.XFW_WIZARD.ajaxUrl + '?action=xfoo_wizard_get_company_employees&nonce=' +
+        encodeURIComponent(window.XFW_WIZARD.nonce) + '&conversation_id=' + cid;
+
+    xfwCompanyEmployeesCache._promise = fetch(url, { credentials: 'same-origin' })
+        .then(function (res) { return res.json(); })
+        .then(function (json) {
+            xfwCompanyEmployeesCache.data = (json && json.success && Array.isArray(json.data)) ? json.data : [];
+            xfwCompanyEmployeesCache.loaded = true;
+            return xfwCompanyEmployeesCache.data;
+        })
+        .catch(function () {
+            xfwCompanyEmployeesCache.data = [];
+            xfwCompanyEmployeesCache.loaded = true;
+            return xfwCompanyEmployeesCache.data;
+        })
+        .finally(function () {
+            xfwCompanyEmployeesCache.loading = false;
+        });
+
+    return xfwCompanyEmployeesCache._promise;
+};
+
+var relatedEmployeeOptions = function (selected) {
+    var options = '<option value="">— Select employee —</option>';
+    xfwCompanyEmployeesCache.data.forEach(function (emp) {
+        var sel = String(emp.id) === String(selected || '') ? ' selected' : '';
+        options += '<option value="' + emp.id + '"' + sel + '>' + xfwEscHtml(emp.name || ('User #' + emp.id)) + '</option>';
+    });
+    return options;
+};
+
 var commitmentRowHtml = function (role, data) {
     data = data || {};
     var id = data.id ? ' data-commitment-id="' + data.id + '"' : '';
     var thirdCol = role === 'employee'
         ? '<select class="xfw-input" data-field="behavioral_driver">' + commitmentDriverOptions(data.behavioral_driver || '') + '</select>'
-        : '<span class="xfw-muted">—</span>';
+        : '<select class="xfw-input" data-field="owner_user_id">' + relatedEmployeeOptions(data.owner_user_id || '') + '</select>';
     return '<tr class="xfw-commit-row" data-role="' + role + '"' + id + '>' +
         '<td><textarea class="xfw-input" rows="2" data-field="title" placeholder="Describe the commitment...">' + xfwEscHtml(data.title) + '</textarea></td>' +
         '<td><select class="xfw-input" data-field="priority">' + commitmentPriorityOptions(data.priority || 'medium') + '</select></td>' +
@@ -523,7 +628,7 @@ var loadCommitments = function (force) {
 
 var collectCommitmentRows = function (role) {
     var rows = [];
-    var fields = ['title', 'priority', 'behavioral_driver', 'due_date', 'success_indicator', 'status'];
+    var fields = ['title', 'priority', 'behavioral_driver', 'due_date', 'success_indicator', 'status', 'owner_user_id'];
     root.querySelectorAll('.xfw-commit-row[data-role="' + role + '"]').forEach(function (tr) {
         var row = { owner_role: role };
         if (tr.dataset.commitmentId) {
@@ -543,11 +648,13 @@ var collectCommitmentRows = function (role) {
 };
 
 var initCommitmentsStep = function () {
-    if (window.xfwCommitmentsCache && window.xfwCommitmentsCache.loaded && window.xfwCommitmentsCache.data) {
-        applyCommitmentsData(window.xfwCommitmentsCache.data, true);
-        return;
-    }
-    loadCommitments(true);
+    fetchCompanyEmployees(false).then(function () {
+        if (window.xfwCommitmentsCache && window.xfwCommitmentsCache.loaded && window.xfwCommitmentsCache.data) {
+            applyCommitmentsData(window.xfwCommitmentsCache.data, true);
+            return;
+        }
+        loadCommitments(true);
+    });
 };
 
 if (root && !root.dataset.commitmentsDelegated) {
