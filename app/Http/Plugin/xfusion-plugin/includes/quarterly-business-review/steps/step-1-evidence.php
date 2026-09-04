@@ -41,7 +41,7 @@ function xfqbr_wizard_evidence_init_js(): string
         assessment_trends: ['<img src="https://sandbox.xperiencefusion.com/wp-content/uploads/2026/07/Assessment-Trends.svg" alt="Assessment Trends icon">', 'Assessment Trends', 'Assessment score trends and development benchmarks.'],
         tool_usage: ['<img src="https://sandbox.xperiencefusion.com/wp-content/uploads/2026/07/Tool-Usage.svg" alt="Tool Usage icon">', 'Tool Usage', 'Utilization of development tools and resources.'],
         ai_insight_themes: ['<img src="https://sandbox.xperiencefusion.com/wp-content/uploads/2026/07/AI-Insight-Themes.svg" alt="AI Insight Themes icon">', 'AI Insight Themes', 'AI-identified themes and organizational patterns.'],
-        organizational_kpis: ['<img src="https://sandbox.xperiencefusion.com/wp-content/uploads/2026/07/Organizational-KPIs.svg" alt="Organizational KPIs icon">', 'Organizational KPIs', 'Key performance indicators and target progress.'],
+        organizational_kpis: ['<img src="https://sandbox.xperiencefusion.com/wp-content/uploads/2026/07/Organizational-KPIs.svg" alt="Organizational KPIs icon">', 'Organizational KPIs', 'Related Organizational KPI(s) from the latest Annual Readiness Plan™ Step 4.'],
         operational_metrics: ['<img src="https://sandbox.xperiencefusion.com/wp-content/uploads/2026/07/Operational-Metrics.svg" alt="Operational Metrics icon">', 'Operational Metrics', 'Operational performance and efficiency metrics.'],
         historical_qbr_data: ['<img src="https://sandbox.xperiencefusion.com/wp-content/uploads/2026/07/Historical-QBR-Data.svg" alt="Historical QBR Data icon">', 'Historical QBR Data', 'Trends and learnings from previous quarterly reviews.'],
         group: ['👥', 'Group', 'Confirms this QBR is correctly scoped to your company group.'],
@@ -142,7 +142,13 @@ function xfqbr_wizard_evidence_init_js(): string
             }).join('');
             return '<ul class="xqbr-evidence-list-plain">' + cItems + '</ul>';
         }
-        if (key === 'organizational_kpis' || key === 'operational_metrics') {
+        if (key === 'organizational_kpis') {
+            var arpKpis = snap.arp_organizational_kpis || [];
+            if (!arpKpis.length) return noData('No Related Organizational KPI(s) have been set on the latest Annual Readiness Plan™ Step 4 yet.');
+            var aItems = arpKpis.map(function (k) { return '<li>' + esc(k) + '</li>'; }).join('');
+            return '<ul class="xqbr-evidence-list-plain">' + aItems + '</ul>';
+        }
+        if (key === 'operational_metrics') {
             var kpis = snap.kpis || [];
             if (!kpis.length) return noData('No KPIs have been added for this quarter yet.');
             var kItems = kpis.map(function (k) {

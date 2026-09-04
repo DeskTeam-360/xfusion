@@ -51,6 +51,7 @@ class QbrEvidenceService
         $assessment = $this->assessmentCompletionRate($memberIds, $evaluations);
         $activity = $this->activityParticipationByProgram($memberIds, $start, $end);
         $toolUtilization = $this->toolUtilizationStats($memberIds, $start, $end);
+        $arpKpis = $this->arpOrganizationalKpis($qbr);
 
         $priorSnapshot = $qbr->previousQuarter()?->evidenceSnapshots()->first()?->snapshot;
 
@@ -76,7 +77,8 @@ class QbrEvidenceService
                 'status' => $k->status,
                 'trend' => $k->trend,
             ])->all(),
-            'evidence_sources' => $this->evidenceSourcesChecklist($qbr, $oneOnOneSummaries, $activity, $toolUtilization),
+            'arp_organizational_kpis' => $arpKpis,
+            'evidence_sources' => $this->evidenceSourcesChecklist($qbr, $oneOnOneSummaries, $activity, $toolUtilization, $arpKpis),
         ];
     }
 
@@ -173,23 +175,28 @@ class QbrEvidenceService
         );
     }
 
-    /** % completion of the active ARP's strategic priorities for this group's company. ARP is company-scoped, QBR stays group-scoped. */
-    public function qbrObjectivesProgress(Qbr $qbr): array
+    /** The ARP that this QBR is actually reviewing progress against — same company, matching year preferred. */
+    private function arpForQbr(Qbr $qbr): ?Arp
     {
         $companyId = $qbr->companyGroup?->company_id;
         if ($companyId === null) {
-            return ['progress' => null, 'objective_count' => 0, 'objectives' => []];
+            return null;
         }
 
         // Prefer the ARP for this QBR's own year (the one it's actually
         // reviewing progress against) — fall back to the most recent ARP
         // only if this company has none for that specific year.
-        $arp = Arp::query()
+        return Arp::query()
             ->where('company_id', $companyId)
             ->where('year', $qbr->year)
             ->first()
             ?? Arp::query()->where('company_id', $companyId)->orderByDesc('year')->first();
+    }
 
+    /** % completion of the active ARP's strategic priorities for this group's company. ARP is company-scoped, QBR stays group-scoped. */
+    public function qbrObjectivesProgress(Qbr $qbr): array
+    {
+        $arp = $this->arpForQbr($qbr);
         if ($arp === null) {
             return ['progress' => null, 'objective_count' => 0, 'objectives' => []];
         }
@@ -207,6 +214,30 @@ class QbrEvidenceService
             'objective_count' => $priorities->count(),
             'objectives' => $priorities->map(fn ($p) => ['title' => $p->title, 'status' => $p->status])->values()->all(),
         ];
+    }
+
+    /**
+     * "Organizational KPIs" evidence source — the "Related Organizational
+     * KPI(s)" values captured per strategic priority on ARP Step 4, for the
+     * same ARP qbrObjectivesProgress() resolves. Real, already-entered data
+     * rather than asking the QBR leader to re-type KPIs from scratch.
+     *
+     * @return list<string>
+     */
+    public function arpOrganizationalKpis(Qbr $qbr): array
+    {
+        $arp = $this->arpForQbr($qbr);
+        if ($arp === null) {
+            return [];
+        }
+
+        return ArpStrategicPriority::query()
+            ->where('arp_id', $arp->id)
+            ->whereNotNull('org_kpi')
+            ->where('org_kpi', '!=', '')
+            ->pluck('org_kpi')
+            ->values()
+            ->all();
     }
 
     /** % of the previous quarter's QBR commitments marked done. */
@@ -667,7 +698,7 @@ class QbrEvidenceService
     }
 
     /** Step 1's read-only checklist — which sources actually returned data. */
-    private function evidenceSourcesChecklist(Qbr $qbr, array $oneOnOneSummaries, array $activity, array $toolUtilization): array
+    private function evidenceSourcesChecklist(Qbr $qbr, array $oneOnOneSummaries, array $activity, array $toolUtilization, array $arpKpis): array
     {
         $group = CompanyGroup::find($qbr->company_group_id);
         $activityAvailable = ($activity['participated'] ?? 0) > 0;
@@ -683,7 +714,7 @@ class QbrEvidenceService
             ['key' => 'assessment_trends', 'label' => 'Assessment Trends', 'available' => true],
             ['key' => 'tool_usage', 'label' => 'Tool Usage', 'available' => $toolAvailable],
             ['key' => 'ai_insight_themes', 'label' => 'AI Insight Themes', 'available' => true],
-            ['key' => 'organizational_kpis', 'label' => 'Organizational KPIs', 'available' => $qbr->kpis()->exists()],
+            ['key' => 'organizational_kpis', 'label' => 'Organizational KPIs', 'available' => $arpKpis !== []],
             ['key' => 'operational_metrics', 'label' => 'Operational Metrics', 'available' => $qbr->kpis()->exists()],
             ['key' => 'historical_qbr_data', 'label' => 'Historical QBR Data', 'available' => $qbr->previousQuarter() !== null],
             ['key' => 'group', 'label' => 'Group', 'available' => $group !== null],
