@@ -64,8 +64,8 @@ function xfqbr_wizard_commitments_init_js(): string
     }
 
     function arpObjectivesDatalist(listId) {
-        if (!arpObjectiveTitles.length) return '';
-        return '<datalist id="' + listId + '">' + arpObjectiveTitles.map(function (t) {
+        var titles = ['Not related with ARP'].concat(arpObjectiveTitles);
+        return '<datalist id="' + listId + '">' + titles.map(function (t) {
             return '<option value="' + escAttr(t) + '">';
         }).join('') + '</datalist>';
     }
@@ -260,7 +260,7 @@ function xfqbr_wizard_commitments_init_js(): string
                 description: '',
                 owner_name: '',
                 priority: 'medium',
-                related_arp_objective: '',
+                related_arp_objective: 'Not related with ARP',
                 success_measure: '',
                 due_date: '',
                 status: 'open',
