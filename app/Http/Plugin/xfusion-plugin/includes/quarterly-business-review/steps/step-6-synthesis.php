@@ -141,11 +141,15 @@ function xfqbr_wizard_synthesis_init_js(): string
             '<div class="xqbr-card"><h4 class="xqbr-heading-with-icon"><img src="' + iconBase + 'RECOMMENDED-AREAS-OF-ATTENTION.svg" alt="Recommended Areas of Attention icon"><span>Recommended Areas of Attention</span></h4>' +
             '<p class="xqbr-muted" style="margin-top:-.3rem">Focus on these areas to improve readiness and reduce risk.</p>' +
             (attention.length
-                ? ('<div class="xqbr-activate-grid">' + attention.map(function (a) {
+                ? ('<div class="xqbr-activate-grid">' + attention.map(function (raw) {
+                    // Older cached syntheses stored this as a plain string
+                    // list before the capability/title/description shape —
+                    // normalize here so old records still render sensibly.
+                    var a = (raw && typeof raw === 'object') ? raw : { capability: null, title: 'Focus Area', description: String(raw || '') };
                     var icon = a.capability && CAPABILITY_ICONS[a.capability]
                         ? '<img src="' + CAPABILITY_ICONS[a.capability] + '" alt="' + esc(a.title) + ' icon">'
                         : '<span class="xqbr-check" style="font-size:1.5rem">&#9888;</span>';
-                    return attentionCard(icon, a.title, a.description);
+                    return attentionCard(icon, a.title || 'Focus Area', a.description || '');
                 }).join('') + '</div>')
                 : '<p class="xqbr-muted">No specific areas of attention identified yet.</p>') +
             '</div>';
