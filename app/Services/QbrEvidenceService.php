@@ -78,6 +78,7 @@ class QbrEvidenceService
                 'trend' => $k->trend,
             ])->all(),
             'arp_organizational_kpis' => $arpKpis,
+            'historical_qbr_data' => $this->historicalQbrData($qbr),
             'evidence_sources' => $this->evidenceSourcesChecklist($qbr, $oneOnOneSummaries, $activity, $toolUtilization, $arpKpis),
         ];
     }
@@ -191,6 +192,29 @@ class QbrEvidenceService
             ->where('year', $qbr->year)
             ->first()
             ?? Arp::query()->where('company_id', $companyId)->orderByDesc('year')->first();
+    }
+
+    /**
+     * "Historical QBR Data" evidence source — the previous quarter's own
+     * Organizational Readiness Summary (Step 2), not just a trend arrow.
+     */
+    private function historicalQbrData(Qbr $qbr): array
+    {
+        $previous = $qbr->previousQuarter();
+        if ($previous === null) {
+            return ['available' => false];
+        }
+
+        $snapshot = $previous->evidenceSnapshots()->first()?->snapshot;
+
+        return [
+            'available' => true,
+            'quarter' => $previous->quarter,
+            'year' => $previous->year,
+            'overall_readiness_score' => $snapshot['overall_readiness_score'] ?? null,
+            'overall_readiness_trend' => $snapshot['overall_readiness_trend'] ?? null,
+            'qbr_objectives_progress' => $snapshot['qbr_objectives_progress']['progress'] ?? null,
+        ];
     }
 
     /** % completion of the active ARP's strategic priorities for this group's company. ARP is company-scoped, QBR stays group-scoped. */

@@ -157,8 +157,19 @@ function xfqbr_wizard_evidence_init_js(): string
             return '<ul class="xqbr-evidence-list-plain">' + kItems + '</ul>';
         }
         if (key === 'historical_qbr_data') {
-            if (!snap.review_period) return noData('No previous quarter data is available yet.');
-            return '<dl class="xqbr-evidence-dl"><dt>Readiness Trend vs Previous Quarter</dt><dd>' + esc(snap.overall_readiness_trend || 'No prior data') + '</dd></dl>';
+            var hist = snap.historical_qbr_data || {};
+            if (!hist.available) return noData('No previous quarter QBR is available yet.');
+            var periodLabel = (hist.quarter && hist.year) ? ('Q' + hist.quarter + ' ' + hist.year) : 'Previous quarter';
+            if (hist.overall_readiness_score === null || hist.overall_readiness_score === undefined) {
+                return noData(periodLabel + ' has no Organizational Readiness Summary generated yet — visit that QBR\'s Step 1/2 to generate it.');
+            }
+            return '<dl class="xqbr-evidence-dl">' +
+                '<dt>' + esc(periodLabel) + ' — Organizational Readiness Score</dt><dd>' + esc(hist.overall_readiness_score) + '/100</dd>' +
+                '<dt>Trend</dt><dd>' + esc(hist.overall_readiness_trend || 'No prior data') + '</dd>' +
+                (hist.qbr_objectives_progress !== null && hist.qbr_objectives_progress !== undefined
+                    ? ('<dt>QBR Objectives Progress</dt><dd>' + esc(hist.qbr_objectives_progress) + '%</dd>')
+                    : '') +
+                '</dl>';
         }
         return noData('No data is available for this section yet.');
     }
