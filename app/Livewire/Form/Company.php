@@ -116,10 +116,19 @@ class Company extends Component
 
     public function update()
     {
+        // mount() pre-fills logo_url with the existing logo's URL string
+        // (for display) when the leader isn't uploading a new one — the
+        // image/mimes/dimensions rules only make sense against an actual
+        // new upload, not that string, or saving without touching the
+        // logo would always fail validation.
+        $logoRule = $this->logo_url instanceof \Livewire\Features\SupportFileUploads\TemporaryUploadedFile
+            ? 'nullable|image|mimes:jpeg,png,jpg,gif|max:4096|dimensions:min_width=140,min_height=60,max_width=160,max_height=80'
+            : 'nullable';
+
         $this->validate([
             'user_id' => 'required',
             'title' => 'required|string|max:255',
-            'logo_url' => 'nullable|image|mimes:jpeg,png,jpg,gif|max:4096|dimensions:min_width=140,min_height=60,max_width=160,max_height=80',
+            'logo_url' => $logoRule,
         ]);
         $data_compare = \App\Models\Company::find($this->dataId);
 
