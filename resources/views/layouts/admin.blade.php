@@ -36,6 +36,26 @@
         .logo-img img {
             max-width: 174px;
         }
+
+        /* SweetAlert2 confirm/alert dialogs — icon/title/buttons sat with
+           almost no breathing room between them by default. */
+        .swal2-popup {
+            padding-bottom: 1.75em !important;
+        }
+        .swal2-icon {
+            margin-top: .5em !important;
+            margin-bottom: 1em !important;
+        }
+        .swal2-title {
+            margin: 0 0 .75em !important;
+            padding: 0 .5em !important;
+        }
+        .swal2-html-container {
+            margin: 0 .5em .5em !important;
+        }
+        .swal2-actions {
+            margin-top: 1.5em !important;
+        }
     </style>
 
 </head>
