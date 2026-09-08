@@ -64,6 +64,12 @@ function xfqbr_wizard_evidence_init_js(): string
         return String(s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
     }
 
+    function formatSlug(s) {
+        return String(s || '').replace(/_/g, ' ').replace(/\w\S*/g, function (w) {
+            return w.charAt(0).toUpperCase() + w.slice(1).toLowerCase();
+        });
+    }
+
     function noData(msg) {
         return '<p class="xqbr-evidence-empty">' + esc(msg) + '</p>';
     }
@@ -145,7 +151,7 @@ function xfqbr_wizard_evidence_init_js(): string
         if (key === 'organizational_kpis') {
             var arpKpis = snap.arp_organizational_kpis || [];
             if (!arpKpis.length) return noData('No Related Organizational KPI(s) have been set on the latest Annual Readiness Plan™ Step 4 yet.');
-            var aItems = arpKpis.map(function (k) { return '<li>' + esc(k) + '</li>'; }).join('');
+            var aItems = arpKpis.map(function (k) { return '<li>' + esc(formatSlug(k)) + '</li>'; }).join('');
             return '<ul class="xqbr-evidence-list-plain">' + aItems + '</ul>';
         }
         if (key === 'operational_metrics') {
