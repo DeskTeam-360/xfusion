@@ -77,6 +77,18 @@ var xfwResetDraftCache = function () {
     window.xfwDraftCache = { loaded: false, loading: false, data: null, conversationId: 0, _promise: null };
 };
 
+// Some drafts saved before this guard existed persisted the literal
+// string "null" (a stray `textarea.value = null` coerces to that string)
+// — treat both the real null/undefined and that stray string as empty so
+// old corrupted drafts self-heal on next load instead of showing "null".
+var xfwCleanDraftValue = function (val) {
+    if (val === null || val === undefined) {
+        return '';
+    }
+    var str = String(val);
+    return str === 'null' ? '' : str;
+};
+
 var applyPreparationDraft = function (data) {
     if (!data) {
         return;
@@ -103,10 +115,11 @@ var applyPreparationDraft = function (data) {
             });
         });
         col.querySelectorAll('[data-field][data-type="textarea"]').forEach(function (el) {
-            var val = values[el.dataset.field];
-            if (val === undefined) {
+            var raw = values[el.dataset.field];
+            if (raw === undefined) {
                 return;
             }
+            var val = xfwCleanDraftValue(raw);
             var ta = el.querySelector('textarea');
             if (!ta) {
                 return;
@@ -130,7 +143,7 @@ var applyConversationDraft = function (data) {
         if (el.closest('.xfw-prep-col')) {
             return;
         }
-        var val = values[el.dataset.field];
+        var val = xfwCleanDraftValue(values[el.dataset.field]);
         if (!val) {
             return;
         }
