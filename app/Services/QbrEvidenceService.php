@@ -454,7 +454,7 @@ class QbrEvidenceService
         }
 
         $allParticipantIds = array_values(array_unique(array_merge(
-            ...array_map(static fn ($row) => $row['user_ids'], $byProgram)
+            ...array_values(array_map(static fn ($row) => $row['user_ids'], $byProgram))
         )));
 
         $displayNames = User::query()
