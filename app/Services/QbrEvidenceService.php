@@ -184,13 +184,14 @@ class QbrEvidenceService
             return null;
         }
 
-        // Prefer the ARP for this QBR's own year (the one it's actually
-        // reviewing progress against) — fall back to the most recent ARP
-        // only if this company has none for that specific year.
-        return Arp::query()
-            ->where('company_id', $companyId)
-            ->where('year', $qbr->year)
-            ->first()
+        // Prefer a published (active) ARP — a same-year draft with no
+        // strategic priorities yet shouldn't hide an already-published ARP
+        // from a prior year. Order of preference: published + this QBR's
+        // year, published + most recent, any-status + this year, any
+        // status + most recent.
+        return Arp::query()->where('company_id', $companyId)->where('year', $qbr->year)->where('status', Arp::STATUS_ACTIVE)->first()
+            ?? Arp::query()->where('company_id', $companyId)->where('status', Arp::STATUS_ACTIVE)->orderByDesc('year')->first()
+            ?? Arp::query()->where('company_id', $companyId)->where('year', $qbr->year)->first()
             ?? Arp::query()->where('company_id', $companyId)->orderByDesc('year')->first();
     }
 
