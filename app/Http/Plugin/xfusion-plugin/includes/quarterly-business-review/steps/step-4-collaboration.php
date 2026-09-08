@@ -138,6 +138,11 @@ function xfqbr_wizard_collaboration_init_js(): string
         if (loadState.loading) {
             return;
         }
+        var addLink = document.getElementById('xqbr-add-decision');
+        var canEdit = !window.XFQBR_WIZARD || window.XFQBR_WIZARD.canEdit !== false;
+        if (addLink) {
+            addLink.style.display = canEdit ? '' : 'none';
+        }
         if (!decisionsCache.length) {
             list.innerHTML = '<p class="xqbr-muted">No decisions or takeaways added yet. Use the + Add Decision button to capture key outcomes from your discussion.</p>';
             return;
