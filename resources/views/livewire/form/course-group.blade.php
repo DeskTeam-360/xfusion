@@ -40,9 +40,10 @@
         </script>
 
     </div>
-    <div style="width: 100px">
-        <x-input type="checkbox" title="Repeat Entry" model="tools"/>
+    <div style="width: 200px">
+        <x-input type="checkbox" title="Development Tool" model="tools"/>
     </div>
+    <p class="-mt-2 mb-3 text-xs text-gray-500">Check this if this group's courses are Development Tools — required for the Tool Usage evidence shown in QBR/ARR/IRR.</p>
 
 
 
