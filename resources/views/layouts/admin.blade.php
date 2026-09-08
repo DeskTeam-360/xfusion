@@ -46,7 +46,8 @@
             margin-top: .5em !important;
             margin-bottom: 1em !important;
         }
-        .swal2-title {
+        div:where(.swal2-container) h2:where(.swal2-title) {
+            font-size: 1.2em !important;
             margin: 0 0 .75em !important;
             padding: 0 .5em !important;
         }
