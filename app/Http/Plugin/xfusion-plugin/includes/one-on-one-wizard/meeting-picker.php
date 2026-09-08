@@ -1026,6 +1026,16 @@ var xfwInitMeetingGate = function () {
             return;
         }
         xfwApplyMeetingContext(ctx, { resetStep: false });
+        // The cached context (localStorage, per-browser) can go stale when
+        // the other participant changes the meeting status from their own
+        // browser — needsEnrich above wouldn't catch that since it only
+        // looks at scheduledAt/employeeName/userRole. Refresh quietly in
+        // the background and re-apply only if something actually changed.
+        xfwEnrichConversationContext(ctx).then(function (enriched) {
+            if (enriched && (enriched.status !== ctx.status || enriched.scheduledAt !== ctx.scheduledAt)) {
+                xfwApplyMeetingContext(enriched, { resetStep: false });
+            }
+        });
         return;
     }
     if (!xfwHasWizardWorkspace()) {
