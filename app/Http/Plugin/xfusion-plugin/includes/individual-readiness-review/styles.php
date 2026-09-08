@@ -314,6 +314,15 @@ table.xirr-table.xirr-table-gaps .xirr-gap-priority{width:12%;white-space:nowrap
 .xirr-evidence-status.pending{color:var(--muted)}
 .xirr-evidence-status.soon{color:#a8a29e;font-style:italic;font-weight:500}
 .xirr-evidence-row-soon{opacity:.6}
+.xirr-evidence-item{display:contents}
+.xirr-evidence-row[role="button"]{cursor:pointer}
+.xirr-evidence-row[role="button"]:focus{outline:2px solid var(--green);outline-offset:-2px}
+.xirr-evidence-panel{grid-column:1 / -1;padding:0 0 1rem calc(36px + .85rem);background:#fff}
+.xirr-evidence-empty{color:var(--muted);font-size:14px;margin:0}
+.xirr-evidence-dl{margin:0;display:flex;flex-direction:column;gap:.5rem}
+.xirr-evidence-dl dt{font-weight:700;font-size:13px;color:var(--muted);text-transform:uppercase;letter-spacing:.02em}
+.xirr-evidence-dl dd{margin:.15rem 0 0;font-size:15px}
+.xirr-evidence-list-plain{margin:0;padding-left:1.1rem;font-size:14px;display:flex;flex-direction:column;gap:.3rem}
 
 /* Metric cards (Step 2) */
 .xirr-metric-grid{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:1rem;margin-bottom:1rem}
