@@ -105,9 +105,10 @@ window.xqbrCollectCollaborationDecisions = function () {
         card.querySelectorAll('[data-key]').forEach(function (el) {
             item[el.getAttribute('data-key')] = el.value;
         });
+        var ownerId = parseInt(item.owner_user_id, 10);
         items.push({
             decision: (item.decision || '').trim(),
-            owner_user_id: null,
+            owner_user_id: ownerId > 0 ? ownerId : null,
             owner_name: (item.owner_name || '').trim() || null,
             impact_area: (item.impact_area || '').trim() || null,
             next_step: (item.next_step || '').trim() || null,

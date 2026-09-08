@@ -64,9 +64,24 @@ function xfqbr_wizard_collaboration_init_js(): string
     var decisionsCache = [];
     var collaborationEdited = false;
     var loadState = { qbrId: null, token: 0, fetched: false, loading: false };
+    var members = [];
 
     function markEdited() {
         collaborationEdited = true;
+    }
+
+    function ownerOptions(selectedId, legacyName) {
+        var html = '<option value="">— Select owner —</option>';
+        var matched = false;
+        members.forEach(function (m) {
+            var isSelected = String(m.id) === String(selectedId || '');
+            if (isSelected) matched = true;
+            html += '<option value="' + m.id + '"' + (isSelected ? ' selected' : '') + '>' + esc(m.name || ('User #' + m.id)) + '</option>';
+        });
+        if (!matched && legacyName) {
+            html = '<option value="" selected>Unassigned (was: ' + esc(legacyName) + ')</option>' + html;
+        }
+        return html;
     }
 
     function currentQbrId() {
@@ -83,6 +98,7 @@ function xfqbr_wizard_collaboration_init_js(): string
         return {
             decision: row.decision || '',
             owner_name: row.owner_name || row.owner_display_name || '',
+            owner_user_id: row.owner_user_id || null,
             impact_area: row.impact_area || '',
             next_step: row.next_step || '',
             target_date: targetDate,
@@ -95,7 +111,7 @@ function xfqbr_wizard_collaboration_init_js(): string
             '<a href="javascript:void(0)" class="xqbr-icon-btn xqbr-prio-delete" data-index="' + index + '" style="position:absolute;top:.5rem;right:.5rem">✕</a>' +
             '<div class="xqbr-prio-grid xqbr-prio-grid-4">' +
             '<div class="xqbr-form-field"><label>Decision / Takeaway</label><input class="xqbr-input" data-key="decision" value="' + escAttr(item.decision) + '"></div>' +
-            '<div class="xqbr-form-field"><label>Owner</label><input class="xqbr-input" data-key="owner_name" value="' + escAttr(item.owner_name) + '" placeholder="Name"></div>' +
+            '<div class="xqbr-form-field"><label>Owner</label><select class="xqbr-input" data-key="owner_user_id">' + ownerOptions(item.owner_user_id, item.owner_name) + '</select></div>' +
             '<div class="xqbr-form-field"><label>Impact Area</label><input class="xqbr-input" data-key="impact_area" value="' + escAttr(item.impact_area) + '"></div>' +
             '<div class="xqbr-form-field"><label>Target Date</label><input type="date" class="xqbr-input" data-key="target_date" value="' + escAttr(item.target_date) + '"></div>' +
             '</div>' +
@@ -166,7 +182,7 @@ function xfqbr_wizard_collaboration_init_js(): string
                 collectDecisions(list);
             }
             markEdited();
-            decisionsCache.push({ decision: '', owner_name: '', impact_area: '', next_step: '', target_date: '' });
+            decisionsCache.push({ decision: '', owner_name: '', owner_user_id: null, impact_area: '', next_step: '', target_date: '' });
             renderDecisions();
         });
     }
@@ -185,7 +201,13 @@ function xfqbr_wizard_collaboration_init_js(): string
         }
         showDecisionsLoading('Loading key decisions…');
         var token = loadState.token;
-        return window.xqbrLoadDecisions().then(function (rows) {
+        var membersPromise = (typeof window.xqbrLoadCommitmentMembers === 'function')
+            ? window.xqbrLoadCommitmentMembers()
+            : Promise.resolve([]);
+        return membersPromise.then(function (rows) {
+            members = rows || [];
+            return window.xqbrLoadDecisions();
+        }).then(function (rows) {
             if (token !== loadState.token) {
                 return;
             }

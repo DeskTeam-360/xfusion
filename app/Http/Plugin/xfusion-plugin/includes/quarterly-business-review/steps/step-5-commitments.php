@@ -184,9 +184,13 @@ function xfqbr_wizard_commitments_init_js(): string
 
         summary.innerHTML = '<div class="xqbr-stat-list">' +
             '<div class="xqbr-stat-row">Total Commitments <strong>' + cache.length + ' of ' + MAX_COMMITMENTS + '</strong></div>' +
+            '<hr class="xqbr-stat-divider">' +
+            '<div class="xqbr-stat-subhead">By Priority</div>' +
             '<div class="xqbr-stat-row">High Priority <strong>' + high + '</strong></div>' +
             '<div class="xqbr-stat-row">Medium Priority <strong>' + medium + '</strong></div>' +
             '<div class="xqbr-stat-row">Low Priority <strong>' + low + '</strong></div>' +
+            '<hr class="xqbr-stat-divider">' +
+            '<div class="xqbr-stat-subhead">By Progress</div>' +
             '<div class="xqbr-stat-row">Not Started <strong>' + notStarted + '</strong></div>' +
             '<div class="xqbr-stat-row">In Progress <strong>' + inProgress + '</strong></div>' +
             '<div class="xqbr-stat-row">Completed <strong>' + done + '</strong></div>' +

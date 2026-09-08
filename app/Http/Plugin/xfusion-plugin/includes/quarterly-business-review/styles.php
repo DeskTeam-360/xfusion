@@ -256,6 +256,9 @@ select.xqbr-input[multiple]{min-height:4.75rem;padding:.35rem}
 .xqbr-stat-list{display:flex;flex-direction:column;gap:.55rem}
 .xqbr-stat-row{display:flex;align-items:center;gap:.55rem;font-size:16px}
 .xqbr-stat-row strong{margin-left:auto;color:var(--navy)}
+.xqbr-stat-subhead{font-size:12px;font-weight:700;letter-spacing:.04em;text-transform:uppercase;color:var(--muted);margin:.5rem 0 -.15rem}
+.xqbr-stat-subhead:first-child{margin-top:0}
+.xqbr-stat-divider{border:none;border-top:1px solid var(--border);margin:.15rem 0}
 .xqbr-dot{width:10px;height:10px;border-radius:50%;display:inline-block;flex-shrink:0}
 .xqbr-dot.green{background:#16a34a}
 .xqbr-dot.amber{background:#ca8a04}
