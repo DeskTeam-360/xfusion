@@ -4,6 +4,7 @@ namespace App\Services;
 
 use App\Models\Arp;
 use App\Models\ArpStrategicPriority;
+use App\Models\CompanyGroup;
 use App\Models\CompanyGroupDetail;
 use App\Models\CourseGroup;
 use App\Models\CourseGroupDetail;
@@ -802,8 +803,13 @@ class IrrEvidenceService
             return ['arp_strategic_priorities' => [], 'qbr_commitments' => []];
         }
 
-        $arpIds = Arp::query()
-            ->where('company_group_id', $groupId)
+        // ARP is company-scoped (not group-scoped like QBR) — resolve the
+        // group's company_id first. wp_fusion_arps has no company_group_id
+        // column at all since the ARP rework.
+        $companyId = CompanyGroup::find($groupId)?->company_id;
+
+        $arpIds = $companyId === null ? collect() : Arp::query()
+            ->where('company_id', $companyId)
             ->where('year', $year)
             ->pluck('id');
 
