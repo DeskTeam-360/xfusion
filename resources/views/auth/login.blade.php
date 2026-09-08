@@ -88,12 +88,8 @@
           rel="stylesheet"/>
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@2.44.0/tabler-icons.min.css">
     <!-- Core Css -->
-    {{--    @vite(['resources/css/app.css', 'resources/js/app.js'])--}}
     <link rel="stylesheet" href="{{ asset('assets/css/theme.css') }}"/>
-    <link rel="stylesheet" href="{{ asset('build/assets/app-DdqVIPGz.css') }}">
-    <script src="{{ asset('build/assets/app-CI1Bgkaz.js') }}"></script>
-
-    {{--    @vite(['resources/css/app.css', 'resources/js/app.js'])--}}
+    @vite(['resources/css/app.css', 'resources/js/app.js'])
     <title>{{ config('app.name', 'Laravel') }}</title>
 </head>
 
