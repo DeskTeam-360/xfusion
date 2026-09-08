@@ -125,7 +125,7 @@ class MeetingBriefFromEvidenceService
             $this->selfAssessmentsDetails($self),
             $this->listSectionDetails('Recent Activities', $activities),
             $this->listSectionDetails('Development Tools', $tools),
-            $this->placeholderNote($review360, 'Previous 360 Review™'),
+            $this->placeholderNote($review360, 'Previous Individual Readiness Review™'),
         ]);
 
         return ['items' => array_slice($items, 0, 4), 'details' => $details];
