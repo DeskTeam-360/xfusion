@@ -148,7 +148,7 @@ function xfqbr_wizard_synthesis_init_js(): string
                     var a = (raw && typeof raw === 'object') ? raw : { capability: null, title: 'Focus Area', description: String(raw || '') };
                     var icon = a.capability && CAPABILITY_ICONS[a.capability]
                         ? '<img src="' + CAPABILITY_ICONS[a.capability] + '" alt="' + esc(a.title) + ' icon">'
-                        : '<span class="xqbr-check" style="font-size:1.5rem">&#9888;</span>';
+                        : '<span style="display:flex;align-items:center;justify-content:center;width:40px;height:40px;margin-bottom:.65rem;border-radius:50%;background:#fef3c7;color:#b45309;font-size:1.1rem;flex-shrink:0">&#9888;</span>';
                     return attentionCard(icon, a.title || 'Focus Area', a.description || '');
                 }).join('') + '</div>')
                 : '<p class="xqbr-muted">No specific areas of attention identified yet.</p>') +
