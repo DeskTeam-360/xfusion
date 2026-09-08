@@ -108,7 +108,7 @@ function xfqbr_wizard_collaboration_init_js(): string
     function decisionRow(item, index) {
         return '<div class="xqbr-prio-card" data-index="' + index + '" style="margin-bottom:.75rem;position:relative">' +
             '<div class="xqbr-prio-body" style="padding-right:2rem">' +
-            '<a href="javascript:void(0)" class="xqbr-icon-btn xqbr-prio-delete" data-index="' + index + '" style="position:absolute;top:.5rem;right:.5rem">✕</a>' +
+            '<a href="javascript:void(0)" class="xqbr-icon-btn xqbr-prio-delete" data-index="' + index + '" style="position:absolute;top:0;right:0">✕</a>' +
             '<div class="xqbr-prio-grid xqbr-prio-grid-4">' +
             '<div class="xqbr-form-field"><label>Decision / Takeaway</label><input class="xqbr-input" data-key="decision" value="' + escAttr(item.decision) + '"></div>' +
             '<div class="xqbr-form-field"><label>Owner</label><select class="xqbr-input" data-key="owner_user_id">' + ownerOptions(item.owner_user_id, item.owner_name) + '</select></div>' +
