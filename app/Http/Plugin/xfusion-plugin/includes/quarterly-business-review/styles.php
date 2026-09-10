@@ -80,6 +80,12 @@ function xfqbr_wizard_styles_css(): string
 .xqbr-btn-outline:hover{background:#f3f4f6}
 .xqbr-btn:disabled{opacity:.45;cursor:default}
 
+.xqbr-modal-overlay{position:fixed;inset:0;z-index:10050;background:rgba(20,29,61,.55);display:flex;align-items:center;justify-content:center;padding:1.25rem}
+.xqbr-modal{width:100%;max-width:460px;background:#fff;border-radius:.6rem;box-shadow:0 20px 50px rgba(0,0,0,.28);padding:1.4rem 1.5rem 1.25rem}
+.xqbr-modal h3{margin:0 0 .5rem;color:var(--navy);font-size:22px;font-weight:700}
+.xqbr-modal p{margin:0 0 1.15rem;color:var(--ink);font-size:16px;line-height:1.5}
+.xqbr-modal-actions{display:flex;justify-content:flex-end}
+
 /* Step indicator */
 .xqbr-steps{background:#fff;border-bottom:1px solid var(--border);padding:1.5rem 1.75rem .5rem}
 .xqbr-steps-inner{display:flex;align-items:flex-start;justify-content:space-between;position:relative;max-width:96%;margin:0 auto}
@@ -249,7 +255,7 @@ select.xqbr-input[multiple]{min-height:4.75rem;padding:.35rem}
 .xqbr-check-list{list-style:none;margin:0;padding:0}
 .xqbr-check-list li{display:flex;gap:.6rem;align-items:center;margin-bottom:.5rem;font-size:16px;line-height:1.4;color:var(--ink)}
 .xqbr-check{width:20px;height:20px;border-radius:50%;background:var(--green);color:#fff;display:inline-flex;align-items:center;justify-content:center;font-size:.7rem;font-weight:700;flex-shrink:0}
-.xqbr-list-bullet{width:20px;height:20px;object-fit:contain;flex-shrink:0;display:block}
+.xqbr-list-bullet{width:35px;height:35px;object-fit:contain;flex-shrink:0;display:block}
 .xqbr-numbered{list-style:none;margin:0;padding:0}
 .xqbr-numbered li{display:flex;gap:.55rem;align-items:flex-start;margin-bottom:.45rem;font-size:16px;line-height:1.4;color:var(--ink)}
 .xqbr-numbered-badge{width:22px;height:22px;border-radius:50%;background:var(--green);color:#fff;display:inline-flex;align-items:center;justify-content:center;font-size:.75rem;font-weight:700;flex-shrink:0;margin-top:.1rem;line-height:1}

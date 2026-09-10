@@ -181,6 +181,18 @@ if (root) {
         });
     };
 
+    var tryPublishQbr = function () {
+        if (typeof window.xqbrIsQbrLocked === 'function' && window.xqbrIsQbrLocked()) {
+            if (typeof window.xqbrShowAlreadyPublishedPopup === 'function') {
+                window.xqbrShowAlreadyPublishedPopup();
+            }
+            return;
+        }
+        if (typeof window.xqbrPublishQbr === 'function') {
+            window.xqbrPublishQbr();
+        }
+    };
+
     var renderMain = function () {
         var main = root.querySelector('#xqbr-main');
         var panelFn = PANELS[STEPS[current].key];
@@ -301,18 +313,14 @@ if (root) {
         navBound = true;
         root.querySelector('#xqbr-next-step').addEventListener('click', function () {
             if (current === STEPS.length - 1) {
-                if (typeof window.xqbrPublishQbr === 'function') {
-                    window.xqbrPublishQbr();
-                }
+                tryPublishQbr();
                 return;
             }
             goTo(current + 1);
         });
         root.querySelector('#xqbr-next-step-2').addEventListener('click', function () {
             if (current === STEPS.length - 1) {
-                if (typeof window.xqbrPublishQbr === 'function') {
-                    window.xqbrPublishQbr();
-                }
+                tryPublishQbr();
                 return;
             }
             goTo(current + 1);

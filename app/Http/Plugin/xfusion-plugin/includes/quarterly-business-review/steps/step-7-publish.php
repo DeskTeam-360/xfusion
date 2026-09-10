@@ -100,6 +100,58 @@ function xfqbr_wizard_publish_init_js(): string
         return s === 'closed' || s === 'archived';
     }
 
+    window.xqbrIsQbrLocked = isLocked;
+
+    function closeAlreadyPublishedPopup() {
+        var overlay = document.getElementById('xqbr-already-published-popup');
+        if (overlay) {
+            overlay.remove();
+        }
+        document.removeEventListener('keydown', onAlreadyPublishedEscape);
+    }
+
+    function onAlreadyPublishedEscape(e) {
+        if (e.key === 'Escape') {
+            closeAlreadyPublishedPopup();
+        }
+    }
+
+    window.xqbrShowAlreadyPublishedPopup = function () {
+        closeAlreadyPublishedPopup();
+        var archived = qbrStatus() === 'archived';
+        var title = archived ? 'QBR already archived' : 'QBR already published';
+        var message = archived
+            ? 'This Quarterly Business Review™ has already been archived. It is stored but not available to dashboards, and it cannot be published or edited.'
+            : 'This Quarterly Business Review™ has already been published. The record is locked and cannot be edited.';
+
+        var overlay = document.createElement('div');
+        overlay.id = 'xqbr-already-published-popup';
+        overlay.className = 'xqbr-modal-overlay';
+        overlay.setAttribute('role', 'dialog');
+        overlay.setAttribute('aria-modal', 'true');
+        overlay.setAttribute('aria-labelledby', 'xqbr-already-published-title');
+        overlay.innerHTML =
+            '<div class="xqbr-modal">' +
+            '<h3 id="xqbr-already-published-title">' + title + '</h3>' +
+            '<p>' + message + '</p>' +
+            '<div class="xqbr-modal-actions">' +
+            '<button type="button" class="xqbr-btn xqbr-btn-accent" id="xqbr-already-published-ok">OK</button>' +
+            '</div></div>';
+
+        overlay.addEventListener('click', function (e) {
+            if (e.target === overlay) {
+                closeAlreadyPublishedPopup();
+            }
+        });
+        document.body.appendChild(overlay);
+        var okBtn = document.getElementById('xqbr-already-published-ok');
+        if (okBtn) {
+            okBtn.addEventListener('click', closeAlreadyPublishedPopup);
+            okBtn.focus();
+        }
+        document.addEventListener('keydown', onAlreadyPublishedEscape);
+    };
+
     function setPublishStatus(text, isError, isLoading) {
         var el = document.getElementById('xqbr-publish-status');
         if (!el) return;
@@ -209,6 +261,7 @@ function xfqbr_wizard_publish_init_js(): string
         }
         if (isLocked()) {
             setPublishStatus('This QBR is already published or archived.', true);
+            window.xqbrShowAlreadyPublishedPopup();
             return;
         }
         if (!window.confirm('Publish this Quarterly Business Review™? Once published, this record cannot be edited.')) {
@@ -258,6 +311,7 @@ function xfqbr_wizard_publish_init_js(): string
         }
         if (isLocked()) {
             setPublishStatus('This QBR is already published or archived.', true);
+            window.xqbrShowAlreadyPublishedPopup();
             return;
         }
         if (!window.confirm('Archive this QBR? It will no longer be available to dashboards.')) {

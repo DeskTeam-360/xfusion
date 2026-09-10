@@ -86,7 +86,7 @@ function xfqbr_wizard_assessment_init_js(): string
 
     function agreementOptionsHtml(canEdit, selected) {
         return AGREEMENT_OPTIONS.map(function (opt) {
-            return '<label style="display:flex;align-items:center;gap:.35rem;font-size:14px">' +
+            return '<label style="display:flex;align-items:center;gap:.35rem;font-size:16px;font-weight:700">' +
                 '<input type="radio" name="xqbr-agreement" value="' + opt[0] + '" ' +
                 (opt[0] === selected ? 'checked' : '') + (canEdit ? '' : ' disabled') + '> ' + esc(opt[1]) + '</label>';
         }).join('');
