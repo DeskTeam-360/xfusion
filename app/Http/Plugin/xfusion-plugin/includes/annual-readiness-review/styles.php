@@ -291,7 +291,9 @@ table.xarr-table.xarr-table-gaps .xarr-gap-priority{width:12%;white-space:nowrap
 .xarr-evidence-list{display:flex;flex-direction:column}
 .xarr-evidence-row{display:flex;align-items:center;gap:.85rem;padding:.85rem 0;border-bottom:1px solid var(--border)}
 .xarr-evidence-row:last-child{border-bottom:none}
-.xarr-evidence-icon{width:36px;height:36px;border-radius:50%;background:#eef4fc;color:var(--navy);display:flex;align-items:center;justify-content:center;font-size:1rem;flex-shrink:0}
+.xarr-evidence-icon{width:36px;height:36px;border-radius:50%;background:#eef4fc;color:var(--navy);display:flex;align-items:center;justify-content:center;font-size:1rem;flex-shrink:0;overflow:hidden}
+.xarr-evidence-icon img{width:100%;height:100%;object-fit:contain;display:block}
+.xarr-evidence-icon:has(img){width:44px;height:44px;background:transparent;border-radius:0;overflow:visible}
 .xarr-evidence-title{font-weight:700;font-size:15px}
 .xarr-evidence-desc{color:var(--muted);font-size:14px}
 .xarr-evidence-status{margin-left:auto;font-size:14px;font-weight:600;white-space:nowrap;display:flex;align-items:center;gap:.35rem}

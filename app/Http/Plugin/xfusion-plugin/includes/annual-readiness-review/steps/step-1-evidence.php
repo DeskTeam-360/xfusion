@@ -61,22 +61,26 @@ function xfarr_wizard_evidence_init_js(): string
 {
     return <<<'JS'
 (function () {
+    var iconBase = 'https://sandbox.xperiencefusion.com/wp-content/uploads/2026/09/';
+    function evidenceIcon(file, alt) {
+        return '<img src="' + iconBase + file + '" alt="' + alt + '">';
+    }
     var LABELS = {
-        annual_readiness_plan: ['&#127919;', 'Annual Readiness Plan™'],
-        quarterly_business_reviews: ['&#128197;', 'Quarterly Business Reviews™'],
-        one_on_one: ['&#128101;', '1-on-1 Alignment Capture™'],
-        individual_readiness_reviews: ['&#128101;', 'Individual Readiness Reviews™'],
-        individual_insights: ['&#128200;', 'Individual Insights™'],
-        activities: ['&#127891;', 'Activities'],
-        self_assessments: ['&#128203;', 'Self-Assessments'],
-        tool_usage: ['&#128295;', 'Tool Usage'],
-        operational_kpis: ['&#128200;', 'Operational KPIs'],
-        organizational_kpis: ['&#127970;', 'Organizational KPIs'],
-        historical_commitments: ['&#128337;', 'Historical Commitments'],
-        group_readiness_trends: ['&#128202;', 'Group Readiness Trends'],
-        executive_dashboard_trends: ['&#128187;', 'Executive Dashboard Trends'],
-        reflection_themes: ['&#10024;', 'Reflection Themes (AI extracted only)'],
-        additional_platform_intelligence: ['&#128218;', 'Additional Platform Intelligence'],
+        annual_readiness_plan: [evidenceIcon('Target-Icon.svg', 'Annual Readiness Plan icon'), 'Annual Readiness Plan™'],
+        quarterly_business_reviews: [evidenceIcon('Calendar-with-Question-Mark.svg', 'Quarterly Business Reviews icon'), 'Quarterly Business Reviews™'],
+        one_on_one: [evidenceIcon('Geometric-Network-Team-Icon.svg', '1-on-1 Alignment Capture icon'), '1-on-1 Alignment Capture™'],
+        individual_readiness_reviews: [evidenceIcon('Geometric-Group-Icon.svg', 'Individual Readiness Reviews icon'), 'Individual Readiness Reviews™'],
+        individual_insights: [evidenceIcon('Geometric-Chart-Growth-Icon.svg', 'Individual Insights icon'), 'Individual Insights™'],
+        activities: [evidenceIcon('Geometric-Graduation-Cap-Icon.svg', 'Activities icon'), 'Activities'],
+        self_assessments: [evidenceIcon('Geometric-Checklist-Icon.svg', 'Self-Assessments icon'), 'Self-Assessments'],
+        tool_usage: [evidenceIcon('Geometric-Tools-Settings-Icon.svg', 'Tool Usage icon'), 'Tool Usage'],
+        operational_kpis: [evidenceIcon('Geometric-Factory-Icon.svg', 'Operational KPIs icon'), 'Operational KPIs'],
+        organizational_kpis: [evidenceIcon('Geometric-Office-Building-Icon.svg', 'Organizational KPIs icon'), 'Organizational KPIs'],
+        historical_commitments: [evidenceIcon('Geometric-Clock-Icon.svg', 'Historical Commitments icon'), 'Historical Commitments'],
+        group_readiness_trends: [evidenceIcon('Geometric-Line-Chart-Icon.svg', 'Group Readiness Trends icon'), 'Group Readiness Trends'],
+        executive_dashboard_trends: [evidenceIcon('Geometric-Monitor-Dashboard-Icon.svg', 'Executive Dashboard Trends icon'), 'Executive Dashboard Trends'],
+        reflection_themes: [evidenceIcon('Geometric-Sparkle-Icon.svg', 'Reflection Themes icon'), 'Reflection Themes (AI extracted only)'],
+        additional_platform_intelligence: [evidenceIcon('Geometric-Stacked-Layers-Icon.svg', 'Additional Platform Intelligence icon'), 'Additional Platform Intelligence'],
     };
     // Live sources first (backend actually computes these). The 4 below are
     // permanently unavailable — no tracked source exists anywhere in FUSION

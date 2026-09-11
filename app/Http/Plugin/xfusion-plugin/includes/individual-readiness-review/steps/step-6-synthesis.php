@@ -125,7 +125,10 @@ function xfirr_wizard_synthesis_init_js(): string
             checkList(synthesis.recommended_focus_areas, 'No focus areas recorded yet.') +
             '</div>' +
             '<div class="xirr-card"><h4 style="margin-top:0">Executive Coaching Summary™</h4>' +
-            '<p class="xirr-muted">' + esc(coaching.summary || 'No coaching summary available yet.') + '</p>' +
+            '<div class="xirr-about-step">' +
+            '<img class="xirr-about-step-icon" src="https://sandbox.xperiencefusion.com/wp-content/uploads/2026/09/Executive-Coaching-Summary.svg" alt="">' +
+            '<div class="xirr-about-step-body"><p class="xirr-muted">' + esc(coaching.summary || 'No coaching summary available yet.') + '</p></div>' +
+            '</div>' +
             '<p class="xirr-muted" style="margin-bottom:.2rem">Coaching Engagement</p>' +
             '<p style="font-weight:700;color:#16a34a;margin:0 0 .6rem">' + esc(coaching.engagement_level || '—') + '</p>' +
             '<p class="xirr-muted" style="margin-bottom:.2rem">Recommendation</p>' +

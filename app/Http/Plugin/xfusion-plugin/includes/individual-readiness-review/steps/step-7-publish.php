@@ -56,12 +56,12 @@ function xfirr_wizard_publish_init_js(): string
     ];
 
     var PUBLISH_ACTIONS = [
-        ['&#10024;', '1-on-1 Alignment Capture™', 'Your commitments will appear in future 1-on-1 conversations.'],
-        ['&#128101;', 'ARR Inputs', 'Key insights and commitments will feed into the Annual Readiness Review™.'],
-        ['&#128203;', 'Historical Development Timeline', 'This review will be added to your historical development record.'],
-        ['&#128200;', 'Individual Dashboard Update', 'Your development trends, roadmap, and progress will be updated.'],
-        ['&#128101;', 'Leader Dashboard Update', 'Your team\'s development data will be updated for leadership visibility.'],
-        ['&#128202;', 'Executive Dashboard Update', 'Aggregated organizational development intelligence will be updated.'],
+        ['https://sandbox.xperiencefusion.com/wp-content/uploads/2026/09/1-on-1-Alignment-Capture%E2%84%A2.svg', '1-on-1 Alignment Capture™', 'Your commitments will appear in future 1-on-1 conversations.'],
+        ['https://sandbox.xperiencefusion.com/wp-content/uploads/2026/09/ARR-Inputs.svg', 'ARR Inputs', 'Key insights and commitments will feed into the Annual Readiness Review™.'],
+        ['https://sandbox.xperiencefusion.com/wp-content/uploads/2026/09/Historical-Development-Timeline.svg', 'Historical Development Timeline', 'This review will be added to your historical development record.'],
+        ['https://sandbox.xperiencefusion.com/wp-content/uploads/2026/09/Individual-Dashboard-Update.svg', 'Individual Dashboard Update', 'Your development trends, roadmap, and progress will be updated.'],
+        ['https://sandbox.xperiencefusion.com/wp-content/uploads/2026/09/Leader-Dashboard-Update.svg', 'Leader Dashboard Update', 'Your team\'s development data will be updated for leadership visibility.'],
+        ['https://sandbox.xperiencefusion.com/wp-content/uploads/2026/09/Executive-Dashboard-Update.svg', 'Executive Dashboard Update', 'Aggregated organizational development intelligence will be updated.'],
     ];
 
     function setPublishStatus(text, isError) {
@@ -101,7 +101,7 @@ function xfirr_wizard_publish_init_js(): string
         var grid = document.getElementById('xirr-publish-actions');
         if (!grid) return;
         grid.innerHTML = PUBLISH_ACTIONS.map(function (a) {
-            return '<div class="xirr-activate-card"><div style="font-size:1.4rem">' + a[0] + '</div>' +
+            return '<div class="xirr-activate-card"><img src="' + a[0] + '" alt="">' +
                 '<h4>' + a[1] + '</h4><p>' + a[2] + '</p></div>';
         }).join('');
     }
