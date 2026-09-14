@@ -298,11 +298,12 @@ table.xirr-table.xirr-table-gaps .xirr-gap-priority{width:12%;white-space:nowrap
 .xirr-autosave{color:#16a34a;display:inline-flex;align-items:center;gap:.4rem}
 .xirr-autosave-check{width:18px;height:18px;border-radius:50%;background:#16a34a;color:#fff;display:inline-flex;align-items:center;justify-content:center;font-size:.65rem;font-weight:700;flex-shrink:0}
 
-/* Evidence checklist (Step 1) */
-.xirr-evidence-list{display:grid;grid-template-columns:1fr 1fr;column-gap:1.5rem}
-.xirr-evidence-list > .xirr-muted{grid-column:1 / -1}
+/* Evidence checklist (Step 1) — single column: a 2-column grid made
+   expanded panels confusing (they'd span both columns, jumbling the
+   row that stayed beside them). */
+.xirr-evidence-list{display:grid;grid-template-columns:1fr}
 .xirr-evidence-row{display:flex;align-items:center;gap:.85rem;padding:.85rem 0;border-bottom:1px solid var(--border);min-width:0}
-.xirr-evidence-list .xirr-evidence-row:nth-last-child(-n+2){border-bottom:none}
+.xirr-evidence-list .xirr-evidence-item:last-child .xirr-evidence-row{border-bottom:none}
 .xirr-evidence-icon{width:36px;height:36px;border-radius:50%;background:#eef4fc;color:var(--navy);display:flex;align-items:center;justify-content:center;font-size:1rem;flex-shrink:0;overflow:hidden}
 .xirr-evidence-icon img{width:100%;height:100%;object-fit:contain;display:block}
 .xirr-evidence-icon:has(img){width:44px;height:44px;background:transparent;border-radius:0;overflow:visible}
@@ -436,9 +437,6 @@ table.xirr-table.xirr-table-gaps .xirr-gap-priority{width:12%;white-space:nowrap
 .xirr-donut-wrap{width:130px}
 .xirr-donut-chart,.xirr-donut{width:130px;height:130px}
 .xirr-activate-grid,.xirr-action-grid{grid-template-columns:1fr}
-.xirr-evidence-list{grid-template-columns:1fr}
-.xirr-evidence-list .xirr-evidence-row:nth-last-child(-n+2){border-bottom:1px solid var(--border)}
-.xirr-evidence-list .xirr-evidence-row:last-child{border-bottom:none}
 .xirr-review-row{flex-wrap:wrap}
 }
 
