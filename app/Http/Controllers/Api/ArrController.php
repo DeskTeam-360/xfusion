@@ -532,7 +532,7 @@ class ArrController extends Controller
                 ArrRenewalRecommendation::create([
                     'arr_id' => $arr->id,
                     'title' => $item['title'] ?? '',
-                    'description' => $item['description'] ?? null,
+                    'description' => $item['description'] ?? '',
                     'priority' => $item['priority'] ?? 'medium',
                     'executive_owner_user_id' => $ownerId !== false ? $ownerId : null,
                     'cor_capability' => $item['cor_capability'] ?? null,

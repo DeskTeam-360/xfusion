@@ -374,12 +374,13 @@ class IrrController extends Controller
     public function publish(Request $request, IrrReview $irr)
     {
         $userId = (int) $request->input('user_id');
-        if (! $this->canEditReview($userId, $irr)) {
-            return $this->forbidden();
-        }
 
         if ($irr->status === IrrReview::STATUS_PUBLISHED) {
             return response()->json(['success' => false, 'message' => 'This review is already published.'], 422);
+        }
+
+        if (! $this->canEditReview($userId, $irr)) {
+            return $this->forbidden();
         }
 
         $progress = is_array($irr->step_progress) ? $irr->step_progress : [];
@@ -668,6 +669,10 @@ class IrrController extends Controller
 
     private function canEditReview(int $userId, IrrReview $review): bool
     {
+        if ($review->status === IrrReview::STATUS_PUBLISHED) {
+            return false;
+        }
+
         if ((int) $review->manager_user_id === $userId) {
             return true;
         }
