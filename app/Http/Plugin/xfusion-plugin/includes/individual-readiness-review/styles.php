@@ -131,7 +131,7 @@ select.xirr-input[multiple]{min-height:4.75rem;padding:.35rem}
 .xirr-add-row{display:flex;justify-content:flex-start;margin:0 0 1rem}
 .xirr-add-link{background:none;border:none;padding:0;cursor:pointer;color:var(--green);font-size:15px;font-weight:700;font-family:inherit;text-decoration:none}
 .xirr-add-link:hover{text-decoration:underline}
-.xirr-prio-list{display:flex;flex-direction:column;gap:1rem}
+.xirr-prio-list{display:flex;flex-direction:column;gap:1rem;margin-bottom:1rem}
 .xirr-prio-card{display:flex;gap:.85rem;align-items:stretch;background:#fff;border:1px solid var(--border);border-radius:.5rem;padding:1.1rem 1.15rem;position:relative}
 .xirr-prio-rail{display:flex;flex-direction:column;align-items:center;gap:.45rem;padding-top:.15rem;flex-shrink:0}
 .xirr-drag{color:var(--muted);font-size:14px;letter-spacing:-2px;line-height:1;cursor:grab;user-select:none}
