@@ -82,7 +82,14 @@ function xfirr_wizard_conversation_init_js(): string
             '</div>';
     }
 
+    function updateSignCache(data) {
+        window.xirrConversationCache = {
+            bothSigned: !!(data && data.employee_signed_at && data.leader_signed_at),
+        };
+    }
+
     function renderBody(data) {
+        updateSignCache(data);
         var yourRole = data.your_role;
         var employeeName = (window.XFIRR_WIZARD && window.XFIRR_WIZARD.employeeName) || 'Employee';
         var leaderName = (window.XFIRR_WIZARD && window.XFIRR_WIZARD.managerName) || 'Leader';

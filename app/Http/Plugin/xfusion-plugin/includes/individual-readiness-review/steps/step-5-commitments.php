@@ -25,7 +25,7 @@ commitments: function () {
         '<span class="xirr-muted" id="xirr-commit-count">Loading commitments…</span>' +
         '<button type="button" class="xirr-btn xirr-btn-outline" id="xirr-add-commitment" disabled>+ Add Commitment</button>' +
         '</div>' +
-        '<div class="xirr-card"><div id="xirr-commitments-list"></div></div>' +
+        '<div id="xirr-commitments-list" class="xirr-prio-list"></div>' +
 
         '<div class="xirr-card"><h4 style="margin-top:0">Commitment Structure</h4>' +
         '<p class="xirr-muted" style="margin-top:-.2rem">Each commitment you create will include the following:</p>' +
@@ -145,7 +145,7 @@ function xfirr_wizard_commitments_init_js(): string
         if (!list) return;
 
         if (cache.length === 0) {
-            list.innerHTML = '<div style="text-align:center;padding:2.5rem 1rem">' +
+            list.innerHTML = '<div class="xirr-card" style="text-align:center;padding:2.5rem 1rem">' +
                 '<img src="https://sandbox.xperiencefusion.com/wp-content/uploads/2026/09/No-Commitment-Added-Yet.svg" alt="" style="width:48px;height:48px;object-fit:contain;display:block;margin:0 auto">' +
                 '<p style="font-weight:700;margin:.5rem 0 .2rem">No commitments added yet.</p>' +
                 '<p class="xirr-muted">Click "Add Commitment" above to create your first development commitment.</p></div>';

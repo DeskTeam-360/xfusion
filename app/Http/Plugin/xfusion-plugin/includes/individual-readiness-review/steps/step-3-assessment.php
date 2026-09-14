@@ -123,12 +123,17 @@ function xfirr_wizard_assessment_init_js(): string
         }).join('') + '</ul>';
     }
 
-    function renderAssessment(assessment) {
+    function renderAssessment(assessment, canEdit) {
         var ri = (assessment && assessment.readiness_indicators) || {};
         var scaleMax = ri.scale_max || 5;
         var pattern = (assessment && assessment.behavioral_pattern_summary) || {};
 
-        return '<div class="xirr-grid-2" style="display:grid;grid-template-columns:1fr 1fr;gap:1rem;margin-bottom:1rem">' +
+        return (canEdit
+            ? '<div style="display:flex;justify-content:flex-end;align-items:center;gap:.5rem;margin-bottom:.75rem">' +
+              '<button type="button" class="xirr-btn xirr-btn-outline xirr-btn-sm" id="xirr-regenerate-assessment-btn">Regenerate</button>' +
+              '</div>'
+            : '') +
+            '<div class="xirr-grid-2" style="display:grid;grid-template-columns:1fr 1fr;gap:1rem;margin-bottom:1rem">' +
             '<div class="xirr-card" style="margin-bottom:0"><h4>Behavioral Strengths™</h4>' +
             strengthRows(assessment.behavioral_strengths, 'Evidence', STRENGTH_ICONS) +
             '</div>' +
@@ -175,7 +180,7 @@ function xfirr_wizard_assessment_init_js(): string
             '</div>';
     }
 
-    function bindGenerateButton(body) {
+    function bindGenerateButton(body, canEdit) {
         var btn = document.getElementById('xirr-generate-assessment-btn');
         if (!btn || btn.dataset.wired) return;
         btn.dataset.wired = '1';
@@ -194,12 +199,40 @@ function xfirr_wizard_assessment_init_js(): string
                     if (statusEl) statusEl.textContent = (res && res.message) ? res.message : 'Failed to generate assessment.';
                     return;
                 }
-                body.innerHTML = renderAssessment(res.data.assessment || {});
+                body.innerHTML = renderAssessment(res.data.assessment || {}, canEdit);
+                bindRegenerateButton(body, canEdit);
             }).catch(function () {
                 btn.dataset.busy = '';
                 btn.disabled = false;
                 btn.textContent = 'Generate AI Development Assessment';
                 if (statusEl) statusEl.textContent = 'Failed to generate assessment — network error.';
+            });
+        });
+    }
+
+    function bindRegenerateButton(body, canEdit) {
+        var btn = document.getElementById('xirr-regenerate-assessment-btn');
+        if (!btn) return;
+        btn.addEventListener('click', function () {
+            if (btn.dataset.busy === '1' || typeof window.xfirrGenerateAssessment !== 'function') return;
+            btn.dataset.busy = '1';
+            btn.disabled = true;
+            btn.textContent = 'Regenerating…';
+            window.xfirrGenerateAssessment().then(function (res) {
+                if (!res || !res.success) {
+                    btn.dataset.busy = '';
+                    btn.disabled = false;
+                    btn.textContent = 'Regenerate';
+                    window.alert((res && res.message) ? res.message : 'Failed to regenerate assessment.');
+                    return;
+                }
+                body.innerHTML = renderAssessment(res.data.assessment || {}, canEdit);
+                bindRegenerateButton(body, canEdit);
+            }).catch(function () {
+                btn.dataset.busy = '';
+                btn.disabled = false;
+                btn.textContent = 'Regenerate';
+                window.alert('Failed to regenerate assessment — network error.');
             });
         });
     }
@@ -217,10 +250,11 @@ function xfirr_wizard_assessment_init_js(): string
             var canEdit = !!(window.XFIRR_WIZARD && window.XFIRR_WIZARD.canEdit);
             if (!data || !data.has_assessment || !data.assessment) {
                 body.innerHTML = renderEmptyState(canEdit);
-                bindGenerateButton(body);
+                bindGenerateButton(body, canEdit);
                 return;
             }
-            body.innerHTML = renderAssessment(data.assessment);
+            body.innerHTML = renderAssessment(data.assessment, canEdit);
+            bindRegenerateButton(body, canEdit);
         });
     };
 })();

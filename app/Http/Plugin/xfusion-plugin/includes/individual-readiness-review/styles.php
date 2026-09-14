@@ -136,12 +136,12 @@ select.xirr-input[multiple]{min-height:4.75rem;padding:.35rem}
 .xirr-prio-rail{display:flex;flex-direction:column;align-items:center;gap:.45rem;padding-top:.15rem;flex-shrink:0}
 .xirr-drag{color:var(--muted);font-size:14px;letter-spacing:-2px;line-height:1;cursor:grab;user-select:none}
 .xirr-prio-num{width:30px;height:30px;border-radius:50%;background:transparent;border:2px solid var(--navy);color:var(--navy);display:flex;align-items:center;justify-content:center;font-weight:700;font-size:14px;box-sizing:border-box}
-.xirr-prio-body{flex:1;min-width:0;position:relative;padding-right:1.75rem}
+.xirr-prio-body{flex:1;min-width:0;position:relative;padding-right:2.5rem}
 .xirr-prio-grid{display:grid;gap:.85rem 1rem;margin-bottom:.85rem}
 .xirr-prio-grid:last-child{margin-bottom:0}
 .xirr-prio-grid-1{grid-template-columns:1fr}
 .xirr-prio-grid-4{grid-template-columns:repeat(4,minmax(0,1fr))}
-.xirr-icon-btn{position:absolute;top:0;right:0;width:32px;height:32px;border:none;background:transparent;color:var(--muted);cursor:pointer;border-radius:.375rem;font-size:1.1rem;line-height:1;padding:0;display:flex;align-items:center;justify-content:center}
+.xirr-icon-btn{position:absolute;top:-.1rem;right:-.35rem;width:32px;height:32px;border:none;background:transparent;color:var(--muted);cursor:pointer;border-radius:.375rem;font-size:1.1rem;line-height:1;padding:0;display:flex;align-items:center;justify-content:center}
 .xirr-icon-btn:hover{color:#b91c1c;background:#fef2f2}
 .xirr-prio-delete{background:transparent !important;color:#87B14B !important;text-decoration:none !important}
 .xirr-prio-delete:hover{background:transparent !important;color:#E1706D !important;text-decoration:none !important}

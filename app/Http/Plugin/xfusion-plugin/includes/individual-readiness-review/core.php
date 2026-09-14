@@ -208,8 +208,43 @@ if (root) {
         root.scrollIntoView({ behavior: 'smooth', block: 'start' });
     };
 
+    var stepIndexOf = function (key) {
+        for (var idx = 0; idx < STEPS.length; idx++) {
+            if (STEPS[idx].key === key) return idx;
+        }
+        return -1;
+    };
+
     var goTo = function (i) {
-        goToInner(i);
+        var target = Math.max(0, Math.min(STEPS.length - 1, i));
+        if (target === current) {
+            goToInner(target);
+            return;
+        }
+
+        var conversationIndex = stepIndexOf('conversation');
+        if (conversationIndex !== -1 && target > conversationIndex) {
+            var bothSigned = (window.xirrConversationCache && typeof window.xirrConversationCache.bothSigned === 'boolean')
+                ? window.xirrConversationCache.bothSigned
+                : !!(window.XFIRR_WIZARD && window.XFIRR_WIZARD.stepProgress && window.XFIRR_WIZARD.stepProgress.conversation);
+            if (!bothSigned) {
+                window.alert('Both the employee and leader must sign the Development Conversation™ (Step 4) before continuing.');
+                return;
+            }
+        }
+
+        var publishIndex = stepIndexOf('publish');
+        if (publishIndex !== -1 && target === publishIndex) {
+            var hasSynthesis = (window.xirrSynthesisCache && typeof window.xirrSynthesisCache.hasSynthesis === 'boolean')
+                ? window.xirrSynthesisCache.hasSynthesis
+                : !!(window.XFIRR_WIZARD && window.XFIRR_WIZARD.stepProgress && window.XFIRR_WIZARD.stepProgress.synthesis);
+            if (!hasSynthesis) {
+                window.alert('Generate the AI Development Synthesis™ (Step 6) before continuing to Publish.');
+                return;
+            }
+        }
+
+        goToInner(target);
     };
     window.xirrGoTo = goTo;
     window.xirrRenderCurrentStep = renderMain;

@@ -82,7 +82,8 @@ function xfirr_wizard_synthesis_init_js(): string
         }).join('') + '</div>';
     }
 
-    function renderSynthesis(synthesis) {
+    function renderSynthesis(synthesis, canEdit) {
+        window.xirrSynthesisCache = { hasSynthesis: true };
         var ri = synthesis.readiness_indicators || {};
         var growth = synthesis.behavioral_growth || {};
         var strength = synthesis.strength_summary || {};
@@ -90,7 +91,12 @@ function xfirr_wizard_synthesis_init_js(): string
         var coaching = synthesis.executive_coaching_summary || {};
         var scaleMax = ri.scale_max || 5;
 
-        return '<div class="xirr-grid-3" style="display:grid;grid-template-columns:repeat(3,1fr);gap:1rem;margin-bottom:1rem">' +
+        return (canEdit
+            ? '<div style="display:flex;justify-content:flex-end;margin-bottom:.75rem">' +
+              '<button type="button" class="xirr-btn xirr-btn-outline xirr-btn-sm" id="xirr-regenerate-synthesis-btn">Regenerate</button>' +
+              '</div>'
+            : '') +
+            '<div class="xirr-grid-3" style="display:grid;grid-template-columns:repeat(3,1fr);gap:1rem;margin-bottom:1rem">' +
             summaryCard('https://sandbox.xperiencefusion.com/wp-content/uploads/2026/09/Annual-Development-Summary.svg', 'Annual Development Summary™', esc(synthesis.annual_development_summary || 'No summary available yet.'), '') +
             summaryCard('https://sandbox.xperiencefusion.com/wp-content/uploads/2026/09/Behavioral-Growth-Summary.svg', 'Behavioral Growth Summary™', esc(synthesis.behavioral_growth_summary || 'No summary available yet.') +
                 (growth.average_score != null
@@ -140,6 +146,7 @@ function xfirr_wizard_synthesis_init_js(): string
     }
 
     function renderEmptyState(canEdit) {
+        window.xirrSynthesisCache = { hasSynthesis: false };
         return '<div class="xirr-card">' +
             '<h4 style="margin-top:0">No synthesis generated yet</h4>' +
             '<p class="xirr-muted">Generate the AI Development Synthesis™ from this year’s evidence, assessment, conversation, and commitments.</p>' +
@@ -150,7 +157,34 @@ function xfirr_wizard_synthesis_init_js(): string
             '</div>';
     }
 
-    function bindGenerateButton(body) {
+    function bindRegenerateButton(body, canEdit) {
+        var btn = document.getElementById('xirr-regenerate-synthesis-btn');
+        if (!btn) return;
+        btn.addEventListener('click', function () {
+            if (btn.dataset.busy === '1' || typeof window.xfirrGenerateSynthesis !== 'function') return;
+            btn.dataset.busy = '1';
+            btn.disabled = true;
+            btn.textContent = 'Regenerating…';
+            window.xfirrGenerateSynthesis().then(function (res) {
+                if (!res || !res.success) {
+                    btn.dataset.busy = '';
+                    btn.disabled = false;
+                    btn.textContent = 'Regenerate';
+                    window.alert((res && res.message) ? res.message : 'Failed to regenerate synthesis.');
+                    return;
+                }
+                body.innerHTML = renderSynthesis(res.data.synthesis || {}, canEdit);
+                bindRegenerateButton(body, canEdit);
+            }).catch(function () {
+                btn.dataset.busy = '';
+                btn.disabled = false;
+                btn.textContent = 'Regenerate';
+                window.alert('Failed to regenerate synthesis — network error.');
+            });
+        });
+    }
+
+    function bindGenerateButton(body, canEdit) {
         var btn = document.getElementById('xirr-generate-synthesis-btn');
         if (!btn || btn.dataset.wired) return;
         btn.dataset.wired = '1';
@@ -169,7 +203,8 @@ function xfirr_wizard_synthesis_init_js(): string
                     if (statusEl) statusEl.textContent = (res && res.message) ? res.message : 'Failed to generate synthesis.';
                     return;
                 }
-                body.innerHTML = renderSynthesis(res.data.synthesis || {});
+                body.innerHTML = renderSynthesis(res.data.synthesis || {}, canEdit);
+                bindRegenerateButton(body, canEdit);
             }).catch(function () {
                 btn.dataset.busy = '';
                 btn.disabled = false;
@@ -192,10 +227,11 @@ function xfirr_wizard_synthesis_init_js(): string
             var canEdit = !!(window.XFIRR_WIZARD && window.XFIRR_WIZARD.canEdit);
             if (!data || !data.has_synthesis || !data.synthesis) {
                 body.innerHTML = renderEmptyState(canEdit);
-                bindGenerateButton(body);
+                bindGenerateButton(body, canEdit);
                 return;
             }
-            body.innerHTML = renderSynthesis(data.synthesis);
+            body.innerHTML = renderSynthesis(data.synthesis, canEdit);
+            bindRegenerateButton(body, canEdit);
         });
     };
 })();
