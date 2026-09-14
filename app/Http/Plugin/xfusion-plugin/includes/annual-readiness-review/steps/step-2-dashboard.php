@@ -75,10 +75,28 @@ function xfarr_wizard_dashboard_init_js(): string
         }).join('') + '</div>';
     }
 
-    function kpiRow(label, status) {
+    var ORG_KPI_ICONS = [
+        'https://sandbox.xperiencefusion.com/wp-content/uploads/2026/09/Revenue-Growth-Icon.svg',
+        'https://sandbox.xperiencefusion.com/wp-content/uploads/2026/09/Geometric-Gross-Margin-Icon.svg',
+        'https://sandbox.xperiencefusion.com/wp-content/uploads/2026/09/Operational-Efficiency-Icon.svg',
+        'https://sandbox.xperiencefusion.com/wp-content/uploads/2026/09/Customer-Retention-Icon.svg',
+        'https://sandbox.xperiencefusion.com/wp-content/uploads/2026/09/Safety-TRIR-Icon.svg',
+    ];
+
+    var OPS_KPI_ICONS = [
+        'https://sandbox.xperiencefusion.com/wp-content/uploads/2026/09/Geometric-On-Time-Delivery-Icon.svg',
+        'https://sandbox.xperiencefusion.com/wp-content/uploads/2026/09/Quality-Index-Icon.svg',
+        'https://sandbox.xperiencefusion.com/wp-content/uploads/2026/09/Cycle-Time-Icon.svg',
+        'https://sandbox.xperiencefusion.com/wp-content/uploads/2026/09/Geometric-Cost-Per-Unit-Icon.svg',
+    ];
+
+    function kpiRow(label, status, iconUrl) {
         var cls = status === 'on_track' ? 'up' : (status === 'off_track' ? 'down' : '');
         var text = status ? status.replace('_', ' ') : '—';
-        return '<div class="xarr-kpi-row"><span class="name">' + esc(label) + '</span>' +
+        var icon = iconUrl
+            ? '<img class="xarr-kpi-icon" src="' + iconUrl + '" alt="">'
+            : '';
+        return '<div class="xarr-kpi-row">' + icon + '<span class="name">' + esc(label) + '</span>' +
             '<span class="delta ' + cls + '">' + esc(text) + '</span></div>';
     }
 
@@ -180,16 +198,18 @@ function xfarr_wizard_dashboard_init_js(): string
             '<div class="xarr-grid-3" style="display:grid;grid-template-columns:repeat(3,1fr);gap:1rem;margin-bottom:1rem;margin-top:1rem">' +
             '<div class="xarr-card" style="margin-bottom:0"><h4>Organizational KPI Trends</h4>' +
             ((data.organizational_kpis && data.organizational_kpis.items && data.organizational_kpis.items.length) ?
-                '<div class="xarr-kpi-list">' + data.organizational_kpis.items.map(function (i) { return kpiRow(i.title, i.status); }).join('') + '</div>'
+                '<div class="xarr-kpi-list">' + data.organizational_kpis.items.map(function (i, idx) {
+                    return kpiRow(i.title, i.status, ORG_KPI_ICONS[idx % ORG_KPI_ICONS.length]);
+                }).join('') + '</div>'
                 : '<p class="xarr-muted">No organizational KPIs recorded for this year\'s ARP(s) yet.</p>') +
             notAvailable(unavailable.kpi_percent_deltas) + '</div>' +
 
             '<div class="xarr-card" style="margin-bottom:0"><h4>Operational KPI Trends</h4>' +
             (data.operational_kpis && data.operational_kpis.count ?
                 '<div class="xarr-kpi-list">' +
-                kpiRow('On Track', 'on_track').replace(/<span class="delta[^>]*>[^<]*<\/span>/, '<span class="delta up">' + data.operational_kpis.on_track + '</span>') +
-                kpiRow('At Risk', 'at_risk').replace(/<span class="delta[^>]*>[^<]*<\/span>/, '<span class="delta">' + data.operational_kpis.at_risk + '</span>') +
-                kpiRow('Off Track', 'off_track').replace(/<span class="delta[^>]*>[^<]*<\/span>/, '<span class="delta down">' + data.operational_kpis.off_track + '</span>') +
+                kpiRow('On Track', 'on_track', OPS_KPI_ICONS[0]).replace(/<span class="delta[^>]*>[^<]*<\/span>/, '<span class="delta up">' + data.operational_kpis.on_track + '</span>') +
+                kpiRow('At Risk', 'at_risk', OPS_KPI_ICONS[1]).replace(/<span class="delta[^>]*>[^<]*<\/span>/, '<span class="delta">' + data.operational_kpis.at_risk + '</span>') +
+                kpiRow('Off Track', 'off_track', OPS_KPI_ICONS[2]).replace(/<span class="delta[^>]*>[^<]*<\/span>/, '<span class="delta down">' + data.operational_kpis.off_track + '</span>') +
                 '</div>'
                 : '<p class="xarr-muted">No operational KPIs recorded for this year\'s QBR(s) yet.</p>') +
             '</div>' +

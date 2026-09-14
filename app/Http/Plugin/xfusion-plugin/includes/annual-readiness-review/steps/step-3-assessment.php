@@ -102,13 +102,34 @@ function xfarr_wizard_assessment_init_js(): string
             '</div>';
     }
 
-    function themeCard(icon, title, desc) {
-        return '<div style="text-align:center"><div style="font-size:1.4rem">' + icon + '</div>' +
-            '<h4 style="margin:.4rem 0 .2rem;font-size:14px">' + esc(title) + '</h4>' +
-            '<p class="xarr-muted" style="font-size:13px">' + esc(desc) + '</p></div>';
+    function themeCard(iconUrl, title, desc) {
+        return '<div class="xarr-theme-item">' +
+            '<img class="xarr-theme-icon" src="' + iconUrl + '" alt="">' +
+            '<div><div class="xarr-theme-title">' + esc(title) + '</div>' +
+            '<p class="xarr-theme-desc">' + esc(desc) + '</p></div></div>';
     }
 
-    var THEME_ICONS = ['&#128101;', '&#127793;', '&#128260;', '&#127942;', '&#128202;', '&#10024;'];
+    var THEME_ICONS = [
+        'https://sandbox.xperiencefusion.com/wp-content/uploads/2026/09/Geometric-Blue-Two-People-Icon.svg',
+        'https://sandbox.xperiencefusion.com/wp-content/uploads/2026/09/Geometric-Blue-Shield-Checkerboard-Icon.svg',
+        'https://sandbox.xperiencefusion.com/wp-content/uploads/2026/09/Geometric-Green-Plant-Icon.svg',
+        'https://sandbox.xperiencefusion.com/wp-content/uploads/2026/09/Geometric-Blue-Refresh-Icon.svg',
+        'https://sandbox.xperiencefusion.com/wp-content/uploads/2026/09/Geometric-Trophy-Icon.svg',
+    ];
+    var DRIVER_ICONS = {
+        get_real: 'https://sandbox.xperiencefusion.com/wp-content/uploads/2026/09/Behavioural-Intelligence-Get-Real-Icon.svg',
+        be_intentional: 'https://sandbox.xperiencefusion.com/wp-content/uploads/2026/09/Be-Intentional-Icon.svg',
+        fill_buckets: 'https://sandbox.xperiencefusion.com/wp-content/uploads/2026/09/Fill-Bucket-Icon.svg',
+        foster_grit: 'https://sandbox.xperiencefusion.com/wp-content/uploads/2026/09/Foster-Grid-Icon.svg',
+        drive_growth: 'https://sandbox.xperiencefusion.com/wp-content/uploads/2026/09/Drive-Growth-Icon.svg',
+    };
+    var DRIVER_ICON_ORDER = [
+        DRIVER_ICONS.get_real,
+        DRIVER_ICONS.be_intentional,
+        DRIVER_ICONS.fill_buckets,
+        DRIVER_ICONS.foster_grit,
+        DRIVER_ICONS.drive_growth,
+    ];
 
     function render(body, data) {
         var ri = (data.assessment && data.assessment.readiness_indicators) || {};
@@ -137,8 +158,9 @@ function xfarr_wizard_assessment_init_js(): string
             '</div>' +
 
             '<div class="xarr-card" style="margin-bottom:0"><h4>Behavioral Intelligence™</h4>' +
-            (behavioral.length ? behavioral.map(function (d) {
-                return '<div class="xarr-stat-row"><span class="xarr-dot green"></span>' + esc(d.label) + '<strong>' + (d.score !== null ? d.score : '—') + '</strong></div>';
+            (behavioral.length ? behavioral.map(function (d, i) {
+                var icon = DRIVER_ICONS[d.slug] || DRIVER_ICON_ORDER[i % DRIVER_ICON_ORDER.length];
+                return '<div class="xarr-stat-row"><img class="xarr-stat-icon" src="' + icon + '" alt="">' + esc(d.label) + '<strong>' + (d.score !== null ? d.score : '—') + '</strong></div>';
             }).join('') : '<p class="xarr-muted">No scoring data found yet.</p>') +
             '</div>' +
             '</div>' +
@@ -171,20 +193,20 @@ function xfarr_wizard_assessment_init_js(): string
 
             '<div class="xarr-card" style="margin-bottom:0"><h4>Strategic Risks™</h4>' +
             ((a.strategic_risks || []).length ? a.strategic_risks.map(function (r) {
-                return '<div class="xarr-stat-row" style="color:#dc2626"><span>&#9888;&#65039;</span>' + esc(r) + '</div>';
+                return '<div class="xarr-stat-row" style="color:#dc2626"><img class="xarr-stat-icon" src="https://sandbox.xperiencefusion.com/wp-content/uploads/2026/09/Geometric-Red-User-Location-Icon.svg" alt="">' + esc(r) + '</div>';
             }).join('') : '<p class="xarr-muted">Generate the AI assessment to see strategic risks.</p>') +
             '</div>' +
 
             '<div class="xarr-card" style="margin-bottom:0"><h4>Strategic Opportunities™</h4>' +
             ((a.strategic_opportunities || []).length ? a.strategic_opportunities.map(function (r) {
-                return '<div class="xarr-stat-row" style="color:#16a34a"><span class="xarr-check" style="margin-top:0">&#10003;</span>' + esc(r) + '</div>';
+                return '<div class="xarr-stat-row" style="color:#16a34a"><img class="xarr-stat-icon" src="https://sandbox.xperiencefusion.com/wp-content/uploads/2026/09/Geometric-Green-Checkmark-Circle-Icon.svg" alt="">' + esc(r) + '</div>';
             }).join('') : '<p class="xarr-muted">Generate the AI assessment to see strategic opportunities.</p>') +
             '</div>' +
             '</div>' +
 
-            '<div class="xarr-card"><h4>Emerging Organizational Themes™</h4>' +
+            '<div class="xarr-card"><h4 class="xarr-heading-with-icon"><img src="https://sandbox.xperiencefusion.com/wp-content/uploads/2026/09/Geometric-Purple-Star-Icon.svg" alt=""><span>Emerging Organizational Themes™</span></h4>' +
             ((a.emerging_themes || []).length ?
-                '<div class="xarr-pattern-grid" style="grid-template-columns:repeat(4,minmax(0,1fr))">' +
+                '<div class="xarr-theme-grid">' +
                 a.emerging_themes.map(function (t, i) { return themeCard(THEME_ICONS[i % THEME_ICONS.length], t.title, t.description); }).join('') +
                 '</div>'
                 : '<p class="xarr-muted">Generate the AI assessment to see emerging themes.</p>') +

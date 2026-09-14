@@ -102,6 +102,13 @@ function xfarr_wizard_styles_css(): string
 /* Cards */
 .xarr-card{background:#fff;border:1px solid var(--border);border-radius:.5rem;padding:1.1rem 1.25rem;margin-bottom:1rem}
 .xarr-card h4{margin:0 0 .6rem;text-transform:uppercase;letter-spacing:.04em;color:var(--navy);font-weight:500}
+.xarr-heading-with-icon{display:flex;align-items:center;gap:.5rem}
+.xarr-heading-with-icon img{width:44px;height:44px;object-fit:contain;flex-shrink:0;display:block}
+.xarr-theme-grid{display:flex;gap:1.25rem;align-items:flex-start}
+.xarr-theme-item{flex:1;min-width:0;display:flex;gap:.65rem;align-items:flex-start}
+.xarr-theme-icon{width:40px;height:40px;object-fit:contain;flex-shrink:0;display:block}
+.xarr-theme-title{margin:0 0 .2rem;font-size:15px;font-weight:700;color:var(--navy);line-height:1.25}
+.xarr-theme-desc{margin:0;font-size:13px;color:var(--muted);line-height:1.4}
 .xarr-about-step{display:flex;gap:.85rem;align-items:flex-start}
 .xarr-about-step-icon{width:50px;height:50px;flex-shrink:0;display:block;object-fit:contain;margin-top:.15rem}
 .xarr-about-step-body{min-width:0;flex:1}
@@ -232,7 +239,8 @@ select.xarr-input[multiple]{min-height:4.75rem;padding:.35rem}
 .xarr-check-list li{display:flex;gap:.55rem;align-items:flex-start;margin-bottom:.45rem;font-size:16px;line-height:1.4;color:var(--ink)}
 .xarr-check{width:20px;height:20px;border-radius:50%;background:var(--green);color:#fff;display:inline-flex;align-items:center;justify-content:center;font-size:.7rem;font-weight:700;flex-shrink:0;margin-top:.1rem}
 .xarr-stat-list{display:flex;flex-direction:column;gap:.55rem}
-.xarr-stat-row{display:flex;align-items:center;gap:.55rem;font-size:16px}
+.xarr-stat-row{display:flex;align-items:center;gap:.55rem;font-size:16px;margin-bottom: 10px;}
+.xarr-stat-icon{width:32px;height:32px;object-fit:contain;flex-shrink:0;display:block}
 .xarr-stat-row strong{margin-left:auto;color:var(--navy)}
 .xarr-dot{width:10px;height:10px;border-radius:50%;display:inline-block;flex-shrink:0}
 .xarr-dot.green{background:#16a34a}
@@ -352,6 +360,8 @@ table.xarr-table.xarr-table-gaps .xarr-gap-priority{width:12%;white-space:nowrap
 .xarr-risk-grid{grid-template-columns:repeat(2,minmax(0,1fr))}
 .xarr-activate-grid,.xarr-action-grid{grid-template-columns:repeat(2,minmax(0,1fr))}
 .xarr-summary-grid{grid-template-columns:1fr}
+.xarr-theme-grid{flex-wrap:wrap}
+.xarr-theme-item{flex:1 1 180px}
 }
 
 /* ── Mobile (≤768px) ── */
@@ -414,6 +424,7 @@ table.xarr-table.xarr-table-gaps .xarr-gap-priority{width:12%;white-space:nowrap
 /* KPI trend rows (Step 2) */
 .xarr-kpi-list{display:flex;flex-direction:column;gap:.55rem}
 .xarr-kpi-row{display:flex;align-items:center;gap:.5rem;font-size:14px}
+.xarr-kpi-icon{width:36px;height:36px;object-fit:contain;flex-shrink:0;display:block}
 .xarr-kpi-row .name{flex:1;color:var(--ink)}
 .xarr-kpi-row .delta{font-weight:700;display:inline-flex;align-items:center;gap:.2rem}
 .xarr-kpi-row .delta.up{color:#16a34a}
@@ -442,6 +453,8 @@ table.xarr-table.xarr-table-gaps .xarr-gap-priority{width:12%;white-space:nowrap
 /* Executive reflection fields (Step 4) */
 .xarr-reflect-field{margin-bottom:1.35rem;display:flex;gap:.75rem}
 .xarr-reflect-icon{width:34px;height:34px;border-radius:50%;background:#eef4fc;display:flex;align-items:center;justify-content:center;font-size:1rem;flex-shrink:0;margin-top:.1rem}
+.xarr-reflect-icon img{width:100%;height:100%;object-fit:contain;display:block}
+.xarr-reflect-icon:has(img){width:40px;height:40px;background:transparent;border-radius:0}
 .xarr-reflect-body{flex:1;min-width:0}
 .xarr-reflect-body label{display:block;font-weight:800;font-size:15px;color:var(--navy);text-transform:uppercase;letter-spacing:.02em;margin-bottom:.15rem}
 .xarr-reflect-body .xarr-muted{margin:0 0 .4rem;font-size:14px}

@@ -23,9 +23,9 @@ function xfarr_wizard_step_reflection_js(): string
     return <<<'JS'
 reflection: function () {
     var fields = [
-        ['&#128218;', 'Organizational Learning', 'What were our most important organizational learnings this year?', 'organizational_learning'],
-        ['&#128200;', 'Readiness Progression', 'How has our organizational readiness progressed over the past year?', 'readiness_progression'],
-        ['&#127919;', 'Strategic Assumptions', 'What assumptions about our strategy or environment were validated or challenged?', 'strategic_assumptions'],
+        ['<img src="https://sandbox.xperiencefusion.com/wp-content/uploads/2026/09/Geometric-Green-Book-Icon.svg" alt="">', 'Organizational Learning', 'What were our most important organizational learnings this year?', 'organizational_learning'],
+        ['<img src="https://sandbox.xperiencefusion.com/wp-content/uploads/2026/09/Geometric-Blue-Growth-Chart-Icon.svg" alt="">', 'Readiness Progression', 'How has our organizational readiness progressed over the past year?', 'readiness_progression'],
+        ['<img src="https://sandbox.xperiencefusion.com/wp-content/uploads/2026/09/Geometric-Purple-Target-Search-Icon.svg" alt="">', 'Strategic Assumptions', 'What assumptions about our strategy or environment were validated or challenged?', 'strategic_assumptions'],
         ['&#9888;&#65039;', 'Organizational Barriers', 'What barriers continue to limit our performance and growth?', 'organizational_barriers'],
         ['&#11088;', 'Organizational Strengths', 'What are our greatest strengths that we should leverage more?', 'organizational_strengths'],
         ['&#128101;', 'Leadership Effectiveness', 'How effective was our leadership this year? What should we continue, stop, or start?', 'leadership_effectiveness'],
@@ -44,7 +44,7 @@ reflection: function () {
         }).join('') +
 
         '<div class="xarr-grid-2" style="display:grid;grid-template-columns:1fr 1fr;gap:1rem">' +
-        '<div class="xarr-card" style="margin-bottom:0"><h4 style="margin-top:0">&#10024; AI Insight &amp; Guidance</h4>' +
+        '<div class="xarr-card" style="margin-bottom:0"><h4 class="xarr-heading-with-icon" style="margin-top:0"><img src="https://sandbox.xperiencefusion.com/wp-content/uploads/2026/07/AI-Insight-Themes.svg" alt=""><span>AI Insight &amp; Guidance</span></h4>' +
         '<p class="xarr-muted" style="margin-top:-.2rem">Based on your annual evidence and AI assessment, here are key areas to explore in your reflection.</p>' +
         '<ul class="xarr-check-list">' +
         '<li>Readiness improved in Alignment and Communication.</li>' +
