@@ -26,9 +26,9 @@ evidence: function () {
         '<p class="xarr-section-desc">FUSION automatically assembles organizational evidence from across the platform for your Annual Readiness Review™.<br>This evidence forms the foundation for organizational learning and strategic renewal.</p>' +
         '<div class="xarr-banner">&#8505;&#65039; <span>No action is required. The system is collecting and organizing your evidence.</span></div>' +
 
-        '<div class="xarr-card"><h3 style="margin-top:0">Evidence Sources</h3>' +
-        '<p class="xarr-muted" style="margin-top:-.3rem">The following sources are compiled to build your Annual Evidence™. Click any source to view its details.</p>' +
-        '<div class="xarr-evidence"><div class="xarr-evidence-list" id="xarr-evidence-list"><p class="xarr-muted" style="margin:0;padding:1rem">Loading evidence sources…</p></div></div></div>' +
+        '<h3 class="xarr-section-title" style="margin-bottom:.3rem">Evidence Sources</h3>' +
+        '<p class="xarr-muted" style="margin-top:0;margin-bottom:.85rem">The following sources are compiled to build your Annual Evidence™. Click any source to view its details.</p>' +
+        '<div class="xarr-card" style="padding:0"><div class="xarr-evidence"><div class="xarr-evidence-list" id="xarr-evidence-list"><p class="xarr-muted" style="margin:0;padding:1rem">Loading evidence sources…</p></div></div></div>' +
 
         '<div class="xarr-card" id="xarr-evidence-generate-card">' +
         '<button type="button" class="xarr-btn xarr-btn-accent" id="xarr-generate-evidence-btn">Generate Evidence</button>' +

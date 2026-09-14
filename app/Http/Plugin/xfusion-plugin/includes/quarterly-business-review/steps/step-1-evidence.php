@@ -16,10 +16,9 @@ evidence: function () {
     return '<h2 class="xqbr-section-title">Step 1. Generate Organizational Evidence™</h2>' +
         '<p class="xqbr-section-desc">FUSION automatically gathers evidence from across the platform for the current review period. This evidence provides the foundation for leadership analysis and decision-making.</p>' +
         '<div class="xqbr-banner">ℹ️ <span>Evidence is system generated and read-only. No manual entry is required. The data below represents the current review period.</span></div>' +
-        '<div class="xqbr-card"><h3 style="margin-top:0">Evidence Sources</h3>' +
-        '<p class="xqbr-muted" style="margin-top:-.5rem">The platform is automatically pulling evidence from the following sources. Click any source to view its details.</p>' +
-        '<div class="xqbr-evidence"><div class="xqbr-evidence-list" id="xqbr-evidence-list"></div></div>' +
-        '</div>' +
+        '<h3 class="xqbr-section-title" style="margin-bottom:.3rem">Evidence Sources</h3>' +
+        '<p class="xqbr-muted" style="margin-top:0;margin-bottom:.85rem">The platform is automatically pulling evidence from the following sources. Click any source to view its details.</p>' +
+        '<div class="xqbr-card" style="padding:0"><div class="xqbr-evidence"><div class="xqbr-evidence-list" id="xqbr-evidence-list"></div></div></div>' +
         '<div class="xqbr-card" id="xqbr-evidence-generate-card">' +
         '<button type="button" class="xqbr-btn xqbr-btn-accent" id="xqbr-generate-evidence-btn">Generate Evidence</button>' +
         '<p class="xqbr-muted" id="xqbr-evidence-status" style="margin-top:.6rem"></p>' +
