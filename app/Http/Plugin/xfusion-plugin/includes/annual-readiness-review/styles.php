@@ -296,19 +296,29 @@ table.xarr-table.xarr-table-gaps .xarr-gap-priority{width:12%;white-space:nowrap
 .xarr-autosave-check{width:18px;height:18px;border-radius:50%;background:#16a34a;color:#fff;display:inline-flex;align-items:center;justify-content:center;font-size:.65rem;font-weight:700;flex-shrink:0}
 
 /* Evidence checklist (Step 1) */
+/* Matches the 1-on-1 wizard's standard evidence-accordion look
+   (.xfw-evidence-*) so all four wizards present collected evidence the
+   same way. */
+.xarr-evidence{border:1px solid var(--border);border-radius:.5rem;overflow:hidden}
 .xarr-evidence-list{display:flex;flex-direction:column}
-.xarr-evidence-row{display:flex;align-items:center;gap:.85rem;padding:.85rem 0;border-bottom:1px solid var(--border)}
-.xarr-evidence-row:last-child{border-bottom:none}
-.xarr-evidence-icon{width:36px;height:36px;border-radius:50%;background:#eef4fc;color:var(--navy);display:flex;align-items:center;justify-content:center;font-size:1rem;flex-shrink:0;overflow:hidden}
+.xarr-evidence-item{border-bottom:1px solid var(--border)}
+.xarr-evidence-item:last-child{border-bottom:none}
+.xarr-evidence-row{display:flex;align-items:center;gap:.85rem;padding:.85rem 1rem;cursor:pointer;user-select:none}
+.xarr-evidence-row:focus{outline:2px solid var(--green);outline-offset:-2px}
+.xarr-evidence-icon{width:50px;height:50px;flex-shrink:0;line-height:0}
 .xarr-evidence-icon img{width:100%;height:100%;object-fit:contain;display:block}
-.xarr-evidence-icon:has(img){width:44px;height:44px;background:transparent;border-radius:0;overflow:visible}
-.xarr-evidence-title{font-weight:700;font-size:15px}
-.xarr-evidence-desc{color:var(--muted);font-size:14px}
-.xarr-evidence-status{margin-left:auto;font-size:14px;font-weight:600;white-space:nowrap;display:flex;align-items:center;gap:.35rem}
-.xarr-evidence-status.ok{color:var(--green)}
+.xarr-evidence-title{font-weight:700;font-size:24px}
+.xarr-evidence-desc{color:var(--muted)}
+.xarr-evidence-status{margin-left:auto;color:var(--green);font-size:18px;font-weight:600;white-space:nowrap;flex-shrink:0;display:flex;align-items:center;gap:.35rem}
 .xarr-evidence-status.pending{color:var(--muted)}
 .xarr-evidence-status.soon{color:#a8a29e;font-style:italic;font-weight:500}
 .xarr-evidence-row-soon{opacity:.6}
+.xarr-evidence-panel{padding:0 1rem 1rem calc(50px + 1.7rem);background:#fff}
+.xarr-evidence-empty{color:var(--muted);font-size:14px;margin:0}
+.xarr-evidence-dl{margin:0;display:flex;flex-direction:column;gap:.5rem}
+.xarr-evidence-dl dt{font-weight:700;font-size:13px;color:var(--muted);text-transform:uppercase;letter-spacing:.02em}
+.xarr-evidence-dl dd{margin:.15rem 0 0;font-size:15px}
+.xarr-evidence-list-plain{margin:0;padding-left:1.1rem;font-size:14px;display:flex;flex-direction:column;gap:.3rem}
 
 /* Metric cards (Step 2) */
 .xarr-metric-grid{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:1rem;margin-bottom:1rem}

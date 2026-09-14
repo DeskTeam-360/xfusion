@@ -18,7 +18,7 @@ evidence: function () {
         '<div class="xirr-banner">&#8505;&#65039; <span>No action is required. The system is collecting and organizing your evidence. You will review — and can re-collect the latest data — in the next step.</span></div>' +
         '<div class="xirr-card"><h3 style="margin-top:0">Evidence Being Compiled</h3>' +
         '<p class="xirr-muted" style="margin-top:-.4rem">Click any source below to view its details.</p>' +
-        '<div class="xirr-evidence-list" id="xirr-evidence-list"><p class="xirr-muted">Loading evidence sources…</p></div>' +
+        '<div class="xirr-evidence"><div class="xirr-evidence-list" id="xirr-evidence-list"><p class="xirr-muted" style="margin:0;padding:1rem">Loading evidence sources…</p></div></div>' +
         '<p class="xirr-muted" id="xirr-evidence-status" style="margin-top:.6rem"></p>' +
         '</div>' +
         '<div class="xirr-callout xirr-callout-success">' +

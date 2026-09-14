@@ -18,7 +18,7 @@ evidence: function () {
         '<div class="xqbr-banner">ℹ️ <span>Evidence is system generated and read-only. No manual entry is required. The data below represents the current review period.</span></div>' +
         '<div class="xqbr-card"><h3 style="margin-top:0">Evidence Sources</h3>' +
         '<p class="xqbr-muted" style="margin-top:-.5rem">The platform is automatically pulling evidence from the following sources. Click any source to view its details.</p>' +
-        '<div class="xqbr-evidence-list" id="xqbr-evidence-list"></div>' +
+        '<div class="xqbr-evidence"><div class="xqbr-evidence-list" id="xqbr-evidence-list"></div></div>' +
         '</div>' +
         '<div class="xqbr-card" id="xqbr-evidence-generate-card">' +
         '<button type="button" class="xqbr-btn xqbr-btn-accent" id="xqbr-generate-evidence-btn">Generate Evidence</button>' +

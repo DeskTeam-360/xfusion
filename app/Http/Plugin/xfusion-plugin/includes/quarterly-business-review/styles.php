@@ -319,18 +319,22 @@ table.xqbr-table.xqbr-table-gaps .xqbr-gap-priority{width:12%;white-space:nowrap
 .xqbr-autosave-check{width:18px;height:18px;border-radius:50%;background:#16a34a;color:#fff;display:inline-flex;align-items:center;justify-content:center;font-size:.65rem;font-weight:700;flex-shrink:0}
 
 /* Evidence checklist (Step 1) */
+/* Matches the 1-on-1 wizard's standard evidence-accordion look
+   (.xfw-evidence-*) so all four wizards present collected evidence the
+   same way. */
+.xqbr-evidence{border:1px solid var(--border);border-radius:.5rem;overflow:hidden}
 .xqbr-evidence-list{display:flex;flex-direction:column}
 .xqbr-evidence-item{border-bottom:1px solid var(--border)}
 .xqbr-evidence-item:last-child{border-bottom:none}
-.xqbr-evidence-row{display:flex;align-items:center;gap:.85rem;padding:.85rem 0;cursor:pointer;user-select:none}
+.xqbr-evidence-row{display:flex;align-items:center;gap:.85rem;padding:.85rem 1rem;cursor:pointer;user-select:none}
 .xqbr-evidence-row:focus{outline:2px solid var(--green);outline-offset:-2px}
-.xqbr-evidence-icon{width:36px;height:36px;border-radius:50%;background:#eef4fc;color:var(--navy);display:flex;align-items:center;justify-content:center;font-size:1rem;flex-shrink:0}
-.xqbr-evidence-title{font-weight:700;font-size:15px}
-.xqbr-evidence-desc{color:var(--muted);font-size:14px}
-.xqbr-evidence-status{margin-left:auto;font-size:14px;font-weight:600;white-space:nowrap;display:flex;align-items:center;gap:.35rem}
-.xqbr-evidence-status.ok{color:var(--green)}
+.xqbr-evidence-icon{width:50px;height:50px;flex-shrink:0;line-height:0}
+.xqbr-evidence-icon img{width:100%;height:100%;object-fit:contain;display:block}
+.xqbr-evidence-title{font-weight:700;font-size:24px}
+.xqbr-evidence-desc{color:var(--muted)}
+.xqbr-evidence-status{margin-left:auto;color:var(--green);font-size:18px;font-weight:600;white-space:nowrap;display:flex;align-items:center;gap:.35rem}
 .xqbr-evidence-status.pending{color:var(--muted)}
-.xqbr-evidence-panel{padding:0 0 1rem calc(36px + .85rem)}
+.xqbr-evidence-panel{padding:0 1rem 1rem calc(50px + 1.7rem)}
 .xqbr-evidence-empty{color:var(--muted);font-size:14px;margin:0}
 .xqbr-evidence-dl{margin:0;display:flex;flex-direction:column;gap:.5rem}
 .xqbr-evidence-dl dt{font-weight:700;font-size:13px;color:var(--muted);text-transform:uppercase;letter-spacing:.02em}
