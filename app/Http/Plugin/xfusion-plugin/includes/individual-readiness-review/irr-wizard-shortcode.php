@@ -125,6 +125,8 @@ function xfusion_irr_wizard_shortcode($atts = []): string
         'stepProgress' => is_array($irrData['step_progress'] ?? null) ? $irrData['step_progress'] : new stdClass(),
         'employeeName' => $employeeName,
         'managerName'  => $managerName,
+        'employeeUserId' => (int) ($irrData['employee_user_id'] ?? 0),
+        'managerUserId'  => (int) ($irrData['manager_user_id'] ?? 0),
     ];
 
     ob_start();

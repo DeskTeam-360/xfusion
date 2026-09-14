@@ -72,9 +72,30 @@ function xfirr_wizard_commitments_init_js(): string
 
     function esc(s) { return String(s == null ? '' : s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
 
+    function ownerOptions(selected, legacyName) {
+        var w = window.XFIRR_WIZARD || {};
+        var options = [];
+        if (w.employeeUserId) options.push([String(w.employeeUserId), w.employeeName || 'Employee']);
+        if (w.managerUserId) options.push([String(w.managerUserId), w.managerName || 'Leader']);
+        var selectedStr = selected ? String(selected) : '';
+        var matched = false;
+        var html = options.map(function (o) {
+            var isSel = selectedStr === o[0];
+            if (isSel) matched = true;
+            return '<option value="' + o[0] + '"' + (isSel ? ' selected' : '') + '>' + esc(o[1]) + '</option>';
+        }).join('');
+        if (!matched && legacyName) {
+            html = '<option value="" selected>' + esc(legacyName) + '</option>' + html;
+        } else {
+            html = '<option value="">— Select owner —</option>' + html;
+        }
+        return html;
+    }
+
     function fromApi(row) {
         return {
             title: row.title || '',
+            owner_user_id: row.owner_user_id ? String(row.owner_user_id) : '',
             owner_name: row.owner_name || '',
             priority: row.priority ? (row.priority.charAt(0).toUpperCase() + row.priority.slice(1)) : 'Medium',
             due_date: row.due_date || '',
@@ -84,9 +105,11 @@ function xfirr_wizard_commitments_init_js(): string
     }
 
     function toApi(c) {
+        var ownerId = parseInt(c.owner_user_id, 10);
         return {
             title: (c.title || '').trim(),
-            owner_name: (c.owner_name || '').trim() || null,
+            owner_user_id: ownerId > 0 ? ownerId : null,
+            owner_name: ownerId > 0 ? null : ((c.owner_name || '').trim() || null),
             priority: (c.priority || 'Medium').toLowerCase(),
             due_date: (c.due_date || '').trim() || null,
             behavioral_driver: c.driver || null,
@@ -101,7 +124,7 @@ function xfirr_wizard_commitments_init_js(): string
             '<div class="xirr-prio-body">' +
             '<div class="xirr-prio-grid xirr-prio-grid-1"><input class="xirr-input" data-f="title" placeholder="Commitment" value="' + esc(c.title) + '"></div>' +
             '<div class="xirr-prio-grid xirr-prio-grid-4">' +
-            '<input class="xirr-input" data-f="owner_name" placeholder="Owner" value="' + esc(c.owner_name) + '">' +
+            '<select class="xirr-input" data-f="owner_user_id">' + ownerOptions(c.owner_user_id, c.owner_name) + '</select>' +
             '<select class="xirr-input" data-f="priority">' + ['High','Medium','Low'].map(function (p) {
                 return '<option' + (c.priority === p ? ' selected' : '') + '>' + p + '</option>';
             }).join('') + '</select>' +
@@ -160,7 +183,7 @@ function xfirr_wizard_commitments_init_js(): string
         if (addBtn) {
             addBtn.addEventListener('click', function () {
                 if (cache.length >= 5) return;
-                cache.push({ title: '', owner_name: '', priority: 'Medium', due_date: '', driver: '', success_indicator: '' });
+                cache.push({ title: '', owner_user_id: '', owner_name: '', priority: 'Medium', due_date: '', driver: '', success_indicator: '' });
                 renderList();
             });
         }
