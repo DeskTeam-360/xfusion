@@ -978,7 +978,14 @@ class OneOnOneController extends Controller
             ];
         }
 
-        if ($isAdmin) {
+        // The admin bypass is for a genuine third-party platform admin
+        // auditing a conversation they're not part of. A WP-admin-capable
+        // account that IS one of the two participants (common on sandbox/
+        // test accounts) must still be bound by its own leader/employee
+        // preparation privacy below — otherwise an admin leader/employee
+        // would see the other side's private answers, which is exactly the
+        // leak this endpoint exists to prevent.
+        if ($isAdmin && ! $isParticipant) {
             return ['user_id' => $userId, 'roles' => OneOnOnePreparation::validRoles(), 'is_admin' => true, 'notes_scope' => 'all'];
         }
 
