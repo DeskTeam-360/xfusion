@@ -982,26 +982,30 @@ class OneOnOneController extends Controller
             return ['user_id' => $userId, 'roles' => OneOnOnePreparation::validRoles(), 'is_admin' => true, 'notes_scope' => 'all'];
         }
 
-        // Preparation stays private (own role only) until it's revealed —
-        // which happens automatically when the meeting status moves to
-        // in_progress (see updateConversationStatus()) — or the meeting is
-        // completed. Read-only: saveWizardPreparation() never sets
-        // forRead=true, so this never grants write access to the other role.
+        // Preparation content is never shared between the two parties, even
+        // after the meeting starts or completes — each side only ever sees
+        // its own answers here; the counterpart only gets a submitted/
+        // not-submitted flag via preparationStatus(), never the content.
+        // Conversation notes (Step 4) are a separate, intentionally shared
+        // record: once the meeting is under way or finished, both sides can
+        // read each other's notes, so notes_scope opens up independently of
+        // the (now permanent) preparation-role restriction below.
+        $notesScope = 'own';
         if ($forRead && $scope === 'wizard' && $isParticipant) {
             $revealed = $conversation->preparations()->where('is_revealed', true)->exists();
             $completed = $conversation->status === OneOnOneConversation::STATUS_COMPLETED;
 
             if ($revealed || $completed) {
-                return ['user_id' => $userId, 'roles' => OneOnOnePreparation::validRoles(), 'is_admin' => false, 'notes_scope' => 'all'];
+                $notesScope = 'all';
             }
         }
 
         if ((int) $pair->leader_user_id === $userId) {
-            return ['user_id' => $userId, 'roles' => [OneOnOnePreparation::ROLE_LEADER], 'is_admin' => false, 'notes_scope' => 'own'];
+            return ['user_id' => $userId, 'roles' => [OneOnOnePreparation::ROLE_LEADER], 'is_admin' => false, 'notes_scope' => $notesScope];
         }
 
         if ((int) $pair->employee_user_id === $userId) {
-            return ['user_id' => $userId, 'roles' => [OneOnOnePreparation::ROLE_EMPLOYEE], 'is_admin' => false, 'notes_scope' => 'own'];
+            return ['user_id' => $userId, 'roles' => [OneOnOnePreparation::ROLE_EMPLOYEE], 'is_admin' => false, 'notes_scope' => $notesScope];
         }
 
         return response()->json(['success' => false, 'message' => 'Not authorized for this conversation.'], 403);
