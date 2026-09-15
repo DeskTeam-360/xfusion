@@ -1342,6 +1342,15 @@ class OneOnOneController extends Controller
         }
 
         $status = $data['status'];
+
+        // Only the leader may move a meeting to in_progress — that transition
+        // reveals both sides' private preparation below. Letting the employee
+        // trigger it would let them unilaterally see the leader's preparation
+        // before the leader has actually started the meeting.
+        if ($status === OneOnOneConversation::STATUS_IN_PROGRESS && (int) $pair->leader_user_id !== $userId) {
+            return response()->json(['success' => false, 'message' => 'Only the leader can start this meeting.'], 403);
+        }
+
         $updates = ['status' => $status];
 
         if ($status === OneOnOneConversation::STATUS_COMPLETED && $conversation->held_at === null) {
