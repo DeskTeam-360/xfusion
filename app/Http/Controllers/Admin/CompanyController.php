@@ -246,7 +246,8 @@ class CompanyController extends Controller
                 ->with(['employee:ID,display_name,user_nicename', 'manager:ID,display_name,user_nicename'])
                 ->orderByDesc('created_at')->get()->map(fn ($r) => [
                     'title' => 'IRR ' . $r->year,
-                    'meta' => $userLabel($r->employee) . ' — ' . $userLabel($r->manager),
+                    'manager' => $userLabel($r->manager),
+                    'employee' => $userLabel($r->employee),
                     'status' => $r->status,
                     'created_at' => $r->created_at,
                     'wp_url' => $wpBase . '?' . $wpRoute['param'] . '=' . $r->id,
@@ -256,7 +257,8 @@ class CompanyController extends Controller
             })->with(['oneOnOne.leader:ID,display_name,user_nicename', 'oneOnOne.employee:ID,display_name,user_nicename'])
                 ->orderByDesc('created_at')->get()->map(fn ($r) => [
                     'title' => 'Meeting #' . $r->id,
-                    'meta' => $userLabel($r->oneOnOne?->leader) . ' — ' . $userLabel($r->oneOnOne?->employee),
+                    'manager' => $userLabel($r->oneOnOne?->leader),
+                    'employee' => $userLabel($r->oneOnOne?->employee),
                     'status' => $r->status,
                     'created_at' => $r->created_at,
                     'wp_url' => $wpBase . '?' . $wpRoute['param'] . '=' . $r->id,
@@ -272,13 +274,13 @@ class CompanyController extends Controller
             'one-on-one' => '1-on-1 Alignment Capture™',
         ])->get($type, $type);
 
+        $showPeopleColumns = in_array($type, ['irr', 'one-on-one'], true);
+
         $metaColumnLabel = collect([
             'qbr' => 'Group',
-            'irr' => 'Employee — Manager',
-            'one-on-one' => 'Leader — Employee',
         ])->get($type);
 
-        return view('admin.company.activity-detail', compact('id', 'company', 'type', 'label', 'records', 'metaColumnLabel'));
+        return view('admin.company.activity-detail', compact('id', 'company', 'type', 'label', 'records', 'metaColumnLabel', 'showPeopleColumns'));
     }
 
     /**

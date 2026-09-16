@@ -18,6 +18,10 @@
                             @if($showRecordColumn)
                                 <th>Record</th>
                             @endif
+                            @if($showPeopleColumns)
+                                <th>Manager</th>
+                                <th>Employee</th>
+                            @endif
                             @if($metaColumnLabel)
                                 <th>{{ $metaColumnLabel }}</th>
                             @endif
@@ -32,6 +36,10 @@
                                 @if($showRecordColumn)
                                     <td>{{ $record['title'] }}</td>
                                 @endif
+                                @if($showPeopleColumns)
+                                    <td>{{ $record['manager'] }}</td>
+                                    <td>{{ $record['employee'] }}</td>
+                                @endif
                                 @if($metaColumnLabel)
                                     <td>{{ $record['meta'] }}</td>
                                 @endif
@@ -45,7 +53,7 @@
                             </tr>
                         @empty
                             <tr>
-                                <td colspan="{{ ($showRecordColumn ? 1 : 0) + ($metaColumnLabel ? 1 : 0) + 3 }}" class="py-10 text-center text-muted dark:text-darklink">
+                                <td colspan="{{ ($showRecordColumn ? 1 : 0) + ($showPeopleColumns ? 2 : 0) + ($metaColumnLabel ? 1 : 0) + 3 }}" class="py-10 text-center text-muted dark:text-darklink">
                                     No activity yet.
                                 </td>
                             </tr>
