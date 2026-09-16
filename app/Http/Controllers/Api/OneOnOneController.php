@@ -324,8 +324,13 @@ class OneOnOneController extends Controller
      * employee side of this pairing. Lets the leader see where the employee
      * currently stands without leaving the 1-on-1 conversation.
      */
-    public function employeeScoring(OneOnOne $oneOnOne)
+    public function employeeScoring(Request $request, OneOnOne $oneOnOne)
     {
+        $callerId = (int) $request->query('user_id');
+        if (! $this->isPairParticipant($callerId, $oneOnOne)) {
+            return $this->notAuthorized();
+        }
+
         $userId = $oneOnOne->employee_user_id;
 
         $groups = CourseScoringGroup::with('details')->get();
@@ -441,8 +446,13 @@ class OneOnOneController extends Controller
         return $num;
     }
 
-    public function conversations(OneOnOne $oneOnOne)
+    public function conversations(Request $request, OneOnOne $oneOnOne)
     {
+        $callerId = (int) $request->query('user_id');
+        if (! $this->isPairParticipant($callerId, $oneOnOne)) {
+            return $this->notAuthorized();
+        }
+
         return response()->json([
             'success' => true,
             'data' => $oneOnOne->conversations()->get(['id', 'scheduled_at', 'held_at', 'meeting_link', 'status']),
@@ -452,9 +462,14 @@ class OneOnOneController extends Controller
     public function scheduleConversation(Request $request, OneOnOne $oneOnOne)
     {
         $data = $request->validate([
+            'user_id' => 'required|integer|min:1',
             'scheduled_at' => 'required|date',
             'meeting_link' => 'nullable|url|max:500',
         ]);
+
+        if ((int) $oneOnOne->leader_user_id !== (int) $data['user_id']) {
+            return response()->json(['success' => false, 'message' => 'Only the leader can schedule this meeting.'], 403);
+        }
 
         $conversation = $oneOnOne->conversations()->create([
             'scheduled_at' => $data['scheduled_at'],
@@ -486,12 +501,19 @@ class OneOnOneController extends Controller
         }
 
         $role = $data['author_role'];
-        $authorUserId = (int) ($data['author_user_id'] ?? 0);
-        if ($authorUserId < 1) {
-            $authorUserId = $role === OneOnOnePreparation::ROLE_LEADER
-                ? (int) $pair->leader_user_id
-                : (int) $pair->employee_user_id;
+        $callerId = (int) ($data['author_user_id'] ?? 0);
+        $expectedId = $role === OneOnOnePreparation::ROLE_LEADER
+            ? (int) $pair->leader_user_id
+            : (int) $pair->employee_user_id;
+
+        // The caller must actually be the leader/employee of this pairing
+        // matching the role they're claiming to submit as — otherwise
+        // anyone could inject preparation content as the other party.
+        if ($callerId < 1 || $callerId !== $expectedId) {
+            return $this->notAuthorized();
         }
+
+        $authorUserId = $expectedId;
 
         $draft = app(OneOnOneWizardDraftService::class);
         if (isset($data['values']) && is_array($data['values'])) {
@@ -681,8 +703,13 @@ class OneOnOneController extends Controller
     }
 
     /** Whether the current user's counterpart has submitted prep — never returns the content. */
-    public function preparationStatus(OneOnOneConversation $conversation)
+    public function preparationStatus(Request $request, OneOnOneConversation $conversation)
     {
+        $userId = (int) $request->query('user_id');
+        if (! $this->isConversationParticipant($userId, $conversation)) {
+            return $this->notAuthorized();
+        }
+
         $rows = $conversation->preparations()->get(['author_role', 'is_revealed']);
 
         return response()->json([
@@ -698,8 +725,14 @@ class OneOnOneController extends Controller
     }
 
     /** Reveal both preparations — call when the meeting actually starts. */
-    public function reveal(OneOnOneConversation $conversation)
+    public function reveal(Request $request, OneOnOneConversation $conversation)
     {
+        $userId = (int) $request->input('user_id');
+        $pair = $conversation->oneOnOne;
+        if ($pair === null || (int) $pair->leader_user_id !== $userId) {
+            return response()->json(['success' => false, 'message' => 'Only the leader can start this meeting.'], 403);
+        }
+
         $conversation->preparations()->update([
             'is_revealed' => true,
             'revealed_at' => now(),
@@ -712,8 +745,13 @@ class OneOnOneController extends Controller
         return response()->json(['success' => true, 'data' => $revealed]);
     }
 
-    public function brief(OneOnOneConversation $conversation, OneOnOneAiService $ai)
+    public function brief(Request $request, OneOnOneConversation $conversation, OneOnOneAiService $ai)
     {
+        $userId = (int) $request->query('user_id');
+        if (! $this->isConversationParticipant($userId, $conversation)) {
+            return $this->notAuthorized();
+        }
+
         $brief = $conversation->brief;
 
         if ($brief === null) {
@@ -724,8 +762,13 @@ class OneOnOneController extends Controller
     }
 
     /** List all generated brief versions for a conversation (newest first). */
-    public function briefHistory(OneOnOneConversation $conversation)
+    public function briefHistory(Request $request, OneOnOneConversation $conversation)
     {
+        $userId = (int) $request->query('user_id');
+        if (! $this->isConversationParticipant($userId, $conversation)) {
+            return $this->notAuthorized();
+        }
+
         $rows = OneOnOneAiBrief::query()
             ->where('conversation_id', $conversation->id)
             ->orderByDesc('id')
@@ -747,8 +790,13 @@ class OneOnOneController extends Controller
     }
 
     /** Fetch one archived brief version by id (must belong to this conversation). */
-    public function showBriefVersion(OneOnOneConversation $conversation, int $brief)
+    public function showBriefVersion(Request $request, OneOnOneConversation $conversation, int $brief)
     {
+        $userId = (int) $request->query('user_id');
+        if (! $this->isConversationParticipant($userId, $conversation)) {
+            return $this->notAuthorized();
+        }
+
         $row = OneOnOneAiBrief::query()
             ->where('conversation_id', $conversation->id)
             ->where('id', $brief)
@@ -790,6 +838,11 @@ class OneOnOneController extends Controller
     ) {
         $this->mergeJsonPayload($request);
 
+        $userId = (int) $request->input('user_id');
+        if (! $this->isConversationParticipant($userId, $conversation)) {
+            return $this->notAuthorized();
+        }
+
         $evidenceContext = $request->input('evidence_context', []);
         if (! is_array($evidenceContext)) {
             $evidenceContext = [];
@@ -828,6 +881,11 @@ class OneOnOneController extends Controller
         MeetingSynthesisFromContextService $composer
     ) {
         $this->mergeJsonPayload($request);
+
+        $userId = (int) $request->input('user_id');
+        if (! $this->isConversationParticipant($userId, $conversation)) {
+            return $this->notAuthorized();
+        }
 
         $forceRefresh = $request->boolean('force_refresh', true);
 
@@ -1018,8 +1076,13 @@ class OneOnOneController extends Controller
         return response()->json(['success' => false, 'message' => 'Not authorized for this conversation.'], 403);
     }
 
-    public function synthesis(OneOnOneConversation $conversation)
+    public function synthesis(Request $request, OneOnOneConversation $conversation)
     {
+        $userId = (int) $request->query('user_id');
+        if (! $this->isConversationParticipant($userId, $conversation)) {
+            return $this->notAuthorized();
+        }
+
         $synthesis = $conversation->synthesis;
 
         if ($synthesis === null) {
@@ -1030,8 +1093,13 @@ class OneOnOneController extends Controller
     }
 
     /** List all generated synthesis versions for a conversation (newest first). */
-    public function synthesisHistory(OneOnOneConversation $conversation)
+    public function synthesisHistory(Request $request, OneOnOneConversation $conversation)
     {
+        $userId = (int) $request->query('user_id');
+        if (! $this->isConversationParticipant($userId, $conversation)) {
+            return $this->notAuthorized();
+        }
+
         $rows = OneOnOneAiSynthesis::query()
             ->where('conversation_id', $conversation->id)
             ->orderByDesc('id')
@@ -1053,8 +1121,13 @@ class OneOnOneController extends Controller
     }
 
     /** Fetch one archived synthesis version by id (must belong to this conversation). */
-    public function showSynthesisVersion(OneOnOneConversation $conversation, int $synthesis)
+    public function showSynthesisVersion(Request $request, OneOnOneConversation $conversation, int $synthesis)
     {
+        $userId = (int) $request->query('user_id');
+        if (! $this->isConversationParticipant($userId, $conversation)) {
+            return $this->notAuthorized();
+        }
+
         $row = OneOnOneAiSynthesis::query()
             ->where('conversation_id', $conversation->id)
             ->where('id', $synthesis)
@@ -1098,8 +1171,13 @@ class OneOnOneController extends Controller
     }
 
     /** Fetch all notes for a conversation. */
-    public function getNotes(OneOnOneConversation $conversation)
+    public function getNotes(Request $request, OneOnOneConversation $conversation)
     {
+        $userId = (int) $request->query('user_id');
+        if (! $this->isConversationParticipant($userId, $conversation)) {
+            return $this->notAuthorized();
+        }
+
         return response()->json([
             'success' => true,
             'data' => $conversation->notes()->orderBy('id')->get(['id', 'section', 'note', 'created_by', 'created_at']),
@@ -1107,8 +1185,13 @@ class OneOnOneController extends Controller
     }
 
     /** Fetch all commitments for a conversation. */
-    public function getCommitments(OneOnOneConversation $conversation)
+    public function getCommitments(Request $request, OneOnOneConversation $conversation)
     {
+        $userId = (int) $request->query('user_id');
+        if (! $this->isConversationParticipant($userId, $conversation)) {
+            return $this->notAuthorized();
+        }
+
         return response()->json([
             'success' => true,
             'data' => $conversation->commitments()->orderBy('id')->get([
@@ -1120,11 +1203,21 @@ class OneOnOneController extends Controller
 
     public function storeNote(Request $request, OneOnOneConversation $conversation)
     {
+        $this->mergeJsonPayload($request);
+
         $data = $request->validate([
+            'user_id' => 'required|integer|min:1',
             'section' => 'required|string|max:60',
             'note' => 'required|string',
             'created_by' => 'required|integer|min:1',
         ]);
+
+        if (! $this->isConversationParticipant((int) $data['user_id'], $conversation)
+            || (int) $data['created_by'] !== (int) $data['user_id']) {
+            return $this->notAuthorized();
+        }
+
+        unset($data['user_id']);
 
         $note = OneOnOneNote::create([
             'conversation_id' => $conversation->id,
@@ -1138,6 +1231,11 @@ class OneOnOneController extends Controller
     {
         $this->mergeJsonPayload($request);
         $this->normalizeCommitmentPayload($request);
+
+        $userId = (int) $request->input('user_id');
+        if (! $this->isConversationParticipant($userId, $conversation)) {
+            return $this->notAuthorized();
+        }
 
         $data = $request->validate([
             'title' => 'required|string|max:255',
@@ -1166,6 +1264,12 @@ class OneOnOneController extends Controller
     {
         $this->mergeJsonPayload($request);
         $this->normalizeCommitmentPayload($request);
+
+        $userId = (int) $request->input('user_id');
+        $conversation = $commitment->conversation;
+        if ($conversation === null || ! $this->isConversationParticipant($userId, $conversation)) {
+            return $this->notAuthorized();
+        }
 
         // Wizard always sends the full row — same rules as create (not "sometimes").
         $data = $request->validate([
@@ -1196,12 +1300,17 @@ class OneOnOneController extends Controller
      * Step 1 evidence — previous meetings + all commitments for the employee
      * in this pairing (regardless of which leader held prior meetings).
      */
-    public function evidence(OneOnOneConversation $conversation)
+    public function evidence(Request $request, OneOnOneConversation $conversation)
     {
         $conversation->loadMissing('oneOnOne.leader:ID,display_name,user_nicename');
         $oneOnOne = $conversation->oneOnOne;
         if ($oneOnOne === null) {
             return response()->json(['success' => false, 'message' => 'Pairing not found.'], 404);
+        }
+
+        $userId = (int) $request->query('user_id');
+        if (! $this->isPairParticipant($userId, $oneOnOne)) {
+            return $this->notAuthorized();
         }
 
         $employeeId = (int) $oneOnOne->employee_user_id;
@@ -1277,12 +1386,17 @@ class OneOnOneController extends Controller
      * this pairing's company, so a leader commitment can reference any
      * employee in the organization, not just the one in this conversation.
      */
-    public function companyEmployees(OneOnOneConversation $conversation)
+    public function companyEmployees(Request $request, OneOnOneConversation $conversation)
     {
         $conversation->loadMissing('oneOnOne');
         $oneOnOne = $conversation->oneOnOne;
         if ($oneOnOne === null) {
             return response()->json(['success' => false, 'message' => 'Pairing not found.'], 404);
+        }
+
+        $userId = (int) $request->query('user_id');
+        if (! $this->isPairParticipant($userId, $oneOnOne)) {
+            return $this->notAuthorized();
         }
 
         $group = $this->companyGroupSync->findGroupForPair((int) $oneOnOne->leader_user_id, (int) $oneOnOne->employee_user_id);
@@ -1313,8 +1427,13 @@ class OneOnOneController extends Controller
     }
 
     /** Mark conversation held + trigger AI synthesis. */
-    public function complete(OneOnOneConversation $conversation, OneOnOneAiService $ai)
+    public function complete(Request $request, OneOnOneConversation $conversation, OneOnOneAiService $ai)
     {
+        $userId = (int) $request->input('user_id');
+        if (! $this->isConversationParticipant($userId, $conversation)) {
+            return $this->notAuthorized();
+        }
+
         $conversation->update([
             'status' => OneOnOneConversation::STATUS_COMPLETED,
             'held_at' => now(),
@@ -1385,5 +1504,23 @@ class OneOnOneController extends Controller
                 'held_at' => $conversation->held_at?->toIso8601String(),
             ],
         ]);
+    }
+
+    private function isPairParticipant(int $userId, OneOnOne $pair): bool
+    {
+        return $userId >= 1
+            && ((int) $pair->leader_user_id === $userId || (int) $pair->employee_user_id === $userId);
+    }
+
+    private function isConversationParticipant(int $userId, OneOnOneConversation $conversation): bool
+    {
+        $pair = $conversation->oneOnOne;
+
+        return $pair !== null && $this->isPairParticipant($userId, $pair);
+    }
+
+    private function notAuthorized()
+    {
+        return response()->json(['success' => false, 'message' => 'Not authorized for this conversation.'], 403);
     }
 }
