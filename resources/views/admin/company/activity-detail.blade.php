@@ -12,8 +12,12 @@
         <div class="admin-data-table w-full">
             <div class="overflow-x-auto">
                 <table class="admin-table">
+                    @php($showRecordColumn = $type !== 'one-on-one')
                     <thead>
                         <tr>
+                            @if($showRecordColumn)
+                                <th>Record</th>
+                            @endif
                             @if($metaColumnLabel)
                                 <th>{{ $metaColumnLabel }}</th>
                             @endif
@@ -25,6 +29,9 @@
                     <tbody>
                         @forelse($records as $record)
                             <tr>
+                                @if($showRecordColumn)
+                                    <td>{{ $record['title'] }}</td>
+                                @endif
                                 @if($metaColumnLabel)
                                     <td>{{ $record['meta'] }}</td>
                                 @endif
@@ -38,7 +45,7 @@
                             </tr>
                         @empty
                             <tr>
-                                <td colspan="{{ $metaColumnLabel ? 4 : 3 }}" class="py-10 text-center text-muted dark:text-darklink">
+                                <td colspan="{{ ($showRecordColumn ? 1 : 0) + ($metaColumnLabel ? 1 : 0) + 3 }}" class="py-10 text-center text-muted dark:text-darklink">
                                     No activity yet.
                                 </td>
                             </tr>
