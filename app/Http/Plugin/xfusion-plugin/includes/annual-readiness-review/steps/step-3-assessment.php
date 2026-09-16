@@ -37,18 +37,16 @@ assessment: function () {
 
         '<div class="xarr-card"><h4 style="margin-top:0">Executive Agreement</h4>' +
         '<p class="xarr-muted" style="margin-top:-.2rem">Please indicate your agreement with the AI Annual Readiness Assessment™.</p>' +
-        '<div id="xarr-agreement-options" style="display:flex;flex-direction:column;gap:.5rem;margin-bottom:.75rem">' +
+        '<div id="xarr-agreement-options" style="display:flex;flex-direction:column;gap:.5rem">' +
         ['Strongly Agree','Agree','Neutral','Disagree','Strongly Disagree'].map(function (o, i) {
             return '<label class="xarr-row"><input type="radio" name="xarr-agreement" value="' + o.toLowerCase().replace(/ /g,'_') + '"> ' + o + '</label>';
         }).join('') + '</div>' +
-        '<button type="button" class="xarr-btn xarr-btn-outline" id="xarr-save-agreement">Save Agreement</button>' +
         '</div>' +
 
         '<div class="xarr-card"><h4 style="margin-top:0">Executive Strategic Context</h4>' +
         '<p class="xarr-muted" style="margin-top:-.2rem">What strategic context should be considered before planning next year\'s future state?</p>' +
         '<textarea class="xarr-input" id="xarr-strategic-context" rows="3" maxlength="2000" placeholder="Enter your strategic context here..."></textarea>' +
-        '<p class="xarr-muted" style="font-size:12px;margin:.3rem 0 .6rem" id="xarr-context-count">0 / 2000 characters</p>' +
-        '<button type="button" class="xarr-btn xarr-btn-outline" id="xarr-save-context">Save Context</button>' +
+        '<p class="xarr-muted" style="font-size:12px;margin:.3rem 0 0" id="xarr-context-count">0 / 2000 characters</p>' +
         '</div>';
 }
 JS;
@@ -284,48 +282,30 @@ function xfarr_wizard_assessment_init_js(): string
     };
 
     function wireAgreementForm() {
-        var saveAgreement = document.getElementById('xarr-save-agreement');
-        if (saveAgreement && !saveAgreement.dataset.wired) {
-            saveAgreement.dataset.wired = '1';
-            saveAgreement.addEventListener('click', function () {
-                var checked = document.querySelector('input[name="xarr-agreement"]:checked');
-                if (!checked || typeof window.xfarrSaveAssessmentAgreement !== 'function') return;
-                saveAgreement.disabled = true;
-                window.xfarrSaveAssessmentAgreement(checked.value).then(function (res) {
-                    saveAgreement.disabled = false;
-                    saveAgreement.textContent = (res && res.success) ? 'Saved ✓' : 'Failed — try again';
-                    window.setTimeout(function () { saveAgreement.textContent = 'Save Agreement'; }, 1500);
-                }).catch(function () {
-                    saveAgreement.disabled = false;
-                    saveAgreement.textContent = 'Failed — try again';
-                    window.setTimeout(function () { saveAgreement.textContent = 'Save Agreement'; }, 1500);
-                });
-            });
-        }
         var ctx = document.getElementById('xarr-strategic-context');
         var count = document.getElementById('xarr-context-count');
         if (ctx && count && !ctx.dataset.wired) {
             ctx.dataset.wired = '1';
             ctx.addEventListener('input', function () { count.textContent = ctx.value.length + ' / 2000 characters'; });
         }
-        var saveContext = document.getElementById('xarr-save-context');
-        if (saveContext && !saveContext.dataset.wired) {
-            saveContext.dataset.wired = '1';
-            saveContext.addEventListener('click', function () {
-                if (typeof window.xfarrSaveAssessmentContext !== 'function') return;
-                saveContext.disabled = true;
-                window.xfarrSaveAssessmentContext(ctx ? ctx.value : '').then(function (res) {
-                    saveContext.disabled = false;
-                    saveContext.textContent = (res && res.success) ? 'Saved ✓' : 'Failed — try again';
-                    window.setTimeout(function () { saveContext.textContent = 'Save Context'; }, 1500);
-                }).catch(function () {
-                    saveContext.disabled = false;
-                    saveContext.textContent = 'Failed — try again';
-                    window.setTimeout(function () { saveContext.textContent = 'Save Context'; }, 1500);
-                });
-            });
-        }
     }
+
+    window.xarrSaveAssessmentStep = function () {
+        var checked = document.querySelector('input[name="xarr-agreement"]:checked');
+        var ctx = document.getElementById('xarr-strategic-context');
+        var tasks = [];
+        if (checked && typeof window.xfarrSaveAssessmentAgreement === 'function') {
+            tasks.push(window.xfarrSaveAssessmentAgreement(checked.value));
+        }
+        if (ctx && typeof window.xfarrSaveAssessmentContext === 'function') {
+            tasks.push(window.xfarrSaveAssessmentContext(ctx.value));
+        }
+        if (!tasks.length) return Promise.resolve({ success: true });
+        return Promise.all(tasks).then(function (results) {
+            var failed = results.find(function (r) { return !r || !r.success; });
+            return failed || { success: true };
+        });
+    };
 })();
 JS;
 }

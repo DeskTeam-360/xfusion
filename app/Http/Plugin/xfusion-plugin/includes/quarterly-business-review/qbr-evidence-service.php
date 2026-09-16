@@ -31,7 +31,7 @@ add_action('wp_ajax_xfqbr_evidence_load', function (): void {
     if ($qbrId < 1) {
         wp_send_json_error(['message' => 'qbr_id is required.'], 422);
     }
-    xfqbr_picker_send(xfqbr_picker_api_request('GET', "/{$qbrId}/evidence"));
+    xfqbr_picker_send(xfqbr_picker_api_request('GET', "/{$qbrId}/evidence", ['user_id' => get_current_user_id()]));
 });
 
 add_action('wp_ajax_xfqbr_kpis_load', function (): void {
@@ -40,7 +40,7 @@ add_action('wp_ajax_xfqbr_kpis_load', function (): void {
         wp_send_json_error(['message' => 'Unauthorized.'], 401);
     }
     $qbrId = isset($_GET['qbr_id']) ? absint($_GET['qbr_id']) : 0;
-    xfqbr_picker_send(xfqbr_picker_api_request('GET', "/{$qbrId}/kpis"));
+    xfqbr_picker_send(xfqbr_picker_api_request('GET', "/{$qbrId}/kpis", ['user_id' => get_current_user_id()]));
 });
 
 add_action('wp_ajax_xfqbr_kpis_save', function (): void {

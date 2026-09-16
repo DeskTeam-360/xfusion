@@ -169,8 +169,19 @@ var xfwRenderSidebarStatus = function (status) {
     if (!statusEl) {
         return;
     }
-    xfwWireStatusSelect();
     var key = String(status || 'scheduled').toLowerCase();
+
+    // Only the leader can move a meeting to In Progress — that transition
+    // reveals both sides' private preparation (see updateConversationStatus()
+    // server-side). Letting the employee drive this control would let them
+    // flip it themselves and see the leader's preparation before the leader
+    // has actually started the meeting.
+    if (window.XFW_WIZARD && window.XFW_WIZARD.userRole !== 'leader') {
+        statusEl.innerHTML = '<span class="xfw-badge ' + xfwStatusBadgeClass(key) + '">' + xfwFormatStatusLabel(key) + '</span>';
+        return;
+    }
+
+    xfwWireStatusSelect();
     var sel = statusEl.querySelector('#xfw-si-status-select');
     if (!sel) {
         var html = '<select class="xfw-input xfw-status-select" id="xfw-si-status-select">';
@@ -597,18 +608,18 @@ var xfwRenderAllMeetings = function () {
     }
 
     html += '<div class="xfw-meetings-table-wrap"><table class="xfw-table"><thead><tr>' +
-        '<th>Timing</th><th>Group</th><th>With</th><th>Your role</th><th>Scheduled</th><th></th>' +
+        '<th>Timing</th><th>Group</th><th>With</th><th></th>' +
         '</tr></thead><tbody>';
 
     pageRows.forEach(function (m) {
         var fmt = xfwFormatMeetingDate(m.scheduled_at);
         var timing = xfwMeetingTiming(m);
         var btnLabel = m.status === 'in_progress' ? 'Resume' : (m.status === 'completed' ? 'View' : 'Open');
-        html += '<tr><td><span class="xfw-badge ' + timing.badge + '">' + xfwEsc(timing.label) + '</span></td>' +
-            '<td>' + xfwEsc(m.group ? m.group.title : '—') + '</td>' +
+        var groupLabel = (m.group ? m.group.title : '—') + (m.user_role ? ' (' + m.user_role + ')' : '');
+        html += '<tr><td><div class="xfw-meeting-timing-cell"><span class="xfw-badge ' + timing.badge + '">' + xfwEsc(timing.label) + '</span>' +
+            '<span class="xfw-meeting-when">' + xfwEsc(fmt.date) + ' ' + xfwEsc(fmt.time) + '</span></div></td>' +
+            '<td>' + xfwEsc(groupLabel) + '</td>' +
             '<td>' + xfwEsc(m.counterpart_name || '—') + '</td>' +
-            '<td><span class="xfw-badge amber">' + xfwEsc(m.user_role || '') + '</span></td>' +
-            '<td>' + xfwEsc(fmt.date) + ' ' + xfwEsc(fmt.time) + '</td>' +
             '<td><button type="button" class="xfw-badge green xfw-meeting-open-btn" data-open-meeting-id="' + m.id + '">' + btnLabel + '</button></td></tr>';
     });
 

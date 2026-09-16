@@ -135,13 +135,29 @@ if (root) {
             col.querySelectorAll('.xfw-scale-btn').forEach(function (el) {
                 el.classList.toggle('xfw-scale-btn-disabled', locked);
             });
-            if (locked && !col.querySelector('.xfw-prep-lock-badge')) {
+            if (locked) {
                 var heading = col.querySelector('h3');
-                if (heading) {
+                var badge = col.querySelector('.xfw-prep-lock-badge');
+                if (!badge && heading) {
                     heading.insertAdjacentHTML(
                         'afterend',
                         '<p class="xfw-prep-lock-badge">&#128274; Only the ' + role + ' can complete this section.</p>'
                     );
+                    badge = col.querySelector('.xfw-prep-lock-badge');
+                }
+                // Never fetch or show the other role's actual answers here -
+                // only a submitted/not-submitted flag, so preparation stays
+                // private between the two parties even after the meeting.
+                if (badge && typeof xfwFetchPrepStatus === 'function') {
+                    xfwFetchPrepStatus().then(function (status) {
+                        if (!status) {
+                            return;
+                        }
+                        var submitted = role === 'employee' ? status.employee_submitted : status.leader_submitted;
+                        badge.innerHTML = submitted
+                            ? '&#128274; The ' + role + ' has completed this section. Their answers stay private to them.'
+                            : '&#128274; Only the ' + role + ' can complete this section &mdash; not yet submitted.';
+                    });
                 }
             }
         });

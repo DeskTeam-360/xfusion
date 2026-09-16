@@ -80,7 +80,7 @@ function xfarr_wizard_recommendations_init_js(): string
         return '<div class="xarr-card" data-idx="' + i + '">' +
             '<div class="xarr-row" style="justify-content:space-between;margin-bottom:.5rem">' +
             '<strong style="color:var(--green);text-transform:uppercase;font-size:13px">Recommendation ' + (i + 1) + '</strong>' +
-            '<div class="xarr-row" style="gap:.4rem">' +
+            '<div class="xarr-row xarr-recommendation-actions" style="gap:.4rem">' +
             '<button type="button" class="xarr-icon-btn" data-dup="' + i + '" title="Duplicate">&#10697;</button>' +
             '<button type="button" class="xarr-icon-btn xarr-prio-delete" data-remove="' + i + '" title="Remove">&#10005;</button>' +
             '</div></div>' +

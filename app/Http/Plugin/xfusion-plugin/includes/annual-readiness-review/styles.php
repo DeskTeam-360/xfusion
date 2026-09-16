@@ -175,6 +175,7 @@ select.xarr-input[multiple]{min-height:4.75rem;padding:.35rem}
 .xarr-prio-grid-1{grid-template-columns:1fr}
 .xarr-prio-grid-4{grid-template-columns:repeat(4,minmax(0,1fr))}
 .xarr-icon-btn{position:absolute;top:0;right:0;width:32px;height:32px;border:none;background:transparent;color:var(--muted);cursor:pointer;border-radius:.375rem;font-size:1.1rem;line-height:1;padding:0;display:flex;align-items:center;justify-content:center}
+.xarr-recommendation-actions .xarr-icon-btn{position:static;width:28px;height:28px}
 .xarr-icon-btn:hover{color:#b91c1c;background:#fef2f2}
 .xarr-prio-delete{background:transparent !important;color:#87B14B !important;text-decoration:none !important}
 .xarr-prio-delete:hover{background:transparent !important;color:#E1706D !important;text-decoration:none !important}
@@ -247,7 +248,7 @@ select.xarr-input[multiple]{min-height:4.75rem;padding:.35rem}
 .xarr-dot.amber{background:#ca8a04}
 .xarr-dot.red{background:#dc2626}
 .xarr-table-scroll{overflow-x:auto}
-table.xarr-table{width:100%;border-collapse:collapse;font-size:15px}
+table.xarr-table{width:100%;border-collapse:collapse;font-size:.8rem}
 table.xarr-table th{text-align:left;padding:.65rem .75rem;color:var(--muted);font-weight:700;border-bottom:1px solid var(--border);font-size:.75rem;text-transform:uppercase;letter-spacing:.03em}
 table.xarr-table td{padding:.85rem .75rem;border-bottom:1px solid var(--border);vertical-align:top}
 table.xarr-table tr:last-child td{border-bottom:none}
@@ -479,6 +480,8 @@ table.xarr-table.xarr-table-gaps .xarr-gap-priority{width:12%;white-space:nowrap
 .xarr-synth-row:last-child{border-bottom:none;padding-bottom:0}
 .xarr-synth-row:first-child{padding-top:0}
 .xarr-synth-icon{width:40px;height:40px;border-radius:50%;background:#eef4fc;display:flex;align-items:center;justify-content:center;font-size:1.1rem;flex-shrink:0}
+.xarr-synth-icon img{width:100%;height:100%;object-fit:contain;display:block}
+.xarr-synth-icon:has(img){width:40px;height:40px;background:transparent;border-radius:0}
 .xarr-synth-body{flex:1;min-width:0}
 .xarr-synth-body h4{margin:0 0 .2rem;font-size:15px;color:var(--navy);text-transform:none;letter-spacing:0}
 .xarr-synth-body p{margin:0;font-size:14px;color:var(--muted)}

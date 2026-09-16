@@ -36,12 +36,12 @@ function xfarr_wizard_synthesis_init_js(): string
     function esc(s) { return String(s == null ? '' : s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
 
     var SECTIONS = [
-        ['&#128218;', 'Annual Organizational Learning Summary™', 'annual_organizational_learning_summary'],
-        ['&#128200;', 'Readiness Progress Summary™', 'readiness_progress_summary'],
-        ['&#129504;', 'Behavioral Intelligence Summary™', 'behavioral_intelligence_summary'],
-        ['&#128101;', 'Leadership Intelligence Summary™', 'leadership_intelligence_summary'],
-        ['&#127919;', 'Strategic Intelligence Summary™', 'strategic_intelligence_summary'],
-        ['&#128260;', 'Strategic Renewal Summary™', 'strategic_renewal_summary'],
+        ['<img src="https://sandbox.xperiencefusion.com/wp-content/uploads/2026/09/Geometric-Green-Book-Icon.svg" alt="">', 'Annual Organizational Learning Summary™', 'annual_organizational_learning_summary'],
+        ['<img src="https://sandbox.xperiencefusion.com/wp-content/uploads/2026/09/Blue-Growth-Chart-Icon-1.svg" alt="">', 'Readiness Progress Summary™', 'readiness_progress_summary'],
+        ['<img src="https://sandbox.xperiencefusion.com/wp-content/uploads/2026/09/Purple-Head-Gear-Icon-1.svg" alt="">', 'Behavioral Intelligence Summary™', 'behavioral_intelligence_summary'],
+        ['<img src="https://sandbox.xperiencefusion.com/wp-content/uploads/2026/09/Orange-Two-People-Icon-1.svg" alt="">', 'Leadership Intelligence Summary™', 'leadership_intelligence_summary'],
+        ['<img src="https://sandbox.xperiencefusion.com/wp-content/uploads/2026/09/Green-Target-Arrow-Icon-1.svg" alt="">', 'Strategic Intelligence Summary™', 'strategic_intelligence_summary'],
+        ['<img src="https://sandbox.xperiencefusion.com/wp-content/uploads/2026/09/Red-Refresh-Sync-Icon-1.svg" alt="">', 'Strategic Renewal Summary™', 'strategic_renewal_summary'],
     ];
 
     function renderSections(synthesis) {
@@ -66,11 +66,11 @@ function xfarr_wizard_synthesis_init_js(): string
         return '<div class="xarr-card"><div class="xarr-synth-list">' + renderSections(synthesis) + '</div></div>' +
 
             '<div class="xarr-grid-2" style="display:grid;grid-template-columns:1fr 1fr;gap:1rem">' +
-            '<div class="xarr-card" style="margin-bottom:0"><h4 style="margin-top:0">&#128681; Recommended Future Focus™</h4>' +
+            '<div class="xarr-card" style="margin-bottom:0"><h4 class="xarr-heading-with-icon" style="margin-top:0"><img src="https://sandbox.xperiencefusion.com/wp-content/uploads/2026/09/Green-Chip-CPU-Icon-Regenerated.svg" alt=""><span>Recommended Future Focus™</span></h4>' +
             '<p class="xarr-muted" style="margin-top:-.2rem">AI-identified focus areas that will drive the greatest impact in the next planning year.</p>' +
             focusList(synthesis.recommended_future_focus) +
             '</div>' +
-            '<div class="xarr-card" style="margin-bottom:0"><h4 style="margin-top:0">&#11088; Executive Summary™</h4>' +
+            '<div class="xarr-card" style="margin-bottom:0"><h4 class="xarr-heading-with-icon" style="margin-top:0"><img src="https://sandbox.xperiencefusion.com/wp-content/uploads/2026/09/Green-Stacked-Layers-Icon-Regenerated.svg" alt=""><span>Executive Summary™</span></h4>' +
             '<p class="xarr-muted">' + esc(synthesis.executive_summary || 'Not enough evidence yet.') + '</p>' +
             '</div></div>' +
 

@@ -37,6 +37,20 @@ add_action('wp_ajax_xfarr_archive', function (): void {
     ]));
 });
 
+add_action('wp_ajax_xfarr_refresh', function (): void {
+    check_ajax_referer('xfarr_wizard', 'nonce');
+    if (! is_user_logged_in()) {
+        wp_send_json_error(['message' => 'Unauthorized.'], 401);
+    }
+    $arrId = isset($_GET['arr_id']) ? absint($_GET['arr_id']) : 0;
+    if ($arrId < 1) {
+        wp_send_json_error(['message' => 'arr_id is required.'], 422);
+    }
+    xfarr_picker_send(xfarr_picker_api_request('GET', "/{$arrId}", [
+        'user_id' => get_current_user_id(),
+    ]));
+});
+
 function xfarr_wizard_publish_service_js(): string
 {
     return <<<'JS'
@@ -68,6 +82,26 @@ window.xfarrArchiveArr = function () {
         headers: { 'Content-Type': 'application/x-www-form-urlencoded; charset=UTF-8' },
         body: payload.toString(),
     }).then(function (res) { return res.json(); });
+};
+
+window.xfarrRefreshStepProgress = function () {
+    if (!window.XFARR_WIZARD || !window.XFARR_WIZARD.arrId) {
+        return Promise.resolve(null);
+    }
+    var params = new URLSearchParams();
+    params.set('action', 'xfarr_refresh');
+    params.set('nonce', window.XFARR_WIZARD.nonce);
+    params.set('arr_id', String(window.XFARR_WIZARD.arrId));
+    return fetch(window.XFARR_WIZARD.ajaxUrl + '?' + params.toString(), { credentials: 'same-origin' })
+        .then(function (res) { return res.json(); })
+        .then(function (json) {
+            if (json && json.success && json.data) {
+                window.XFARR_WIZARD.stepProgress = json.data.step_progress || {};
+                window.XFARR_WIZARD.status = json.data.status || window.XFARR_WIZARD.status;
+            }
+            return (json && json.success) ? json.data : null;
+        })
+        .catch(function () { return null; });
 };
 JS;
 }

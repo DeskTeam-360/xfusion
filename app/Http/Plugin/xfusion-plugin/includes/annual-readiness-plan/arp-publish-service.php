@@ -57,6 +57,22 @@ add_action('wp_ajax_xfarp_publish_now', function (): void {
     ]));
 });
 
+add_action('wp_ajax_xfarp_refresh', function (): void {
+    check_ajax_referer('xfarp_wizard_save_draft', 'nonce');
+    if (! is_user_logged_in()) {
+        wp_send_json_error(['message' => 'Unauthorized.'], 401);
+    }
+
+    $arpId = isset($_GET['arp_id']) ? absint($_GET['arp_id']) : 0;
+    if ($arpId < 1) {
+        wp_send_json_error(['message' => 'arp_id is required.'], 422);
+    }
+
+    xfarp_picker_send(xfarp_picker_api_request('GET', "/{$arpId}", [
+        'user_id' => get_current_user_id(),
+    ]));
+});
+
 /**
  * JS: real archive/publish calls + version history fetch, replacing the
  * Step 7 UI-shell alerts with actual Laravel-backed actions.
@@ -189,6 +205,26 @@ window.xarInitVersionHistoryCard = function () {
 window.xarRefreshVersionHistory = function () {
     window.xarVersionHistoryCache = null;
     window.xarInitVersionHistoryCard();
+};
+
+window.xfarpRefreshStepProgress = function () {
+    if (!window.XFARP_WIZARD || !window.XFARP_WIZARD.arpId) {
+        return Promise.resolve(null);
+    }
+    var params = new URLSearchParams();
+    params.set('action', 'xfarp_refresh');
+    params.set('nonce', window.XFARP_WIZARD.nonce);
+    params.set('arp_id', String(window.XFARP_WIZARD.arpId));
+    return fetch(window.XFARP_WIZARD.ajaxUrl + '?' + params.toString(), { credentials: 'same-origin' })
+        .then(function (res) { return res.json(); })
+        .then(function (json) {
+            if (json && json.success && json.data) {
+                window.XFARP_WIZARD.stepProgress = json.data.step_progress || {};
+                window.XFARP_WIZARD.status = json.data.status || window.XFARP_WIZARD.status;
+            }
+            return (json && json.success) ? json.data : null;
+        })
+        .catch(function () { return null; });
 };
 JS;
 }

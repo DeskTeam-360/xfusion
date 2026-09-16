@@ -144,6 +144,12 @@ function xfarr_wizard_publish_init_js(): string
 
     window.initPublishStep = function () {
         renderReview();
+        if (typeof window.xfarrRefreshStepProgress === 'function') {
+            window.xfarrRefreshStepProgress().then(function () {
+                renderReview();
+                if (isPublished()) setPublishStatus('This Annual Readiness Review™ has been published and is locked.', false);
+            });
+        }
 
         var publishBtn = document.getElementById('xarr-publish-go');
         var archiveBtn = document.getElementById('xarr-archive-go');

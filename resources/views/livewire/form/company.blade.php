@@ -23,7 +23,9 @@
     <div class="form-group">
 {{--        <label for="user_id">{{ __('Company leader') }}</label>@error('user_id') <span style="margin-left: 10px; color: indianred;" >{{ $message }}</span> @enderror--}}
         <x-select model="user_id" :options="$usersOption" id="user_id" required="true" title="Company leader"/>
-
+        @if($leaderWarning)
+            <div class="alert alert-warning" role="alert" style="margin-top:-.5rem">{{ $leaderWarning }}</div>
+        @endif
     </div>
 
     <hr>

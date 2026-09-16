@@ -161,7 +161,6 @@ function xfusion_irr_wizard_shortcode($atts = []): string
                 </div>
                 <dl class="xirr-dl">
                     <dt>Employee</dt><dd id="xirr-si-employee"><?php echo esc_html($employeeName); ?></dd>
-                    <dt>Role</dt><dd id="xirr-si-role">—</dd>
                     <dt>Manager</dt><dd id="xirr-si-manager"><?php echo esc_html($managerName); ?></dd>
                     <dt>Group</dt><dd id="xirr-si-group"><?php echo esc_html($groupName); ?></dd>
                     <dt>Organization</dt><dd id="xirr-si-org"><?php echo esc_html($orgName); ?></dd>

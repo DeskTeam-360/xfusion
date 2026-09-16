@@ -142,6 +142,8 @@ function xfarp_render_picker_gate(): string
 #xfarp-picker .xfarp-new-form{margin-top:1.25rem;border-top:1px solid var(--border);padding-top:1rem}
 #xfarp-picker .xfarp-new-form select,
 #xfarp-picker .xfarp-new-form input{margin:.2rem .5rem .5rem 0;width:auto;display:inline-block}
+#xfarp-picker .xar-picker-open-btn{appearance:none;-webkit-appearance:none;margin:0;padding:.15rem .55rem !important;border-radius:999px;font-size:16px !important;font-weight:600;line-height:1.25;border:1px solid #86efac !important;background:#dcfce7 !important;color:#166534 !important;cursor:pointer;font-family:inherit;white-space:nowrap;width:auto !important;min-height:0;min-width:0;box-shadow:none !important;text-transform:none;letter-spacing:normal;vertical-align:middle}
+#xfarp-picker .xar-picker-open-btn:hover{background:#bbf7d0 !important;color:#166534 !important}
 </style>
 
 <script>
@@ -185,7 +187,7 @@ function xfarp_render_picker_gate(): string
                 html += '<tr><td>' + escHtml(a.company_name) + '</td><td>' + escHtml(a.year) + '</td>' +
                     '<td><span class="' + badgeClass + '">' + escHtml(a.status) + '</span></td>' +
                     '<td>' + accessBadge + '</td>' +
-                    '<td><button type="button" class="xar-btn xar-btn-outline xar-btn-sm" data-open="' + a.id + '">Open &rarr;</button></td></tr>';
+                    '<td><button type="button" class="xar-badge green xar-picker-open-btn" data-open="' + a.id + '">Open</button></td></tr>';
             });
             html += '</tbody></table></div>';
         }
@@ -236,8 +238,7 @@ function xfarp_render_picker_gate(): string
             return;
         }
         if (listRes.has_access === false) {
-            body.innerHTML = '<h2>Annual Readiness Plan™</h2>' +
-                '<p class="xar-muted">You are not a member of any organization yet, so you do not have access to any Annual Readiness Plan™. Contact your administrator if you believe this is a mistake.</p>';
+            window.location.href = '/resources/resource-menu/';
             return;
         }
 

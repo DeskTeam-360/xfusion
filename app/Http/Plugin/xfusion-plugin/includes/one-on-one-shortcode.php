@@ -122,13 +122,13 @@ add_action('wp_ajax_xfusion_oo_schedule_for_employee', function (): void {
 add_action('wp_ajax_xfusion_oo_employee_scoring', function (): void {
     xfusion_oo_require_login();
     $pairId = (int) ($_POST['pair_id'] ?? 0);
-    xfusion_oo_send(xfusion_oo_api_request('GET', "/{$pairId}/employee-scoring"));
+    xfusion_oo_send(xfusion_oo_api_request('GET', "/{$pairId}/employee-scoring", ['user_id' => get_current_user_id()]));
 });
 
 add_action('wp_ajax_xfusion_oo_conversations', function (): void {
     xfusion_oo_require_login();
     $pairId = (int) ($_POST['pair_id'] ?? 0);
-    xfusion_oo_send(xfusion_oo_api_request('GET', "/{$pairId}/conversations"));
+    xfusion_oo_send(xfusion_oo_api_request('GET', "/{$pairId}/conversations", ['user_id' => get_current_user_id()]));
 });
 
 add_action('wp_ajax_xfusion_oo_schedule', function (): void {
@@ -136,7 +136,7 @@ add_action('wp_ajax_xfusion_oo_schedule', function (): void {
     $pairId      = (int) ($_POST['pair_id'] ?? 0);
     $scheduledAt = sanitize_text_field($_POST['scheduled_at'] ?? '');
     $meetingLink = esc_url_raw(wp_unslash($_POST['meeting_link'] ?? ''));
-    $body = ['scheduled_at' => $scheduledAt];
+    $body = ['user_id' => get_current_user_id(), 'scheduled_at' => $scheduledAt];
     if ($meetingLink !== '') {
         $body['meeting_link'] = $meetingLink;
     }
@@ -170,37 +170,40 @@ add_action('wp_ajax_xfusion_oo_save_preparation', function (): void {
 add_action('wp_ajax_xfusion_oo_preparation_status', function (): void {
     xfusion_oo_require_login();
     $conversationId = (int) ($_POST['conversation_id'] ?? 0);
-    xfusion_oo_send(xfusion_oo_api_request('GET', "/conversations/{$conversationId}/preparation-status"));
+    xfusion_oo_send(xfusion_oo_api_request('GET', "/conversations/{$conversationId}/preparation-status", ['user_id' => get_current_user_id()]));
 });
 
 add_action('wp_ajax_xfusion_oo_reveal', function (): void {
     xfusion_oo_require_login();
     $conversationId = (int) ($_POST['conversation_id'] ?? 0);
-    xfusion_oo_send(xfusion_oo_api_request('POST', "/conversations/{$conversationId}/reveal"));
+    xfusion_oo_send(xfusion_oo_api_request('POST', "/conversations/{$conversationId}/reveal", [], [
+        'user_id' => get_current_user_id(),
+    ]));
 });
 
 add_action('wp_ajax_xfusion_oo_brief', function (): void {
     xfusion_oo_require_login();
     $conversationId = (int) ($_POST['conversation_id'] ?? 0);
-    xfusion_oo_send(xfusion_oo_api_request('GET', "/conversations/{$conversationId}/brief"));
+    xfusion_oo_send(xfusion_oo_api_request('GET', "/conversations/{$conversationId}/brief", ['user_id' => get_current_user_id()]));
 });
 
 add_action('wp_ajax_xfusion_oo_synthesis', function (): void {
     xfusion_oo_require_login();
     $conversationId = (int) ($_POST['conversation_id'] ?? 0);
-    xfusion_oo_send(xfusion_oo_api_request('GET', "/conversations/{$conversationId}/synthesis"));
+    xfusion_oo_send(xfusion_oo_api_request('GET', "/conversations/{$conversationId}/synthesis", ['user_id' => get_current_user_id()]));
 });
 
 add_action('wp_ajax_xfusion_oo_get_notes', function (): void {
     xfusion_oo_require_login();
     $conversationId = (int) ($_POST['conversation_id'] ?? 0);
-    xfusion_oo_send(xfusion_oo_api_request('GET', "/conversations/{$conversationId}/notes"));
+    xfusion_oo_send(xfusion_oo_api_request('GET', "/conversations/{$conversationId}/notes", ['user_id' => get_current_user_id()]));
 });
 
 add_action('wp_ajax_xfusion_oo_save_note', function (): void {
     xfusion_oo_require_login();
     $conversationId = (int) ($_POST['conversation_id'] ?? 0);
     xfusion_oo_send(xfusion_oo_api_request('POST', "/conversations/{$conversationId}/notes", [], [
+        'user_id'    => get_current_user_id(),
         'section'    => sanitize_text_field($_POST['section'] ?? 'general'),
         'note'       => sanitize_textarea_field(wp_unslash($_POST['note'] ?? '')),
         'created_by' => get_current_user_id(),
@@ -210,13 +213,14 @@ add_action('wp_ajax_xfusion_oo_save_note', function (): void {
 add_action('wp_ajax_xfusion_oo_get_commitments', function (): void {
     xfusion_oo_require_login();
     $conversationId = (int) ($_POST['conversation_id'] ?? 0);
-    xfusion_oo_send(xfusion_oo_api_request('GET', "/conversations/{$conversationId}/commitments"));
+    xfusion_oo_send(xfusion_oo_api_request('GET', "/conversations/{$conversationId}/commitments", ['user_id' => get_current_user_id()]));
 });
 
 add_action('wp_ajax_xfusion_oo_save_commitment', function (): void {
     xfusion_oo_require_login();
     $conversationId = (int) ($_POST['conversation_id'] ?? 0);
     xfusion_oo_send(xfusion_oo_api_request('POST', "/conversations/{$conversationId}/commitments", [], [
+        'user_id'     => get_current_user_id(),
         'title'       => sanitize_text_field($_POST['title'] ?? ''),
         'description' => sanitize_textarea_field(wp_unslash($_POST['description'] ?? '')),
         'owner_role'  => sanitize_text_field($_POST['owner_role'] ?? 'shared'),
@@ -227,7 +231,9 @@ add_action('wp_ajax_xfusion_oo_save_commitment', function (): void {
 add_action('wp_ajax_xfusion_oo_complete', function (): void {
     xfusion_oo_require_login();
     $conversationId = (int) ($_POST['conversation_id'] ?? 0);
-    xfusion_oo_send(xfusion_oo_api_request('POST', "/conversations/{$conversationId}/complete"));
+    xfusion_oo_send(xfusion_oo_api_request('POST', "/conversations/{$conversationId}/complete", [], [
+        'user_id' => get_current_user_id(),
+    ]));
 });
 
 add_action('wp_ajax_xfusion_oo_update_status', function (): void {

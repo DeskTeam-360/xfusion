@@ -25,6 +25,7 @@ function xfoo_wizard_ajax_generate_synthesis(): void
     }
 
     $payload = [
+        'user_id' => get_current_user_id(),
         'force_refresh' => true,
         'debug' => true,
     ];

@@ -270,7 +270,7 @@ select.xqbr-input[multiple]{min-height:4.75rem;padding:.35rem}
 .xqbr-dot.amber{background:#ca8a04}
 .xqbr-dot.red{background:#dc2626}
 .xqbr-table-scroll{overflow-x:auto}
-table.xqbr-table{width:100%;border-collapse:collapse;font-size:15px}
+table.xqbr-table{width:100%;border-collapse:collapse;font-size:.8rem}
 table.xqbr-table th{text-align:left;padding:.65rem .75rem;color:var(--muted);font-weight:700;border-bottom:1px solid var(--border);font-size:.75rem;text-transform:uppercase;letter-spacing:.03em}
 table.xqbr-table td{padding:.85rem .75rem;border-bottom:1px solid var(--border);vertical-align:top}
 table.xqbr-table tr:last-child td{border-bottom:none}

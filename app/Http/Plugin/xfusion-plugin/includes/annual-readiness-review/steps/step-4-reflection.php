@@ -43,7 +43,7 @@ reflection: function () {
                 '<textarea class="xarr-input" data-field="' + f[3] + '" rows="3" maxlength="4000"></textarea></div></div>';
         }).join('') +
 
-        '<div class="xarr-grid-2" style="display:grid;grid-template-columns:1fr 1fr;gap:1rem">' +
+        '<div class="xarr-grid-2" style="display:grid;grid-template-columns:1fr 1fr;gap:1rem;margin-bottom:1rem">' +
         '<div class="xarr-card" style="margin-bottom:0"><h4 class="xarr-heading-with-icon" style="margin-top:0"><img src="https://sandbox.xperiencefusion.com/wp-content/uploads/2026/07/AI-Insight-Themes.svg" alt=""><span>AI Insight &amp; Guidance</span></h4>' +
         '<p class="xarr-muted" style="margin-top:-.2rem">Based on your annual evidence and AI assessment, here are key areas to explore in your reflection.</p>' +
         '<ul class="xarr-check-list">' +

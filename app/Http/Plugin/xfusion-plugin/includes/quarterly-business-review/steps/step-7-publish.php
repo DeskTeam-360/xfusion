@@ -358,6 +358,12 @@ function xfqbr_wizard_publish_init_js(): string
         renderReview();
         bindReviewNavigation();
         renderReadyBanner();
+        if (typeof window.xfqbrRefreshStepProgress === 'function') {
+            window.xfqbrRefreshStepProgress().then(function () {
+                renderReview();
+                renderReadyBanner();
+            });
+        }
 
         var canEdit = !window.XFQBR_WIZARD || window.XFQBR_WIZARD.canEdit !== false;
         var locked = isLocked();

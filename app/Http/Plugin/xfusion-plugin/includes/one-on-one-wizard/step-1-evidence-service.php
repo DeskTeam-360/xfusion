@@ -656,7 +656,7 @@ function xfoo_wizard_load_evidence_summary(int $conversationId): array
     $meetings = [];
     $commitments = [];
 
-    $result = xfoo_wizard_fusion_api_request('GET', "/conversations/{$conversationId}/evidence");
+    $result = xfoo_wizard_fusion_api_request('GET', "/conversations/{$conversationId}/evidence", ['user_id' => get_current_user_id()]);
     if ($result['ok']) {
         $body = is_array($result['body']) ? $result['body'] : [];
         $data = is_array($body['data'] ?? null) ? $body['data'] : [];
@@ -872,6 +872,7 @@ function xfoo_wizard_ajax_generate_brief(): void
 
     $bundle = xfoo_wizard_evidence_bundle_for_brief($conversationId);
     $result = xfoo_wizard_fusion_api_request('POST', "/conversations/{$conversationId}/generate-brief", [], [
+        'user_id' => get_current_user_id(),
         'evidence_context' => $bundle,
         'force_refresh' => true,
     ]);

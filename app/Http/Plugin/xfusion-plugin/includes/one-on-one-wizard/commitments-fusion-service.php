@@ -86,7 +86,7 @@ function xfoo_wizard_fusion_api_request(string $method, string $path, array $que
  */
 function xfoo_wizard_get_commitments(int $conversationId): array
 {
-    $result = xfoo_wizard_fusion_api_request('GET', "/conversations/{$conversationId}/commitments");
+    $result = xfoo_wizard_fusion_api_request('GET', "/conversations/{$conversationId}/commitments", ['user_id' => get_current_user_id()]);
 
     if (! $result['ok']) {
         $body = is_array($result['body']) ? $result['body'] : [];
@@ -108,7 +108,7 @@ function xfoo_wizard_get_commitments(int $conversationId): array
  */
 function xfoo_wizard_get_company_employees(int $conversationId): array
 {
-    $result = xfoo_wizard_fusion_api_request('GET', "/conversations/{$conversationId}/company-employees");
+    $result = xfoo_wizard_fusion_api_request('GET', "/conversations/{$conversationId}/company-employees", ['user_id' => get_current_user_id()]);
 
     if (! $result['ok']) {
         $body = is_array($result['body']) ? $result['body'] : [];
@@ -184,6 +184,7 @@ function xfoo_wizard_upsert_commitment(int $conversationId, array $row)
 {
     $id = (int) ($row['id'] ?? 0);
     $body = [
+        'user_id' => get_current_user_id(),
         'title' => $row['title'],
         'description' => $row['description'] ?? null,
         'priority' => $row['priority'] ?? 'medium',

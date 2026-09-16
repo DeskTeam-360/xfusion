@@ -244,6 +244,10 @@ if (root) {
             }
         }
 
+        if (target > current && typeof window.xirrSaveDraft === 'function') {
+            try { window.xirrSaveDraft(); } catch (e) {}
+        }
+
         goToInner(target);
     };
     window.xirrGoTo = goTo;
@@ -294,9 +298,25 @@ if (root) {
         }
     };
 
+    var xirrResumeIndex = function () {
+        var progress = (window.XFIRR_WIZARD && window.XFIRR_WIZARD.stepProgress) || {};
+        var furthest = -1;
+        for (var i = 0; i < STEPS.length; i++) {
+            if (progress[STEPS[i].key]) {
+                furthest = i;
+            }
+        }
+        if (furthest < 0) {
+            return 0;
+        }
+        return Math.min(furthest + 1, STEPS.length - 1);
+    };
+
     window.xirrBootWizard = function (resetStep) {
         if (resetStep) {
             current = 0;
+        } else if (!wizardBooted) {
+            current = xirrResumeIndex();
         }
         bindNav();
         if (!wizardBooted) {

@@ -139,10 +139,45 @@ class CompanyController extends Controller
 
         $companyEmployees = $company->companyEmployees()->get()->pluck('user_id')->toArray();
         $companyEmployeesEntries = \App\Models\WpGfEntry::whereIn('created_by', $companyEmployees)->where('status', 'Active')->get();
-        // dd($companyEmployeesEntries);
-        // dd($companyEmployees);
-        // dd($companyEmployees);
-        return view('admin.company.show-detail', compact('id', 'company', 'companyEmployeesEntries'));
+
+        $fusionActivity = [
+            [
+                'label' => 'Annual Readiness Plan™',
+                'icon' => 'ti-target-arrow',
+                'count' => \App\Models\Arp::where('company_id', $id)->count(),
+                'last_at' => \App\Models\Arp::where('company_id', $id)->latest('created_at')->value('created_at'),
+            ],
+            [
+                'label' => 'Quarterly Business Review™',
+                'icon' => 'ti-chart-bar',
+                'count' => \App\Models\Qbr::where('company_id', $id)->count(),
+                'last_at' => \App\Models\Qbr::where('company_id', $id)->latest('created_at')->value('created_at'),
+            ],
+            [
+                'label' => 'Annual Readiness Review™',
+                'icon' => 'ti-report-analytics',
+                'count' => \App\Models\Arr::where('company_id', $id)->count(),
+                'last_at' => \App\Models\Arr::where('company_id', $id)->latest('created_at')->value('created_at'),
+            ],
+            [
+                'label' => '1-on-1 Alignment Capture™',
+                'icon' => 'ti-users',
+                'count' => \App\Models\OneOnOneConversation::whereHas('oneOnOne', function ($q) use ($id) {
+                    $q->where('company_id', $id);
+                })->count(),
+                'last_at' => \App\Models\OneOnOneConversation::whereHas('oneOnOne', function ($q) use ($id) {
+                    $q->where('company_id', $id);
+                })->latest('created_at')->value('created_at'),
+            ],
+            [
+                'label' => 'Individual Readiness Review™',
+                'icon' => 'ti-user-check',
+                'count' => \App\Models\IrrReview::where('company_id', $id)->count(),
+                'last_at' => \App\Models\IrrReview::where('company_id', $id)->latest('created_at')->value('created_at'),
+            ],
+        ];
+
+        return view('admin.company.show-detail', compact('id', 'company', 'companyEmployeesEntries', 'fusionActivity'));
     }
 
     /**

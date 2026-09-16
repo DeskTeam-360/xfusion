@@ -295,6 +295,9 @@ if (root) {
             window.alert('Generate the AI Organizational Synthesis™ (Step 6) before continuing to Publish.');
             return;
         }
+        if (target > current && typeof window.xqbrSaveDraft === 'function') {
+            try { window.xqbrSaveDraft(); } catch (e) {}
+        }
         goToInner(target);
     };
     window.xqbrGoTo = goTo;
@@ -341,9 +344,25 @@ if (root) {
         }
     };
 
+    var xqbrResumeIndex = function () {
+        var progress = (window.XFQBR_WIZARD && window.XFQBR_WIZARD.stepProgress) || {};
+        var furthest = -1;
+        for (var i = 0; i < STEPS.length; i++) {
+            if (progress[STEPS[i].key]) {
+                furthest = i;
+            }
+        }
+        if (furthest < 0) {
+            return 0;
+        }
+        return Math.min(furthest + 1, STEPS.length - 1);
+    };
+
     window.xqbrBootWizard = function (resetStep) {
         if (resetStep) {
             current = 0;
+        } else if (!wizardBooted) {
+            current = xqbrResumeIndex();
         }
         bindNav();
         if (!wizardBooted) {

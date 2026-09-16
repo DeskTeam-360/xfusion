@@ -219,7 +219,7 @@ select.xar-input[multiple]{min-height:4.75rem;padding:.35rem}
 .xar-dot.amber{background:#ca8a04}
 .xar-dot.red{background:#dc2626}
 .xar-table-scroll{overflow-x:auto}
-table.xar-table{width:100%;border-collapse:collapse;font-size:15px}
+table.xar-table{width:100%;border-collapse:collapse;font-size:.8rem}
 table.xar-table th{text-align:left;padding:.65rem .75rem;color:var(--muted);font-weight:700;border-bottom:1px solid var(--border);font-size:.75rem;text-transform:uppercase;letter-spacing:.03em}
 table.xar-table td{padding:.85rem .75rem;border-bottom:1px solid var(--border);vertical-align:top}
 table.xar-table tr:last-child td{border-bottom:none}

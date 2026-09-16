@@ -46,6 +46,10 @@ window.xarrSaveDraft = function () {
     var stepKey = STEPS[current] ? STEPS[current].key : '';
     var saveFn = null;
 
+    if (stepKey === 'assessment' && typeof window.xarrSaveAssessmentStep === 'function') {
+        saveFn = window.xarrSaveAssessmentStep;
+    }
+
     if (stepKey === 'reflection' && typeof window.xarrSaveReflectionStep === 'function') {
         saveFn = window.xarrSaveReflectionStep;
     }

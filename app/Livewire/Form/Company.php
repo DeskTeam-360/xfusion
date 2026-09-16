@@ -18,6 +18,11 @@ class Company extends Component
     public $data;
     public $usersOption;
 
+    // Informational only — any user can be selected as a company leader
+    // even if they already belong to another company; this just surfaces
+    // that fact so the person assigning them can make an informed choice.
+    public $leaderWarning = null;
+
 //    #[Validate('required')]
     public $user_id;
 //    #[Validate('required|max:255')]
@@ -58,8 +63,10 @@ class Company extends Component
     public function mount()
     {
         $this->usersOption = [];
-        // Only get users who don't have a company
-        foreach (\App\Models\User::whereDoesntHave('companyEmployee')->get() as $item) {
+        // Any user can be assigned as a company leader, including someone
+        // who already leads/works at another company — see updatedUserId()
+        // for the informational warning shown when that's the case.
+        foreach (\App\Models\User::get() as $item) {
             $this->usersOption[] = ['value' => $item->ID, 'title' => $item->user_email];
         }
 
@@ -74,7 +81,28 @@ class Company extends Component
             $this->team = $data->team;
             $this->organizational_goals = $data->organizational_goals;
             $this->readiness_priorities = $data->readiness_priorities;
-            $this->usersOption[] = ['value' => $data->user_id, 'title' => \App\Models\User::find($data->user_id)->user_email. " - Current Company Leader"];
+        }
+    }
+
+    /** Livewire lifecycle hook — fires whenever the Leader select changes. */
+    public function updatedUserId($value): void
+    {
+        $this->leaderWarning = null;
+        if (! $value) {
+            return;
+        }
+
+        $companyNames = CompanyEmployee::where('user_id', $value)
+            ->where('company_id', '!=', $this->dataId ?? 0)
+            ->with('company:id,title')
+            ->get()
+            ->pluck('company.title')
+            ->filter()
+            ->unique()
+            ->values();
+
+        if ($companyNames->isNotEmpty()) {
+            $this->leaderWarning = 'This user already belongs to: ' . $companyNames->implode(', ') . '.';
         }
     }
 

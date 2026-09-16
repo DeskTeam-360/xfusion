@@ -15,7 +15,7 @@ add_action('wp_ajax_xfqbr_synthesis_load', function (): void {
         wp_send_json_error(['message' => 'Unauthorized.'], 401);
     }
     $qbrId = isset($_GET['qbr_id']) ? absint($_GET['qbr_id']) : 0;
-    xfqbr_picker_send(xfqbr_picker_api_request('GET', "/{$qbrId}/synthesis"));
+    xfqbr_picker_send(xfqbr_picker_api_request('GET', "/{$qbrId}/synthesis", ['user_id' => get_current_user_id()]));
 });
 
 add_action('wp_ajax_xfqbr_synthesis_generate', function (): void {
