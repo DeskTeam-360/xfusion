@@ -71,8 +71,8 @@
         <div class="px-0 text-xl mb-3">FUSION Operating System™ Activity</div>
         <div class="col-span-12 grid grid-cols-12 gap-3">
             @foreach($fusionActivity as $item)
-                <div class="lg:col-span-4 md:col-span-6 sm:col-span-12 col-span-12">
-                    <div class="card">
+                <a href="{{ route('company.activity-detail', [$id, $item['type']]) }}" class="lg:col-span-4 md:col-span-6 sm:col-span-12 col-span-12 text-decoration-none text-reset">
+                    <div class="card" style="cursor:pointer">
                         <div class="card-body flex-row py-4 flex items-center gap-2">
                             <div class="bg-primary h-10 w-10 p-1 text-center text-white flex-shrink-0" style="border-radius: 100px">
                                 <i class="ti {{ $item['icon'] }} text-2xl"></i>
@@ -87,12 +87,12 @@
                                     @endif
                                 </span>
                             </div>
-                            <a class="ms-auto text-2xl" style="border-radius: 40px">
+                            <span class="ms-auto text-2xl">
                                 {{ $item['count'] }}
-                            </a>
+                            </span>
                         </div>
                     </div>
-                </div>
+                </a>
             @endforeach
         </div>
 

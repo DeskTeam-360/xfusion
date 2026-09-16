@@ -493,6 +493,11 @@ Route::middleware(['auth',],)->group(function () {
         'showDetail',
     ],)->name('company.show-detail',);
 
+    Route::get('company/{id}/activity/{type}', [
+        CompanyController::class,
+        'activityDetail',
+    ],)->name('company.activity-detail',);
+
 
     Route::get('/company/{id}/add-employee', [
         CompanyController::class,

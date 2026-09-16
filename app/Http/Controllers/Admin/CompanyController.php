@@ -142,24 +142,28 @@ class CompanyController extends Controller
 
         $fusionActivity = [
             [
+                'type' => 'arp',
                 'label' => 'Annual Readiness Plan™',
                 'icon' => 'ti-target-arrow',
                 'count' => \App\Models\Arp::where('company_id', $id)->count(),
                 'last_at' => \App\Models\Arp::where('company_id', $id)->latest('created_at')->value('created_at'),
             ],
             [
+                'type' => 'qbr',
                 'label' => 'Quarterly Business Review™',
                 'icon' => 'ti-chart-bar',
                 'count' => \App\Models\Qbr::where('company_id', $id)->count(),
                 'last_at' => \App\Models\Qbr::where('company_id', $id)->latest('created_at')->value('created_at'),
             ],
             [
+                'type' => 'arr',
                 'label' => 'Annual Readiness Review™',
                 'icon' => 'ti-report-analytics',
                 'count' => \App\Models\Arr::where('company_id', $id)->count(),
                 'last_at' => \App\Models\Arr::where('company_id', $id)->latest('created_at')->value('created_at'),
             ],
             [
+                'type' => 'one-on-one',
                 'label' => '1-on-1 Alignment Capture™',
                 'icon' => 'ti-users',
                 'count' => \App\Models\OneOnOneConversation::whereHas('oneOnOne', function ($q) use ($id) {
@@ -170,6 +174,7 @@ class CompanyController extends Controller
                 })->latest('created_at')->value('created_at'),
             ],
             [
+                'type' => 'irr',
                 'label' => 'Individual Readiness Review™',
                 'icon' => 'ti-user-check',
                 'count' => \App\Models\IrrReview::where('company_id', $id)->count(),
@@ -178,6 +183,86 @@ class CompanyController extends Controller
         ];
 
         return view('admin.company.show-detail', compact('id', 'company', 'companyEmployeesEntries', 'fusionActivity'));
+    }
+
+    /**
+     * WordPress front-end page + query param for each FUSION component's
+     * wizard, so an activity record can link straight to it.
+     *
+     * @return array{slug: string, param: string}
+     */
+    private function fusionActivityWpRoute(string $type): array
+    {
+        return match ($type) {
+            'arp' => ['slug' => 'annual-readiness-plan', 'param' => 'arp_id'],
+            'qbr' => ['slug' => 'quarterly-business-review', 'param' => 'qbr_id'],
+            'arr' => ['slug' => 'annual-readiness-review', 'param' => 'arr_id'],
+            'irr' => ['slug' => 'individual-readiness-review', 'param' => 'irr_id'],
+            'one-on-one' => ['slug' => '1-on-1-alignment', 'param' => 'conversation_id'],
+            default => ['slug' => '', 'param' => ''],
+        };
+    }
+
+    /** List of a single FUSION component's records for this company, each linking out to its WordPress wizard. */
+    public function activityDetail(string $id, string $type)
+    {
+        $company = Company::find($id);
+        if ($company === null) {
+            abort(404);
+        }
+
+        $wpRoute = $this->fusionActivityWpRoute($type);
+        if ($wpRoute['slug'] === '') {
+            abort(404);
+        }
+
+        $wpBase = \App\Support\WordpressPublicUrl::base() . '/' . $wpRoute['slug'] . '/';
+
+        $records = match ($type) {
+            'arp' => \App\Models\Arp::where('company_id', $id)->orderByDesc('created_at')->get()->map(fn ($r) => [
+                'title' => 'ARP ' . $r->year,
+                'status' => $r->status,
+                'created_at' => $r->created_at,
+                'wp_url' => $wpBase . '?' . $wpRoute['param'] . '=' . $r->id,
+            ]),
+            'qbr' => \App\Models\Qbr::where('company_id', $id)->orderByDesc('created_at')->get()->map(fn ($r) => [
+                'title' => 'Q' . $r->quarter . ' ' . $r->year,
+                'status' => $r->status,
+                'created_at' => $r->created_at,
+                'wp_url' => $wpBase . '?' . $wpRoute['param'] . '=' . $r->id,
+            ]),
+            'arr' => \App\Models\Arr::where('company_id', $id)->orderByDesc('created_at')->get()->map(fn ($r) => [
+                'title' => 'ARR ' . $r->year,
+                'status' => $r->status,
+                'created_at' => $r->created_at,
+                'wp_url' => $wpBase . '?' . $wpRoute['param'] . '=' . $r->id,
+            ]),
+            'irr' => \App\Models\IrrReview::where('company_id', $id)->orderByDesc('created_at')->get()->map(fn ($r) => [
+                'title' => 'IRR ' . $r->year,
+                'status' => $r->status,
+                'created_at' => $r->created_at,
+                'wp_url' => $wpBase . '?' . $wpRoute['param'] . '=' . $r->id,
+            ]),
+            'one-on-one' => \App\Models\OneOnOneConversation::whereHas('oneOnOne', function ($q) use ($id) {
+                $q->where('company_id', $id);
+            })->orderByDesc('created_at')->get()->map(fn ($r) => [
+                'title' => 'Meeting #' . $r->id,
+                'status' => $r->status,
+                'created_at' => $r->created_at,
+                'wp_url' => $wpBase . '?' . $wpRoute['param'] . '=' . $r->id,
+            ]),
+            default => collect(),
+        };
+
+        $label = collect([
+            'arp' => 'Annual Readiness Plan™',
+            'qbr' => 'Quarterly Business Review™',
+            'arr' => 'Annual Readiness Review™',
+            'irr' => 'Individual Readiness Review™',
+            'one-on-one' => '1-on-1 Alignment Capture™',
+        ])->get($type, $type);
+
+        return view('admin.company.activity-detail', compact('id', 'company', 'type', 'label', 'records'));
     }
 
     /**
