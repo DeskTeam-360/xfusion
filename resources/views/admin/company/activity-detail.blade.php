@@ -6,15 +6,15 @@
         {{ $label }} — {{ $company->title }}
     </div>
     <div class="px-5 py-5">
-        <div class="card">
-            <div class="card-body p-0">
-                <table class="table mb-0">
+        <div class="admin-data-table w-full">
+            <div class="overflow-x-auto">
+                <table class="admin-table">
                     <thead>
                         <tr>
                             <th>Record</th>
                             <th>Status</th>
                             <th>Created</th>
-                            <th class="text-end">Action</th>
+                            <th style="text-align:right">Action</th>
                         </tr>
                     </thead>
                     <tbody>
@@ -23,15 +23,17 @@
                                 <td>{{ $record['title'] }}</td>
                                 <td>{{ ucfirst(str_replace('_', ' ', (string) $record['status'])) }}</td>
                                 <td>{{ $record['created_at']?->format('F d, Y') }}</td>
-                                <td class="text-end">
-                                    <a href="{{ $record['wp_url'] }}" target="_blank" rel="noopener" class="btn btn-sm btn-primary">
+                                <td class="admin-table__cell-actions" style="text-align:right">
+                                    <a href="{{ $record['wp_url'] }}" target="_blank" rel="noopener" class="btn inline-flex items-center btn-light-primary">
                                         Open in WordPress <i class="ti ti-external-link"></i>
                                     </a>
                                 </td>
                             </tr>
                         @empty
                             <tr>
-                                <td colspan="4" class="text-center text-muted py-4">No activity yet.</td>
+                                <td colspan="4" class="py-10 text-center text-muted dark:text-darklink">
+                                    No activity yet.
+                                </td>
                             </tr>
                         @endforelse
                     </tbody>
