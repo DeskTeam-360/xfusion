@@ -218,39 +218,49 @@ class CompanyController extends Controller
 
         $wpBase = \App\Support\WordpressPublicUrl::base() . '/' . $wpRoute['slug'] . '/';
 
+        $userLabel = fn ($user) => $user ? ($user->display_name ?: $user->user_nicename) : '—';
+
         $records = match ($type) {
             'arp' => \App\Models\Arp::where('company_id', $id)->orderByDesc('created_at')->get()->map(fn ($r) => [
                 'title' => 'ARP ' . $r->year,
+                'meta' => null,
                 'status' => $r->status,
                 'created_at' => $r->created_at,
                 'wp_url' => $wpBase . '?' . $wpRoute['param'] . '=' . $r->id,
             ]),
-            'qbr' => \App\Models\Qbr::where('company_id', $id)->orderByDesc('created_at')->get()->map(fn ($r) => [
+            'qbr' => \App\Models\Qbr::where('company_id', $id)->with('companyGroup:id,title')->orderByDesc('created_at')->get()->map(fn ($r) => [
                 'title' => 'Q' . $r->quarter . ' ' . $r->year,
+                'meta' => $r->companyGroup?->title ?: '—',
                 'status' => $r->status,
                 'created_at' => $r->created_at,
                 'wp_url' => $wpBase . '?' . $wpRoute['param'] . '=' . $r->id,
             ]),
             'arr' => \App\Models\Arr::where('company_id', $id)->orderByDesc('created_at')->get()->map(fn ($r) => [
                 'title' => 'ARR ' . $r->year,
+                'meta' => null,
                 'status' => $r->status,
                 'created_at' => $r->created_at,
                 'wp_url' => $wpBase . '?' . $wpRoute['param'] . '=' . $r->id,
             ]),
-            'irr' => \App\Models\IrrReview::where('company_id', $id)->orderByDesc('created_at')->get()->map(fn ($r) => [
-                'title' => 'IRR ' . $r->year,
-                'status' => $r->status,
-                'created_at' => $r->created_at,
-                'wp_url' => $wpBase . '?' . $wpRoute['param'] . '=' . $r->id,
-            ]),
+            'irr' => \App\Models\IrrReview::where('company_id', $id)
+                ->with(['employee:ID,display_name,user_nicename', 'manager:ID,display_name,user_nicename'])
+                ->orderByDesc('created_at')->get()->map(fn ($r) => [
+                    'title' => 'IRR ' . $r->year,
+                    'meta' => $userLabel($r->employee) . ' — ' . $userLabel($r->manager),
+                    'status' => $r->status,
+                    'created_at' => $r->created_at,
+                    'wp_url' => $wpBase . '?' . $wpRoute['param'] . '=' . $r->id,
+                ]),
             'one-on-one' => \App\Models\OneOnOneConversation::whereHas('oneOnOne', function ($q) use ($id) {
                 $q->where('company_id', $id);
-            })->orderByDesc('created_at')->get()->map(fn ($r) => [
-                'title' => 'Meeting #' . $r->id,
-                'status' => $r->status,
-                'created_at' => $r->created_at,
-                'wp_url' => $wpBase . '?' . $wpRoute['param'] . '=' . $r->id,
-            ]),
+            })->with(['oneOnOne.leader:ID,display_name,user_nicename', 'oneOnOne.employee:ID,display_name,user_nicename'])
+                ->orderByDesc('created_at')->get()->map(fn ($r) => [
+                    'title' => 'Meeting #' . $r->id,
+                    'meta' => $userLabel($r->oneOnOne?->leader) . ' — ' . $userLabel($r->oneOnOne?->employee),
+                    'status' => $r->status,
+                    'created_at' => $r->created_at,
+                    'wp_url' => $wpBase . '?' . $wpRoute['param'] . '=' . $r->id,
+                ]),
             default => collect(),
         };
 
@@ -262,7 +272,13 @@ class CompanyController extends Controller
             'one-on-one' => '1-on-1 Alignment Capture™',
         ])->get($type, $type);
 
-        return view('admin.company.activity-detail', compact('id', 'company', 'type', 'label', 'records'));
+        $metaColumnLabel = collect([
+            'qbr' => 'Group',
+            'irr' => 'Employee — Manager',
+            'one-on-one' => 'Leader — Employee',
+        ])->get($type);
+
+        return view('admin.company.activity-detail', compact('id', 'company', 'type', 'label', 'records', 'metaColumnLabel'));
     }
 
     /**

@@ -15,6 +15,9 @@
                     <thead>
                         <tr>
                             <th>Record</th>
+                            @if($metaColumnLabel)
+                                <th>{{ $metaColumnLabel }}</th>
+                            @endif
                             <th>Status</th>
                             <th>Created</th>
                             <th class="admin-table__col-actions" style="text-align:right">Action</th>
@@ -24,6 +27,9 @@
                         @forelse($records as $record)
                             <tr>
                                 <td>{{ $record['title'] }}</td>
+                                @if($metaColumnLabel)
+                                    <td>{{ $record['meta'] }}</td>
+                                @endif
                                 <td>{{ ucfirst(str_replace('_', ' ', (string) $record['status'])) }}</td>
                                 <td>{{ $record['created_at']?->format('F d, Y') }}</td>
                                 <td class="admin-table__cell-actions" style="text-align:right">
@@ -34,7 +40,7 @@
                             </tr>
                         @empty
                             <tr>
-                                <td colspan="4" class="py-10 text-center text-muted dark:text-darklink">
+                                <td colspan="{{ $metaColumnLabel ? 5 : 4 }}" class="py-10 text-center text-muted dark:text-darklink">
                                     No activity yet.
                                 </td>
                             </tr>
