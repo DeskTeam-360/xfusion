@@ -20,6 +20,14 @@ class Company extends Model
 {
     use HasFactory;
 
+    // Pinned explicitly: Eloquent's newRelatedInstance() inherits the
+    // caller's connection for any related model that doesn't set its own,
+    // so being eager-loaded from a 'wordpress'-connection model (e.g.
+    // CompanyEmployee::with('company')) would otherwise resolve this model
+    // on the 'wordpress' connection too — double-prefixing the already
+    // wp_-prefixed table name into wp_wp_companies.
+    protected $connection = 'mysql';
+
     protected $table = 'wp_companies';
 
     protected $fillable = [
