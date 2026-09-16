@@ -1,11 +1,14 @@
 <x-admin-layout>
-    <div class="px-5 pt-5">
-        <a href="{{ route('company.show-detail', $id) }}" class="text-muted"><i class="ti ti-arrow-left"></i> Back to {{ $company->title }}</a>
-    </div>
-    <div class="px-5 text-3xl">
-        {{ $label }} — {{ $company->title }}
-    </div>
-    <div class="px-5 py-5">
+    <x-admin.page
+        :title="$label . ' — ' . $company->title"
+        description="Every record for this company, with a link to open it in the WordPress wizard."
+    >
+        <x-slot:actions>
+            <a href="{{ route('company.show-detail', $id) }}" class="btn btn-light-secondary">
+                <i class="ti ti-arrow-left"></i> Back to {{ $company->title }}
+            </a>
+        </x-slot:actions>
+
         <div class="admin-data-table w-full">
             <div class="overflow-x-auto">
                 <table class="admin-table">
@@ -14,7 +17,7 @@
                             <th>Record</th>
                             <th>Status</th>
                             <th>Created</th>
-                            <th style="text-align:right">Action</th>
+                            <th class="admin-table__col-actions" style="text-align:right">Action</th>
                         </tr>
                     </thead>
                     <tbody>
@@ -40,5 +43,5 @@
                 </table>
             </div>
         </div>
-    </div>
+    </x-admin.page>
 </x-admin-layout>
