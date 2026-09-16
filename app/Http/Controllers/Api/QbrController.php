@@ -65,15 +65,15 @@ class QbrController extends Controller
             return response()->json(['success' => false, 'message' => 'user_id is required'], 422);
         }
 
-        $memberGroupIds = $this->memberGroupIds($userId);
-        if ($memberGroupIds->isEmpty()) {
+        $viewableGroupIds = $this->viewableGroupIds($userId);
+        if ($viewableGroupIds->isEmpty()) {
             return response()->json(['success' => true, 'data' => [], 'has_access' => false]);
         }
 
         $leadableGroupIds = $this->leadableGroupIds($userId);
 
         $qbrs = Qbr::query()
-            ->whereIn('company_group_id', $memberGroupIds)
+            ->whereIn('company_group_id', $viewableGroupIds)
             ->with(['company:id,title', 'companyGroup:id,title'])
             ->orderByDesc('year')
             ->orderByDesc('quarter')
@@ -223,6 +223,9 @@ class QbrController extends Controller
     public function show(Request $request, Qbr $qbr)
     {
         $userId = (int) $request->query('user_id');
+        if ($userId < 1 || ! $this->viewableGroupIds($userId)->contains($qbr->company_group_id)) {
+            return $this->forbidden();
+        }
 
         return response()->json([
             'success' => true,
@@ -271,8 +274,13 @@ class QbrController extends Controller
     }
 
     /** Step 2: latest evidence snapshot, generating one on first view if none exists. */
-    public function getEvidence(Qbr $qbr, QbrEvidenceService $evidenceService)
+    public function getEvidence(Request $request, Qbr $qbr, QbrEvidenceService $evidenceService)
     {
+        $userId = (int) $request->query('user_id');
+        if ($userId < 1 || ! $this->viewableGroupIds($userId)->contains($qbr->company_group_id)) {
+            return $this->forbidden();
+        }
+
         $latest = $qbr->evidenceSnapshots()->first();
         if ($latest === null) {
             $snapshot = $evidenceService->buildSnapshot($qbr);
@@ -290,8 +298,13 @@ class QbrController extends Controller
     // Step 3 — AI Organizational Assessment™
     // -------------------------------------------------------------------
 
-    public function getAssessment(Qbr $qbr, QbrAiService $ai)
+    public function getAssessment(Request $request, Qbr $qbr, QbrAiService $ai)
     {
+        $userId = (int) $request->query('user_id');
+        if ($userId < 1 || ! $this->viewableGroupIds($userId)->contains($qbr->company_group_id)) {
+            return $this->forbidden();
+        }
+
         $latest = $ai->latestAssessment($qbr);
         if ($latest === null) {
             return response()->json(['success' => true, 'data' => null]);
@@ -390,8 +403,13 @@ class QbrController extends Controller
         return response()->json(['success' => true, 'saved_at' => now()->format('g:i A')]);
     }
 
-    public function getDecisions(Qbr $qbr)
+    public function getDecisions(Request $request, Qbr $qbr)
     {
+        $userId = (int) $request->query('user_id');
+        if ($userId < 1 || ! $this->viewableGroupIds($userId)->contains($qbr->company_group_id)) {
+            return $this->forbidden();
+        }
+
         return response()->json([
             'success' => true,
             'data' => $qbr->decisions()
@@ -461,8 +479,13 @@ class QbrController extends Controller
     // -------------------------------------------------------------------
 
     /** Group roster for the Step 5 Commitment "Owner" picker. */
-    public function groupMembers(Qbr $qbr)
+    public function groupMembers(Request $request, Qbr $qbr)
     {
+        $userId = (int) $request->query('user_id');
+        if ($userId < 1 || ! $this->viewableGroupIds($userId)->contains($qbr->company_group_id)) {
+            return $this->forbidden();
+        }
+
         if ($qbr->company_group_id === null) {
             return response()->json(['success' => true, 'data' => []]);
         }
@@ -492,16 +515,26 @@ class QbrController extends Controller
      * every call (not the possibly-stale Step 1 evidence snapshot) — used
      * by Step 5's Related ARP Objective autocomplete.
      */
-    public function arpObjectives(Qbr $qbr, QbrEvidenceService $evidenceService)
+    public function arpObjectives(Request $request, Qbr $qbr, QbrEvidenceService $evidenceService)
     {
+        $userId = (int) $request->query('user_id');
+        if ($userId < 1 || ! $this->viewableGroupIds($userId)->contains($qbr->company_group_id)) {
+            return $this->forbidden();
+        }
+
         return response()->json([
             'success' => true,
             'data' => $evidenceService->qbrObjectivesProgress($qbr)['objectives'] ?? [],
         ]);
     }
 
-    public function getCommitments(Qbr $qbr)
+    public function getCommitments(Request $request, Qbr $qbr)
     {
+        $userId = (int) $request->query('user_id');
+        if ($userId < 1 || ! $this->viewableGroupIds($userId)->contains($qbr->company_group_id)) {
+            return $this->forbidden();
+        }
+
         $this->carryForwardIncomplete($qbr);
 
         return response()->json([
@@ -623,8 +656,13 @@ class QbrController extends Controller
     // Step 2 KPIs (leader-entered custom business KPIs — no other source exists)
     // -------------------------------------------------------------------
 
-    public function getKpis(Qbr $qbr)
+    public function getKpis(Request $request, Qbr $qbr)
     {
+        $userId = (int) $request->query('user_id');
+        if ($userId < 1 || ! $this->viewableGroupIds($userId)->contains($qbr->company_group_id)) {
+            return $this->forbidden();
+        }
+
         return response()->json(['success' => true, 'data' => $qbr->kpis()->get()]);
     }
 
@@ -666,8 +704,13 @@ class QbrController extends Controller
     // Step 6 — AI Organizational Synthesis™
     // -------------------------------------------------------------------
 
-    public function getSynthesis(Qbr $qbr, QbrAiService $ai)
+    public function getSynthesis(Request $request, Qbr $qbr, QbrAiService $ai)
     {
+        $userId = (int) $request->query('user_id');
+        if ($userId < 1 || ! $this->viewableGroupIds($userId)->contains($qbr->company_group_id)) {
+            return $this->forbidden();
+        }
+
         $latest = $ai->latestSynthesis($qbr);
         if ($latest === null) {
             return response()->json(['success' => true, 'data' => null]);
@@ -819,6 +862,33 @@ class QbrController extends Controller
             ->filter()
             ->unique()
             ->values();
+    }
+
+    /**
+     * Every group whose QBR this user may VIEW (read-only unless also in
+     * leadableGroupIds()). Company Leaders (companies.user_id) and anyone
+     * who leads at least one group in a company can see every QBR across
+     * that whole company, not just their own group's — editing still
+     * requires actually leading that specific group.
+     */
+    private function viewableGroupIds(int $userId)
+    {
+        $memberGroupIds = $this->memberGroupIds($userId);
+
+        $companyIds = CompanyGroup::query()
+            ->whereIn('id', $this->leadableGroupIds($userId))
+            ->pluck('company_id')
+            ->merge(\App\Models\Company::where('user_id', $userId)->pluck('id'))
+            ->filter()
+            ->unique();
+
+        if ($companyIds->isEmpty()) {
+            return $memberGroupIds;
+        }
+
+        $companyWideGroupIds = CompanyGroup::whereIn('company_id', $companyIds)->pluck('id');
+
+        return $memberGroupIds->merge($companyWideGroupIds)->unique()->values();
     }
 
     /** Merge one step's completion flag into the JSON step_progress map. */

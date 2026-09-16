@@ -43,17 +43,13 @@ class ArpController extends Controller
             return response()->json(['success' => false, 'message' => 'user_id is required'], 422);
         }
 
-        $companies = CompanyGroupDetail::query()
+        // ARP is company-leader-only: the pool here must match
+        // leadableCompanyIds()/memberCompanyIds() below, or a group leader
+        // could pick a company here and then get rejected by store().
+        $companies = \App\Models\Company::query()
             ->where('user_id', $userId)
-            ->where('status', CompanyGroup::STATUS_LEADER)
-            ->whereHas('companyGroup')
-            ->with('companyGroup.company:id,title')
-            ->get()
-            ->pluck('companyGroup.company')
-            ->filter()
-            ->unique('id')
-            ->sortBy('title')
-            ->values();
+            ->orderBy('title')
+            ->get(['id', 'title']);
 
         return response()->json([
             'success' => true,
@@ -69,8 +65,8 @@ class ArpController extends Controller
             return response()->json(['success' => false, 'message' => 'user_id is required'], 422);
         }
 
-        // Members see the ARPs of any company they belong to (view-only);
-        // leaders additionally get edit rights, flagged per-row via can_edit.
+        // ARP is company-leader-only — memberCompanyIds() and
+        // leadableCompanyIds() are the same set here, unlike QBR.
         $memberCompanyIds = $this->memberCompanyIds($userId);
         if ($memberCompanyIds->isEmpty()) {
             return response()->json(['success' => true, 'data' => [], 'has_access' => false]);
@@ -782,31 +778,22 @@ class ArpController extends Controller
     }
 
     /** Company ids where the user leads at least one group. */
+    /**
+     * ARP is company-leader-only: nobody else (group leaders, members)
+     * gets any access — not even read-only. This deliberately does NOT
+     * fall back to group leadership like QBR does.
+     */
     private function leadableCompanyIds(int $userId)
     {
-        return CompanyGroupDetail::query()
+        return \App\Models\Company::query()
             ->where('user_id', $userId)
-            ->where('status', CompanyGroup::STATUS_LEADER)
-            ->whereHas('companyGroup')
-            ->with('companyGroup:id,company_id')
-            ->get()
-            ->pluck('companyGroup.company_id')
-            ->filter()
-            ->unique()
+            ->pluck('id')
             ->values();
     }
 
-    /** Company ids where the user belongs to at least one group (any role). */
+    /** Same as leadableCompanyIds() — ARP has no separate "view only" tier. */
     private function memberCompanyIds(int $userId)
     {
-        return CompanyGroupDetail::query()
-            ->where('user_id', $userId)
-            ->whereHas('companyGroup')
-            ->with('companyGroup:id,company_id')
-            ->get()
-            ->pluck('companyGroup.company_id')
-            ->filter()
-            ->unique()
-            ->values();
+        return $this->leadableCompanyIds($userId);
     }
 }

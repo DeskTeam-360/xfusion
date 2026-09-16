@@ -50,16 +50,17 @@ class ArrController extends Controller
             return response()->json(['success' => false, 'message' => 'user_id is required'], 422);
         }
 
-        $groups = CompanyGroupDetail::query()
+        // ARR is company-leader-only: the pool here must match
+        // leadableCompanyIds()/memberCompanyIds() below, or a group leader
+        // could pick a group here and then get rejected by store().
+        $leadableCompanyIds = \App\Models\Company::query()
             ->where('user_id', $userId)
-            ->where('status', CompanyGroup::STATUS_LEADER)
-            ->whereHas('companyGroup')
-            ->with('companyGroup:id,company_id,title', 'companyGroup.company:id,title')
-            ->get()
-            ->pluck('companyGroup')
-            ->filter()
-            ->unique('id')
-            ->values();
+            ->pluck('id');
+
+        $groups = CompanyGroup::query()
+            ->whereIn('company_id', $leadableCompanyIds)
+            ->with('company:id,title')
+            ->get();
 
         return response()->json([
             'success' => true,
@@ -121,18 +122,16 @@ class ArrController extends Controller
             'year' => 'required|integer|min:2000|max:2100',
         ]);
 
-        $group = CompanyGroupDetail::query()
-            ->where('user_id', $userId)
-            ->where('company_group_id', $data['company_group_id'])
-            ->where('status', CompanyGroup::STATUS_LEADER)
-            ->with('companyGroup:id,company_id')
-            ->first();
-
-        if ($userId < 1 || ! $group || ! $group->companyGroup) {
-            return response()->json(['success' => false, 'message' => 'You do not lead this group.'], 403);
+        $group = CompanyGroup::find($data['company_group_id']);
+        if ($userId < 1 || ! $group) {
+            return response()->json(['success' => false, 'message' => 'Group not found.'], 404);
         }
 
-        $companyId = $group->companyGroup->company_id;
+        $companyId = $group->company_id;
+
+        if (! $this->leadableCompanyIds($userId)->contains($companyId)) {
+            return response()->json(['success' => false, 'message' => 'You do not lead this company.'], 403);
+        }
 
         $existing = Arr::query()
             ->where('company_id', $companyId)
@@ -726,31 +725,22 @@ class ArrController extends Controller
     }
 
     /** Company ids where the user leads at least one group. */
+    /**
+     * ARR is company-leader-only: nobody else (group leaders, members)
+     * gets any access — not even read-only. This deliberately does NOT
+     * fall back to group leadership like QBR does.
+     */
     private function leadableCompanyIds(int $userId)
     {
-        return CompanyGroupDetail::query()
+        return \App\Models\Company::query()
             ->where('user_id', $userId)
-            ->where('status', CompanyGroup::STATUS_LEADER)
-            ->whereHas('companyGroup')
-            ->with('companyGroup:id,company_id')
-            ->get()
-            ->pluck('companyGroup.company_id')
-            ->filter()
-            ->unique()
+            ->pluck('id')
             ->values();
     }
 
-    /** Company ids where the user belongs to at least one group (any role). */
+    /** Same as leadableCompanyIds() — ARR has no separate "view only" tier. */
     private function memberCompanyIds(int $userId)
     {
-        return CompanyGroupDetail::query()
-            ->where('user_id', $userId)
-            ->whereHas('companyGroup')
-            ->with('companyGroup:id,company_id')
-            ->get()
-            ->pluck('companyGroup.company_id')
-            ->filter()
-            ->unique()
-            ->values();
+        return $this->leadableCompanyIds($userId);
     }
 }
