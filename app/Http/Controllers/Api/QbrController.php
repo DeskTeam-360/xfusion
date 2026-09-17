@@ -782,8 +782,27 @@ class QbrController extends Controller
     public function publish(Request $request, Qbr $qbr)
     {
         $userId = (int) $request->input('user_id');
+
+        if ($qbr->status === Qbr::STATUS_CLOSED) {
+            return response()->json(['success' => false, 'message' => 'This QBR is already published.'], 422);
+        }
+
         if (! $this->assertEdit($userId, $qbr)) {
             return $this->forbidden();
+        }
+
+        // Mirrors the REVIEW_STEPS list the Step 7 UI already checks
+        // client-side — enforced here too so publish can't be reached by
+        // calling the API directly with steps still incomplete.
+        $progress = is_array($qbr->step_progress) ? $qbr->step_progress : [];
+        $requiredSteps = ['evidence', 'assessment', 'collaboration', 'commitments', 'synthesis'];
+        $missing = array_values(array_filter($requiredSteps, fn ($step) => empty($progress[$step])));
+
+        if ($missing !== []) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Complete all steps before publishing. Missing: '.implode(', ', $missing).'.',
+            ], 422);
         }
 
         $qbr->update(['status' => Qbr::STATUS_CLOSED, 'held_at' => now()]);

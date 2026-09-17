@@ -308,6 +308,22 @@ class ArpController extends Controller
             return response()->json(['success' => false, 'message' => 'You do not lead this ARP\'s company group.'], 403);
         }
 
+        // Mirrors QBR/ARR/IRR's publish gate — Step 7's "Review Your Plan"
+        // list previously always showed every step as Complete regardless
+        // of real progress, and nothing here stopped a half-empty plan
+        // from being published. Uses the same keys ArpPlanService::
+        // computeStepProgress() already returns to the wizard.
+        $progress = app(ArpPlanService::class)->computeStepProgress($arp);
+        $requiredSteps = ['foundation', 'future_state', 'readiness', 'strategic', 'learning', 'ai_review'];
+        $missing = array_values(array_filter($requiredSteps, fn ($step) => empty($progress[$step])));
+
+        if ($missing !== []) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Complete all steps before publishing. Missing: '.implode(', ', $missing).'.',
+            ], 422);
+        }
+
         $newVersion = round(((float) $arp->version) + 0.1, 1);
 
         $result = DB::transaction(function () use ($arp, $userId, $newVersion) {

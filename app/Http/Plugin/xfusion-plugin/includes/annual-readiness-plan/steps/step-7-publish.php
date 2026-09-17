@@ -46,11 +46,14 @@ publish: function () {
         return '<div class="xar-summary-item"><dt>' + label + '</dt><dd>' + value + '</dd></div>';
     }
 
-    function reviewRow(stepIndex, label) {
+    var progress = (cfg.stepProgress && typeof cfg.stepProgress === 'object') ? cfg.stepProgress : {};
+
+    function reviewRow(stepIndex, stepKey, label) {
+        var done = !!progress[stepKey];
         return '<div class="xar-review-row">' +
             '<div class="xar-review-left">' +
-            '<span class="xar-review-check" aria-hidden="true">&#10003;</span>' +
-            '<div><strong>' + label + '</strong><div class="xar-review-status">Complete</div></div>' +
+            '<span class="xar-review-check" aria-hidden="true" style="color:' + (done ? '#16a34a' : '#d97706') + '">' + (done ? '&#10003;' : '&#9675;') + '</span>' +
+            '<div><strong>' + label + '</strong><div class="xar-review-status">' + (done ? 'Complete' : 'Incomplete') + '</div></div>' +
             '</div>' +
             '<button type="button" class="xar-btn xar-btn-outline xar-btn-sm" data-edit-step="' + stepIndex + '">Edit</button>' +
             '</div>';
@@ -91,14 +94,13 @@ publish: function () {
 
         '<div class="xar-card">' +
         '<h3 class="xar-ai-heading">Review Your Plan</h3>' +
-        '<div class="xar-review-list">' +
-        reviewRow(0, 'Step 1: Organizational Foundation™') +
-        reviewRow(1, 'Step 2: Future State™') +
-        reviewRow(2, 'Step 3: Organizational Readiness™') +
-        reviewRow(3, 'Step 4: Strategic Priorities™') +
-        reviewRow(4, 'Step 5: Organizational Learning™') +
-        reviewRow(5, 'Step 6: AI Readiness Review™') +
-        reviewRow(5, 'Leadership Context™') +
+        '<div class="xar-review-list" id="xar-review-list">' +
+        reviewRow(0, 'foundation', 'Step 1: Organizational Foundation™') +
+        reviewRow(1, 'future_state', 'Step 2: Future State™') +
+        reviewRow(2, 'readiness', 'Step 3: Organizational Readiness™') +
+        reviewRow(3, 'strategic', 'Step 4: Strategic Priorities™') +
+        reviewRow(4, 'learning', 'Step 5: Organizational Learning™') +
+        reviewRow(5, 'ai_review', 'Step 6: AI Readiness Review™') +
         '</div></div>' +
 
         '<div class="xar-card">' +
@@ -208,10 +210,49 @@ function xfarp_wizard_publish_init_js(): string
         });
     };
 
+    var ARP_REVIEW_STEPS = [
+        [0, 'foundation', 'Step 1: Organizational Foundation™'],
+        [1, 'future_state', 'Step 2: Future State™'],
+        [2, 'readiness', 'Step 3: Organizational Readiness™'],
+        [3, 'strategic', 'Step 4: Strategic Priorities™'],
+        [4, 'learning', 'Step 5: Organizational Learning™'],
+        [5, 'ai_review', 'Step 6: AI Readiness Review™'],
+    ];
+
+    function renderArpReviewList() {
+        var list = document.getElementById('xar-review-list');
+        if (!list) {
+            return;
+        }
+        var progress = (window.XFARP_WIZARD && window.XFARP_WIZARD.stepProgress) || {};
+        list.innerHTML = ARP_REVIEW_STEPS.map(function (row) {
+            var stepIndex = row[0], stepKey = row[1], label = row[2];
+            var done = !!progress[stepKey];
+            return '<div class="xar-review-row">' +
+                '<div class="xar-review-left">' +
+                '<span class="xar-review-check" aria-hidden="true" style="color:' + (done ? '#16a34a' : '#d97706') + '">' + (done ? '&#10003;' : '&#9675;') + '</span>' +
+                '<div><strong>' + label + '</strong><div class="xar-review-status">' + (done ? 'Complete' : 'Incomplete') + '</div></div>' +
+                '</div>' +
+                '<button type="button" class="xar-btn xar-btn-outline xar-btn-sm" data-edit-step="' + stepIndex + '">Edit</button>' +
+                '</div>';
+        }).join('');
+        list.querySelectorAll('[data-edit-step]').forEach(function (btn) {
+            btn.addEventListener('click', function () {
+                var idx = parseInt(btn.getAttribute('data-edit-step'), 10);
+                if (typeof window.xarGoTo === 'function') {
+                    window.xarGoTo(idx);
+                }
+            });
+        });
+    }
+
     window.initPublishStep = function () {
         var main = document.getElementById('xar-main');
         if (!main) {
             return;
+        }
+        if (typeof window.xfarpRefreshStepProgress === 'function') {
+            window.xfarpRefreshStepProgress().then(renderArpReviewList);
         }
         main.querySelectorAll('[data-edit-step]').forEach(function (btn) {
             btn.addEventListener('click', function () {
