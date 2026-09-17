@@ -12,6 +12,12 @@
                         <option value="{{ $m }}" @selected($module === $m)>{{ $m }}</option>
                     @endforeach
                 </select>
+                <select name="company" class="admin-data-table__control" onchange="this.form.submit()">
+                    <option value="">All companies</option>
+                    @foreach($companies as $c)
+                        <option value="{{ $c }}" @selected($company === $c)>{{ $c }}</option>
+                    @endforeach
+                </select>
             </form>
         </div>
 
@@ -78,42 +84,42 @@
         <h2 style="margin:0 0 12px">All Generations</h2>
         <div class="admin-data-table w-full">
             <div class="overflow-x-auto">
-                <table class="admin-table">
+                <table class="admin-table" style="min-width:0; table-layout:auto">
                     <thead>
                         <tr>
                             <th>Module</th>
-                            <th>Type</th>
                             <th>Company</th>
                             <th>Record</th>
-                            <th>Model</th>
-                            <th>Tokens</th>
-                            <th>Cost (USD)</th>
+                            <th>Usage</th>
                             <th>Generated</th>
-                            <th style="width:11rem; text-align:right">Action</th>
+                            <th style="width:9rem; text-align:right">Action</th>
                         </tr>
                     </thead>
                     <tbody>
                         @forelse($rows as $row)
                             <tr>
-                                <td>{{ $row['module'] }}</td>
-                                <td>{{ $row['type'] }}</td>
+                                <td>
+                                    <div class="font-semibold">{{ $row['module'] }}</div>
+                                    <div class="text-muted text-xs">{{ $row['type'] }}</div>
+                                </td>
                                 <td>{{ $row['company_name'] }}</td>
                                 <td>{{ $row['record_label'] }}</td>
-                                <td>{{ $row['insight_model'] }}</td>
-                                <td>{{ number_format($row['tokens_used']) }}</td>
-                                <td>${{ number_format($row['cost_usd'], 4) }}</td>
-                                <td>{{ $row['created_at']?->format('F d, Y H:i') }}</td>
-                                <td style="width:11rem; text-align:right; vertical-align:top">
+                                <td>
+                                    <div>{{ number_format($row['tokens_used']) }} tokens</div>
+                                    <div class="text-muted text-xs">${{ number_format($row['cost_usd'], 4) }} · {{ $row['insight_model'] }}</div>
+                                </td>
+                                <td>{{ $row['created_at']?->format('M d, Y H:i') }}</td>
+                                <td style="width:9rem; text-align:right; vertical-align:top">
                                     @if($row['wp_url'])
                                         <a href="{{ $row['wp_url'] }}" target="_blank" rel="noopener" class="btn inline-flex items-center btn-light-primary">
-                                            Open in WordPress <i class="ti ti-external-link"></i>
+                                            Open <i class="ti ti-external-link"></i>
                                         </a>
                                     @endif
                                 </td>
                             </tr>
                         @empty
                             <tr>
-                                <td colspan="9" class="py-10 text-center text-muted dark:text-darklink">
+                                <td colspan="6" class="py-10 text-center text-muted dark:text-darklink">
                                     No AI generations yet.
                                 </td>
                             </tr>
@@ -126,11 +132,11 @@
                 <div class="admin-data-table__pagination">
                     <div class="flex flex-wrap justify-center gap-1 text-sm">
                         @if($page > 1)
-                            <a href="?page={{ $page - 1 }}&module={{ $module }}" class="btn btn-light-secondary px-3 py-1">&laquo;</a>
+                            <a href="?page={{ $page - 1 }}&module={{ urlencode($module) }}&company={{ urlencode($company) }}" class="btn btn-light-secondary px-3 py-1">&laquo;</a>
                         @endif
                         <span class="px-3 py-1">Page {{ $page }} of {{ $lastPage }} ({{ number_format($total) }} total)</span>
                         @if($page < $lastPage)
-                            <a href="?page={{ $page + 1 }}&module={{ $module }}" class="btn btn-light-secondary px-3 py-1">&raquo;</a>
+                            <a href="?page={{ $page + 1 }}&module={{ urlencode($module) }}&company={{ urlencode($company) }}" class="btn btn-light-secondary px-3 py-1">&raquo;</a>
                         @endif
                     </div>
                 </div>

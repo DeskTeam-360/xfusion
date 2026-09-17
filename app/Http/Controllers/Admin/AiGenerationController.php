@@ -18,9 +18,16 @@ class AiGenerationController extends Controller
     {
         $rows = $aiUsage->allRows();
 
+        $companies = $rows->pluck('company_name')->unique()->sort()->values();
+
         $module = (string) $request->query('module', '');
         if ($module !== '') {
             $rows = $rows->filter(fn ($r) => $r['module'] === $module)->values();
+        }
+
+        $company = (string) $request->query('company', '');
+        if ($company !== '') {
+            $rows = $rows->filter(fn ($r) => $r['company_name'] === $company)->values();
         }
 
         $stats = $aiUsage->periodSummaries($rows);
@@ -38,6 +45,8 @@ class AiGenerationController extends Controller
             'lastPage' => $lastPage,
             'total' => $total,
             'module' => $module,
+            'company' => $company,
+            'companies' => $companies,
             'stats' => $stats,
             'perCompany' => $perCompany,
         ]);
