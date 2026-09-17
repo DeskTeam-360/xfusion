@@ -26,6 +26,19 @@ function xfusion_llm_prompts_register_admin_menu(): void
         81
     );
 
+    // WordPress auto-adds a submenu item duplicating the parent menu's own
+    // label ("LLM Prompts" appearing twice) unless the first submenu page
+    // explicitly reuses the parent slug — register it here with a distinct
+    // label instead of leaving that redundant duplicate.
+    add_submenu_page(
+        'xfusion-llm-prompts',
+        __('LLM Prompts — Overview', 'xfusion'),
+        __('Overview', 'xfusion'),
+        'manage_options',
+        'xfusion-llm-prompts',
+        'xfusion_llm_prompts_render_overview_page'
+    );
+
     foreach (xfusion_llm_prompt_slug_definitions() as $slug => $def) {
         add_submenu_page(
             'xfusion-llm-prompts',
