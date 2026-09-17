@@ -287,7 +287,12 @@ Route::middleware(['auth',],)->group(function () {
             $role = array_key_first(unserialize($r['meta_value'],),);
         }
         if ($role == 'administrator') {
-            return view('admin.index',);
+            $aiUsage = app(\App\Services\AiUsageService::class);
+            $aiRows = $aiUsage->allRows();
+            $aiStats = $aiUsage->periodSummaries($aiRows);
+            $aiTopCompanies = $aiUsage->perCompany($aiRows)->take(5);
+
+            return view('admin.index', compact('aiStats', 'aiTopCompanies'));
         } else if ($role == 'editor') {
             return view('admin.dashboard-company',);
         } else {

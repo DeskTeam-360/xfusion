@@ -409,6 +409,65 @@
                 chart.render();
             });
         </script>
+
+        @isset($aiStats)
+            <div class="flex items-center justify-between mt-5 mb-3">
+                <h3 class="text-xl">AI Usage</h3>
+                <a href="{{ route('ai-generations.index') }}" class="text-primary text-sm font-semibold">See full breakdown &rarr;</a>
+            </div>
+            <div class="col-span-12 grid grid-cols-12 gap-3">
+                @foreach([
+                    ['label' => 'All Time', 'icon' => 'ti-sum', 'data' => $aiStats['all']],
+                    ['label' => 'This Month', 'icon' => 'ti-calendar', 'data' => $aiStats['this_month']],
+                    ['label' => 'Last Month', 'icon' => 'ti-calendar-due', 'data' => $aiStats['last_month']],
+                ] as $card)
+                    <div class="lg:col-span-4 md:col-span-6 sm:col-span-12 col-span-12">
+                        <div class="card">
+                            <div class="card-body flex-row py-4 flex items-center gap-2">
+                                <div class="bg-primary h-10 w-10 p-1 text-center text-white flex-shrink-0" style="border-radius: 100px">
+                                    <i class="ti {{ $card['icon'] }} text-2xl"></i>
+                                </div>
+                                <div>
+                                    <h5 class="text-xl leading-normal">{{ $card['label'] }}</h5>
+                                    <span class="text-muted">{{ number_format($card['data']['count']) }} generations</span>
+                                </div>
+                                <div class="ms-auto text-end">
+                                    <div class="text-lg font-semibold">{{ number_format($card['data']['tokens']) }} tokens</div>
+                                    <div class="text-muted">${{ number_format($card['data']['cost'], 4) }}</div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                @endforeach
+            </div>
+
+            @if($aiTopCompanies->isNotEmpty())
+                <div class="admin-data-table w-full mt-3">
+                    <div class="overflow-x-auto">
+                        <table class="admin-table">
+                            <thead>
+                                <tr>
+                                    <th>Top Companies by AI Cost</th>
+                                    <th>Generations</th>
+                                    <th>Tokens</th>
+                                    <th>Cost (USD)</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                @foreach($aiTopCompanies as $company)
+                                    <tr>
+                                        <td>{{ $company['company_name'] }}</td>
+                                        <td>{{ number_format($company['count']) }}</td>
+                                        <td>{{ number_format($company['tokens']) }}</td>
+                                        <td>${{ number_format($company['cost'], 4) }}</td>
+                                    </tr>
+                                @endforeach
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            @endif
+        @endisset
     </div>
-    
+
 </x-admin-layout>

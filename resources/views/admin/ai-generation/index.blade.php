@@ -40,6 +40,39 @@
             @endforeach
         </div>
 
+        <h2 style="margin:0 0 12px">AI Usage by Company</h2>
+        <div class="admin-data-table w-full" style="margin-bottom:24px;">
+            <div class="overflow-x-auto">
+                <table class="admin-table">
+                    <thead>
+                        <tr>
+                            <th>Company</th>
+                            <th>Generations</th>
+                            <th>Tokens</th>
+                            <th>Cost (USD)</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @forelse($perCompany as $company)
+                            <tr>
+                                <td>{{ $company['company_name'] }}</td>
+                                <td>{{ number_format($company['count']) }}</td>
+                                <td>{{ number_format($company['tokens']) }}</td>
+                                <td>${{ number_format($company['cost'], 4) }}</td>
+                            </tr>
+                        @empty
+                            <tr>
+                                <td colspan="4" class="py-10 text-center text-muted dark:text-darklink">
+                                    No AI generations yet.
+                                </td>
+                            </tr>
+                        @endforelse
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+        <h2 style="margin:0 0 12px">All Generations</h2>
         <div class="admin-data-table w-full">
             <div class="overflow-x-auto">
                 <table class="admin-table">
