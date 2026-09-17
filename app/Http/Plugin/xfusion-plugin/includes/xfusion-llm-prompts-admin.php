@@ -10,6 +10,25 @@ defined('ABSPATH') || exit;
 add_action('admin_menu', 'xfusion_llm_prompts_register_admin_menu');
 add_action('admin_init', 'xfusion_llm_prompts_handle_actions');
 
+// Runs after every submenu under 'xfusion-llm-prompts' has registered
+// (the History pages hook admin_menu at priority 82/83) so the flyout is
+// completely empty — clicking "LLM Prompts" in the sidebar still opens the
+// Overview page directly, and Overview has its own "Generation history"
+// links to the History pages so they stay reachable.
+add_action('admin_menu', 'xfusion_llm_prompts_hide_all_submenu_items', 100);
+
+function xfusion_llm_prompts_hide_all_submenu_items(): void
+{
+    foreach ([
+        'xfusion-llm-prompts',
+        'xfusion-oo-brief-history',
+        'xfusion-oo-synthesis-history',
+        'xfusion-arp-ai-review-history',
+    ] as $pageSlug) {
+        remove_submenu_page('xfusion-llm-prompts', $pageSlug);
+    }
+}
+
 function xfusion_llm_prompts_register_admin_menu(): void
 {
     if (! current_user_can('manage_options')) {
@@ -164,6 +183,15 @@ function xfusion_llm_prompts_render_overview_page(): void
         <p class="description" style="margin-top:16px;">
             <?php esc_html_e('Connection settings (API URL, model, default status) remain under Settings → XFusion LLM.', 'xfusion'); ?>
             <a href="<?php echo esc_url(admin_url('options-general.php?page=xfusion-llm-settings')); ?>"><?php esc_html_e('Open XFusion LLM settings', 'xfusion'); ?></a>
+        </p>
+
+        <h2 style="margin-top:24px;"><?php esc_html_e('Generation history', 'xfusion'); ?></h2>
+        <p class="description">
+            <a href="<?php echo esc_url(admin_url('admin.php?page=xfusion-oo-brief-history')); ?>"><?php esc_html_e('1-on-1 Brief History', 'xfusion'); ?></a>
+            &nbsp;·&nbsp;
+            <a href="<?php echo esc_url(admin_url('admin.php?page=xfusion-oo-synthesis-history')); ?>"><?php esc_html_e('1-on-1 Synthesis History', 'xfusion'); ?></a>
+            &nbsp;·&nbsp;
+            <a href="<?php echo esc_url(admin_url('admin.php?page=xfusion-arp-ai-review-history')); ?>"><?php esc_html_e('ARP AI Review History', 'xfusion'); ?></a>
         </p>
     </div>
     <?php
