@@ -42,6 +42,20 @@ class AiGenerationController extends Controller
             $rows = $rows->filter(fn ($r) => $r['module'] === $module)->values();
         }
 
+        $now = now();
+        $lastMonth = $now->copy()->subMonthNoOverflow();
+        $summarize = fn (Collection $set) => [
+            'tokens' => (int) $set->sum('tokens_used'),
+            'cost' => (float) $set->sum('cost_usd'),
+            'count' => $set->count(),
+        ];
+
+        $stats = [
+            'all' => $summarize($rows),
+            'this_month' => $summarize($rows->filter(fn ($r) => $r['created_at'] && $r['created_at']->isSameMonth($now))),
+            'last_month' => $summarize($rows->filter(fn ($r) => $r['created_at'] && $r['created_at']->isSameMonth($lastMonth))),
+        ];
+
         $perPage = 25;
         $page = max(1, (int) $request->query('page', 1));
         $total = $rows->count();
@@ -54,6 +68,7 @@ class AiGenerationController extends Controller
             'lastPage' => $lastPage,
             'total' => $total,
             'module' => $module,
+            'stats' => $stats,
         ]);
     }
 
