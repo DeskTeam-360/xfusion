@@ -50,6 +50,11 @@ function xfusion_llm_prompts_register_admin_menu(): void
                 xfusion_llm_prompts_render_slug_page($slug);
             }
         );
+
+        // Keep the page reachable (Overview's "Manage" buttons link to it
+        // directly) without cluttering the sidebar flyout with one entry
+        // per prompt — Overview is the single jumping-off point.
+        remove_submenu_page('xfusion-llm-prompts', 'xfusion-llm-prompt-' . $slug);
     }
 }
 
