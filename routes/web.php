@@ -346,6 +346,7 @@ Route::middleware(['auth',],)->group(function () {
     Route::resource('course-title', LimitLinkController::class,)->only('index', 'create', 'edit',);
     Route::resource('course-group', CourseGroupController::class,)->only('index', 'create', 'edit', 'show',);
     Route::resource('course-scoring-group', CourseScoringGroupController::class)->only('index', 'create', 'edit',);
+    Route::get('course-scoring-group/{courseScoringGroup}/edit/{formId}', [CourseScoringGroupController::class, 'editForm'])->name('course-scoring-group.edit-form');
     Route::resource('xfusion-knowledge', XfusionKnowledgeController::class)->only('index', 'create', 'edit',);
 
     Route::get('schedule', function () {

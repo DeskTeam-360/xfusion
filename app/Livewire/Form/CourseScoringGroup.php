@@ -24,12 +24,9 @@ class CourseScoringGroup extends Component
     public ?string $description = null;
 
     /**
-     * @var list<array{form_id: int|null, search: string, field_ids: list<int>, field_weights: array<int, float>}>
+     * @var list<array{form_id: int|null, search: string, connected_count: int}>
      */
     public array $blocks = [];
-
-    /** @var list<int> Form IDs whose full field list is expanded in the UI. */
-    public array $expandedFormIds = [];
 
     /** @var array<int, list<array{id: int, title: string}>> Server-side GF search results per block index. */
     public array $pickerResults = [];
@@ -71,42 +68,18 @@ class CourseScoringGroup extends Component
                 continue;
             }
 
-            $connected = $rows->filter(static fn (CourseScoringGroupDetail $d): bool => $d->isConnected());
-            $fieldIds = $connected->pluck('field_id')->map(fn ($v) => (int) $v)->values()->all();
-            $fieldWeights = $this->weightsForFieldIds($rows, $fieldIds);
+            $connectedCount = $rows->filter(static fn (CourseScoringGroupDetail $d): bool => $d->isConnected())->count();
 
             $this->blocks[] = [
                 'form_id' => $fid,
                 'search' => (string) ($formTitles->get($fid) ?? "Form #{$fid}"),
-                'field_ids' => $fieldIds,
-                'field_weights' => $fieldWeights,
+                'connected_count' => $connectedCount,
             ];
         }
 
         if (count($this->blocks) === 0) {
             $this->blocks[] = $this->emptyBlock();
         }
-    }
-
-    /** @return array<int, float> */
-    private function weightsForFieldIds(Collection $rows, array $fieldIds): array
-    {
-        if ($fieldIds === []) {
-            return [];
-        }
-
-        $lookup = array_fill_keys($fieldIds, true);
-        $weights = [];
-
-        foreach ($rows as $detail) {
-            $fieldId = (int) $detail->field_id;
-            if ($fieldId < 1 || ! isset($lookup[$fieldId])) {
-                continue;
-            }
-            $weights[$fieldId] = (float) ($detail->weight ?? 1);
-        }
-
-        return $weights;
     }
 
     public function searchPickerForms(int $index, string $query): void
@@ -131,64 +104,10 @@ class CourseScoringGroup extends Component
             ->all();
     }
 
-    public function toggleBlockFields(int $index): void
-    {
-        $formId = isset($this->blocks[$index]['form_id']) ? (int) $this->blocks[$index]['form_id'] : 0;
-        if ($formId < 1) {
-            return;
-        }
-
-        if (in_array($formId, $this->expandedFormIds, true)) {
-            $this->expandedFormIds = array_values(array_filter(
-                $this->expandedFormIds,
-                static fn (int $id) => $id !== $formId
-            ));
-
-            return;
-        }
-
-        $this->expandedFormIds[] = $formId;
-    }
-
-    public function blockFieldsExpanded(int $index): bool
-    {
-        $formId = isset($this->blocks[$index]['form_id']) ? (int) $this->blocks[$index]['form_id'] : 0;
-
-        return $formId > 0 && in_array($formId, $this->expandedFormIds, true);
-    }
-
-    /** @return list<array{id: int, label: string, type: string}> */
-    public function gfFieldsForBlock(int $index): array
-    {
-        if (! isset($this->blocks[$index])) {
-            return [];
-        }
-
-        $formId = isset($this->blocks[$index]['form_id']) ? (int) $this->blocks[$index]['form_id'] : 0;
-        if ($formId < 1) {
-            return [];
-        }
-
-        $all = self::gfFieldsForFormId($formId);
-        if ($this->blockFieldsExpanded($index)) {
-            return $all;
-        }
-
-        $connected = array_fill_keys($this->blocks[$index]['field_ids'] ?? [], true);
-        if ($connected === []) {
-            return [];
-        }
-
-        return array_values(array_filter(
-            $all,
-            static fn (array $f) => isset($connected[(int) $f['id']])
-        ));
-    }
-
-    /** @return array{form_id: int|null, search: string, field_ids: list<int>, field_weights: array<int, float>} */
+    /** @return array{form_id: int|null, search: string, connected_count: int} */
     private function emptyBlock(): array
     {
-        return ['form_id' => null, 'search' => '', 'field_ids' => [], 'field_weights' => []];
+        return ['form_id' => null, 'search' => '', 'connected_count' => 0];
     }
 
     public function saveNew(): void
@@ -235,13 +154,8 @@ class CourseScoringGroup extends Component
         $form = WpGfForm::find($formId);
         $this->blocks[$index]['form_id'] = $formId;
         $this->blocks[$index]['search'] = $form !== null ? (string) $form->title : ('Form #'.$formId);
-        $this->blocks[$index]['field_ids'] = [];
-        $this->blocks[$index]['field_weights'] = [];
+        $this->blocks[$index]['connected_count'] = 0;
         unset($this->pickerResults[$index]);
-        $this->expandedFormIds = array_values(array_filter(
-            $this->expandedFormIds,
-            static fn (int $id) => $id !== $formId
-        ));
     }
 
     public function clearForm(int $index): void
@@ -250,114 +164,10 @@ class CourseScoringGroup extends Component
             return;
         }
 
-        $formId = (int) ($this->blocks[$index]['form_id'] ?? 0);
-
         $this->blocks[$index]['form_id'] = null;
         $this->blocks[$index]['search'] = '';
-        $this->blocks[$index]['field_ids'] = [];
-        $this->blocks[$index]['field_weights'] = [];
+        $this->blocks[$index]['connected_count'] = 0;
         unset($this->pickerResults[$index]);
-
-        if ($formId > 0) {
-            $this->expandedFormIds = array_values(array_filter(
-                $this->expandedFormIds,
-                static fn (int $id) => $id !== $formId
-            ));
-        }
-    }
-
-    public function setFieldChecked(int $index, int $fieldId, $checked): void
-    {
-        if (! isset($this->blocks[$index])) {
-            return;
-        }
-
-        $fieldId = abs((int) $fieldId);
-        if ($fieldId < 1) {
-            return;
-        }
-
-        $on = filter_var($checked, FILTER_VALIDATE_BOOLEAN);
-
-        $selected = &$this->blocks[$index]['field_ids'];
-        $weights = &$this->blocks[$index]['field_weights'];
-
-        if ($on) {
-            if (! in_array($fieldId, $selected, true)) {
-                $selected[] = $fieldId;
-            }
-            if (! isset($weights[$fieldId]) || (float) $weights[$fieldId] <= 0) {
-                $weights[$fieldId] = 1.0;
-            }
-        } else {
-            $selected = array_values(array_filter($selected, static fn ($id) => (int) $id !== $fieldId));
-            unset($weights[$fieldId]);
-        }
-
-        $selected = array_values(array_unique(array_map('intval', $selected)));
-
-        $this->skipRender();
-    }
-
-    public function setFieldWeight(int $index, int $fieldId, $weight): void
-    {
-        if (! isset($this->blocks[$index])) {
-            return;
-        }
-
-        $fieldId = abs((int) $fieldId);
-        if ($fieldId < 1) {
-            return;
-        }
-
-        if (is_string($weight)) {
-            $weight = trim($weight);
-        }
-
-        if ($weight === '' || $weight === null || ! is_numeric($weight)) {
-            $this->setFieldChecked($index, $fieldId, false);
-
-            return;
-        }
-
-        $value = round((float) $weight, 2);
-        if ($value <= 0) {
-            $this->setFieldChecked($index, $fieldId, false);
-
-            return;
-        }
-
-        if (! $this->fieldIsChecked($index, $fieldId)) {
-            $selected = &$this->blocks[$index]['field_ids'];
-            if (! in_array($fieldId, $selected, true)) {
-                $selected[] = $fieldId;
-                $selected = array_values(array_unique(array_map('intval', $selected)));
-            }
-        }
-
-        $this->blocks[$index]['field_weights'][$fieldId] = $value;
-
-        $this->skipRender();
-    }
-
-    public function fieldWeight(int $index, int $fieldId): ?float
-    {
-        if (! isset($this->blocks[$index])) {
-            return null;
-        }
-
-        $weight = $this->blocks[$index]['field_weights'][$fieldId] ?? null;
-
-        return $weight !== null ? (float) $weight : null;
-    }
-
-    public function fieldIsChecked(int $index, int $fieldId): bool
-    {
-        if (! isset($this->blocks[$index])) {
-            return false;
-        }
-
-        return in_array($fieldId, $this->blocks[$index]['field_ids'], true);
     }
 
     /** @return list<array{id: int, label: string, type: string}> All Gravity Forms input fields (any type except structural). */
@@ -721,12 +531,8 @@ class CourseScoringGroup extends Component
             'description' => $this->description !== null ? trim((string) $this->description) : null,
         ]);
 
-        /** @var Collection<int, CourseScoringGroupDetail> $existing */
-        $existing = CourseScoringGroupDetail::query()
-            ->where('course_scoring_group_id', $group->id)
-            ->get()
-            ->keyBy(static fn (CourseScoringGroupDetail $d): string => ((int) $d->form_id).':'.((int) $d->field_id));
-
+        // Field-level connections/weights are managed on the per-form "Edit fields" page —
+        // this only tracks which forms belong to the group and drops removed ones.
         $activeFormIds = [];
         foreach ($this->blocks as $block) {
             $formId = isset($block['form_id']) ? (int) $block['form_id'] : 0;
@@ -735,113 +541,15 @@ class CourseScoringGroup extends Component
             }
         }
 
-        foreach ($existing as $detail) {
-            $formId = (int) $detail->form_id;
-            if ($formId < 1 || isset($activeFormIds[$formId])) {
-                continue;
-            }
-
-            $detail->delete();
-        }
-
-        foreach ($this->blocks as $block) {
-            $formId = isset($block['form_id']) ? (int) $block['form_id'] : 0;
-            if ($formId < 1) {
-                continue;
-            }
-
-            $checkedIds = array_values(array_unique(array_map(
-                'intval',
-                $block['field_ids'] ?? []
-            )));
-            $checkedLookup = array_fill_keys($checkedIds, true);
-            $blockWeights = $block['field_weights'] ?? [];
-
-            $fieldIds = array_values(array_unique(array_map(
-                static fn (array $f): int => (int) $f['id'],
-                self::gfFieldsForFormId($formId)
-            )));
-
-            foreach ($existing as $detail) {
-                if ((int) $detail->form_id !== $formId) {
-                    continue;
-                }
-                $fieldId = (int) $detail->field_id;
-                if ($fieldId > 0 && ! in_array($fieldId, $fieldIds, true)) {
-                    $fieldIds[] = $fieldId;
-                }
-            }
-
-            foreach ($fieldIds as $fieldId) {
-                if ($fieldId < 1) {
-                    continue;
-                }
-
-                $key = $formId.':'.$fieldId;
-                $prior = $existing->get($key);
-
-                if (isset($checkedLookup[$fieldId])) {
-                    $weight = isset($blockWeights[$fieldId]) && (float) $blockWeights[$fieldId] > 0
-                        ? round((float) $blockWeights[$fieldId], 2)
-                        : ($prior !== null && (float) ($prior->weight ?? 0) > 0
-                            ? round((float) $prior->weight, 2)
-                            : 1.0);
-                } else {
-                    $weight = 0.0;
-                }
-
-                if ($prior !== null) {
-                    if ((float) ($prior->weight ?? 0) !== $weight) {
-                        $prior->update(['weight' => $weight]);
-                    }
-
-                    continue;
-                }
-
-                if ($weight <= 0) {
-                    continue;
-                }
-
-                try {
-                    CourseScoringGroupDetail::create([
-                        'course_scoring_group_id' => $group->id,
-                        'form_id' => $formId,
-                        'field_id' => $fieldId,
-                        'weight' => $weight,
-                    ]);
-                } catch (\Illuminate\Database\QueryException) {
-                    // Duplicate (unique) skipped
-                }
-            }
-        }
-
-        $group->load('details');
-        $this->syncBlockFieldStateFromGroup($group);
+        CourseScoringGroupDetail::query()
+            ->where('course_scoring_group_id', $group->id)
+            ->when($activeFormIds !== [], fn ($q) => $q->whereNotIn('form_id', array_keys($activeFormIds)), fn ($q) => $q)
+            ->delete();
 
         $this->dispatch('swal:alert', data: [
             'icon' => 'success',
             'title' => 'Saved.',
         ]);
-    }
-
-    private function syncBlockFieldStateFromGroup(CourseScoringGroupModel $group): void
-    {
-        /** @var Collection<int|string, Collection<int, CourseScoringGroupDetail>> $byForm */
-        $byForm = $group->details->groupBy(static fn (CourseScoringGroupDetail $d) => (int) $d->form_id);
-
-        foreach ($this->blocks as $index => $block) {
-            $formId = isset($block['form_id']) ? (int) $block['form_id'] : 0;
-            if ($formId < 1) {
-                continue;
-            }
-
-            $rows = $byForm->get($formId, collect());
-            $connected = $rows->filter(static fn (CourseScoringGroupDetail $d): bool => $d->isConnected());
-            $fieldIds = $connected->pluck('field_id')->map(fn ($v) => (int) $v)->values()->all();
-
-            $this->blocks[$index]['field_ids'] = $fieldIds;
-            $this->blocks[$index]['field_weights'] = $this->weightsForFieldIds($rows, $fieldIds);
-        }
     }
 
     public function render()

@@ -20,4 +20,9 @@ class CourseScoringGroupController extends Controller
     {
         return view('admin.course-scoring-group.edit', compact('id'));
     }
+
+    public function editForm(string $id, string $formId)
+    {
+        return view('admin.course-scoring-group.edit-form', compact('id', 'formId'));
+    }
 }

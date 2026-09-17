@@ -69,9 +69,7 @@
                         @php
                             /** @var int $index */
                             $picked = isset($block['form_id']) && $block['form_id'] !== null;
-                            $fieldsExpanded = $picked && $this->blockFieldsExpanded($index);
-                            $gfFields = $picked ? $this->gfFieldsForBlock($index) : [];
-                            $connectedCount = count($block['field_ids'] ?? []);
+                            $connectedCount = (int) ($block['connected_count'] ?? 0);
                         @endphp
                         <div wire:key="csg-block-{{ $index }}-{{ $picked ? 'yes' : 'no' }}-{{ md5(($block['search'] ?? '')) }}" class="mb-4 rounded-lg border border-border bg-gray-50/40 p-5 dark:bg-transparent dark:border-darkborder">
                             <div class="mb-4 flex flex-wrap items-center justify-between gap-3">
@@ -159,74 +157,14 @@
                                         Selected: <strong class="text-dark dark:text-white">{{ $block['search'] }}</strong>
                                         &nbsp;(form ID {{ $block['form_id'] }})
                                     </p>
-                                    <p class="mb-2 text-sm font-semibold text-dark dark:text-white">Connected fields</p>
-                                    <p class="mb-3 text-xs text-dark/60 dark:text-darklink">Only connected fields load by default. Check a field to connect it, then set weight (&gt; 0).</p>
-                                    <div class="mb-3 flex flex-wrap gap-2">
-                                        <button type="button"
-                                                wire:click="toggleBlockFields({{ $index }})"
-                                                wire:loading.attr="disabled"
-                                                wire:target="toggleBlockFields"
-                                                class="btn-outline-primary shrink-0">
-                                            @if($fieldsExpanded)
-                                                Show connected only
-                                            @else
-                                                Browse all fields
-                                            @endif
-                                        </button>
-                                        @if(!$fieldsExpanded)
-                                            <span class="self-center text-xs text-dark/60 dark:text-darklink">{{ $connectedCount }} connected</span>
-                                        @endif
-                                    </div>
-                                    @if(count($gfFields) === 0)
-                                        <p class="text-sm text-dark/75 dark:text-darklink">
-                                            @if($fieldsExpanded)
-                                                No input fields found in this form meta.
-                                            @else
-                                                No fields connected yet. Use “Browse all fields” to pick questions.
-                                            @endif
-                                        </p>
-                                    @else
-                                        <div class="max-h-60 space-y-2 overflow-y-auto rounded border border-border bg-white p-3 [color-scheme:light] dark:[color-scheme:dark] dark:bg-darkgray/30 dark:border-darkborder">
-                                            @foreach($gfFields as $f)
-                                                @php
-                                                    $_id = (int) $f['id'];
-                                                    $isChecked = $this->fieldIsChecked($index, $_id);
-                                                    $fieldWeight = $this->fieldWeight($index, $_id);
-                                                @endphp
-                                                <div wire:key="fld-{{ $index }}-{{ $_id }}"
-                                                     x-data="{ connected: @js($isChecked) }"
-                                                     class="flex items-start gap-3 rounded px-2 py-1 hover:bg-gray-100 dark:hover:bg-darkborder/40">
-                                                    <input type="checkbox"
-                                                           wire:key="fld-cb-{{ $index }}-{{ $_id }}"
-                                                           wire:change="setFieldChecked({{ $index }}, {{ $_id }}, $event.target.checked)"
-                                                           x-on:change="connected = $event.target.checked"
-                                                           :checked="connected"
-                                                           class="mt-1 size-[1.125rem] shrink-0 cursor-pointer appearance-auto rounded border-2 border-gray-600 bg-white accent-blue-600 shadow-sm outline-none ring-offset-2 focus-visible:ring-2 focus-visible:ring-blue-600 dark:border-gray-300 dark:bg-darkgray dark:accent-teal-400 dark:shadow-inner dark:focus-visible:ring-teal-400"/>
-                                                    <span class="min-w-0 flex-1 text-sm text-dark dark:text-white">
-                                                        <strong class="font-medium">{{ $f['label'] }}</strong>
-                                                        @if(($f['type'] ?? '') !== '')
-                                                            <span class="text-xs text-dark/60 dark:text-darklink">({{ $f['type'] }})</span>
-                                                        @endif
-                                                        <span class="text-xs text-dark/60 dark:text-darklink"> · field #{{ $_id }}</span>
-                                                    </span>
-                                                    <div x-show="connected"
-                                                         x-cloak
-                                                         class="flex shrink-0 flex-col items-end gap-0.5">
-                                                        <label for="csg-weight-{{ $index }}-{{ $_id }}" class="text-[10px] font-semibold uppercase tracking-wide text-dark/50 dark:text-darklink">Weight</label>
-                                                        <input id="csg-weight-{{ $index }}-{{ $_id }}"
-                                                               type="number"
-                                                               step="0.01"
-                                                               min="0.01"
-                                                               wire:key="fld-wt-{{ $index }}-{{ $_id }}"
-                                                               wire:blur="setFieldWeight({{ $index }}, {{ $_id }}, $event.target.value)"
-                                                               value="{{ $fieldWeight ?? 1 }}"
-                                                               inputmode="decimal"
-                                                               class="form-control w-[5.5rem] rounded border border-border bg-white px-2 py-1 text-end text-sm tabular-nums text-dark dark:bg-darkgray dark:border-darkborder dark:text-white"/>
-                                                    </div>
-                                                </div>
-                                            @endforeach
-                                        </div>
-                                    @endif
+                                    <p class="mb-3 text-sm text-dark/75 dark:text-darklink">
+                                        <strong class="text-dark dark:text-white">{{ $connectedCount }}</strong> field{{ $connectedCount === 1 ? '' : 's' }} connected.
+                                        Fields are edited on their own page, so this page stays fast even with very large forms.
+                                    </p>
+                                    <a href="{{ route('course-scoring-group.edit-form', ['courseScoringGroup' => $dataId, 'formId' => $block['form_id']]) }}"
+                                       class="btn-outline-primary inline-flex items-center gap-1.5">
+                                        Edit fields <i class="ti ti-arrow-right text-base" aria-hidden="true"></i>
+                                    </a>
                                 </div>
                             @endif
                         </div>
