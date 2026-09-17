@@ -73,7 +73,15 @@
                         @endphp
                         <div wire:key="csg-block-{{ $index }}-{{ $picked ? 'yes' : 'no' }}-{{ md5(($block['search'] ?? '')) }}" class="mb-4 rounded-lg border border-border bg-gray-50/40 p-5 dark:bg-transparent dark:border-darkborder">
                             <div class="mb-4 flex flex-wrap items-center justify-between gap-3">
-                                <span class="text-sm font-medium uppercase tracking-wide text-dark/70 dark:text-darklink">Form block {{ $index + 1 }}</span>
+                                <div>
+                                    <span class="text-sm font-medium uppercase tracking-wide text-dark/70 dark:text-darklink">Form block {{ $index + 1 }}</span>
+                                    @if($picked)
+                                        <p class="mt-1 text-sm text-dark/75 dark:text-darklink">
+                                            <strong class="text-dark dark:text-white">{{ $block['search'] }}</strong>
+                                            (form ID {{ $block['form_id'] }}) &middot; {{ $connectedCount }}/{{ $this->totalFieldsForForm($block['form_id']) }} connected
+                                        </p>
+                                    @endif
+                                </div>
                                 <div class="flex flex-wrap items-center justify-end gap-2">
                                     @if($picked)
                                         <a href="{{ route('course-scoring-group.edit-form', ['courseScoringGroup' => $dataId, 'formId' => $block['form_id']]) }}"
@@ -155,14 +163,6 @@
                                 </div>
                             @endif
 
-                            @if($picked)
-                                <div class="mt-4">
-                                    <p class="text-sm text-dark/75 dark:text-darklink">
-                                        <strong class="text-dark dark:text-white">{{ $block['search'] }}</strong>
-                                        (form ID {{ $block['form_id'] }}) &middot; {{ $connectedCount }}/{{ $this->totalFieldsForForm($block['form_id']) }} connected
-                                    </p>
-                                </div>
-                            @endif
                         </div>
                     @endforeach
                 </div>
