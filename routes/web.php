@@ -1,5 +1,6 @@
 <?php
 
+use App\Http\Controllers\Admin\AiGenerationController;
 use App\Http\Controllers\Admin\CampaignController;
 use App\Http\Controllers\Admin\CompanyController;
 use App\Http\Controllers\Admin\CompanyGroupController;
@@ -492,6 +493,11 @@ Route::middleware(['auth',],)->group(function () {
         CompanyController::class,
         'showDetail',
     ],)->name('company.show-detail',);
+
+    Route::get('ai-generations', [
+        AiGenerationController::class,
+        'index',
+    ],)->name('ai-generations.index',);
 
     Route::get('company/{id}/activity/{type}', [
         CompanyController::class,
