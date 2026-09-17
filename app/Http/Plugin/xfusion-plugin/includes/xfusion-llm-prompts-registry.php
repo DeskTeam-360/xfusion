@@ -57,8 +57,8 @@ function xfusion_llm_prompt_slug_definitions(): array
             ])),
         ],
         XFUSION_LLM_PROMPT_SLUG_OO_BRIEF => [
-            'title' => __('1-on-1 — Meeting Brief (system)', 'xfusion'),
-            'menu_title' => __('1-on-1 Brief System', 'xfusion'),
+            'title' => __('1-on-1 — Step 2: AI Meeting Brief (system)', 'xfusion'),
+            'menu_title' => __('1-on-1 Step 2: Brief', 'xfusion'),
             'description' => __('System prompt for POST /api/v1/one-on-one/meeting-brief (via Laravel).', 'xfusion'),
             'placeholder_hint' => __('Defines JSON output sections for the AI Meeting Brief.', 'xfusion'),
             'default_files' => array_values(array_filter([
@@ -67,8 +67,8 @@ function xfusion_llm_prompt_slug_definitions(): array
             ])),
         ],
         XFUSION_LLM_PROMPT_SLUG_OO_SYNTHESIS => [
-            'title' => __('1-on-1 — Meeting Synthesis (system)', 'xfusion'),
-            'menu_title' => __('1-on-1 Synthesis System', 'xfusion'),
+            'title' => __('1-on-1 — Step 6: AI Meeting Synthesis (system)', 'xfusion'),
+            'menu_title' => __('1-on-1 Step 6: Synthesis', 'xfusion'),
             'description' => __('System prompt for POST /api/v1/one-on-one/meeting-synthesis (via Laravel).', 'xfusion'),
             'placeholder_hint' => __('Defines JSON output sections for the AI Meeting Synthesis.', 'xfusion'),
             'default_files' => array_values(array_filter([
@@ -77,8 +77,8 @@ function xfusion_llm_prompt_slug_definitions(): array
             ])),
         ],
         XFUSION_LLM_PROMPT_SLUG_ARP_READINESS_REVIEW => [
-            'title' => __('ARP — AI Readiness Review (system)', 'xfusion'),
-            'menu_title' => __('ARP Readiness Review System', 'xfusion'),
+            'title' => __('ARP — Step 6: AI Readiness Review (system)', 'xfusion'),
+            'menu_title' => __('ARP Step 6: Readiness Review', 'xfusion'),
             'description' => __('System prompt for POST /api/v1/arp/readiness-review (ARP Step 6, via Laravel).', 'xfusion'),
             'placeholder_hint' => __('Defines the strategic_alignment / readiness_assessment / gaps / priority_alignment / risk_summary / focus_areas JSON output sections for the AI Readiness Review.', 'xfusion'),
             'default_files' => array_values(array_filter([
@@ -87,8 +87,8 @@ function xfusion_llm_prompt_slug_definitions(): array
             ])),
         ],
         XFUSION_LLM_PROMPT_SLUG_QBR_ASSESSMENT => [
-            'title' => __('QBR — AI Organizational Assessment (system)', 'xfusion'),
-            'menu_title' => __('QBR Assessment System', 'xfusion'),
+            'title' => __('QBR — Step 3: AI Organizational Assessment (system)', 'xfusion'),
+            'menu_title' => __('QBR Step 3: Assessment', 'xfusion'),
             'description' => __('System prompt for POST /api/v1/qbr/assessment (QBR Step 3, via Laravel).', 'xfusion'),
             'placeholder_hint' => __('Defines the overall_readiness / confidence_level / cor_capability_assessment / top_strengths / top_opportunities / emerging_risks / emerging_opportunities JSON output sections.', 'xfusion'),
             'default_files' => array_values(array_filter([
@@ -97,8 +97,8 @@ function xfusion_llm_prompt_slug_definitions(): array
             ])),
         ],
         XFUSION_LLM_PROMPT_SLUG_QBR_SYNTHESIS => [
-            'title' => __('QBR — AI Organizational Synthesis (system)', 'xfusion'),
-            'menu_title' => __('QBR Synthesis System', 'xfusion'),
+            'title' => __('QBR — Step 6: AI Organizational Synthesis (system)', 'xfusion'),
+            'menu_title' => __('QBR Step 6: Synthesis', 'xfusion'),
             'description' => __('System prompt for POST /api/v1/qbr/synthesis (QBR Step 6, via Laravel).', 'xfusion'),
             'placeholder_hint' => __('Defines the executive_summary / organizational_readiness_summary / strengths / opportunities / key_risks / quarterly_focus / recommended_areas_of_attention JSON output sections. Confidence Level, Data Completeness, and Commitment Summary are computed by the system from real data and passed in as context — never generate or alter those numbers.', 'xfusion'),
             'default_files' => array_values(array_filter([
@@ -107,8 +107,8 @@ function xfusion_llm_prompt_slug_definitions(): array
             ])),
         ],
         XFUSION_LLM_PROMPT_SLUG_IRR_ASSESSMENT => [
-            'title' => __('IRR — AI Development Assessment (system)', 'xfusion'),
-            'menu_title' => __('IRR Assessment System', 'xfusion'),
+            'title' => __('IRR — Step 3: AI Development Assessment (system)', 'xfusion'),
+            'menu_title' => __('IRR Step 3: Assessment', 'xfusion'),
             'description' => __('System prompt for POST /api/v1/360/development-assessment (IRR Step 3, via Laravel).', 'xfusion'),
             'placeholder_hint' => __('Defines the behavioral_strengths / development_opportunities / behavioral_pattern_summary / leadership_contributions / organizational_contribution / key_takeaway JSON output sections. Readiness Indicator scores are computed by Laravel and passed in as context — never generate or alter numeric scores.', 'xfusion'),
             'default_files' => array_values(array_filter([
@@ -117,8 +117,8 @@ function xfusion_llm_prompt_slug_definitions(): array
             ])),
         ],
         XFUSION_LLM_PROMPT_SLUG_IRR_SYNTHESIS => [
-            'title' => __('IRR — AI Development Synthesis (system)', 'xfusion'),
-            'menu_title' => __('IRR Synthesis System', 'xfusion'),
+            'title' => __('IRR — Step 6: AI Development Synthesis (system)', 'xfusion'),
+            'menu_title' => __('IRR Step 6: Synthesis', 'xfusion'),
             'description' => __('System prompt for the IRR Step 6 AI Development Synthesis (via Laravel).', 'xfusion'),
             'placeholder_hint' => __('Defines the annual_development_summary / behavioral_growth_summary / strength_summary / opportunity_summary / development_roadmap / recommended_focus_areas / executive_coaching_summary JSON output sections. Readiness score and behavioral growth average are computed by Laravel and passed in as context — never generate or alter numeric scores.', 'xfusion'),
             'default_files' => array_values(array_filter([
@@ -127,8 +127,8 @@ function xfusion_llm_prompt_slug_definitions(): array
             ])),
         ],
         XFUSION_LLM_PROMPT_SLUG_ARR_ASSESSMENT => [
-            'title' => __('ARR — AI Annual Readiness Assessment (system)', 'xfusion'),
-            'menu_title' => __('ARR Assessment System', 'xfusion'),
+            'title' => __('ARR — Step 3: AI Annual Readiness Assessment (system)', 'xfusion'),
+            'menu_title' => __('ARR Step 3: Assessment', 'xfusion'),
             'description' => __('System prompt for POST /api/v1/arr/annual-assessment (ARR Step 3, via Laravel).', 'xfusion'),
             'placeholder_hint' => __('Defines the strategic_risks / strategic_opportunities / emerging_themes / narrative summary JSON output sections. Organizational Readiness / Strategic Alignment / Behavioral Intelligence / COR Capability / Leadership Readiness / Development Trends scores are computed by Laravel and passed in as context — never generate or alter numeric scores.', 'xfusion'),
             'default_files' => array_values(array_filter([
@@ -137,8 +137,8 @@ function xfusion_llm_prompt_slug_definitions(): array
             ])),
         ],
         XFUSION_LLM_PROMPT_SLUG_ARR_SYNTHESIS => [
-            'title' => __('ARR — AI Strategic Renewal Synthesis (system)', 'xfusion'),
-            'menu_title' => __('ARR Synthesis System', 'xfusion'),
+            'title' => __('ARR — Step 6: AI Strategic Renewal Synthesis (system)', 'xfusion'),
+            'menu_title' => __('ARR Step 6: Synthesis', 'xfusion'),
             'description' => __('System prompt for POST /api/v1/arr/strategic-renewal-synthesis (ARR Step 6, via Laravel).', 'xfusion'),
             'placeholder_hint' => __('Defines the annual_organizational_learning_summary / readiness_progress_summary / behavioral_intelligence_summary / leadership_intelligence_summary / strategic_intelligence_summary / strategic_renewal_summary / recommended_future_focus / executive_summary JSON output sections. Synthesizes evidence, the Step 3 assessment, the Step 4 executive reflection, and the Step 5 recommendations — never generate or alter any numeric score.', 'xfusion'),
             'default_files' => array_values(array_filter([
