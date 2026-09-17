@@ -1,4 +1,5 @@
 <?php
+
 /**
  * Tool Library catalog — [fusion_tool_library group="Leadership Development"]
  *
@@ -104,22 +105,35 @@ function xfusion_tool_library_shortcode($atts = []): string
 
     if ($style === 'pills') {
         ob_start();
-        ?>
+?>
         <div class="xfusion-tool-library-pills">
             <?php foreach ($tools as $tool) : ?>
                 <div class="xfusion-tool-library-pill"><?php echo esc_html($tool->page_title ?: $tool->course_title); ?></div>
             <?php endforeach; ?>
         </div>
         <style>
-            .xfusion-tool-library-pills{display:flex;flex-direction:column;gap:.6rem}
-            .xfusion-tool-library-pill{background:#1e2a4a;color:#fff;font-weight:600;text-align:center;border-radius:.35rem;padding:.65rem .9rem;font-size:.95rem}
+            .xfusion-tool-library-pills {
+                display: flex;
+                flex-direction: column;
+                gap: .6rem
+            }
+
+            .xfusion-tool-library-pill {
+                background: #1e2a4a;
+                color: #fff;
+                font-weight: 600;
+                text-align: center;
+                border-radius: .35rem;
+                padding: .65rem .9rem;
+                font-size: .95rem
+            }
         </style>
-        <?php
+    <?php
 
         return (string) ob_get_clean();
     }
 
-    $toolIds = array_map(fn ($t) => (int) $t->id, $tools);
+    $toolIds = array_map(fn($t) => (int) $t->id, $tools);
     $placeholders = implode(',', array_fill(0, count($toolIds), '%d'));
 
     $tags = $wpdb->get_results($wpdb->prepare(
@@ -151,14 +165,14 @@ function xfusion_tool_library_shortcode($atts = []): string
                             <span class="xfusion-tool-library-icon xfusion-tool-library-icon-emoji"><?php echo esc_html($tool->icon); ?></span>
                         <?php endif; ?>
                     <?php endif; ?>
-                    <span class="xfusion-tool-library-title"><?php echo esc_html($tool->page_title ?: $tool->course_title); ?></span>
+                    <a class="xfusion-tool-library-title"><?php echo esc_html($tool->page_title ?: $tool->course_title); ?></a>
                 </div>
                 <div class="xfusion-tool-library-tags">
                     <?php foreach ($capabilities as $title => $meta) : ?>
                         <?php $isActive = in_array($title, $active, true); ?>
                         <span class="xfusion-tool-library-tag<?php echo $isActive ? ' active' : ''; ?>"
-                              style="<?php echo $isActive ? 'background:' . esc_attr($meta['color']) . ';border-color:' . esc_attr($meta['color']) : ''; ?>"
-                              title="<?php echo esc_attr($title); ?>">
+                            style="<?php echo $isActive ? 'background:' . esc_attr($meta['color']) . ';border-color:' . esc_attr($meta['color']) : ''; ?>"
+                            title="<?php echo esc_attr($title); ?>">
                             <?php echo $isActive ? '&#10003;' : ''; ?>
                         </span>
                     <?php endforeach; ?>
@@ -167,17 +181,79 @@ function xfusion_tool_library_shortcode($atts = []): string
         <?php endforeach; ?>
     </div>
     <style>
-        .xfusion-tool-library-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:.75rem}
-        @media (max-width:640px){.xfusion-tool-library-grid{grid-template-columns:1fr}}
-        .xfusion-tool-library-row{display:flex;align-items:center;justify-content:space-between;gap:.75rem;background:#fff;border:1px solid #e5e7eb;border-radius:.5rem;padding:.65rem .85rem}
-        .xfusion-tool-library-row-main{display:flex;align-items:center;gap:.6rem;min-width:0}
-        .xfusion-tool-library-icon{width:28px;height:28px;flex-shrink:0;object-fit:contain}
-        .xfusion-tool-library-icon-emoji{font-size:1.4rem;line-height:1;display:inline-flex;align-items:center;justify-content:center}
-        .xfusion-tool-library-title{font-weight:600;color:#1f2937;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-        .xfusion-tool-library-tags{display:flex;gap:.3rem;flex-shrink:0}
-        .xfusion-tool-library-tag{width:22px;height:22px;border-radius:.3rem;border:1.5px solid #e5e7eb;display:inline-flex;align-items:center;justify-content:center;color:#fff;font-size:.75rem;font-weight:700}
+        .xfusion-tool-library-grid {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: .75rem
+        }
+
+        @media (max-width:640px) {
+            .xfusion-tool-library-grid {
+                grid-template-columns: 1fr
+            }
+        }
+
+        .xfusion-tool-library-row {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: .75rem;
+            background: #fff;
+            border: 1px solid #e5e7eb;
+            border-radius: .5rem;
+            padding: .65rem .85rem
+        }
+
+        .xfusion-tool-library-row-main {
+            display: flex;
+            align-items: center;
+            gap: .6rem;
+            min-width: 0
+        }
+
+        .xfusion-tool-library-icon {
+            width: 28px;
+            height: 28px;
+            flex-shrink: 0;
+            object-fit: contain
+        }
+
+        .xfusion-tool-library-icon-emoji {
+            font-size: 1.4rem;
+            line-height: 1;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center
+        }
+
+        .xfusion-tool-library-title {
+            font-weight: 600;
+            color: #1f2937;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis
+        }
+
+        .xfusion-tool-library-tags {
+            display: flex;
+            gap: .3rem;
+            flex-shrink: 0
+        }
+
+        .xfusion-tool-library-tag {
+            width: 22px;
+            height: 22px;
+            border-radius: .3rem;
+            border: 1.5px solid #e5e7eb;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            color: #fff;
+            font-size: .75rem;
+            font-weight: 700
+        }
     </style>
-    <?php
+<?php
 
     return (string) ob_get_clean();
 }
