@@ -66,6 +66,11 @@ class CourseScoringGroupFormFields extends Component
         $this->expanded = ! $this->expanded;
     }
 
+    public function totalFieldsCount(): int
+    {
+        return count(CourseScoringGroup::gfFieldsForFormId($this->formId));
+    }
+
     /** @return list<array{id: int, label: string, type: string}> */
     public function visibleFields(): array
     {
