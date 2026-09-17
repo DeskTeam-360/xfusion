@@ -143,7 +143,7 @@
             @endforeach
         </div>
 
-        <div class="col-span-12 grid grid-cols-2 sm:grid-cols-3 md:grid-cols-5 gap-3" style="margin-bottom:16px;">
+        <div class="col-span-12 grid grid-cols-5 gap-3" style="margin-bottom:16px;">
             @forelse(CourseScoringGroup::withCount('details')->orderBy('id')->get() as $group)
                 <div>
                     <a href="{{ route('course-scoring-group.edit', $group->id) }}" class="card h-full block hover:shadow-md transition-shadow">
