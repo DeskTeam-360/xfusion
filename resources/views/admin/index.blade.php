@@ -117,7 +117,7 @@
             ['title' => 'Transform', 'icon' => 'ti-arrows-exchange-2', 'color' => 'bg-primary'],
             ['title' => 'Sustain', 'icon' => 'ti-seeding', 'color' => 'bg-info'],
         ])
-        <div class="card" style="margin-bottom:16px;">
+        <div class="card" style="margin-top:16px; margin-bottom:16px;">
             <div class="card-body">
                 <h5 class="card-title mb-1">Courses</h5>
                 <p class="card-subtitle mb-4">Course library and how each module is scored</p>
@@ -149,9 +149,9 @@
                 </div>
 
                 <h6 class="text-muted uppercase text-xs font-semibold mb-2" style="letter-spacing:.05em">Course Scoring Groups</h6>
-                <div class="grid grid-cols-12 gap-3">
-                    @forelse(CourseScoringGroup::withCount('details')->orderBy('title')->get() as $group)
-                        <div class="lg:col-span-3 md:col-span-6 sm:col-span-12 col-span-12">
+                <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-3">
+                    @forelse(CourseScoringGroup::withCount('details')->orderBy('id')->get() as $group)
+                        <div>
                             <a href="{{ route('course-scoring-group.edit', $group->id) }}" class="card h-full shadow-none border block hover:shadow-md transition-shadow">
                                 <div class="card-body flex-row py-4 flex items-center gap-2">
                                     <div class="bg-primary h-10 w-10 shrink-0 flex items-center justify-center text-white" style="border-radius: 100px">
@@ -168,7 +168,7 @@
                             </a>
                         </div>
                     @empty
-                        <div class="col-span-12">
+                        <div class="col-span-full">
                             <div class="card shadow-none border">
                                 <div class="card-body py-10 text-center text-muted dark:text-darklink">
                                     No course scoring groups yet.
