@@ -1,9 +1,10 @@
 <x-admin-layout>
-    <x-admin.page
-        title="AI Generations"
-        description="Every AI Assessment/Synthesis/Brief generated across ARP, QBR, ARR, IRR, and 1-on-1 — newest first."
-    >
-        <x-slot:actions>
+    <div class="px-5 py-5">
+        <div class="flex flex-col gap-2 sm:flex-row sm:items-start sm:justify-between mb-5">
+            <div>
+                <h1 class="text-2xl font-semibold text-dark dark:text-white">AI Generations</h1>
+                <p class="mt-1 max-w-3xl text-sm text-muted dark:text-darklink">Every AI Assessment/Synthesis/Brief generated across ARP, QBR, ARR, IRR, and 1-on-1 — newest first.</p>
+            </div>
             <form method="get" class="flex items-center gap-2">
                 <select name="module" class="admin-data-table__control" onchange="this.form.submit()">
                     <option value="">All modules</option>
@@ -12,7 +13,7 @@
                     @endforeach
                 </select>
             </form>
-        </x-slot:actions>
+        </div>
 
         <div class="col-span-12 grid grid-cols-12 gap-4" style="margin-bottom:24px;">
             @foreach([
@@ -88,7 +89,7 @@
                             <th>Tokens</th>
                             <th>Cost (USD)</th>
                             <th>Generated</th>
-                            <th class="admin-table__col-actions" style="text-align:right">Action</th>
+                            <th style="width:11rem; text-align:right">Action</th>
                         </tr>
                     </thead>
                     <tbody>
@@ -102,7 +103,7 @@
                                 <td>{{ number_format($row['tokens_used']) }}</td>
                                 <td>${{ number_format($row['cost_usd'], 4) }}</td>
                                 <td>{{ $row['created_at']?->format('F d, Y H:i') }}</td>
-                                <td class="admin-table__cell-actions" style="text-align:right">
+                                <td style="width:11rem; text-align:right; vertical-align:top">
                                     @if($row['wp_url'])
                                         <a href="{{ $row['wp_url'] }}" target="_blank" rel="noopener" class="btn inline-flex items-center btn-light-primary">
                                             Open in WordPress <i class="ti ti-external-link"></i>
@@ -135,5 +136,5 @@
                 </div>
             @endif
         </div>
-    </x-admin.page>
+    </div>
 </x-admin-layout>
