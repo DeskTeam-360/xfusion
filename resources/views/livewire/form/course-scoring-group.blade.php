@@ -157,13 +157,9 @@
 
                             @if($picked)
                                 <div class="mt-4">
-                                    <p class="mb-1 text-sm text-dark/75 dark:text-darklink">
-                                        Selected: <strong class="text-dark dark:text-white">{{ $block['search'] }}</strong>
-                                        &nbsp;(form ID {{ $block['form_id'] }})
-                                    </p>
                                     <p class="text-sm text-dark/75 dark:text-darklink">
-                                        <strong class="text-dark dark:text-white">{{ $connectedCount }}</strong> field{{ $connectedCount === 1 ? '' : 's' }} connected.
-                                        Fields are edited on their own page, so this page stays fast even with very large forms.
+                                        <strong class="text-dark dark:text-white">{{ $block['search'] }}</strong>
+                                        (form ID {{ $block['form_id'] }}) &middot; {{ $connectedCount }}/{{ $this->totalFieldsForForm($block['form_id']) }} connected
                                     </p>
                                 </div>
                             @endif

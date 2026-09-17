@@ -158,6 +158,11 @@ class CourseScoringGroup extends Component
         unset($this->pickerResults[$index]);
     }
 
+    public function totalFieldsForForm(int $formId): int
+    {
+        return count(self::gfFieldsForFormId($formId));
+    }
+
     public function clearForm(int $index): void
     {
         if (! isset($this->blocks[$index])) {
