@@ -117,10 +117,7 @@
             ['title' => 'Transform', 'icon' => 'ti-arrows-exchange-2', 'color' => 'bg-primary'],
             ['title' => 'Sustain', 'icon' => 'ti-seeding', 'color' => 'bg-info'],
         ])
-        <h2 style="margin:24px 0 4px">Courses</h2>
-        <p class="card-subtitle mb-4">Course library and how each module is scored</p>
-
-        <h6 class="text-muted uppercase text-xs font-semibold mb-2" style="letter-spacing:.05em">Course List</h6>
+        <h3 class="text-xl mt-5 mb-3">Courses</h3>
         <div class="col-span-12 grid grid-cols-12 gap-3" style="margin-bottom:20px;">
             @foreach($courseCards as $courseCard)
                 <div class="lg:col-span-4 md:col-span-6 sm:col-span-12 col-span-12">
@@ -146,7 +143,6 @@
             @endforeach
         </div>
 
-        <h6 class="text-muted uppercase text-xs font-semibold mb-2" style="letter-spacing:.05em">Course Scoring Groups</h6>
         <div class="col-span-12 grid grid-cols-2 sm:grid-cols-3 md:grid-cols-5 gap-3" style="margin-bottom:16px;">
             @forelse(CourseScoringGroup::withCount('details')->orderBy('id')->get() as $group)
                 <div>
