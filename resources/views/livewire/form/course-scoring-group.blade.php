@@ -76,6 +76,10 @@
                                 <span class="text-sm font-medium uppercase tracking-wide text-dark/70 dark:text-darklink">Form block {{ $index + 1 }}</span>
                                 <div class="flex flex-wrap items-center justify-end gap-2">
                                     @if($picked)
+                                        <a href="{{ route('course-scoring-group.edit-form', ['courseScoringGroup' => $dataId, 'formId' => $block['form_id']]) }}"
+                                           class="btn btn-primary btn-xs shrink-0 inline-flex items-center gap-1">
+                                            Edit fields <i class="ti ti-arrow-right text-base" aria-hidden="true"></i>
+                                        </a>
                                         <button type="button"
                                                 wire:click.prevent="clearForm({{ $index }})"
                                                 wire:loading.attr="disabled"
@@ -153,18 +157,14 @@
 
                             @if($picked)
                                 <div class="mt-4">
-                                    <p class="mb-2 text-sm text-dark/75 dark:text-darklink">
+                                    <p class="mb-1 text-sm text-dark/75 dark:text-darklink">
                                         Selected: <strong class="text-dark dark:text-white">{{ $block['search'] }}</strong>
                                         &nbsp;(form ID {{ $block['form_id'] }})
                                     </p>
-                                    <p class="mb-3 text-sm text-dark/75 dark:text-darklink">
+                                    <p class="text-sm text-dark/75 dark:text-darklink">
                                         <strong class="text-dark dark:text-white">{{ $connectedCount }}</strong> field{{ $connectedCount === 1 ? '' : 's' }} connected.
                                         Fields are edited on their own page, so this page stays fast even with very large forms.
                                     </p>
-                                    <a href="{{ route('course-scoring-group.edit-form', ['courseScoringGroup' => $dataId, 'formId' => $block['form_id']]) }}"
-                                       class="btn-outline-primary inline-flex items-center gap-1.5">
-                                        Edit fields <i class="ti ti-arrow-right text-base" aria-hidden="true"></i>
-                                    </a>
                                 </div>
                             @endif
                         </div>
