@@ -117,67 +117,63 @@
             ['title' => 'Transform', 'icon' => 'ti-arrows-exchange-2', 'color' => 'bg-primary'],
             ['title' => 'Sustain', 'icon' => 'ti-seeding', 'color' => 'bg-info'],
         ])
-        <div class="card" style="margin-top:16px; margin-bottom:16px;">
-            <div class="card-body">
-                <h5 class="card-title mb-1">Courses</h5>
-                <p class="card-subtitle mb-4">Course library and how each module is scored</p>
+        <h2 style="margin:24px 0 4px">Courses</h2>
+        <p class="card-subtitle mb-4">Course library and how each module is scored</p>
 
-                <h6 class="text-muted uppercase text-xs font-semibold mb-2" style="letter-spacing:.05em">Course List</h6>
-                <div class="grid grid-cols-12 gap-3" style="margin-bottom:20px;">
-                    @foreach($courseCards as $courseCard)
-                        <div class="lg:col-span-4 md:col-span-6 sm:col-span-12 col-span-12">
-                            <div class="card h-full shadow-none border">
-                                <div class="card-body flex-row py-4 flex items-center gap-2">
-                                    <div class="{{ $courseCard['color'] }} h-10 w-10 shrink-0 flex items-center justify-center text-white" style="border-radius: 100px">
-                                        <i class="ti {{ $courseCard['icon'] }} text-2xl"></i>
-                                    </div>
-                                    <div class="min-w-0 flex-1">
-                                        <h5 class="text-3xl leading-normal">
-                                            {{ CourseList::where('course_title', $courseCard['title'])->count() }}
-                                        </h5>
-                                        <span class="text-lg flex items-center gap-1">
-                                            {{ $courseCard['title'] }}
-                                        </span>
-                                    </div>
-                                    <span class="ms-auto shrink-0 text-muted dark:text-darklink" title="Course modules">
-                                        <i class="ti ti-book-2 text-2xl"></i>
-                                    </span>
-                                </div>
+        <h6 class="text-muted uppercase text-xs font-semibold mb-2" style="letter-spacing:.05em">Course List</h6>
+        <div class="col-span-12 grid grid-cols-12 gap-3" style="margin-bottom:20px;">
+            @foreach($courseCards as $courseCard)
+                <div class="lg:col-span-4 md:col-span-6 sm:col-span-12 col-span-12">
+                    <div class="card h-full">
+                        <div class="card-body flex-row py-4 flex items-center gap-2">
+                            <div class="{{ $courseCard['color'] }} h-10 w-10 shrink-0 flex items-center justify-center text-white" style="border-radius: 100px">
+                                <i class="ti {{ $courseCard['icon'] }} text-2xl"></i>
                             </div>
+                            <div class="min-w-0 flex-1">
+                                <h5 class="text-3xl leading-normal">
+                                    {{ CourseList::where('course_title', $courseCard['title'])->count() }}
+                                </h5>
+                                <span class="text-lg flex items-center gap-1">
+                                    {{ $courseCard['title'] }}
+                                </span>
+                            </div>
+                            <span class="ms-auto shrink-0 text-muted dark:text-darklink" title="Course modules">
+                                <i class="ti ti-book-2 text-2xl"></i>
+                            </span>
                         </div>
-                    @endforeach
+                    </div>
                 </div>
+            @endforeach
+        </div>
 
-                <h6 class="text-muted uppercase text-xs font-semibold mb-2" style="letter-spacing:.05em">Course Scoring Groups</h6>
-                <div class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-5 gap-3">
-                    @forelse(CourseScoringGroup::withCount('details')->orderBy('id')->get() as $group)
-                        <div>
-                            <a href="{{ route('course-scoring-group.edit', $group->id) }}" class="card h-full shadow-none border block hover:shadow-md transition-shadow">
-                                <div class="card-body flex-row py-4 flex items-center gap-2">
-                                    <div class="bg-primary h-10 w-10 shrink-0 flex items-center justify-center text-white" style="border-radius: 100px">
-                                        <i class="ti ti-calculator text-2xl"></i>
-                                    </div>
-                                    <div class="min-w-0 flex-1">
-                                        <h5 class="text-xl leading-normal truncate" title="{{ $group->title }}">{{ $group->title }}</h5>
-                                        <span class="text-muted">{{ $group->details_count }} field{{ $group->details_count == 1 ? '' : 's' }}</span>
-                                    </div>
-                                    <span class="ms-auto shrink-0 text-muted dark:text-darklink">
-                                        <i class="ti ti-chevron-right text-2xl"></i>
-                                    </span>
-                                </div>
-                            </a>
-                        </div>
-                    @empty
-                        <div class="col-span-full">
-                            <div class="card shadow-none border">
-                                <div class="card-body py-10 text-center text-muted dark:text-darklink">
-                                    No course scoring groups yet.
-                                </div>
+        <h6 class="text-muted uppercase text-xs font-semibold mb-2" style="letter-spacing:.05em">Course Scoring Groups</h6>
+        <div class="col-span-12 grid grid-cols-2 sm:grid-cols-3 md:grid-cols-5 gap-3" style="margin-bottom:16px;">
+            @forelse(CourseScoringGroup::withCount('details')->orderBy('id')->get() as $group)
+                <div>
+                    <a href="{{ route('course-scoring-group.edit', $group->id) }}" class="card h-full block hover:shadow-md transition-shadow">
+                        <div class="card-body flex-row py-4 flex items-center gap-2">
+                            <div class="bg-primary h-10 w-10 shrink-0 flex items-center justify-center text-white" style="border-radius: 100px">
+                                <i class="ti ti-calculator text-2xl"></i>
                             </div>
+                            <div class="min-w-0 flex-1">
+                                <h5 class="text-xl leading-normal truncate" title="{{ $group->title }}">{{ $group->title }}</h5>
+                                <span class="text-muted">{{ $group->details_count }} field{{ $group->details_count == 1 ? '' : 's' }}</span>
+                            </div>
+                            <span class="ms-auto shrink-0 text-muted dark:text-darklink">
+                                <i class="ti ti-chevron-right text-2xl"></i>
+                            </span>
                         </div>
-                    @endforelse
+                    </a>
                 </div>
-            </div>
+            @empty
+                <div class="col-span-full">
+                    <div class="card">
+                        <div class="card-body py-10 text-center text-muted dark:text-darklink">
+                            No course scoring groups yet.
+                        </div>
+                    </div>
+                </div>
+            @endforelse
         </div>
 
         <style>
