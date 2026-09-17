@@ -149,7 +149,7 @@
                 </div>
 
                 <h6 class="text-muted uppercase text-xs font-semibold mb-2" style="letter-spacing:.05em">Course Scoring Groups</h6>
-                <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-3">
+                <div class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-5 gap-3">
                     @forelse(CourseScoringGroup::withCount('details')->orderBy('id')->get() as $group)
                         <div>
                             <a href="{{ route('course-scoring-group.edit', $group->id) }}" class="card h-full shadow-none border block hover:shadow-md transition-shadow">
