@@ -132,11 +132,11 @@
                 <div class="admin-data-table__pagination">
                     <div class="flex flex-wrap justify-center gap-1 text-sm">
                         @if($page > 1)
-                            <a href="?page={{ $page - 1 }}&module={{ urlencode($module) }}&company={{ urlencode($company) }}" class="btn btn-light-secondary px-3 py-1">&laquo;</a>
+                            <a href="?page={{ $page - 1 }}&{{ $filterQuery }}" class="btn btn-light-secondary px-3 py-1">&laquo;</a>
                         @endif
                         <span class="px-3 py-1">Page {{ $page }} of {{ $lastPage }} ({{ number_format($total) }} total)</span>
                         @if($page < $lastPage)
-                            <a href="?page={{ $page + 1 }}&module={{ urlencode($module) }}&company={{ urlencode($company) }}" class="btn btn-light-secondary px-3 py-1">&raquo;</a>
+                            <a href="?page={{ $page + 1 }}&{{ $filterQuery }}" class="btn btn-light-secondary px-3 py-1">&raquo;</a>
                         @endif
                     </div>
                 </div>

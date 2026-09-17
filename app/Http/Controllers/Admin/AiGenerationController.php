@@ -20,12 +20,14 @@ class AiGenerationController extends Controller
 
         $companies = $rows->pluck('company_name')->unique()->sort()->values();
 
-        $module = (string) $request->query('module', '');
+        $module = $request->query('module', '');
+        $module = is_string($module) ? $module : '';
         if ($module !== '') {
             $rows = $rows->filter(fn ($r) => $r['module'] === $module)->values();
         }
 
-        $company = (string) $request->query('company', '');
+        $company = $request->query('company', '');
+        $company = is_string($company) ? $company : '';
         if ($company !== '') {
             $rows = $rows->filter(fn ($r) => $r['company_name'] === $company)->values();
         }
@@ -49,6 +51,7 @@ class AiGenerationController extends Controller
             'companies' => $companies,
             'stats' => $stats,
             'perCompany' => $perCompany,
+            'filterQuery' => http_build_query(['module' => $module, 'company' => $company]),
         ]);
     }
 }
