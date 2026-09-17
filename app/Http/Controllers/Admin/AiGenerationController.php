@@ -32,6 +32,18 @@ class AiGenerationController extends Controller
             $rows = $rows->filter(fn ($r) => $r['company_name'] === $company)->values();
         }
 
+        $dateFrom = $request->query('date_from', '');
+        $dateFrom = is_string($dateFrom) ? $dateFrom : '';
+        if ($dateFrom !== '') {
+            $rows = $rows->filter(fn ($r) => $r['created_at'] && $r['created_at']->toDateString() >= $dateFrom)->values();
+        }
+
+        $dateTo = $request->query('date_to', '');
+        $dateTo = is_string($dateTo) ? $dateTo : '';
+        if ($dateTo !== '') {
+            $rows = $rows->filter(fn ($r) => $r['created_at'] && $r['created_at']->toDateString() <= $dateTo)->values();
+        }
+
         $stats = $aiUsage->periodSummaries($rows);
         $perCompany = $aiUsage->perCompany($rows);
 
@@ -49,9 +61,11 @@ class AiGenerationController extends Controller
             'module' => $module,
             'company' => $company,
             'companies' => $companies,
+            'dateFrom' => $dateFrom,
+            'dateTo' => $dateTo,
             'stats' => $stats,
             'perCompany' => $perCompany,
-            'filterQuery' => http_build_query(['module' => $module, 'company' => $company]),
+            'filterQuery' => http_build_query(['module' => $module, 'company' => $company, 'date_from' => $dateFrom, 'date_to' => $dateTo]),
         ]);
     }
 }

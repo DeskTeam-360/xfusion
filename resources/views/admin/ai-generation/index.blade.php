@@ -5,7 +5,7 @@
                 <h1 class="text-2xl font-semibold text-dark dark:text-white">AI Generations</h1>
                 <p class="mt-1 max-w-3xl text-sm text-muted dark:text-darklink">Every AI Assessment/Synthesis/Brief generated across ARP, QBR, ARR, IRR, and 1-on-1 — newest first.</p>
             </div>
-            <form method="get" class="flex items-center gap-2">
+            <form method="get" class="flex flex-wrap items-center gap-2">
                 <select name="module" class="admin-data-table__control" onchange="this.form.submit()">
                     <option value="">All modules</option>
                     @foreach(['QBR', 'ARP', 'ARR', 'IRR', '1-on-1'] as $m)
@@ -18,6 +18,11 @@
                         <option value="{{ $c }}" @selected($company === $c)>{{ $c }}</option>
                     @endforeach
                 </select>
+                <input type="date" name="date_from" value="{{ $dateFrom }}" class="admin-data-table__control" title="From date" onchange="this.form.submit()">
+                <input type="date" name="date_to" value="{{ $dateTo }}" class="admin-data-table__control" title="To date" onchange="this.form.submit()">
+                @if($module || $company || $dateFrom || $dateTo)
+                    <a href="{{ route('ai-generations.index') }}" class="btn btn-light-secondary">Clear</a>
+                @endif
             </form>
         </div>
 
