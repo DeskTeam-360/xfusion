@@ -22,6 +22,7 @@
                 </p>
             </div>
             <div class="flex flex-wrap items-center gap-2">
+                <span class="self-center text-xs text-dark/60 dark:text-darklink">{{ $connectedCount }}/{{ $totalCount }} fields</span>
                 <button type="button"
                         wire:click="toggleExpanded"
                         wire:loading.attr="disabled"
@@ -33,7 +34,6 @@
                         Browse all fields
                     @endif
                 </button>
-                <span class="self-center text-xs text-dark/60 dark:text-darklink">{{ $connectedCount }}/{{ $totalCount }} fields</span>
             </div>
         </div>
 
@@ -55,13 +55,13 @@
                     @endphp
                     <div wire:key="fld-{{ $_id }}"
                          x-data="{ connected: @js($isChecked) }"
-                         class="flex items-start gap-3 rounded px-2 py-1 hover:bg-gray-100 dark:hover:bg-darkborder/40">
+                         class="flex items-center gap-3 rounded px-2 py-1 hover:bg-gray-100 dark:hover:bg-darkborder/40">
                         <input type="checkbox"
                                wire:key="fld-cb-{{ $_id }}"
                                wire:change="setFieldChecked({{ $_id }}, $event.target.checked)"
                                x-on:change="connected = $event.target.checked"
                                :checked="connected"
-                               class="mt-1 size-[1.125rem] shrink-0 cursor-pointer appearance-auto rounded border-2 border-gray-600 bg-white accent-blue-600 shadow-sm outline-none ring-offset-2 focus-visible:ring-2 focus-visible:ring-blue-600 dark:border-gray-300 dark:bg-darkgray dark:accent-teal-400 dark:shadow-inner dark:focus-visible:ring-teal-400"/>
+                               class="size-[1.125rem] shrink-0 cursor-pointer appearance-auto rounded border-2 border-gray-600 bg-white accent-blue-600 shadow-sm outline-none ring-offset-2 focus-visible:ring-2 focus-visible:ring-blue-600 dark:border-gray-300 dark:bg-darkgray dark:accent-teal-400 dark:shadow-inner dark:focus-visible:ring-teal-400"/>
                         <span class="min-w-0 flex-1 text-sm text-dark dark:text-white">
                             <strong class="font-medium">{{ $f['label'] }}</strong>
                             @if(($f['type'] ?? '') !== '')
@@ -71,7 +71,7 @@
                         </span>
                         <div x-show="connected"
                              x-cloak
-                             class="flex shrink-0 flex-col items-end gap-0.5">
+                             class="flex shrink-0 items-center gap-2">
                             <label for="csgf-weight-{{ $_id }}" class="text-[10px] font-semibold uppercase tracking-wide text-dark/50 dark:text-darklink">Weight</label>
                             <input id="csgf-weight-{{ $_id }}"
                                    type="number"
