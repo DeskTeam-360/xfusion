@@ -1,4 +1,4 @@
-@php use App\Models\Company;use App\Models\CompanyEmployee;use App\Models\CourseList;use App\Models\User;use Carbon\Carbon; @endphp
+@php use App\Models\Company;use App\Models\CompanyEmployee;use App\Models\CourseList;use App\Models\CourseScoringGroup;use App\Models\User;use Carbon\Carbon; @endphp
 <x-admin-layout xmlns:livewire="http://www.w3.org/1999/html">
 
     <div class="px-5 text-3xl font-semibold text-dark dark:text-white">
@@ -37,6 +37,44 @@
             </div>
 
             <div class="lg:col-span-3 col-span-12 flex flex-col gap-3" style="min-height: 280px">
+
+                <div class="card flex-1">
+                    <div class="card-body flex-row py-4 flex items-center gap-2 h-full">
+                        <div class="bg-primary h-10 w-10 shrink-0 flex items-center justify-center text-white" style="border-radius: 100px">
+                            <i class="ti ti-users text-2xl"></i>
+                        </div>
+                        <div class="min-w-0 flex-1">
+                            <h5 class="xl:text-xl text-base leading-normal">
+                                {{ User::whereHas('meta',function ($q){$q->where('meta_key',config('app.wp_prefix', 'wp_') . 'capabilities')->where('meta_value','like','%contributor%');})->count() }}
+                            </h5>
+                            <span class="text-md flex items-center gap-1">
+                                Contributor
+                            </span>
+                        </div>
+                        <a class="ms-auto text-2xl shrink-0" style="border-radius: 40px">
+                            <i class="ti ti-arrow-up-right"></i>
+                        </a>
+                    </div>
+                </div>
+
+                <div class="card flex-1">
+                    <div class="card-body flex-row py-4 flex items-center gap-2 h-full">
+                        <div class="bg-primary h-10 w-10 shrink-0 flex items-center justify-center text-white" style="border-radius: 100px">
+                            <i class="ti ti-building-community text-2xl"></i>
+                        </div>
+                        <div class="min-w-0 flex-1">
+                            <h5 class="xl:text-xl text-base leading-normal">
+                                {{ Company::count() }}
+                            </h5>
+                            <span class="text-lg flex items-center gap-1">
+                                Company
+                            </span>
+                        </div>
+                        <a class="ms-auto text-2xl shrink-0" style="border-radius: 40px">
+                            <i class="ti ti-arrow-up-right"></i>
+                        </a>
+                    </div>
+                </div>
 
                 <div class="card flex-1">
                     <div class="card-body flex-row py-4 flex items-center gap-2 h-full">
@@ -101,33 +139,39 @@
             @endforeach
         </div>
 
+        <h2 style="margin:24px 0 12px">Course Scoring Groups</h2>
         <div class="col-span-12 grid grid-cols-12 gap-3" style="margin-bottom:16px;">
-            @foreach($courseCards as $courseCard)
-                <div class="lg:col-span-4 md:col-span-6 sm:col-span-12 col-span-12">
-                    <div class="card h-full">
-                        <div class="card-body">
-                            <h5 class="card-title mb-1">{{ $courseCard['title'] }} breakdown</h5>
-                            <p class="card-subtitle mb-4">Modules in this group</p>
-                            <ul class="divide-y divide-border dark:divide-darkborder">
-                                @php($pages = CourseList::where('course_title', $courseCard['title'])->select('page_title')->get()->groupBy('page_title'))
-                                @forelse($pages as $pageTitle => $items)
-                                    <li class="flex items-center justify-between py-2">
-                                        <span>{{ $pageTitle ?: '—' }}</span>
-                                        <span class="font-semibold">{{ $items->count() }}</span>
-                                    </li>
-                                @empty
-                                    <li class="py-2 text-muted dark:text-darklink">No modules yet.</li>
-                                @endforelse
-                            </ul>
+            @forelse(CourseScoringGroup::withCount('details')->orderBy('title')->get() as $group)
+                <div class="lg:col-span-3 md:col-span-6 sm:col-span-12 col-span-12">
+                    <a href="{{ route('course-scoring-group.edit', $group->id) }}" class="card h-full block hover:shadow-md transition-shadow">
+                        <div class="card-body flex-row py-4 flex items-center gap-2">
+                            <div class="bg-primary h-10 w-10 shrink-0 flex items-center justify-center text-white" style="border-radius: 100px">
+                                <i class="ti ti-calculator text-2xl"></i>
+                            </div>
+                            <div class="min-w-0 flex-1">
+                                <h5 class="text-xl leading-normal truncate" title="{{ $group->title }}">{{ $group->title }}</h5>
+                                <span class="text-muted">{{ $group->details_count }} field{{ $group->details_count == 1 ? '' : 's' }}</span>
+                            </div>
+                            <span class="ms-auto shrink-0 text-muted dark:text-darklink">
+                                <i class="ti ti-chevron-right text-2xl"></i>
+                            </span>
+                        </div>
+                    </a>
+                </div>
+            @empty
+                <div class="col-span-12">
+                    <div class="card">
+                        <div class="card-body py-10 text-center text-muted dark:text-darklink">
+                            No course scoring groups yet.
                         </div>
                     </div>
                 </div>
-            @endforeach
+            @endforelse
         </div>
 
         <style>
             .dashboard-panel-card {
-                min-height: 280px;
+                min-height: 220px;
             }
         </style>
 
@@ -173,6 +217,7 @@
 
 
                     chart: {
+                        height: 220,
                         toolbar: {
                             show: false,
                         },
