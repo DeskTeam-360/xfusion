@@ -290,7 +290,7 @@ Route::middleware(['auth',],)->group(function () {
             $aiUsage = app(\App\Services\AiUsageService::class);
             $aiRows = $aiUsage->allRows();
             $aiStats = $aiUsage->periodSummaries($aiRows);
-            $aiTopCompanies = $aiUsage->perCompany($aiRows)->take(5);
+            $aiTopCompanies = $aiUsage->perCompany($aiRows)->take(10);
 
             return view('admin.index', compact('aiStats', 'aiTopCompanies'));
         } else if ($role == 'editor') {

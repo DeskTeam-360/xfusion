@@ -40,44 +40,6 @@
 
                 <div class="card flex-1">
                     <div class="card-body flex-row py-4 flex items-center gap-2 h-full">
-                        <div class="bg-primary h-10 w-10 shrink-0 flex items-center justify-center text-white" style="border-radius: 100px">
-                            <i class="ti ti-users text-2xl"></i>
-                        </div>
-                        <div class="min-w-0 flex-1">
-                            <h5 class="xl:text-xl text-base leading-normal">
-                                {{ User::whereHas('meta',function ($q){$q->where('meta_key',config('app.wp_prefix', 'wp_') . 'capabilities')->where('meta_value','like','%contributor%');})->count() }}
-                            </h5>
-                            <span class="text-md flex items-center gap-1">
-                                Contributor
-                            </span>
-                        </div>
-                        <a class="ms-auto text-2xl shrink-0" style="border-radius: 40px">
-                            <i class="ti ti-arrow-up-right"></i>
-                        </a>
-                    </div>
-                </div>
-
-                <div class="card flex-1">
-                    <div class="card-body flex-row py-4 flex items-center gap-2 h-full">
-                        <div class="bg-primary h-10 w-10 shrink-0 flex items-center justify-center text-white" style="border-radius: 100px">
-                            <i class="ti ti-building-community text-2xl"></i>
-                        </div>
-                        <div class="min-w-0 flex-1">
-                            <h5 class="xl:text-xl text-base leading-normal">
-                                {{ Company::count() }}
-                            </h5>
-                            <span class="text-lg flex items-center gap-1">
-                                Company
-                            </span>
-                        </div>
-                        <a class="ms-auto text-2xl shrink-0" style="border-radius: 40px">
-                            <i class="ti ti-arrow-up-right"></i>
-                        </a>
-                    </div>
-                </div>
-
-                <div class="card flex-1">
-                    <div class="card-body flex-row py-4 flex items-center gap-2 h-full">
                         <div class="bg-success h-10 w-10 shrink-0 flex items-center justify-center text-white" style="border-radius: 100px">
                             <i class="ti ti-user-check text-2xl"></i>
                         </div>
@@ -292,7 +254,7 @@
 
         <style>
             .dashboard-panel-card {
-                min-height: 360px;
+                min-height: 280px;
             }
         </style>
 
@@ -448,6 +410,7 @@
                             <thead>
                                 <tr>
                                     <th>Top Companies by AI Cost</th>
+                                    <th>Employees</th>
                                     <th>Generations</th>
                                     <th>Tokens</th>
                                     <th>Cost (USD)</th>
@@ -457,6 +420,7 @@
                                 @foreach($aiTopCompanies as $company)
                                     <tr>
                                         <td>{{ $company['company_name'] }}</td>
+                                        <td>{{ number_format($company['employee_count']) }}</td>
                                         <td>{{ number_format($company['count']) }}</td>
                                         <td>{{ number_format($company['tokens']) }}</td>
                                         <td>${{ number_format($company['cost'], 4) }}</td>

@@ -47,6 +47,7 @@
                     <thead>
                         <tr>
                             <th>Company</th>
+                            <th>Employees</th>
                             <th>Generations</th>
                             <th>Tokens</th>
                             <th>Cost (USD)</th>
@@ -56,13 +57,14 @@
                         @forelse($perCompany as $company)
                             <tr>
                                 <td>{{ $company['company_name'] }}</td>
+                                <td>{{ number_format($company['employee_count']) }}</td>
                                 <td>{{ number_format($company['count']) }}</td>
                                 <td>{{ number_format($company['tokens']) }}</td>
                                 <td>${{ number_format($company['cost'], 4) }}</td>
                             </tr>
                         @empty
                             <tr>
-                                <td colspan="4" class="py-10 text-center text-muted dark:text-darklink">
+                                <td colspan="5" class="py-10 text-center text-muted dark:text-darklink">
                                     No AI generations yet.
                                 </td>
                             </tr>
