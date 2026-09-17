@@ -3,6 +3,7 @@
 namespace App\Repository\View;
 
 use App\Models\Company;
+use App\Models\WpUserMeta;
 use App\Repository\View;
 use App\Support\CompanyAdmin;
 use App\Support\UserAccessCoder;
@@ -16,35 +17,83 @@ class User extends \App\Models\User implements View
     {
         $query = $params['query'] ?? '';
         $companyId = $params['param1'] ?? null;
+        $role = $params['param2'] ?? null;
+        $keap = $params['param3'] ?? null;
 
-        if ($companyId === null || $companyId === '') {
-            return $query === '' || $query === null
-                ? static::query()
-                : static::query()->where('user_nicename', 'like', "%{$query}%")->orWhereHas('meta', function ($q2) use ($query) {
-                    $q2->where('meta_value', 'like', "%{$query}%");
-                });
+        $base = static::query();
+
+        if ($companyId !== null && $companyId !== '') {
+            $base->with('meta')->whereHas('companyEmployee', function ($q) use ($companyId) {
+                $q->where('company_id', '=', $companyId);
+            });
         }
 
-        $scoped = static::query()->with('meta')->whereHas('companyEmployee', function ($q) use ($companyId) {
-            $q->where('company_id', '=', $companyId);
-        });
-
-        if ($query === '' || $query === null) {
-            return $scoped;
+        if ($role !== null && $role !== '') {
+            $base->whereHas('meta', function ($q) use ($role) {
+                $q->where('meta_key', 'user_role')->where('meta_value', $role);
+            });
         }
 
-        return $scoped->where(function ($qb) use ($query) {
-            $qb->where('user_nicename', 'like', "%{$query}%")
-                ->orWhere('user_email', 'like', "%{$query}%")
-                ->orWhereHas('meta', function ($q2) use ($query) {
-                    $q2->where('meta_value', 'like', "%{$query}%");
+        if ($keap === 'yes') {
+            $base->whereHas('meta', function ($q) {
+                $q->where('meta_key', 'keap_contact_id')->whereNotNull('meta_value')->where('meta_value', '!=', '');
+            })->whereHas('meta', function ($q) {
+                $q->where('meta_key', 'keap_status')->whereIn('meta_value', ['1', 'true']);
+            });
+        } elseif ($keap === 'no') {
+            $base->where(function ($qb) {
+                $qb->whereDoesntHave('meta', function ($q) {
+                    $q->where('meta_key', 'keap_contact_id')->whereNotNull('meta_value')->where('meta_value', '!=', '');
+                })->orWhereDoesntHave('meta', function ($q) {
+                    $q->where('meta_key', 'keap_status')->whereIn('meta_value', ['1', 'true']);
                 });
-        });
+            });
+        }
+
+        if ($query !== '' && $query !== null) {
+            $base->where(function ($qb) use ($query) {
+                $qb->where('user_nicename', 'like', "%{$query}%")
+                    ->orWhere('user_email', 'like', "%{$query}%")
+                    ->orWhereHas('meta', function ($q2) use ($query) {
+                        $q2->where('meta_value', 'like', "%{$query}%");
+                    });
+            });
+        }
+
+        return $base;
     }
 
     public static function tableView(): array
     {
         return ['searchable' => true,];
+    }
+
+    /** @return list<array{param: string, label: string, options: array<string|int, string>}> */
+    public static function tableFilters(): array
+    {
+        return [
+            [
+                'param' => 'param1',
+                'label' => 'Company',
+                'options' => Company::orderBy('title')->pluck('title', 'id')->all(),
+            ],
+            [
+                'param' => 'param2',
+                'label' => 'Role',
+                'options' => WpUserMeta::where('meta_key', 'user_role')
+                    ->whereNotNull('meta_value')
+                    ->where('meta_value', '!=', '')
+                    ->distinct()
+                    ->orderBy('meta_value')
+                    ->pluck('meta_value', 'meta_value')
+                    ->all(),
+            ],
+            [
+                'param' => 'param3',
+                'label' => 'Keap',
+                'options' => ['yes' => 'Connected', 'no' => 'Not connected'],
+            ],
+        ];
     }
 
     public static function tableField(): array

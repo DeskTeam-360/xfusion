@@ -28,6 +28,20 @@
                        type="date">
             </div>
         @endif
+
+        @if(method_exists($model, 'tableFilters'))
+            @foreach($model::tableFilters() as $filter)
+                <div class="admin-data-table__field">
+                    <span class="admin-data-table__label">{{ $filter['label'] }}</span>
+                    <select wire:model.live="{{ $filter['param'] }}" class="admin-data-table__control">
+                        <option value="">All</option>
+                        @foreach($filter['options'] as $value => $label)
+                            <option value="{{ $value }}">{{ $label }}</option>
+                        @endforeach
+                    </select>
+                </div>
+            @endforeach
+        @endif
     </div>
 
     <div class="overflow-x-auto">
