@@ -181,7 +181,7 @@
 
 
         <script>
-            @php($series = ['Employee', 'Contributor', 'Company'])
+            @php($series = ['Employee', 'Editor', 'Contributor'])
             document.addEventListener("DOMContentLoaded", function () {
                 // =====================================
                 // Salary
@@ -207,7 +207,7 @@
 
 
                         {
-                            name: "{{ $series[1] }}",
+                            name: "{{ $series[2] }}",
                             data: [
                                 @for($i=0; $i<3;$i++)
                                     {{ User::whereHas('meta',function ($q){ $q->where('meta_key',config('app.wp_prefix', 'wp_') . 'capabilities')->where('meta_value','like','%contributor%');})->whereMonth('user_registered',Carbon::now()->subMonths(2-$i)->month )->whereYear('user_registered',Carbon::now()->subMonths(2-$i)->year )->get()->count() }},
@@ -301,14 +301,14 @@
             </div>
             <div class="col-span-12 grid grid-cols-12 gap-3">
                 @foreach([
-                    ['label' => 'All Time', 'icon' => 'ti-sum', 'data' => $aiStats['all']],
-                    ['label' => 'This Month', 'icon' => 'ti-calendar', 'data' => $aiStats['this_month']],
-                    ['label' => 'Last Month', 'icon' => 'ti-calendar-due', 'data' => $aiStats['last_month']],
+                    ['label' => 'All Time', 'icon' => 'ti-sum', 'color' => 'bg-primary', 'data' => $aiStats['all']],
+                    ['label' => 'This Month', 'icon' => 'ti-calendar', 'color' => 'bg-success', 'data' => $aiStats['this_month']],
+                    ['label' => 'Last Month', 'icon' => 'ti-calendar-due', 'color' => 'bg-warning', 'data' => $aiStats['last_month']],
                 ] as $card)
                     <div class="lg:col-span-4 md:col-span-6 sm:col-span-12 col-span-12">
                         <div class="card">
                             <div class="card-body flex-row py-4 flex items-center gap-2">
-                                <div class="bg-primary h-10 w-10 p-1 text-center text-white flex-shrink-0" style="border-radius: 100px">
+                                <div class="{{ $card['color'] }} h-10 w-10 p-1 text-center text-white flex-shrink-0" style="border-radius: 100px">
                                     <i class="ti {{ $card['icon'] }} text-2xl"></i>
                                 </div>
                                 <div>
