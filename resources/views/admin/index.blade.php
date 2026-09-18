@@ -143,12 +143,13 @@
             @endforeach
         </div>
 
+        @php($groupColors = ['bg-primary', 'bg-success', 'bg-warning', 'bg-info', 'bg-secondary'])
         <div class="col-span-12 grid grid-cols-5 gap-3" style="margin-bottom:16px;">
-            @forelse(CourseScoringGroup::withCount('details')->orderBy('id')->get() as $group)
+            @forelse(CourseScoringGroup::withCount('details')->orderBy('id')->get() as $groupIndex => $group)
                 <div>
                     <a href="{{ route('course-scoring-group.edit', $group->id) }}" class="card h-full block hover:shadow-md transition-shadow">
                         <div class="card-body flex-row py-4 flex items-center gap-2">
-                            <div class="bg-primary h-10 w-10 shrink-0 flex items-center justify-center text-white" style="border-radius: 100px">
+                            <div class="{{ $groupColors[$groupIndex % count($groupColors)] }} h-10 w-10 shrink-0 flex items-center justify-center text-white" style="border-radius: 100px">
                                 <i class="ti ti-calculator text-2xl"></i>
                             </div>
                             <div class="min-w-0 flex-1">
