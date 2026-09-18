@@ -72,7 +72,7 @@
                             $connectedCount = (int) ($block['connected_count'] ?? 0);
                         @endphp
                         <div wire:key="csg-block-{{ $index }}-{{ $picked ? 'yes' : 'no' }}-{{ md5(($block['search'] ?? '')) }}" class="mb-4 rounded-lg border border-border bg-gray-50/40 p-5 dark:bg-transparent dark:border-darkborder">
-                            <div class="mb-4 flex flex-wrap items-center justify-between gap-3">
+                            <div class="{{ $picked ? '' : 'mb-4' }} flex flex-wrap items-center justify-between gap-3">
                                 <div>
                                     <span class="text-sm font-medium uppercase tracking-wide text-dark/70 dark:text-darklink">Form block {{ $index + 1 }}</span>
                                     @if($picked)
