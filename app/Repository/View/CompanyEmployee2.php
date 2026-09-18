@@ -63,20 +63,28 @@ class CompanyEmployee2 extends \App\Models\CompanyEmployee implements View
             $formIds = $courseGroup->courseGroupDetails->pluck('course_list_id')->toArray();
             $progress = \App\Models\WpGfEntry::where('created_by', $data->user_id)
             ->where('status', 'Active')->whereIn('form_id', $formIds)->count();
+
+            $courseCompletedCountTotal += $progress;
+            $courseGroupCountTotal += $courseGroup->courseGroupDetails->count();
+
+            if ($progress < 1) {
+                continue;
+            }
+
             $courseProgress[] = '<div style="display:flex;justify-content:space-between;">'
     . '<span><strong>' . $courseGroup->title . ' - ' . $courseGroup->sub_title . '</strong></span>'
     . ' <span>' . $progress . '/' . $courseGroup->courseGroupDetails->count() . ' (' . round($progress/$courseGroup->courseGroupDetails->count()*100) . '%)</span>'
     . '</div>';
- 
-            $courseCompletedCountTotal += $progress;
-            $courseGroupCountTotal += $courseGroup->courseGroupDetails->count();
-}   
+}
 
-        $courseProgress = implode(' ', $courseProgress);
-        $courseCompletedCount = $courseCompletedCountTotal . '/' . $courseGroupCountTotal;
-        $courseProgress .= '<hr>';
-        $courseProgress .= "<div style='display:flex;justify-content:space-between;'><span><b>Total</b></span> <span>". $courseCompletedCount . ' (' . round($courseCompletedCountTotal/$courseGroupCountTotal*100) . '%)</span></div>  </br>';
-        // dd($courseProgress);
+        if ($courseCompletedCountTotal < 1) {
+            $courseProgress = '<span class="text-muted">No Progress</span>';
+        } else {
+            $courseProgress = implode(' ', $courseProgress);
+            $courseCompletedCount = $courseCompletedCountTotal . '/' . $courseGroupCountTotal;
+            $courseProgress .= '<hr>';
+            $courseProgress .= "<div style='display:flex;justify-content:space-between;'><span><b>Total</b></span> <span>". $courseCompletedCount . ' (' . round($courseCompletedCountTotal/$courseGroupCountTotal*100) . '%)</span></div>  </br>';
+        }
         $lastLoginAt = \App\Models\WpViewAllLog::where('user_id', $data->user_id)->where('note', 'login action from wordfence')->orderBy('id', 'desc')->first(); 
         if($lastLoginAt){
             $lastLoginAt = "<span>" . \Carbon\Carbon::parse($lastLoginAt->log_time)->format('F d, Y') . "</span>";
