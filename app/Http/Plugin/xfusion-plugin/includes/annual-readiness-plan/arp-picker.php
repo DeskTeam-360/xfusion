@@ -237,10 +237,11 @@ function xfarp_render_picker_gate(): string
             body.innerHTML = '<p class="xar-muted">' + escHtml(listRes.message || 'Unable to load.') + '</p>';
             return;
         }
-        if (listRes.has_access === false) {
-            window.location.href = '/resources/resource-menu/';
-            return;
-        }
+        // TEMP: no-access redirect disabled while ARP access is still being tested.
+        // if (listRes.has_access === false) {
+        //     window.location.href = '/resources/resource-menu/';
+        //     return;
+        // }
 
         var companies = (companiesRes.success ? companiesRes.data : []) || [];
         render(listRes.data || [], companies, !!listRes.can_create);
