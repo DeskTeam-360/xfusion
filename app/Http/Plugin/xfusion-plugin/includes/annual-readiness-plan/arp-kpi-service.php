@@ -23,7 +23,10 @@ add_action('wp_ajax_xfarp_kpi_load', function (): void {
         wp_send_json_error(['message' => 'arp_id is required.'], 422);
     }
 
-    xfarp_picker_send(xfarp_picker_api_request('GET', "/{$arpId}/kpis"));
+    $result = xfarp_picker_api_request('GET', "/{$arpId}/kpis");
+    // TEMP debug — remove once the "route could not be found" issue is confirmed fixed.
+    error_log('[XFARP KPI load] base=' . XFUSION_LARAVEL_API_BASE . ' arp_id=' . $arpId . ' ok=' . ($result['ok'] ? '1' : '0') . ' body=' . wp_json_encode($result['body']));
+    xfarp_picker_send($result);
 });
 
 add_action('wp_ajax_xfarp_kpi_save', function (): void {
@@ -63,10 +66,13 @@ add_action('wp_ajax_xfarp_kpi_save', function (): void {
         return $item;
     }, $items);
 
-    xfarp_picker_send(xfarp_picker_api_request('POST', "/{$arpId}/kpis", [], [
+    $result = xfarp_picker_api_request('POST', "/{$arpId}/kpis", [], [
         'user_id' => get_current_user_id(),
         'items' => $items,
-    ]));
+    ]);
+    // TEMP debug — remove once the "route could not be found" issue is confirmed fixed.
+    error_log('[XFARP KPI save] base=' . XFUSION_LARAVEL_API_BASE . ' arp_id=' . $arpId . ' ok=' . ($result['ok'] ? '1' : '0') . ' body=' . wp_json_encode($result['body']));
+    xfarp_picker_send($result);
 });
 
 /**
@@ -87,15 +93,22 @@ window.xarLoadKpiDraft = function () {
     params.set('nonce', window.XFARP_WIZARD.nonce);
     params.set('arp_id', String(window.XFARP_WIZARD.arpId));
 
-    return fetch(window.XFARP_WIZARD.ajaxUrl + '?' + params.toString(), { credentials: 'same-origin' })
+    var kpiLoadUrl = window.XFARP_WIZARD.ajaxUrl + '?' + params.toString();
+    console.log('[XFARP KPI] load request', kpiLoadUrl);
+
+    return fetch(kpiLoadUrl, { credentials: 'same-origin' })
         .then(function (res) { return res.json(); })
         .then(function (json) {
+            console.log('[XFARP KPI] load response', json);
             if (!json || !json.success || !Array.isArray(json.data)) {
                 return null;
             }
             return json.data;
         })
-        .catch(function () { return null; });
+        .catch(function (err) {
+            console.log('[XFARP KPI] load error', err);
+            return null;
+        });
 };
 
 window.xarSaveKpiDraft = function () {
@@ -120,12 +133,17 @@ window.xarSaveKpiDraft = function () {
     payload.set('arp_id', String(window.XFARP_WIZARD.arpId));
     payload.set('items', JSON.stringify(items));
 
+    console.log('[XFARP KPI] save request', window.XFARP_WIZARD.ajaxUrl, items);
+
     return fetch(window.XFARP_WIZARD.ajaxUrl, {
         method: 'POST',
         credentials: 'same-origin',
         headers: { 'Content-Type': 'application/x-www-form-urlencoded; charset=UTF-8' },
         body: payload.toString(),
-    }).then(function (res) { return res.json(); });
+    }).then(function (res) { return res.json(); }).then(function (json) {
+        console.log('[XFARP KPI] save response', json);
+        return json;
+    });
 };
 JS;
 }
