@@ -3,6 +3,7 @@
 namespace App\Services;
 
 use App\Models\Arp;
+use App\Models\ArpKpi;
 use App\Models\ArpStrategicPriority;
 use App\Models\CompanyGroup;
 use App\Models\CompanyGroupDetail;
@@ -53,6 +54,7 @@ class QbrEvidenceService
         $activity = $this->activityParticipationByProgram($memberIds, $start, $end);
         $toolUtilization = $this->toolUtilizationStats($memberIds, $start, $end);
         $arpKpis = $this->arpOrganizationalKpis($qbr);
+        $operationalMetrics = $this->arpOperationalMetrics($qbr);
 
         $priorSnapshot = $qbr->previousQuarter()?->evidenceSnapshots()->first()?->snapshot;
 
@@ -71,16 +73,10 @@ class QbrEvidenceService
             'cor_capability_trends' => $corTrends,
             'behavioral_driver_trends' => $driverTrends,
             'readiness_indicators' => $this->readinessIndicators($oneOnOne, $assessment, $commitmentCompletion, $objectivesProgress, $toolUtilization),
-            'kpis' => $qbr->kpis()->get()->map(fn ($k) => [
-                'name' => $k->name,
-                'current' => $k->current_value,
-                'target' => $k->target_value,
-                'status' => $k->status,
-                'trend' => $k->trend,
-            ])->all(),
+            'kpis' => $operationalMetrics,
             'arp_organizational_kpis' => $arpKpis,
             'historical_qbr_data' => $this->historicalQbrData($qbr),
-            'evidence_sources' => $this->evidenceSourcesChecklist($qbr, $oneOnOneSummaries, $activity, $toolUtilization, $arpKpis),
+            'evidence_sources' => $this->evidenceSourcesChecklist($qbr, $oneOnOneSummaries, $activity, $toolUtilization, $arpKpis, $operationalMetrics),
         ];
     }
 
@@ -266,13 +262,108 @@ class QbrEvidenceService
             return [];
         }
 
-        return ArpStrategicPriority::query()
+        $groupsByKpiName = [];
+        ArpStrategicPriority::query()
             ->where('arp_id', $arp->id)
             ->whereNotNull('org_kpi')
             ->where('org_kpi', '!=', '')
-            ->pluck('org_kpi')
+            ->get(['org_kpi', 'related_groups'])
+            ->each(function (ArpStrategicPriority $p) use (&$groupsByKpiName) {
+                $names = $this->decodeJsonStringArray($p->org_kpi);
+                $groups = is_array($p->related_groups) ? $p->related_groups : [];
+                foreach ($names as $name) {
+                    $groupsByKpiName[$name] = array_values(array_unique(array_merge(
+                        $groupsByKpiName[$name] ?? [],
+                        array_map('intval', $groups)
+                    )));
+                }
+            });
+
+        if ($groupsByKpiName === []) {
+            return [];
+        }
+
+        [$start, $end] = $this->periodDates($qbr);
+        $kpisByName = ArpKpi::query()->where('arp_id', $arp->id)->get()->keyBy('name');
+
+        $out = [];
+        foreach ($groupsByKpiName as $name => $groupIds) {
+            $kpi = $kpisByName->get($name);
+
+            $individualActual = null;
+            if ($kpi !== null && $kpi->owner_user_id) {
+                $individualActual = $this->overallReadinessScore(
+                    $this->latestEvaluationsInPeriod([(int) $kpi->owner_user_id], $start, $end)
+                );
+            }
+
+            $groupActual = null;
+            if ($groupIds !== []) {
+                $groupMemberIds = CompanyGroupDetail::query()
+                    ->whereIn('company_group_id', $groupIds)
+                    ->pluck('user_id')
+                    ->map(fn ($id) => (int) $id)
+                    ->unique()
+                    ->values()
+                    ->all();
+
+                if ($groupMemberIds !== []) {
+                    $groupActual = $this->overallReadinessScore(
+                        $this->latestEvaluationsInPeriod($groupMemberIds, $start, $end)
+                    );
+                }
+            }
+
+            $out[] = [
+                'name' => $name,
+                'current_baseline' => $kpi?->current_baseline,
+                'target_value' => $kpi?->target_value,
+                'owner_user_id' => $kpi?->owner_user_id,
+                'individual_actual' => $individualActual,
+                'group_ids' => $groupIds,
+                'group_actual' => $groupActual,
+            ];
+        }
+
+        return $out;
+    }
+
+    /** ArpKpi rows for this QBR's ARP, shaped for the "Operational Metrics" evidence card. */
+    private function arpOperationalMetrics(Qbr $qbr): array
+    {
+        $arp = $this->arpForQbr($qbr);
+        if ($arp === null) {
+            return [];
+        }
+
+        return ArpKpi::query()
+            ->where('arp_id', $arp->id)
+            ->orderBy('priority_rank')
+            ->get()
+            ->map(fn (ArpKpi $k) => [
+                'name' => $k->name,
+                'current' => $k->current_baseline,
+                'target' => $k->target_value,
+                'status' => $k->target_date !== null && $k->target_date->isPast() ? 'overdue' : 'on_track',
+                'trend' => null,
+            ])
             ->values()
             ->all();
+    }
+
+    /** @return list<string> */
+    private function decodeJsonStringArray(?string $raw): array
+    {
+        if ($raw === null || trim($raw) === '') {
+            return [];
+        }
+
+        $decoded = json_decode($raw, true);
+        if (is_array($decoded)) {
+            return array_values(array_filter(array_map('strval', $decoded), fn ($v) => $v !== ''));
+        }
+
+        return [$raw];
     }
 
     /** % of the previous quarter's QBR commitments marked done. */
@@ -733,7 +824,7 @@ class QbrEvidenceService
     }
 
     /** Step 1's read-only checklist — which sources actually returned data. */
-    private function evidenceSourcesChecklist(Qbr $qbr, array $oneOnOneSummaries, array $activity, array $toolUtilization, array $arpKpis): array
+    private function evidenceSourcesChecklist(Qbr $qbr, array $oneOnOneSummaries, array $activity, array $toolUtilization, array $arpKpis, array $operationalMetrics): array
     {
         $group = CompanyGroup::find($qbr->company_group_id);
         $activityAvailable = ($activity['participated'] ?? 0) > 0;
@@ -750,7 +841,7 @@ class QbrEvidenceService
             ['key' => 'tool_usage', 'label' => 'Tool Usage', 'available' => $toolAvailable],
             ['key' => 'ai_insight_themes', 'label' => 'AI Insight Themes', 'available' => true],
             ['key' => 'organizational_kpis', 'label' => 'Organizational KPIs', 'available' => $arpKpis !== []],
-            ['key' => 'operational_metrics', 'label' => 'Operational Metrics', 'available' => $qbr->kpis()->exists()],
+            ['key' => 'operational_metrics', 'label' => 'Operational Metrics', 'available' => $operationalMetrics !== []],
             ['key' => 'historical_qbr_data', 'label' => 'Historical QBR Data', 'available' => $qbr->previousQuarter() !== null],
             ['key' => 'group', 'label' => 'Group', 'available' => $group !== null],
         ];

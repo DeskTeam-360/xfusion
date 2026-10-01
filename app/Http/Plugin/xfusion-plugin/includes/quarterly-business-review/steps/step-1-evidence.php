@@ -149,13 +149,25 @@ function xfqbr_wizard_evidence_init_js(): string
         }
         if (key === 'organizational_kpis') {
             var arpKpis = snap.arp_organizational_kpis || [];
-            if (!arpKpis.length) return noData('No Related Organizational KPI(s) have been set on the latest Annual Readiness Plan™ Step 4 yet.');
-            var aItems = arpKpis.map(function (k) { return '<li>' + esc(formatSlug(k)) + '</li>'; }).join('');
+            if (!arpKpis.length) return noData('No Related Organizational KPI(s) have been set on the latest Annual Readiness Plan™ Step 4/5 yet.');
+            var aItems = arpKpis.map(function (k) {
+                var baseline = (k.current_baseline !== null && k.current_baseline !== undefined && k.current_baseline !== '') ? k.current_baseline : '—';
+                var target = (k.target_value !== null && k.target_value !== undefined && k.target_value !== '') ? k.target_value : '—';
+                var actualBits = [];
+                if (k.individual_actual !== null && k.individual_actual !== undefined) {
+                    actualBits.push('Individual actual: ' + esc(k.individual_actual));
+                }
+                if (k.group_actual !== null && k.group_actual !== undefined) {
+                    actualBits.push('Group actual: ' + esc(k.group_actual));
+                }
+                var actualHtml = actualBits.length ? ' — ' + actualBits.join(', ') : '';
+                return '<li>' + esc(k.name) + ': ' + esc(baseline) + ' / ' + esc(target) + actualHtml + '</li>';
+            }).join('');
             return '<ul class="xqbr-evidence-list-plain">' + aItems + '</ul>';
         }
         if (key === 'operational_metrics') {
             var kpis = snap.kpis || [];
-            if (!kpis.length) return noData('No KPIs have been added for this quarter yet.');
+            if (!kpis.length) return noData('No KPIs have been set on the latest Annual Readiness Plan™ Step 4 yet.');
             var kItems = kpis.map(function (k) {
                 return '<li>' + esc(k.name) + ': ' + esc(k.current) + ' / ' + esc(k.target) + ' <span class="xqbr-muted">(' + esc(k.status) + ')</span></li>';
             }).join('');
