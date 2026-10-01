@@ -194,6 +194,9 @@ function xfoo_wizard_upsert_commitment(int $conversationId, array $row)
         'owner_role' => $row['owner_role'],
         'owner_user_id' => (int) ($row['owner_user_id'] ?? 0) ?: null,
         'due_date' => $row['due_date'] ?? null,
+        // Tells the API which meeting this edit comes from — a commitment
+        // carried from an earlier meeting only allows a status change there.
+        'from_conversation_id' => $conversationId,
     ];
 
     if ($id > 0) {
@@ -319,6 +322,9 @@ function xfoo_wizard_format_commitments_for_ui(array $rows): array
             'success_indicator' => xfoo_wizard_commitment_pick_field($row, $meta, 'success_indicator'),
             'status' => xfoo_wizard_commitment_pick_field($row, $meta, 'status', 'open'),
             'owner_user_id' => (int) ($row['owner_user_id'] ?? 0) ?: null,
+            // Carried over from an earlier meeting of the same pair — only status is editable here.
+            'is_carried' => ! empty($row['is_carried']),
+            'carried_from_date' => isset($row['carried_from_date']) ? (string) $row['carried_from_date'] : null,
         ];
     }
 
@@ -479,15 +485,20 @@ var relatedEmployeeOptions = function (selected) {
 var commitmentRowHtml = function (role, data) {
     data = data || {};
     var id = data.id ? ' data-commitment-id="' + data.id + '"' : '';
+    var carried = !!data.is_carried;
+    var lockedAttr = carried ? ' disabled' : '';
     var thirdCol = role === 'employee'
-        ? '<select class="xfw-input" data-field="behavioral_driver">' + commitmentDriverOptions(data.behavioral_driver || '') + '</select>'
-        : '<select class="xfw-input" data-field="owner_user_id">' + relatedEmployeeOptions(data.owner_user_id || '') + '</select>';
-    return '<tr class="xfw-commit-row" data-role="' + role + '"' + id + '>' +
-        '<td><textarea class="xfw-input" rows="2" data-field="title" placeholder="Describe the commitment...">' + xfwEscHtml(data.title) + '</textarea></td>' +
-        '<td><select class="xfw-input" data-field="priority">' + commitmentPriorityOptions(data.priority || 'medium') + '</select></td>' +
+        ? '<select class="xfw-input" data-field="behavioral_driver"' + lockedAttr + '>' + commitmentDriverOptions(data.behavioral_driver || '') + '</select>'
+        : '<select class="xfw-input" data-field="owner_user_id"' + lockedAttr + '>' + relatedEmployeeOptions(data.owner_user_id || '') + '</select>';
+    var carriedBadge = carried
+        ? '<div class="xfw-muted" style="font-size:11px;margin-top:4px">Continuing from ' + xfwEscHtml(data.carried_from_date || 'a previous meeting') + '</div>'
+        : '';
+    return '<tr class="xfw-commit-row' + (carried ? ' xfw-commit-row-carried' : '') + '" data-role="' + role + '"' + id + (carried ? ' data-carried="1"' : '') + '>' +
+        '<td><textarea class="xfw-input" rows="2" data-field="title" placeholder="Describe the commitment..."' + lockedAttr + '>' + xfwEscHtml(data.title) + '</textarea>' + carriedBadge + '</td>' +
+        '<td><select class="xfw-input" data-field="priority"' + lockedAttr + '>' + commitmentPriorityOptions(data.priority || 'medium') + '</select></td>' +
         '<td>' + thirdCol + '</td>' +
-        '<td><input class="xfw-input" type="date" data-field="due_date" value="' + xfwEscHtml(data.due_date) + '"></td>' +
-        '<td><textarea class="xfw-input" rows="2" data-field="success_indicator" placeholder="How will success be measured?">' + xfwEscHtml(data.success_indicator) + '</textarea></td>' +
+        '<td><input class="xfw-input" type="date" data-field="due_date" value="' + xfwEscHtml(data.due_date) + '"' + lockedAttr + '></td>' +
+        '<td><textarea class="xfw-input" rows="2" data-field="success_indicator" placeholder="How will success be measured?"' + lockedAttr + '>' + xfwEscHtml(data.success_indicator) + '</textarea></td>' +
         '<td><select class="xfw-input" data-field="status">' + commitmentStatusOptions(data.status || 'open') + '</select></td>' +
         '</tr>';
 };

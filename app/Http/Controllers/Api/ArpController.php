@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
 use App\Models\Arp;
+use App\Models\ArpKpi;
 use App\Models\ArpLearning;
 use App\Models\ArpReadinessPriority;
 use App\Models\ArpStrategicPriority;
@@ -160,7 +161,7 @@ class ArpController extends Controller
 
     /**
      * Every group in this ARP's company — used to populate the
-     * "Related Group(s)" multi-select on Step 4 (Strategic Priorities)
+     * "Related Group(s)" multi-select on Step 5 (Strategic Priorities)
      * instead of a hardcoded pseudo-scope list (all_leaders, etc).
      */
     public function companyGroups(Request $request, Arp $arp)
@@ -238,7 +239,7 @@ class ArpController extends Controller
 
     /**
      * Single version's full snapshot — powers the "Version History" sidebar
-     * card's detail view (Step 7 "Archive Previous Version" / "Publish"
+     * card's detail view (Step 8 "Archive Previous Version" / "Publish"
      * both write a snapshot here; this is the only place to read one back).
      */
     public function getVersion(Request $request, Arp $arp, ArpVersion $version)
@@ -308,13 +309,13 @@ class ArpController extends Controller
             return response()->json(['success' => false, 'message' => 'You do not lead this ARP\'s company group.'], 403);
         }
 
-        // Mirrors QBR/ARR/IRR's publish gate — Step 7's "Review Your Plan"
+        // Mirrors QBR/ARR/IRR's publish gate — Step 8's "Review Your Plan"
         // list previously always showed every step as Complete regardless
         // of real progress, and nothing here stopped a half-empty plan
         // from being published. Uses the same keys ArpPlanService::
         // computeStepProgress() already returns to the wizard.
         $progress = app(ArpPlanService::class)->computeStepProgress($arp);
-        $requiredSteps = ['foundation', 'future_state', 'readiness', 'strategic', 'learning', 'ai_review'];
+        $requiredSteps = ['foundation', 'future_state', 'readiness', 'kpis', 'strategic', 'learning', 'ai_review'];
         $missing = array_values(array_filter($requiredSteps, fn ($step) => empty($progress[$step])));
 
         if ($missing !== []) {
@@ -374,6 +375,7 @@ class ArpController extends Controller
             'foundation' => $plan->foundationValues($arp),
             'future_state' => $plan->futureStateValues($arp),
             'readiness_priorities' => ArpReadinessPriority::where('arp_id', $arp->id)->orderBy('priority_rank')->get()->toArray(),
+            'kpis' => ArpKpi::where('arp_id', $arp->id)->orderBy('priority_rank')->get()->toArray(),
             'strategic_priorities' => ArpStrategicPriority::where('arp_id', $arp->id)->orderBy('priority_rank')->get()->toArray(),
             'learning' => $plan->learningValues($arp),
             'learnings' => ArpLearning::where('arp_id', $arp->id)->get()->toArray(),
@@ -494,7 +496,7 @@ class ArpController extends Controller
         return response()->json(['success' => true, 'saved_at' => now()->format('g:i A')]);
     }
 
-    /** Step 5 — Organizational Learning™ */
+    /** Step 6 — Organizational Learning™ */
     public function getLearning(Arp $arp)
     {
         return response()->json([
@@ -589,8 +591,82 @@ class ArpController extends Controller
         return response()->json(['success' => true, 'saved_at' => now()->format('g:i A')]);
     }
 
+    /** Step 4 — Key Performance Indicators™: list. */
+    public function getKpis(Arp $arp)
+    {
+        $items = ArpKpi::where('arp_id', $arp->id)
+            ->orderBy('priority_rank')
+            ->get();
+
+        return response()->json(['success' => true, 'data' => $items]);
+    }
+
     /**
-     * Step 4 — Strategic Priorities™: list, with readiness_priority_id
+     * Step 4 — replace-all save: same semantics as the other repeatable ARP
+     * steps (delete-then-insert on the whole list).
+     */
+    public function saveKpis(Request $request, Arp $arp)
+    {
+        $userId = (int) $request->input('user_id');
+        if ($userId < 1 || ! $this->leadableCompanyIds($userId)->contains($arp->company_id)) {
+            return response()->json(['success' => false, 'message' => 'You do not lead this ARP\'s company group.'], 403);
+        }
+
+        $data = $request->validate([
+            'items' => 'present|array',
+            'items.*.name' => 'nullable|string|max:255',
+            'items.*.type' => 'nullable|string|max:20',
+            'items.*.description' => 'nullable|string',
+            'items.*.why_it_matters' => 'nullable|string',
+            'items.*.current_baseline' => 'nullable|string|max:120',
+            'items.*.target_value' => 'nullable|string|max:120',
+            'items.*.target_date' => 'nullable|string',
+            'items.*.measurement_frequency' => 'nullable|string|max:20',
+            'items.*.data_source' => 'nullable|string|max:255',
+            'items.*.owner_user_id' => 'nullable',
+            'items.*.readiness_priority_ids' => 'nullable|array',
+            'items.*.readiness_priority_ids.*' => 'nullable',
+            'items.*.notes' => 'nullable|string',
+        ]);
+
+        DB::transaction(function () use ($arp, $data) {
+            ArpKpi::where('arp_id', $arp->id)->delete();
+
+            foreach (array_values($data['items']) as $index => $item) {
+                $readinessIds = array_values(array_filter(array_map(
+                    fn ($id) => filter_var($id, FILTER_VALIDATE_INT),
+                    $item['readiness_priority_ids'] ?? []
+                ), fn ($id) => $id !== false));
+
+                $ownerId = filter_var($item['owner_user_id'] ?? null, FILTER_VALIDATE_INT);
+                $targetDate = ! empty($item['target_date']) ? $item['target_date'] : null;
+
+                ArpKpi::create([
+                    'arp_id' => $arp->id,
+                    'name' => $item['name'] ?? '',
+                    'type' => $item['type'] ?? ArpKpi::TYPE_LEADING,
+                    'description' => $item['description'] ?? null,
+                    'why_it_matters' => $item['why_it_matters'] ?? null,
+                    'current_baseline' => $item['current_baseline'] ?? null,
+                    'target_value' => $item['target_value'] ?? null,
+                    'target_date' => $targetDate,
+                    'measurement_frequency' => $item['measurement_frequency'] ?? 'quarterly',
+                    'data_source' => $item['data_source'] ?? null,
+                    'owner_user_id' => $ownerId !== false ? $ownerId : null,
+                    'readiness_priority_ids' => $readinessIds,
+                    'notes' => $item['notes'] ?? null,
+                    'priority_rank' => $index,
+                ]);
+            }
+        });
+
+        app(ArpPlanService::class)->refreshStepProgress($arp);
+
+        return response()->json(['success' => true, 'saved_at' => now()->format('g:i A')]);
+    }
+
+    /**
+     * Step 5 — Strategic Priorities™: list, with readiness_priority_id
      * resolved back to the readiness priority's name for the UI's
      * "Related Readiness Priority" select (which matches by name, not id).
      */
@@ -614,7 +690,7 @@ class ArpController extends Controller
     }
 
     /**
-     * Step 4 — replace-all save. `related_readiness` arrives as the
+     * Step 5 — replace-all save. `related_readiness` arrives as the
      * readiness priority's NAME (the UI matches by name, not id) — resolved
      * here against this ARP's saved readiness priorities before insert.
      */
@@ -682,7 +758,7 @@ class ArpController extends Controller
         return response()->json(['success' => true, 'saved_at' => now()->format('g:i A')]);
     }
 
-    /** Step 6 — latest AI Readiness Review assessment + leadership context. */
+    /** Step 7 — latest AI Readiness Review assessment + leadership context. */
     public function getReadinessReview(Request $request, Arp $arp)
     {
         $userId = (int) $request->query('user_id');
@@ -704,7 +780,7 @@ class ArpController extends Controller
                 'insight_model' => $latest?->insight_model,
                 'generated_at' => $latest?->created_at?->toIso8601String(),
                 'can_edit' => $this->leadableCompanyIds($userId)->contains($arp->company_id),
-                // Steps 1-5 stay freely navigable (just draft saves) - this
+                // Steps 1-6 stay freely navigable (just draft saves) - this
                 // is the one hard requirement, surfaced here so the UI can
                 // disable Generate and show what's missing before the user
                 // even clicks it.
@@ -713,7 +789,7 @@ class ArpController extends Controller
         ]);
     }
 
-    /** Step 6 — generate (or regenerate) AI Readiness Review from Steps 1–5. */
+    /** Step 7 — generate (or regenerate) AI Readiness Review from Steps 1–6. */
     public function generateReadinessReview(Request $request, Arp $arp)
     {
         $userId = (int) $request->input('user_id');
@@ -767,7 +843,7 @@ class ArpController extends Controller
         ]);
     }
 
-    /** Step 6 — save leadership context (editable by group leaders). */
+    /** Step 7 — save leadership context (editable by group leaders). */
     public function saveReadinessReviewContext(Request $request, Arp $arp)
     {
         $userId = (int) $request->input('user_id');

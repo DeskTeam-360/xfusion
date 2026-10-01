@@ -282,7 +282,16 @@ class QbrController extends Controller
         }
 
         $latest = $qbr->evidenceSnapshots()->first();
-        if ($latest === null) {
+
+        // A snapshot taken before the previous quarter's own QBR existed/had
+        // evidence yet freezes "Historical QBR Data" as unavailable forever,
+        // since this endpoint otherwise only serves the cached snapshot.
+        // Auto-refresh once the previous quarter is able to supply it.
+        $staleHistoricalData = $latest !== null
+            && $qbr->previousQuarter() !== null
+            && ! ($latest->snapshot['historical_qbr_data']['available'] ?? false);
+
+        if ($latest === null || $staleHistoricalData) {
             $snapshot = $evidenceService->buildSnapshot($qbr);
             $latest = QbrEvidenceSnapshot::create(['qbr_id' => $qbr->id, 'snapshot' => $snapshot, 'captured_at' => now()]);
         }

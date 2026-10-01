@@ -19,7 +19,7 @@
 
 defined('ABSPATH') || exit;
 
-const XFUSION_ARP_DB_VERSION = '1.1';
+const XFUSION_ARP_DB_VERSION = '1.2';
 
 /**
  * @return array<string, string>
@@ -33,6 +33,7 @@ function xfusion_arp_table_names(): array
         'arps' => $p . 'fusion_arps',
         'future_states' => $p . 'fusion_arp_future_states',
         'readiness_priorities' => $p . 'fusion_arp_readiness_priorities',
+        'kpis' => $p . 'fusion_arp_kpis',
         'strategic_priorities' => $p . 'fusion_arp_strategic_priorities',
         'learnings' => $p . 'fusion_arp_learnings',
         'ai_assessments' => $p . 'fusion_arp_ai_assessments',
@@ -107,6 +108,29 @@ function xfusion_arp_maybe_migrate_tables(): void
         KEY arprp_rank_idx (arp_id, priority_rank)
     ) {$charset};");
 
+    dbDelta("CREATE TABLE {$t['kpis']} (
+        id bigint(20) unsigned NOT NULL AUTO_INCREMENT,
+        arp_id bigint(20) unsigned NOT NULL,
+        name varchar(255) NOT NULL DEFAULT '',
+        type varchar(20) NOT NULL DEFAULT 'leading',
+        description text NULL,
+        why_it_matters text NULL,
+        current_baseline varchar(120) NULL,
+        target_value varchar(120) NULL,
+        target_date date NULL,
+        measurement_frequency varchar(20) NOT NULL DEFAULT 'quarterly',
+        data_source varchar(255) NULL,
+        owner_user_id bigint(20) unsigned NULL,
+        readiness_priority_ids text NULL COMMENT 'JSON array of wp_fusion_arp_readiness_priorities.id',
+        notes text NULL,
+        priority_rank smallint(5) unsigned NOT NULL DEFAULT 0,
+        created_at datetime NULL,
+        updated_at datetime NULL,
+        PRIMARY KEY  (id),
+        KEY arpkpi_arp_idx (arp_id),
+        KEY arpkpi_rank_idx (arp_id, priority_rank)
+    ) {$charset};");
+
     dbDelta("CREATE TABLE {$t['strategic_priorities']} (
         id bigint(20) unsigned NOT NULL AUTO_INCREMENT,
         arp_id bigint(20) unsigned NOT NULL,
@@ -172,6 +196,12 @@ function xfusion_arp_maybe_migrate_tables(): void
         MODIFY success_measures text NULL,
         MODIFY org_kpi text NULL,
         MODIFY readiness_indicator text NULL");
+
+    // phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared
+    $wpdb->query("ALTER TABLE {$t['kpis']}
+        MODIFY description text NULL,
+        MODIFY why_it_matters text NULL,
+        MODIFY notes text NULL");
 
     update_option('xfusion_arp_db_version', XFUSION_ARP_DB_VERSION);
 }

@@ -4,7 +4,7 @@
  *
  * Usage: [fusion_arp_wizard]
  *
- * 7-step wizard shell. All steps persist via Laravel API (/api/v1/arps/*).
+ * 8-step wizard shell. All steps persist via Laravel API (/api/v1/arps/*).
  *
  * @package XFusion
  */
@@ -19,6 +19,7 @@ require_once __DIR__ . '/arp-save-draft.php';
 require_once __DIR__ . '/arp-load-draft.php';
 require_once __DIR__ . '/arp-plan-service.php';
 require_once __DIR__ . '/arp-readiness-service.php';
+require_once __DIR__ . '/arp-kpi-service.php';
 require_once __DIR__ . '/arp-strategic-service.php';
 require_once __DIR__ . '/arp-ai-review-service.php';
 require_once __DIR__ . '/arp-publish-service.php';
@@ -26,6 +27,7 @@ require_once __DIR__ . '/core.php';
 require_once __DIR__ . '/steps/step-1-foundation.php';
 require_once __DIR__ . '/steps/step-2-future-state.php';
 require_once __DIR__ . '/steps/step-3-readiness.php';
+require_once __DIR__ . '/steps/step-4-kpis.php';
 require_once __DIR__ . '/steps/step-4-priorities.php';
 require_once __DIR__ . '/steps/step-5-learning.php';
 require_once __DIR__ . '/steps/step-6-ai-review.php';
@@ -118,6 +120,7 @@ function xfusion_arp_wizard_shortcode($atts = []): string
         xfarp_wizard_step_foundation_js(),
         xfarp_wizard_step_future_state_js(),
         xfarp_wizard_step_readiness_js(),
+        xfarp_wizard_step_kpis_js(),
         xfarp_wizard_step_priorities_js(),
         xfarp_wizard_step_learning_js(),
         xfarp_wizard_step_ai_review_js(),
@@ -127,6 +130,7 @@ function xfusion_arp_wizard_shortcode($atts = []): string
     $panelsJs    = 'var PANELS = {' . "\n" . implode(",\n\n", $panelFns) . "\n" . '};';
     $coreJs      = xfarp_wizard_core_js();
     $readinessJs = xfarp_wizard_readiness_init_js();
+    $kpiJs       = xfarp_wizard_kpis_init_js();
     $strategicJs = xfarp_wizard_strategic_init_js();
     $learningJs  = xfarp_wizard_learning_init_js();
     $aiReviewJs  = xfarp_wizard_ai_review_init_js();
@@ -159,6 +163,7 @@ function xfusion_arp_wizard_shortcode($atts = []): string
     $loadJs      = xfarp_wizard_load_draft_js();
     $planSvcJs   = xfarp_wizard_plan_service_js();
     $readinessSvcJs = xfarp_wizard_readiness_service_js();
+    $kpiSvcJs       = xfarp_wizard_kpi_service_js();
     $strategicSvcJs = xfarp_wizard_strategic_service_js();
     $aiReviewSvcJs  = xfarp_wizard_ai_review_service_js();
     $publishSvcJs   = xfarp_wizard_publish_service_js();
@@ -256,6 +261,8 @@ if (window.XFARP_WIZARD.viewingVersion && window.XFARP_WIZARD.viewingVersion.sna
     } };
     window.xarReadinessCache = xarSnap.readiness_priorities || [];
     window.xarReadinessLoaded = true;
+    window.xarKpiCache = xarSnap.kpis || [];
+    window.xarKpiLoaded = true;
     window.xarStrategicCache = xarSnap.strategic_priorities || [];
     window.xarStrategicLoaded = true;
 }
@@ -269,8 +276,8 @@ if (window.XFARP_WIZARD.viewingVersion && window.XFARP_WIZARD.viewingVersion.sna
 // touch `root`/`document` outside of function bodies, so reordering
 // them ahead of coreJs is safe (same fix applied to the QBR/IRR
 // wizards for an equivalent root-ordering bug).
-echo $panelsJs . "\n\n" . $readinessJs . "\n\n" . $strategicJs . "\n\n" . $learningJs . "\n\n" . $aiReviewJs . "\n\n" . $publishJs . "\n\n"
-    . $planSvcJs . "\n\n" . $readinessSvcJs . "\n\n" . $strategicSvcJs . "\n\n" . $aiReviewSvcJs . "\n\n" . $publishSvcJs . "\n\n"
+echo $panelsJs . "\n\n" . $readinessJs . "\n\n" . $kpiJs . "\n\n" . $strategicJs . "\n\n" . $learningJs . "\n\n" . $aiReviewJs . "\n\n" . $publishJs . "\n\n"
+    . $planSvcJs . "\n\n" . $readinessSvcJs . "\n\n" . $kpiSvcJs . "\n\n" . $strategicSvcJs . "\n\n" . $aiReviewSvcJs . "\n\n" . $publishSvcJs . "\n\n"
     . $coreJs . "\n\n" . $saveJs . "\n\n" . $loadJs;
 ?>
 })();

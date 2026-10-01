@@ -1,6 +1,6 @@
 <?php
 /**
- * Step 6 — AI Readiness Review™: Laravel-backed load / generate / leadership context.
+ * Step 7 — AI Readiness Review™: Laravel-backed load / generate / leadership context.
  *
  * @package XFusion
  */

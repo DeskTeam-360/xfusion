@@ -1,11 +1,9 @@
 <?php
 /**
- * Step 5 — Strategic Priorities™: Laravel-backed save/load bridge.
+ * Step 4 — Key Performance Indicators™: Laravel-backed save/load bridge.
  *
- * Mirrors arp-readiness-service.php's pattern. Saves to
- * wp_fusion_arp_strategic_priorities via ArpController::getStrategicPriorities
- * / saveStrategicPriorities. Reuses xfarp_picker_api_request() from
- * arp-picker.php for the HTTP bridge.
+ * Saves directly to wp_fusion_arp_kpis via the Laravel API.
+ * Reuses xfarp_picker_api_request() from arp-picker.php for the HTTP bridge.
  *
  * @package XFusion
  */
@@ -14,7 +12,7 @@ if (! defined('ABSPATH')) {
     exit;
 }
 
-add_action('wp_ajax_xfarp_strategic_load', function (): void {
+add_action('wp_ajax_xfarp_kpi_load', function (): void {
     check_ajax_referer('xfarp_wizard_save_draft', 'nonce');
     if (! is_user_logged_in()) {
         wp_send_json_error(['message' => 'Unauthorized.'], 401);
@@ -25,10 +23,10 @@ add_action('wp_ajax_xfarp_strategic_load', function (): void {
         wp_send_json_error(['message' => 'arp_id is required.'], 422);
     }
 
-    xfarp_picker_send(xfarp_picker_api_request('GET', "/{$arpId}/strategic-priorities"));
+    xfarp_picker_send(xfarp_picker_api_request('GET', "/{$arpId}/kpis"));
 });
 
-add_action('wp_ajax_xfarp_strategic_save', function (): void {
+add_action('wp_ajax_xfarp_kpi_save', function (): void {
     check_ajax_referer('xfarp_wizard_save_draft', 'nonce');
     if (! is_user_logged_in()) {
         wp_send_json_error(['message' => 'Unauthorized.'], 401);
@@ -41,29 +39,22 @@ add_action('wp_ajax_xfarp_strategic_save', function (): void {
 
     $items = xfarp_wizard_decode_json_post('items');
 
-    // Laravel validates org_kpi / readiness_indicator as strings (TEXT JSON),
-    // while the UI collects them as arrays. Encode arrays to JSON strings
-    // here so validation passes and the column stores a JSON array.
-    $stringFields = ['title', 'description', 'success_measures', 'related_readiness', 'target_date'];
-    $jsonArrayFields = ['org_kpi', 'readiness_indicator'];
-    $items = array_map(static function ($item) use ($stringFields, $jsonArrayFields) {
+    // Optional text fields: Laravel ConvertEmptyStringsToNull turns "" into
+    // null, and the live MySQL column may still be NOT NULL. Use a single
+    // space for blank optional text so the insert succeeds; the UI treats
+    // whitespace-only as empty on render.
+    $requiredStrings = ['name'];
+    $optionalText = ['description', 'why_it_matters', 'notes'];
+    $items = array_map(static function ($item) use ($requiredStrings, $optionalText) {
         if (! is_array($item)) {
             return $item;
         }
-        foreach ($stringFields as $field) {
-            if (! array_key_exists($field, $item) || $item[$field] === null || $item[$field] === '') {
-                // description is optional — space survives ConvertEmptyStringsToNull
-                // when the live column is still NOT NULL.
-                $item[$field] = ($field === 'description') ? ' ' : '';
-            } else {
-                $item[$field] = (string) $item[$field];
-            }
+        foreach ($requiredStrings as $field) {
+            $item[$field] = isset($item[$field]) && $item[$field] !== null ? (string) $item[$field] : '';
         }
-        foreach ($jsonArrayFields as $field) {
+        foreach ($optionalText as $field) {
             if (! array_key_exists($field, $item) || $item[$field] === null || $item[$field] === '') {
-                $item[$field] = '[]';
-            } elseif (is_array($item[$field])) {
-                $item[$field] = wp_json_encode(array_values($item[$field]));
+                $item[$field] = ' ';
             } else {
                 $item[$field] = (string) $item[$field];
             }
@@ -72,25 +63,27 @@ add_action('wp_ajax_xfarp_strategic_save', function (): void {
         return $item;
     }, $items);
 
-    xfarp_picker_send(xfarp_picker_api_request('POST', "/{$arpId}/strategic-priorities", [], [
+    xfarp_picker_send(xfarp_picker_api_request('POST', "/{$arpId}/kpis", [], [
         'user_id' => get_current_user_id(),
         'items' => $items,
     ]));
 });
 
 /**
- * JS: fetch/save Step 5 strategic priorities against the Laravel API.
- * Exposed as window.xarLoadStrategicDraft / window.xarSaveStrategicDraft.
+ * JS: fetch/save Step 4 KPIs against the Laravel API.
+ * Exposed as window.xarLoadKpiDraft / window.xarSaveKpiDraft so
+ * step-4-kpis.php (window.initKpiStep) and the save-draft button
+ * handler (arp-save-draft.php) can both call in.
  */
-function xfarp_wizard_strategic_service_js(): string
+function xfarp_wizard_kpi_service_js(): string
 {
     return <<<'JS'
-window.xarLoadStrategicDraft = function () {
+window.xarLoadKpiDraft = function () {
     if (!window.XFARP_WIZARD || !window.XFARP_WIZARD.arpId) {
         return Promise.resolve(null);
     }
     var params = new URLSearchParams();
-    params.set('action', 'xfarp_strategic_load');
+    params.set('action', 'xfarp_kpi_load');
     params.set('nonce', window.XFARP_WIZARD.nonce);
     params.set('arp_id', String(window.XFARP_WIZARD.arpId));
 
@@ -105,13 +98,24 @@ window.xarLoadStrategicDraft = function () {
         .catch(function () { return null; });
 };
 
-window.xarSaveStrategicDraft = function () {
+window.xarSaveKpiDraft = function () {
     if (!window.XFARP_WIZARD || !window.XFARP_WIZARD.arpId) {
         return Promise.reject(new Error('No ARP selected.'));
     }
-    var items = window.xarStrategicCache || [];
+    // Optional text fields must be strings (never null) so MySQL NOT NULL
+    // columns / Laravel inserts do not reject blank draft textareas.
+    var items = (window.xarKpiCache || []).map(function (item) {
+        var next = Object.assign({}, item);
+        ['name', 'description', 'why_it_matters', 'notes', 'current_baseline', 'target_value', 'data_source'].forEach(function (key) {
+            next[key] = (next[key] === null || next[key] === undefined) ? '' : String(next[key]);
+        });
+        if (!Array.isArray(next.readiness_priority_ids)) {
+            next.readiness_priority_ids = [];
+        }
+        return next;
+    });
     var payload = new URLSearchParams();
-    payload.set('action', 'xfarp_strategic_save');
+    payload.set('action', 'xfarp_kpi_save');
     payload.set('nonce', window.XFARP_WIZARD.nonce);
     payload.set('arp_id', String(window.XFARP_WIZARD.arpId));
     payload.set('items', JSON.stringify(items));

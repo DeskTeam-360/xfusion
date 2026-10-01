@@ -75,9 +75,14 @@ function xfoo_wizard_ajax_complete_meeting(): void
         wp_send_json_error(['message' => 'conversation_id is required.'], 422);
     }
 
-    $result = xfoo_wizard_fusion_api_request('POST', "/conversations/{$conversationId}/status", [], [
+    // Hits OneOnOneController::complete() — marks the meeting held AND
+    // generates the AI Meeting Synthesis in one step. The plain
+    // /status endpoint (used elsewhere for scheduled/in_progress/cancelled
+    // transitions) only flips status and never generates a synthesis, which
+    // left completed meetings permanently missing from QBR's "1-on-1
+    // Alignment Capture Summaries" evidence.
+    $result = xfoo_wizard_fusion_api_request('POST', "/conversations/{$conversationId}/complete", [], [
         'user_id' => get_current_user_id(),
-        'status' => 'completed',
     ]);
 
     if (! $result['ok']) {

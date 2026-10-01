@@ -1,6 +1,6 @@
 <?php
 /**
- * Step 4 — Strategic Priorities™ (repeatable initiative cards).
+ * Step 5 — Strategic Priorities™ (repeatable initiative cards).
  *
  * @package XFusion
  */
@@ -13,7 +13,7 @@ function xfarp_wizard_step_priorities_js(): string
 {
     return <<<'JS'
 priorities: function () {
-    return '<h2 class="xar-section-title">Step 4. Strategic Priorities™</h2>' +
+    return '<h2 class="xar-section-title">Step 5. Strategic Priorities™</h2>' +
         '<p class="xar-section-desc">Translate readiness priorities into executable strategic priorities. Assign ownership, target dates, success measures, and related groups.</p>' +
         '<div class="xar-add-row">' +
         '<a href="#" class="xar-add-link" id="xar-add-strategic">+ Add Strategic Priority</a>' +

@@ -5,6 +5,7 @@ namespace App\Services;
 use App\Models\Arp;
 use App\Models\ArpAiAssessment;
 use App\Models\ArpFutureState;
+use App\Models\ArpKpi;
 use App\Models\ArpLearning;
 use App\Models\ArpReadinessPriority;
 use App\Models\ArpStrategicPriority;
@@ -168,6 +169,17 @@ class ArpPlanService
                 ]))
                 ->values()
                 ->all(),
+            'kpis' => ArpKpi::query()
+                ->where('arp_id', $arp->id)
+                ->orderBy('priority_rank')
+                ->get()
+                ->map(fn (ArpKpi $k) => $k->only([
+                    'name', 'type', 'description', 'why_it_matters', 'current_baseline',
+                    'target_value', 'target_date', 'measurement_frequency', 'data_source',
+                    'owner_user_id', 'readiness_priority_ids', 'notes', 'priority_rank',
+                ]))
+                ->values()
+                ->all(),
             'strategic_priorities' => ArpStrategicPriority::query()
                 ->where('arp_id', $arp->id)
                 ->with('readinessPriority:id,name')
@@ -201,6 +213,7 @@ class ArpPlanService
         $futureDone = trim((string) ($future['future_state_narrative'] ?? '')) !== '';
 
         $readinessDone = ArpReadinessPriority::query()->where('arp_id', $arp->id)->exists();
+        $kpisDone = ArpKpi::query()->where('arp_id', $arp->id)->exists();
         $strategicDone = ArpStrategicPriority::query()->where('arp_id', $arp->id)->exists();
 
         $learningDone = collect($this->learningValues($arp))
@@ -220,6 +233,7 @@ class ArpPlanService
             'foundation' => $foundationDone,
             'future_state' => $futureDone,
             'readiness' => $readinessDone,
+            'kpis' => $kpisDone,
             'strategic' => $strategicDone,
             'learning' => $learningDone,
             'ai_review' => $aiDone,
@@ -239,8 +253,8 @@ class ArpPlanService
     private const FOUNDATION_REQUIRED = ['mission', 'vision', 'organizational_description', 'business_environment', 'executive_narrative'];
 
     /**
-     * Steps 1-5 required-field gate for Step 6 (AI Readiness Review™).
-     * Steps 1-5 themselves stay freely navigable (they're just draft saves),
+     * Steps 1-6 required-field gate for Step 7 (AI Readiness Review™).
+     * Steps 1-6 themselves stay freely navigable (they're just draft saves),
      * but generating the AI review needs real input to analyze - this is
      * the one hard stop, checked server-side so it can never be bypassed by
      * skipping straight to Step 6.
@@ -289,24 +303,24 @@ class ArpPlanService
 
         $strategic = ArpStrategicPriority::query()->where('arp_id', $arp->id)->orderBy('priority_rank')->get();
         if ($strategic->isEmpty()) {
-            $issues[] = 'Step 4 (Strategic Priorities™): add at least one strategic priority.';
+            $issues[] = 'Step 5 (Strategic Priorities™): add at least one strategic priority.';
         } else {
             foreach ($strategic as $index => $p) {
                 $n = $index + 1;
                 if (trim((string) $p->title) === '') {
-                    $issues[] = "Step 4, Priority {$n}: Title is required.";
+                    $issues[] = "Step 5, Priority {$n}: Title is required.";
                 }
                 if ($p->readiness_priority_id === null) {
-                    $issues[] = "Step 4, Priority {$n}: Related Readiness Priority is required.";
+                    $issues[] = "Step 5, Priority {$n}: Related Readiness Priority is required.";
                 }
                 if ($p->target_date === null) {
-                    $issues[] = "Step 4, Priority {$n}: Target Completion Date is required.";
+                    $issues[] = "Step 5, Priority {$n}: Target Completion Date is required.";
                 }
                 if (trim((string) $p->success_measures) === '') {
-                    $issues[] = "Step 4, Priority {$n}: Success Measures is required.";
+                    $issues[] = "Step 5, Priority {$n}: Success Measures is required.";
                 }
                 if (empty($p->owner_user_ids)) {
-                    $issues[] = "Step 4, Priority {$n}: at least one Executive Owner is required.";
+                    $issues[] = "Step 5, Priority {$n}: at least one Executive Owner is required.";
                 }
             }
         }

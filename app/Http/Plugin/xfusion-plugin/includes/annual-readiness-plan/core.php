@@ -20,10 +20,11 @@ var STEPS = [
     { key: 'foundation',   label: 'Organizational\nFoundation™',   title: 'Step 1. Organizational Foundation™' },
     { key: 'future_state', label: 'Future State™',                  title: 'Step 2. Future State™' },
     { key: 'readiness',    label: 'Organizational\nReadiness™',     title: 'Step 3. Organizational Readiness™' },
-    { key: 'priorities',   label: 'Strategic\nPriorities™',         title: 'Step 4. Strategic Priorities™' },
-    { key: 'learning',     label: 'Organizational\nLearning™',      title: 'Step 5. Organizational Learning™' },
-    { key: 'ai_review',    label: 'AI Readiness\nReview™',          title: 'Step 6. AI Readiness Review™' },
-    { key: 'publish',      label: 'Publish ARP™',                   title: 'Step 7. Publish ARP™' },
+    { key: 'kpis',         label: 'Key Performance\nIndicators™',   title: 'Step 4. Key Performance Indicators™ (KPIs)' },
+    { key: 'priorities',   label: 'Strategic\nPriorities™',         title: 'Step 5. Strategic Priorities™' },
+    { key: 'learning',     label: 'Organizational\nLearning™',      title: 'Step 6. Organizational Learning™' },
+    { key: 'ai_review',    label: 'AI Readiness\nReview™',          title: 'Step 7. AI Readiness Review™' },
+    { key: 'publish',      label: 'Publish ARP™',                   title: 'Step 8. Publish ARP™' },
 ];
 
 var iconBase = 'https://sandbox.xperiencefusion.com/wp-content/uploads/2026/07/';
@@ -47,6 +48,14 @@ var SIDEBAR = [
             'Identify the organizational capabilities you must strengthen to achieve your future state.',
             'Each priority links to a COR Organizational Capability™ and Behavioral Drivers™ to ensure alignment across people, process, and systems.',
             'These priorities will become the foundation for your strategic execution.',
+        ],
+    },
+    {
+        aboutIcon: iconBase + 'Target-Crosshairs-Green-Icon.svg',
+        about: [
+            'KPIs provide measurable evidence of progress toward your readiness priorities and strategic priorities.',
+            'Each KPI can be linked to multiple Readiness Priorities and will cascade to be selected within Step 5 (Strategic Priorities).',
+            'Focus on a balanced set of leading and trailing indicators that reflect people, process, and business performance.',
         ],
     },
     {
@@ -206,6 +215,9 @@ if (root) {
         if (STEPS[current].key === 'readiness' && typeof initReadinessStep === 'function') {
             initReadinessStep();
         }
+        if (STEPS[current].key === 'kpis' && typeof initKpiStep === 'function') {
+            initKpiStep();
+        }
         if (STEPS[current].key === 'priorities' && typeof initStrategicStep === 'function') {
             initStrategicStep();
         }
@@ -227,10 +239,10 @@ if (root) {
     var goTo = function (i) {
         var target = Math.max(0, Math.min(STEPS.length - 1, i));
 
-        // Steps 1-5 stay freely navigable (just draft saves) - the one hard
-        // stop is reaching Step 7 (Publish) without ever having generated
-        // the AI Readiness Review in Step 6. Checked here (not just on the
-        // Next button) so clicking the step-7 circle directly can't skip it.
+        // Steps 1-6 stay freely navigable (just draft saves) - the one hard
+        // stop is reaching Step 8 (Publish) without ever having generated
+        // the AI Readiness Review in Step 7. Checked here (not just on the
+        // Next button) so clicking the step-8 circle directly can't skip it.
         var isPublishStep = STEPS[target] && STEPS[target].key === 'publish';
         // Prefer the freshest client-side signal (set once Step 6 has been
         // visited/generated this session), but fall back to the
@@ -242,7 +254,7 @@ if (root) {
             ? window.xarAiReviewCache.has_assessment
             : !!(window.XFARP_WIZARD && window.XFARP_WIZARD.stepProgress && window.XFARP_WIZARD.stepProgress.ai_review);
         if (isPublishStep && target !== current && !aiReviewDone) {
-            window.alert('Generate the AI Readiness Review™ (Step 6) before continuing to Publish.');
+            window.alert('Generate the AI Readiness Review™ (Step 7) before continuing to Publish.');
             return;
         }
 

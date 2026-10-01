@@ -1,6 +1,6 @@
 <?php
 /**
- * Step 5 — Organizational Learning™ (custom UI → Gravity Forms).
+ * Step 6 — Organizational Learning™ (custom UI → Gravity Forms).
  *
  * Field slugs match keys in arp-gf-mapping.php → learning.fields.
  *
@@ -35,7 +35,7 @@ learning: function () {
             .replace(/</g, '&lt;')
             .replace(/>/g, '&gt;');
     }
-    return '<h2 class="xar-section-title">Step 5. Organizational Learning™</h2>' +
+    return '<h2 class="xar-section-title">Step 6. Organizational Learning™</h2>' +
         '<p class="xar-section-desc">Capture the strategic assumptions, risks, opportunities, and key learning objectives that will guide leadership throughout the year.</p>' +
         field('assumptions', 'Key Organizational Assumptions',
             'What assumptions are we making about the future that must be true for our plan to succeed?',

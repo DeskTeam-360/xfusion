@@ -1185,6 +1185,12 @@ class OneOnOneController extends Controller
     }
 
     /** Fetch all commitments for a conversation. */
+    /**
+     * Step 5 "Shared Commitments" rows — this meeting's own commitments plus
+     * any still-open/in_progress commitment carried forward from an earlier
+     * meeting of the same pair, so they can be updated here instead of
+     * silently going stale.
+     */
     public function getCommitments(Request $request, OneOnOneConversation $conversation)
     {
         $userId = (int) $request->query('user_id');
@@ -1192,12 +1198,32 @@ class OneOnOneController extends Controller
             return $this->notAuthorized();
         }
 
+        $fields = [
+            'id', 'conversation_id', 'title', 'description', 'priority', 'behavioral_driver',
+            'success_indicator', 'owner_role', 'owner_user_id', 'status', 'due_date',
+        ];
+
+        $row = fn (OneOnOneCommitment $c, bool $carried, ?string $carriedFromDate) => array_merge(
+            $c->only($fields),
+            ['is_carried' => $carried, 'carried_from_date' => $carriedFromDate]
+        );
+
+        $own = $conversation->commitments()->orderBy('id')->get($fields)
+            ->map(fn (OneOnOneCommitment $c) => $row($c, false, null));
+
+        $oneOnOneId = (int) $conversation->one_on_one_id;
+
+        $carried = OneOnOneCommitment::query()
+            ->whereIn('status', [OneOnOneCommitment::STATUS_OPEN, OneOnOneCommitment::STATUS_IN_PROGRESS])
+            ->whereHas('conversation', fn ($q) => $q->where('one_on_one_id', $oneOnOneId)->where('id', '!=', $conversation->id))
+            ->with('conversation:id,scheduled_at,held_at')
+            ->orderBy('id')
+            ->get($fields)
+            ->map(fn (OneOnOneCommitment $c) => $row($c, true, ($c->conversation?->held_at ?? $c->conversation?->scheduled_at)?->toDateString()));
+
         return response()->json([
             'success' => true,
-            'data' => $conversation->commitments()->orderBy('id')->get([
-                'id', 'title', 'description', 'priority', 'behavioral_driver',
-                'success_indicator', 'owner_role', 'status', 'due_date',
-            ]),
+            'data' => $carried->concat($own)->values(),
         ]);
     }
 
@@ -1269,6 +1295,31 @@ class OneOnOneController extends Controller
         $conversation = $commitment->conversation;
         if ($conversation === null || ! $this->isConversationParticipant($userId, $conversation)) {
             return $this->notAuthorized();
+        }
+
+        // A commitment carried into a later meeting (Step 5 "continuing" row) can
+        // only have its status changed there — title/description/etc stay owned
+        // by the meeting that created it. "from_conversation_id" is the meeting
+        // the wizard is currently editing from.
+        $fromConversationId = (int) $request->input('from_conversation_id', $commitment->conversation_id);
+        $isCarriedHere = $fromConversationId !== (int) $commitment->conversation_id;
+
+        if ($isCarriedHere) {
+            $fromConversation = OneOnOneConversation::find($fromConversationId);
+            if ($fromConversation === null
+                || (int) $fromConversation->one_on_one_id !== (int) $conversation->one_on_one_id
+                || ! $this->isConversationParticipant($userId, $fromConversation)) {
+                return $this->notAuthorized();
+            }
+
+            $data = $request->validate([
+                'status' => 'required|in:open,in_progress,done',
+            ]);
+
+            $commitment->forceFill($data);
+            $commitment->save();
+
+            return response()->json(['success' => true, 'data' => $commitment->fresh()]);
         }
 
         // Wizard always sends the full row — same rules as create (not "sometimes").

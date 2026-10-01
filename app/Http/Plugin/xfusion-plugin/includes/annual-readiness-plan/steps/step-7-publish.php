@@ -76,7 +76,7 @@ publish: function () {
             '</div>';
     }
 
-    return '<h2 class="xar-section-title">Step 7. Publish ARP™</h2>' +
+    return '<h2 class="xar-section-title">Step 8. Publish ARP™</h2>' +
         '<p class="xar-section-desc">Review your plan, publish to activate the FUSION Operating System™, and ensure alignment across the organization for the year ahead.</p>' +
 
         '<div class="xar-card">' +
@@ -98,9 +98,10 @@ publish: function () {
         reviewRow(0, 'foundation', 'Step 1: Organizational Foundation™') +
         reviewRow(1, 'future_state', 'Step 2: Future State™') +
         reviewRow(2, 'readiness', 'Step 3: Organizational Readiness™') +
-        reviewRow(3, 'strategic', 'Step 4: Strategic Priorities™') +
-        reviewRow(4, 'learning', 'Step 5: Organizational Learning™') +
-        reviewRow(5, 'ai_review', 'Step 6: AI Readiness Review™') +
+        reviewRow(3, 'kpis', 'Step 4: Key Performance Indicators™') +
+        reviewRow(4, 'strategic', 'Step 5: Strategic Priorities™') +
+        reviewRow(5, 'learning', 'Step 6: Organizational Learning™') +
+        reviewRow(6, 'ai_review', 'Step 7: AI Readiness Review™') +
         '</div></div>' +
 
         '<div class="xar-card">' +
@@ -214,9 +215,10 @@ function xfarp_wizard_publish_init_js(): string
         [0, 'foundation', 'Step 1: Organizational Foundation™'],
         [1, 'future_state', 'Step 2: Future State™'],
         [2, 'readiness', 'Step 3: Organizational Readiness™'],
-        [3, 'strategic', 'Step 4: Strategic Priorities™'],
-        [4, 'learning', 'Step 5: Organizational Learning™'],
-        [5, 'ai_review', 'Step 6: AI Readiness Review™'],
+        [3, 'kpis', 'Step 4: Key Performance Indicators™'],
+        [4, 'strategic', 'Step 5: Strategic Priorities™'],
+        [5, 'learning', 'Step 6: Organizational Learning™'],
+        [6, 'ai_review', 'Step 7: AI Readiness Review™'],
     ];
 
     function renderArpReviewList() {

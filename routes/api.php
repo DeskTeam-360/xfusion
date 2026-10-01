@@ -470,6 +470,8 @@ Route::prefix('v1')->middleware('fusion.api')->group(function () {
         Route::post('/{arp}/learning', [ArpController::class, 'saveLearning']);
         Route::get('/{arp}/readiness-priorities', [ArpController::class, 'getReadinessPriorities']);
         Route::post('/{arp}/readiness-priorities', [ArpController::class, 'saveReadinessPriorities']);
+        Route::get('/{arp}/kpis', [ArpController::class, 'getKpis']);
+        Route::post('/{arp}/kpis', [ArpController::class, 'saveKpis']);
         Route::get('/{arp}/strategic-priorities', [ArpController::class, 'getStrategicPriorities']);
         Route::post('/{arp}/strategic-priorities', [ArpController::class, 'saveStrategicPriorities']);
         Route::get('/{arp}/readiness-review', [ArpController::class, 'getReadinessReview']);

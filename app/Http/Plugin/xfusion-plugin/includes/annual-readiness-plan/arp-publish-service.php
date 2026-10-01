@@ -1,6 +1,6 @@
 <?php
 /**
- * Step 7 — Publish ARP™: versioning bridge (archive / publish / version history).
+ * Step 8 — Publish ARP™: versioning bridge (archive / publish / version history).
  *
  * Reuses xfarp_picker_api_request() from arp-picker.php.
  *
@@ -75,7 +75,7 @@ add_action('wp_ajax_xfarp_refresh', function (): void {
 
 /**
  * JS: real archive/publish calls + version history fetch, replacing the
- * Step 7 UI-shell alerts with actual Laravel-backed actions.
+ * Step 8 UI-shell alerts with actual Laravel-backed actions.
  */
 function xfarp_wizard_publish_service_js(): string
 {

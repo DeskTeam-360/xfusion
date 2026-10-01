@@ -1,6 +1,6 @@
 <?php
 /**
- * Step 6 — AI Readiness Review™ (dynamic AI synthesis + leadership context).
+ * Step 7 — AI Readiness Review™ (dynamic AI synthesis + leadership context).
  *
  * @package XFusion
  */
@@ -13,7 +13,7 @@ function xfarp_wizard_step_ai_review_js(): string
 {
     return <<<'JS'
 ai_review: function () {
-    return '<h2 class="xar-section-title">Step 6. AI Readiness Review™</h2>' +
+    return '<h2 class="xar-section-title">Step 7. AI Readiness Review™</h2>' +
         '<p class="xar-section-desc">FUSION AI has analyzed your plan to evaluate strategic alignment, identify potential gaps, and highlight key areas of focus to strengthen organizational readiness.</p>' +
         '<div class="xar-banner">' +
         '<span class="xar-banner-icon" aria-hidden="true">ℹ️</span>' +

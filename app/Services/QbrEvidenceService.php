@@ -13,6 +13,7 @@ use App\Models\OneOnOne;
 use App\Models\OneOnOneConversation;
 use App\Models\Qbr;
 use App\Models\QbrCommitment;
+use App\Models\QbrEvidenceSnapshot;
 use App\Models\ResultEvaluation;
 use App\Models\User;
 use App\Models\WpGfEntry;
@@ -203,6 +204,19 @@ class QbrEvidenceService
         }
 
         $snapshot = $previous->evidenceSnapshots()->first()?->snapshot;
+
+        // The previous quarter's own Step 1/2 evidence is normally generated
+        // lazily the first time someone opens it (see QbrController::getEvidence).
+        // If nobody ever opened it, there's no snapshot to read from yet —
+        // backfill it here instead of silently reporting "no data".
+        if ($snapshot === null) {
+            $snapshot = $this->buildSnapshot($previous);
+            QbrEvidenceSnapshot::create([
+                'qbr_id' => $previous->id,
+                'snapshot' => $snapshot,
+                'captured_at' => now(),
+            ]);
+        }
 
         return [
             'available' => true,
