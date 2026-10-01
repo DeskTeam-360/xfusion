@@ -710,8 +710,10 @@ class ArpController extends Controller
             'items.*.target_date' => 'nullable|string',
             'items.*.description' => 'nullable|string',
             'items.*.success_measures' => 'nullable|string',
-            'items.*.org_kpi' => 'nullable|string|max:80',
-            'items.*.readiness_indicator' => 'nullable|string|max:80',
+            // JSON-encoded array of names (e.g. KPI or readiness priority
+            // names) — not a single 80-char slug, so no short max() here.
+            'items.*.org_kpi' => 'nullable|string',
+            'items.*.readiness_indicator' => 'nullable|string',
             'items.*.related_groups' => 'nullable|array',
             'items.*.related_groups.*' => 'nullable',
         ]);

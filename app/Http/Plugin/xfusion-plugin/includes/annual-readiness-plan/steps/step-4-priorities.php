@@ -41,13 +41,19 @@ function xfarp_wizard_strategic_init_js(): string
     var GROUPS = ((window.XFARP_WIZARD && window.XFARP_WIZARD.companyGroups) || []).map(function (g) {
         return { value: String(g.id), label: g.name || ('Group #' + g.id) };
     });
-    var ORG_KPIS = [
-        { value: 'leadership_effectiveness', label: 'Leadership Effectiveness Index' },
-        { value: 'employee_engagement', label: 'Employee Engagement Score' },
-        { value: 'customer_nps', label: 'Customer NPS' },
-        { value: 'on_time_delivery', label: 'On-Time Delivery Rate' },
-        { value: 'revenue_growth', label: 'Revenue Growth' },
-    ];
+    // Related Organizational KPI(s) options come from Step 4's KPIs
+    // (by name, same name-based linking convention as Related Readiness
+    // Indicator(s) below) instead of a hardcoded list.
+    function orgKpiNames() {
+        return (window.xarKpiCache || []).map(function (k) { return k.name; }).filter(Boolean);
+    }
+
+    function orgKpiOptions() {
+        return orgKpiNames().map(function (n) {
+            return { value: n, label: n };
+        });
+    }
+
     function ensureCache() {
         if (!window.xarStrategicCache) {
             window.xarStrategicCache = [];
@@ -171,7 +177,7 @@ function xfarp_wizard_strategic_init_js(): string
             field('Success Measures', true, '<textarea class="xar-input" rows="3" data-key="success_measures" placeholder="How will success be measured?...">' + escHtml(item.success_measures) + '</textarea>') +
             '</div>' +
             '<div class="xar-prio-grid xar-prio-grid-2">' +
-            multiCheckboxField('Related Organizational KPI(s)', false, 'org_kpi', ORG_KPIS, asArray(item.org_kpi), 'No organizational KPIs available') +
+            multiCheckboxField('Related Organizational KPI(s)', false, 'org_kpi', orgKpiOptions(), asArray(item.org_kpi).filter(function (n) { return orgKpiNames().indexOf(n) !== -1; }), 'No KPIs yet — add one in Step 4') +
             multiCheckboxField('Related Readiness Indicator(s)', false, 'readiness_indicator', readinessIndicatorOptions(), asArray(item.readiness_indicator).filter(function (n) { return readinessNames().indexOf(n) !== -1; }), 'No readiness priorities yet — add one in Step 3') +
             '</div>' +
             '<div class="xar-prio-grid xar-prio-grid-1">' +
@@ -289,6 +295,17 @@ function xfarp_wizard_strategic_init_js(): string
             window.xarLoadReadinessDraft().then(function (items) {
                 window.xarReadinessCache = items || [];
                 window.xarReadinessLoaded = true;
+                finishInit();
+            });
+            return;
+        }
+
+        // Options for Related Organizational KPI(s) come from Step 4's KPIs
+        // — load that cache first if this session skipped Step 4.
+        if (!window.xarKpiLoaded && typeof window.xarLoadKpiDraft === 'function') {
+            window.xarLoadKpiDraft().then(function (items) {
+                window.xarKpiCache = items || [];
+                window.xarKpiLoaded = true;
                 finishInit();
             });
             return;
