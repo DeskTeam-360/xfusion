@@ -117,9 +117,19 @@ function xfoo_wizard_save_preparation_to_laravel(int $conversationId, array $emp
     );
 
     if (! $result['ok']) {
-        $msg = is_array($result['body']) ? ($result['body']['message'] ?? 'Save failed.') : ($result['error'] ?? 'Save failed.');
+        $body = is_array($result['body']) ? $result['body'] : [];
+        $msg = (string) ($body['message'] ?? $result['error'] ?? 'Save failed.');
+        if (isset($body['errors']) && is_array($body['errors'])) {
+            $first = reset($body['errors']);
+            if (is_array($first)) {
+                $first = reset($first);
+            }
+            if (is_string($first) && $first !== '') {
+                $msg = $first;
+            }
+        }
 
-        return new WP_Error('prep_save_failed', (string) $msg);
+        return new WP_Error('prep_save_failed', $msg);
     }
 
     return true;
@@ -161,13 +171,54 @@ function xfoo_wizard_save_conversation_notes_to_laravel(int $conversationId, arr
 }
 
 /**
- * Roles the current user may save on Step 3.
+ * Keep only known Step 3 fields for a role, dropping empty values.
+ *
+ * The UI always serializes the other party's locked column as empty
+ * textarea strings. Sending that as `employee: { biggest_accomplishment: "" }`
+ * makes Laravel treat it as a write to the other side and reject the save.
+ *
+ * @param  array<string, mixed>  $values
+ * @return array<string, string>
+ */
+function xfoo_wizard_sanitize_prep_values(string $role, array $values): array
+{
+    $config = function_exists('xfoo_preparation_gf_role_config')
+        ? xfoo_preparation_gf_role_config($role)
+        : null;
+    $fields = (is_array($config) && is_array($config['fields'] ?? null)) ? $config['fields'] : [];
+    $out = [];
+
+    foreach ($fields as $slug => $field) {
+        if (! array_key_exists($slug, $values)) {
+            continue;
+        }
+        $raw = $values[$slug];
+        if (! is_scalar($raw)) {
+            continue;
+        }
+        $val = trim((string) $raw);
+        if ($val === '' || $val === 'null') {
+            continue;
+        }
+        if (($field['type'] ?? '') === 'scale') {
+            if (! preg_match('/^[1-5]$/', $val)) {
+                continue;
+            }
+        }
+        $out[$slug] = $val;
+    }
+
+    return $out;
+}
+
+/**
+ * Roles the current user may save on Step 3 for this conversation.
  *
  * @return list<string>
  */
-function xfoo_wizard_allowed_prep_roles(): array
+function xfoo_wizard_allowed_prep_roles(int $conversationId = 0): array
 {
-    $role = xfoo_wizard_current_user_role();
+    $role = xfoo_wizard_current_user_role($conversationId);
 
     if ($role === 'admin') {
         return ['employee', 'leader'];
@@ -182,11 +233,22 @@ function xfoo_wizard_allowed_prep_roles(): array
 
 /**
  * Resolve wizard participant role for the logged-in user.
+ *
+ * Pairing on this conversation wins — a WP admin who is the leader must
+ * save as leader, not as "admin" (which used to POST both columns and
+ * made Laravel reject the empty employee payload).
  */
-function xfoo_wizard_current_user_role(): string
+function xfoo_wizard_current_user_role(int $conversationId = 0): string
 {
-    if (current_user_can('manage_options')) {
-        return 'admin';
+    $uid = get_current_user_id();
+    if ($conversationId > 0 && $uid > 0 && function_exists('xfoo_wizard_evidence_pair_for_conversation')) {
+        $pair = xfoo_wizard_evidence_pair_for_conversation($conversationId);
+        if ((int) ($pair['leader_user_id'] ?? 0) === $uid) {
+            return 'leader';
+        }
+        if ((int) ($pair['employee_user_id'] ?? 0) === $uid) {
+            return 'employee';
+        }
     }
 
     $fromRequest = isset($_REQUEST['user_role']) ? sanitize_key(wp_unslash($_REQUEST['user_role'])) : '';
@@ -194,7 +256,11 @@ function xfoo_wizard_current_user_role(): string
         return $fromRequest;
     }
 
-    $fromFilter = apply_filters('xfoo_wizard_user_role', 'employee', get_current_user_id());
+    if (current_user_can('manage_options')) {
+        return 'admin';
+    }
+
+    $fromFilter = apply_filters('xfoo_wizard_user_role', 'employee', $uid);
 
     return in_array($fromFilter, ['employee', 'leader', 'admin'], true) ? $fromFilter : 'employee';
 }

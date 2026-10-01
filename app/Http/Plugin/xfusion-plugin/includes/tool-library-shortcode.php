@@ -60,13 +60,13 @@ function xfusion_tool_library_find_group(int $groupId, string $groupTitle)
     return null;
 }
 
-/** @return list<object> each {id, course_title, page_title, icon} */
+/** @return list<object> each {id, course_title, page_title, icon, url} */
 function xfusion_tool_library_find_tools(int $groupId): array
 {
     global $wpdb;
 
     return $wpdb->get_results($wpdb->prepare(
-        "SELECT cl.id, cl.course_title, cl.page_title, cl.icon
+        "SELECT cl.id, cl.course_title, cl.page_title, cl.icon, cl.url
          FROM {$wpdb->prefix}course_group_details cgd
          INNER JOIN {$wpdb->prefix}course_lists cl ON cl.id = cgd.course_list_id
          WHERE cgd.course_group_id = %d
@@ -108,7 +108,11 @@ function xfusion_tool_library_shortcode($atts = []): string
 ?>
         <div class="xfusion-tool-library-pills">
             <?php foreach ($tools as $tool) : ?>
-                <div class="xfusion-tool-library-pill"><?php echo esc_html($tool->page_title ?: $tool->course_title); ?></div>
+                <a href="<?php echo esc_url(add_query_arg('btn-close', 'true', $tool->url)); ?>" target="_blank" class="xfusion-tool-library-pill">
+                    <span class="xfusion-tool-library-pill-text">
+                        <?php echo esc_html($tool->page_title ?: $tool->course_title); ?>
+                    </span>
+                </a>
             <?php endforeach; ?>
         </div>
         <style>
@@ -120,12 +124,30 @@ function xfusion_tool_library_shortcode($atts = []): string
 
             .xfusion-tool-library-pill {
                 background: #1e2a4a;
-                color: #fff;
-                font-weight: 600;
-                text-align: center;
                 border-radius: .35rem;
                 padding: .65rem .9rem;
-                font-size: .95rem
+                position: relative;
+                top: 0;
+                transition: .3s;
+            }
+
+            .xfusion-tool-library-pill:hover {
+                top: -4px;
+            }
+
+            .xfusion-tool-library-pill-text {
+                width: 100%;
+                font-size: 20px;
+                font-weight: 600;
+                padding: 0;
+                text-align: left;
+                color: #c6c6c6;
+                display: block;
+                transition: .3s;
+            }
+
+            .xfusion-tool-library-pill:hover .xfusion-tool-library-pill-text {
+                color: #ffc807;
             }
         </style>
     <?php
@@ -157,7 +179,7 @@ function xfusion_tool_library_shortcode($atts = []): string
         <?php foreach ($tools as $tool) : ?>
             <?php $active = $tagsByTool[(int) $tool->id] ?? []; ?>
             <div class="xfusion-tool-library-row">
-                <div class="xfusion-tool-library-row-main">
+                <a href="<?php echo esc_url(add_query_arg('btn-close', 'true', $tool->url)); ?>" target="_blank" class="xfusion-tool-library-row-main">
                     <?php if (! empty($tool->icon)) : ?>
                         <?php if (str_starts_with((string) $tool->icon, 'http')) : ?>
                             <img class="xfusion-tool-library-icon" src="<?php echo esc_url($tool->icon); ?>" alt="" width="28" height="28">
@@ -165,8 +187,8 @@ function xfusion_tool_library_shortcode($atts = []): string
                             <span class="xfusion-tool-library-icon xfusion-tool-library-icon-emoji"><?php echo esc_html($tool->icon); ?></span>
                         <?php endif; ?>
                     <?php endif; ?>
-                    <a class="xfusion-tool-library-title"><?php echo esc_html($tool->page_title ?: $tool->course_title); ?></a>
-                </div>
+                    <span class="xfusion-tool-library-title"><?php echo esc_html($tool->page_title ?: $tool->course_title); ?></span>
+                </a>
                 <div class="xfusion-tool-library-tags">
                     <?php foreach ($capabilities as $title => $meta) : ?>
                         <?php $isActive = in_array($title, $active, true); ?>
@@ -187,21 +209,31 @@ function xfusion_tool_library_shortcode($atts = []): string
             gap: .75rem
         }
 
-        @media (max-width:640px) {
-            .xfusion-tool-library-grid {
-                grid-template-columns: 1fr
-            }
-        }
-
         .xfusion-tool-library-row {
             display: flex;
             align-items: center;
             justify-content: space-between;
             gap: .75rem;
-            background: #fff;
+            background: transparent;
             border: 1px solid #e5e7eb;
             border-radius: .5rem;
-            padding: .65rem .85rem
+            padding: .65rem .85rem;
+            cursor: pointer;
+            position: relative;
+            transition: .3s;
+            top: 0;
+        }
+
+        .xfusion-tool-library-row:hover {
+            top: -4px;
+        }
+
+        .xfusion-tool-library-row span {
+            transition: .3s;
+        }
+
+        .xfusion-tool-library-row:hover span {
+            color: #ffc807 !important;
         }
 
         .xfusion-tool-library-row-main {
@@ -212,7 +244,7 @@ function xfusion_tool_library_shortcode($atts = []): string
         }
 
         .xfusion-tool-library-icon {
-            width: 28px;
+            width: 48px;
             height: 28px;
             flex-shrink: 0;
             object-fit: contain
@@ -228,7 +260,7 @@ function xfusion_tool_library_shortcode($atts = []): string
 
         .xfusion-tool-library-title {
             font-weight: 600;
-            color: #1f2937;
+            color: #c6c6c6 !important;
             white-space: nowrap;
             overflow: hidden;
             text-overflow: ellipsis
@@ -251,6 +283,31 @@ function xfusion_tool_library_shortcode($atts = []): string
             color: #fff;
             font-size: .75rem;
             font-weight: 700
+        }
+
+        @media (max-width:1310px) {
+            .xfusion-tool-library-grid {
+                grid-template-columns: 1fr;
+                gap: 1.75rem;
+            }
+
+            .xfusion-tool-library-row {
+                flex-wrap: wrap;
+                flex-direction: column;
+            }
+
+            .xfusion-tool-library-row-main {
+                display: flex;
+                flex-direction: column;
+                align-items: center;
+                justify-content: center;
+                flex-wrap: wrap;
+            }
+
+            .xfusion-tool-library-title {
+                white-space: wrap;
+                text-align: center;
+            }
         }
     </style>
 <?php

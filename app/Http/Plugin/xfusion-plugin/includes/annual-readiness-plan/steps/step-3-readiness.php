@@ -136,11 +136,11 @@ function xfarp_wizard_readiness_init_js(): string
             field('Secondary Behavioral Driver™', false, '<select class="xar-input" data-key="secondary_driver">' + opts(DRIVERS, item.secondary_driver) + '</select>') +
             '</div>' +
             '<div class="xar-prio-grid xar-prio-grid-2">' +
-            field('Description', false, '<textarea class="xar-input" rows="3" data-key="description" placeholder="Describe this readiness priority...">' + escHtml(item.description) + '</textarea>') +
-            field('Business Rationale', false, '<textarea class="xar-input" rows="3" data-key="business_rationale" placeholder="Why does this matter?...">' + escHtml(item.business_rationale) + '</textarea>') +
+            field('Description', false, '<textarea class="xar-input" rows="3" data-key="description" placeholder="Describe this readiness priority...">' + escHtml(String(item.description || '').trim()) + '</textarea>') +
+            field('Business Rationale', false, '<textarea class="xar-input" rows="3" data-key="business_rationale" placeholder="Why does this matter?...">' + escHtml(String(item.business_rationale || '').trim()) + '</textarea>') +
             '</div>' +
             '<div class="xar-prio-grid xar-prio-grid-1">' +
-            field('Expected Organizational Impact', false, '<textarea class="xar-input" rows="2" data-key="expected_impact" placeholder="What organizational impact do you expect?...">' + escHtml(item.expected_impact) + '</textarea>') +
+            field('Expected Organizational Impact', false, '<textarea class="xar-input" rows="2" data-key="expected_impact" placeholder="What organizational impact do you expect?...">' + escHtml(String(item.expected_impact || '').trim()) + '</textarea>') +
             '</div>' +
             '<div class="xar-prio-grid xar-prio-grid-1">' +
             multiCheckboxField('Executive Owner(s)', true, 'executive_owner_user_ids', OWNERS, item.executive_owner_user_ids, 'No group members found') +

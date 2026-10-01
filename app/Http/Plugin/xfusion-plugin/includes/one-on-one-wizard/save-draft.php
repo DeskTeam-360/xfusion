@@ -83,9 +83,13 @@ function xfoo_wizard_save_prep_roles(
     array &$skipped,
     array &$errors
 ): void {
-    $allowed = xfoo_wizard_allowed_prep_roles();
-    $payloadEmployee = in_array('employee', $allowed, true) ? $employeeValues : [];
-    $payloadLeader = in_array('leader', $allowed, true) ? $leaderValues : [];
+    $allowed = xfoo_wizard_allowed_prep_roles($conversationId);
+    $payloadEmployee = in_array('employee', $allowed, true)
+        ? xfoo_wizard_sanitize_prep_values('employee', $employeeValues)
+        : [];
+    $payloadLeader = in_array('leader', $allowed, true)
+        ? xfoo_wizard_sanitize_prep_values('leader', $leaderValues)
+        : [];
 
     if ($payloadEmployee === [] && $payloadLeader === []) {
         $skipped[] = 'preparation:empty';
@@ -198,7 +202,7 @@ var saveDraftBusy = false;
 
 var collectRolePrepValues = function (role) {
     var col = root.querySelector('.xfw-prep-col.' + role);
-    if (!col) {
+    if (!col || col.classList.contains('xfw-prep-col-locked')) {
         return {};
     }
     var out = {};
@@ -210,7 +214,7 @@ var collectRolePrepValues = function (role) {
     });
     col.querySelectorAll('[data-field][data-type="textarea"]').forEach(function (el) {
         var textarea = el.querySelector('textarea');
-        if (textarea) {
+        if (textarea && textarea.value.trim()) {
             out[el.dataset.field] = textarea.value;
         }
     });
@@ -263,8 +267,13 @@ var saveDraft = function () {
     }
 
     if (stepKey === 'preparation') {
-        payload.set('employee', JSON.stringify(collectRolePrepValues('employee')));
-        payload.set('leader', JSON.stringify(collectRolePrepValues('leader')));
+        var myRole = window.XFW_WIZARD.userRole;
+        if (myRole === 'employee' || myRole === 'leader') {
+            payload.set(myRole, JSON.stringify(collectRolePrepValues(myRole)));
+        } else {
+            payload.set('employee', JSON.stringify(collectRolePrepValues('employee')));
+            payload.set('leader', JSON.stringify(collectRolePrepValues('leader')));
+        }
     }
 
     if (stepKey === 'conversation') {
@@ -289,6 +298,10 @@ var saveDraft = function () {
         .then(function (json) {
             if (!json || !json.success) {
                 var msg = (json && json.data && json.data.message) ? json.data.message : 'Save failed.';
+                var firstErr = json && json.data && json.data.errors && json.data.errors[0];
+                if (firstErr && firstErr.message) {
+                    msg = firstErr.message;
+                }
                 updateAutosaveLabel('⚠ ' + msg, true);
                 return;
             }
@@ -296,8 +309,14 @@ var saveDraft = function () {
             updateAutosaveLabel('✓ Draft saved' + (savedAt ? ' ' + savedAt : ''), false);
             if (window.xfwDraftCache && window.xfwDraftCache.data) {
                 if (stepKey === 'preparation') {
-                    window.xfwDraftCache.data.employee = collectRolePrepValues('employee');
-                    window.xfwDraftCache.data.leader = collectRolePrepValues('leader');
+                    var savedEmployee = collectRolePrepValues('employee');
+                    var savedLeader = collectRolePrepValues('leader');
+                    if (Object.keys(savedEmployee).length) {
+                        window.xfwDraftCache.data.employee = savedEmployee;
+                    }
+                    if (Object.keys(savedLeader).length) {
+                        window.xfwDraftCache.data.leader = savedLeader;
+                    }
                 }
                 if (stepKey === 'conversation') {
                     window.xfwDraftCache.data.conversation = collectConversationNotes();

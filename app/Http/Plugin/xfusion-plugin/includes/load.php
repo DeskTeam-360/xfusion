@@ -1,4 +1,5 @@
 <?php
+
 /**
  * Muat semua modul plugin (bekas WPCode + bridge theme).
  *
@@ -40,6 +41,7 @@ $xfusion_include_files = [
     'xfusion-arp-ai-review-admin.php',
     'xfusion-ai-insights-settings.php',
     'result-evaluation.php',
+    'new-tools-align-gform-submit-button.php',
     'once-popup.php',
     'insight-date-filter.php',
     'cor-unified-insights.php',

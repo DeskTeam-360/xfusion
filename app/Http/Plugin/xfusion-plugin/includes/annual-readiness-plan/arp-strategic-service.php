@@ -41,6 +41,37 @@ add_action('wp_ajax_xfarp_strategic_save', function (): void {
 
     $items = xfarp_wizard_decode_json_post('items');
 
+    // Laravel validates org_kpi / readiness_indicator as strings (TEXT JSON),
+    // while the UI collects them as arrays. Encode arrays to JSON strings
+    // here so validation passes and the column stores a JSON array.
+    $stringFields = ['title', 'description', 'success_measures', 'related_readiness', 'target_date'];
+    $jsonArrayFields = ['org_kpi', 'readiness_indicator'];
+    $items = array_map(static function ($item) use ($stringFields, $jsonArrayFields) {
+        if (! is_array($item)) {
+            return $item;
+        }
+        foreach ($stringFields as $field) {
+            if (! array_key_exists($field, $item) || $item[$field] === null || $item[$field] === '') {
+                // description is optional — space survives ConvertEmptyStringsToNull
+                // when the live column is still NOT NULL.
+                $item[$field] = ($field === 'description') ? ' ' : '';
+            } else {
+                $item[$field] = (string) $item[$field];
+            }
+        }
+        foreach ($jsonArrayFields as $field) {
+            if (! array_key_exists($field, $item) || $item[$field] === null || $item[$field] === '') {
+                $item[$field] = '[]';
+            } elseif (is_array($item[$field])) {
+                $item[$field] = wp_json_encode(array_values($item[$field]));
+            } else {
+                $item[$field] = (string) $item[$field];
+            }
+        }
+
+        return $item;
+    }, $items);
+
     xfarp_picker_send(xfarp_picker_api_request('POST', "/{$arpId}/strategic-priorities", [], [
         'user_id' => get_current_user_id(),
         'items' => $items,

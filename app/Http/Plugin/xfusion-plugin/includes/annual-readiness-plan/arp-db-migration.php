@@ -19,7 +19,7 @@
 
 defined('ABSPATH') || exit;
 
-const XFUSION_ARP_DB_VERSION = '1.0';
+const XFUSION_ARP_DB_VERSION = '1.1';
 
 /**
  * @return array<string, string>
@@ -116,8 +116,8 @@ function xfusion_arp_maybe_migrate_tables(): void
         owner_user_ids text NULL COMMENT 'JSON array of wp_users.ID',
         target_date date NULL,
         success_measures text NULL,
-        org_kpi varchar(80) NULL,
-        readiness_indicator varchar(80) NULL,
+        org_kpi text NULL COMMENT 'JSON array of organizational KPI slugs',
+        readiness_indicator text NULL COMMENT 'JSON array of Step 3 Priority Name values',
         related_groups text NULL COMMENT 'JSON array of wp_company_groups.id',
         kpi text NULL,
         status varchar(20) NOT NULL DEFAULT 'not_started',
@@ -155,6 +155,23 @@ function xfusion_arp_maybe_migrate_tables(): void
         PRIMARY KEY  (id),
         KEY arpaa_arp_idx (arp_id)
     ) {$charset};");
+
+    // dbDelta does not reliably flip NULL/NOT NULL on existing columns.
+    // Live Step 3 saves fail with "Column 'description' cannot be null" when
+    // optional textareas are left blank (Laravel ConvertEmptyStringsToNull).
+    // phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared -- table names from xfusion_arp_table_names().
+    $wpdb->query("ALTER TABLE {$t['readiness_priorities']}
+        MODIFY description text NULL,
+        MODIFY business_rationale text NULL,
+        MODIFY expected_impact text NULL,
+        MODIFY secondary_driver varchar(40) NULL");
+
+    // phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared
+    $wpdb->query("ALTER TABLE {$t['strategic_priorities']}
+        MODIFY description text NULL,
+        MODIFY success_measures text NULL,
+        MODIFY org_kpi text NULL,
+        MODIFY readiness_indicator text NULL");
 
     update_option('xfusion_arp_db_version', XFUSION_ARP_DB_VERSION);
 }

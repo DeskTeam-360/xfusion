@@ -39,6 +39,35 @@ add_action('wp_ajax_xfarp_readiness_save', function (): void {
 
     $items = xfarp_wizard_decode_json_post('items');
 
+    // Optional text fields: Laravel ConvertEmptyStringsToNull turns "" into
+    // null, and the live MySQL column may still be NOT NULL. Use a single
+    // space for blank optional text so the insert succeeds; the UI treats
+    // whitespace-only as empty on render.
+    $requiredStrings = ['name'];
+    $optionalText = ['description', 'business_rationale', 'expected_impact'];
+    $items = array_map(static function ($item) use ($requiredStrings, $optionalText) {
+        if (! is_array($item)) {
+            return $item;
+        }
+        foreach ($requiredStrings as $field) {
+            $item[$field] = isset($item[$field]) && $item[$field] !== null ? (string) $item[$field] : '';
+        }
+        foreach ($optionalText as $field) {
+            if (! array_key_exists($field, $item) || $item[$field] === null || $item[$field] === '') {
+                $item[$field] = ' ';
+            } else {
+                $item[$field] = (string) $item[$field];
+            }
+        }
+        if (! isset($item['secondary_driver']) || $item['secondary_driver'] === null || $item['secondary_driver'] === '') {
+            $item['secondary_driver'] = 'drive_growth';
+        } else {
+            $item['secondary_driver'] = (string) $item['secondary_driver'];
+        }
+
+        return $item;
+    }, $items);
+
     xfarp_picker_send(xfarp_picker_api_request('POST', "/{$arpId}/readiness-priorities", [], [
         'user_id' => get_current_user_id(),
         'items' => $items,
@@ -78,7 +107,18 @@ window.xarSaveReadinessDraft = function () {
     if (!window.XFARP_WIZARD || !window.XFARP_WIZARD.arpId) {
         return Promise.reject(new Error('No ARP selected.'));
     }
-    var items = window.xarReadinessCache || [];
+    // Optional text fields must be strings (never null) so MySQL NOT NULL
+    // columns / Laravel inserts do not reject blank draft textareas.
+    var items = (window.xarReadinessCache || []).map(function (item) {
+        var next = Object.assign({}, item);
+        ['name', 'description', 'business_rationale', 'expected_impact', 'secondary_driver'].forEach(function (key) {
+            next[key] = (next[key] === null || next[key] === undefined) ? '' : String(next[key]);
+        });
+        if (!Array.isArray(next.executive_owner_user_ids)) {
+            next.executive_owner_user_ids = [];
+        }
+        return next;
+    });
     var payload = new URLSearchParams();
     payload.set('action', 'xfarp_readiness_save');
     payload.set('nonce', window.XFARP_WIZARD.nonce);

@@ -48,14 +48,6 @@ function xfarp_wizard_strategic_init_js(): string
         { value: 'on_time_delivery', label: 'On-Time Delivery Rate' },
         { value: 'revenue_growth', label: 'Revenue Growth' },
     ];
-    var READINESS_INDICATORS = [
-        { value: 'leadership_bench', label: 'Leadership Bench Strength' },
-        { value: 'priority_clarity', label: 'Priority Clarity Score' },
-        { value: 'commitment_completion', label: 'Commitment Completion Rate' },
-        { value: 'cross_team_alignment', label: 'Cross-Team Alignment Index' },
-        { value: 'execution_velocity', label: 'Execution Velocity' },
-    ];
-
     function ensureCache() {
         if (!window.xarStrategicCache) {
             window.xarStrategicCache = [];
@@ -63,8 +55,34 @@ function xfarp_wizard_strategic_init_js(): string
         return window.xarStrategicCache;
     }
 
+    function readinessNames() {
+        return (window.xarReadinessCache || []).map(function (r) { return r.name; }).filter(Boolean);
+    }
+
+    function asArray(value) {
+        if (Array.isArray(value)) {
+            return value.filter(Boolean).map(String);
+        }
+        if (value === null || value === undefined || value === '') {
+            return [];
+        }
+        // Laravel stores multi-selects as JSON text — parse back for checkboxes.
+        if (typeof value === 'string') {
+            var trimmed = value.trim();
+            if (trimmed.charAt(0) === '[') {
+                try {
+                    var parsed = JSON.parse(trimmed);
+                    if (Array.isArray(parsed)) {
+                        return parsed.filter(Boolean).map(String);
+                    }
+                } catch (e) { /* fall through */ }
+            }
+        }
+        return [String(value)];
+    }
+
     function readinessOptions(selected) {
-        var names = (window.xarReadinessCache || []).map(function (r) { return r.name; }).filter(Boolean);
+        var names = readinessNames();
         if (!names.length) {
             return '<option value="">No readiness priorities yet — add one in Step 3</option>';
         }
@@ -77,10 +95,10 @@ function xfarp_wizard_strategic_init_js(): string
         return html;
     }
 
-    function opts(list, selected) {
-        return list.map(function (o) {
-            return '<option value="' + o.value + '"' + (o.value === selected ? ' selected' : '') + '>' + o.label + '</option>';
-        }).join('');
+    function readinessIndicatorOptions() {
+        return readinessNames().map(function (n) {
+            return { value: n, label: n };
+        });
     }
 
     function escAttr(s) {
@@ -127,8 +145,8 @@ function xfarp_wizard_strategic_init_js(): string
             target_date: '',
             description: '',
             success_measures: '',
-            org_kpi: 'leadership_effectiveness',
-            readiness_indicator: 'leadership_bench',
+            org_kpi: [],
+            readiness_indicator: [],
             related_groups: [],
         };
     }
@@ -149,12 +167,12 @@ function xfarp_wizard_strategic_init_js(): string
             field('Target Completion Date', true, '<input type="date" class="xar-input" data-key="target_date" value="' + escAttr(item.target_date) + '">') +
             '</div>' +
             '<div class="xar-prio-grid xar-prio-grid-2">' +
-            field('Description', false, '<textarea class="xar-input" rows="3" data-key="description" placeholder="Describe this strategic priority...">' + escHtml(item.description) + '</textarea>') +
+            field('Description', false, '<textarea class="xar-input" rows="3" data-key="description" placeholder="Describe this strategic priority...">' + escHtml(String(item.description || '').trim()) + '</textarea>') +
             field('Success Measures', true, '<textarea class="xar-input" rows="3" data-key="success_measures" placeholder="How will success be measured?...">' + escHtml(item.success_measures) + '</textarea>') +
             '</div>' +
             '<div class="xar-prio-grid xar-prio-grid-2">' +
-            field('Related Organizational KPI(s)', false, '<select class="xar-input" data-key="org_kpi">' + opts(ORG_KPIS, item.org_kpi) + '</select>') +
-            field('Related Readiness Indicator(s)', false, '<select class="xar-input" data-key="readiness_indicator">' + opts(READINESS_INDICATORS, item.readiness_indicator) + '</select>') +
+            multiCheckboxField('Related Organizational KPI(s)', false, 'org_kpi', ORG_KPIS, asArray(item.org_kpi), 'No organizational KPIs available') +
+            multiCheckboxField('Related Readiness Indicator(s)', false, 'readiness_indicator', readinessIndicatorOptions(), asArray(item.readiness_indicator).filter(function (n) { return readinessNames().indexOf(n) !== -1; }), 'No readiness priorities yet — add one in Step 3') +
             '</div>' +
             '<div class="xar-prio-grid xar-prio-grid-1">' +
             multiCheckboxField('Executive Owner(s)', true, 'executive_owner_user_ids', OWNERS, item.executive_owner_user_ids, 'No group members found') +
@@ -245,25 +263,38 @@ function xfarp_wizard_strategic_init_js(): string
             };
         }
 
-        // Already loaded once this session — render from cache immediately,
-        // no need to show a loading state again.
-        if (window.xarStrategicLoaded) {
-            renderList();
-            return;
-        }
-
-        showLoading();
-        if (typeof window.xarLoadStrategicDraft === 'function') {
-            window.xarLoadStrategicDraft().then(function (items) {
-                window.xarStrategicCache = items || [];
-                window.xarStrategicLoaded = true;
+        var finishInit = function () {
+            if (window.xarStrategicLoaded) {
                 renderList();
-            });
-        } else {
+                return;
+            }
+
+            showLoading();
+            if (typeof window.xarLoadStrategicDraft === 'function') {
+                window.xarLoadStrategicDraft().then(function (items) {
+                    window.xarStrategicCache = items || [];
+                    window.xarStrategicLoaded = true;
+                    renderList();
+                });
+                return;
+            }
             window.xarStrategicCache = [];
             window.xarStrategicLoaded = true;
             renderList();
+        };
+
+        // Options for Related Readiness Indicator(s) come from Step 3
+        // Priority Name — load that cache first if this session skipped Step 3.
+        if (!window.xarReadinessLoaded && typeof window.xarLoadReadinessDraft === 'function') {
+            window.xarLoadReadinessDraft().then(function (items) {
+                window.xarReadinessCache = items || [];
+                window.xarReadinessLoaded = true;
+                finishInit();
+            });
+            return;
         }
+
+        finishInit();
     };
 })();
 JS;
