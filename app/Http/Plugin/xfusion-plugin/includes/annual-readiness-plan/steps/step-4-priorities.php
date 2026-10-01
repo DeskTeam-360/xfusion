@@ -87,20 +87,6 @@ function xfarp_wizard_strategic_init_js(): string
         return [String(value)];
     }
 
-    function readinessOptions(selected) {
-        var names = readinessNames();
-        if (!names.length) {
-            return '<option value="">No readiness priorities yet — add one in Step 3</option>';
-        }
-        var html = names.map(function (n) {
-            return '<option value="' + escAttr(n) + '"' + (n === selected ? ' selected' : '') + '>' + escHtml(n) + '</option>';
-        }).join('');
-        if (selected && names.indexOf(selected) === -1) {
-            html = '<option value="' + escAttr(selected) + '" selected>' + escHtml(selected) + '</option>' + html;
-        }
-        return html;
-    }
-
     function readinessIndicatorOptions() {
         return readinessNames().map(function (n) {
             return { value: n, label: n };
@@ -143,10 +129,8 @@ function xfarp_wizard_strategic_init_js(): string
     }
 
     function emptyItem() {
-        var readiness = window.xarReadinessCache || [];
         return {
             title: '',
-            related_readiness: readiness[0] ? readiness[0].name : '',
             executive_owner_user_ids: [],
             target_date: '',
             description: '',
@@ -167,9 +151,8 @@ function xfarp_wizard_strategic_init_js(): string
             '<a href="#" class="xar-icon-btn xar-prio-delete" data-index="' + index + '" aria-label="Delete strategic priority" role="button">' +
             '<img src="https://sandbox.xperiencefusion.com/wp-content/uploads/2026/07/trash-icon.svg" alt="" width="18" height="18">' +
             '</a>' +
-            '<div class="xar-prio-grid xar-prio-grid-3">' +
+            '<div class="xar-prio-grid xar-prio-grid-2">' +
             field('Title', true, '<input type="text" class="xar-input" data-key="title" value="' + escAttr(item.title) + '" placeholder="Enter strategic priority title...">') +
-            field('Related Readiness Priority', true, '<select class="xar-input" data-key="related_readiness">' + readinessOptions(item.related_readiness) + '</select>') +
             field('Target Completion Date', true, '<input type="date" class="xar-input" data-key="target_date" value="' + escAttr(item.target_date) + '">') +
             '</div>' +
             '<div class="xar-prio-grid xar-prio-grid-2">' +

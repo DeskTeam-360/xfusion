@@ -182,19 +182,13 @@ class ArpPlanService
                 ->all(),
             'strategic_priorities' => ArpStrategicPriority::query()
                 ->where('arp_id', $arp->id)
-                ->with('readinessPriority:id,name')
                 ->orderBy('priority_rank')
                 ->get()
-                ->map(function (ArpStrategicPriority $p) {
-                    $row = $p->only([
-                        'title', 'description', 'owner_user_ids', 'target_date',
-                        'success_measures', 'org_kpi', 'readiness_indicator',
-                        'related_groups', 'status', 'priority_rank',
-                    ]);
-                    $row['related_readiness'] = $p->readinessPriority?->name;
-
-                    return $row;
-                })
+                ->map(fn (ArpStrategicPriority $p) => $p->only([
+                    'title', 'description', 'owner_user_ids', 'target_date',
+                    'success_measures', 'org_kpi', 'readiness_indicator',
+                    'related_groups', 'status', 'priority_rank',
+                ]))
                 ->values()
                 ->all(),
             'learning' => $this->learningValues($arp),
@@ -309,9 +303,6 @@ class ArpPlanService
                 $n = $index + 1;
                 if (trim((string) $p->title) === '') {
                     $issues[] = "Step 5, Priority {$n}: Title is required.";
-                }
-                if ($p->readiness_priority_id === null) {
-                    $issues[] = "Step 5, Priority {$n}: Related Readiness Priority is required.";
                 }
                 if ($p->target_date === null) {
                     $issues[] = "Step 5, Priority {$n}: Target Completion Date is required.";

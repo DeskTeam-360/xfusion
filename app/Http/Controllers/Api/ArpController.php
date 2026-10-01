@@ -666,34 +666,21 @@ class ArpController extends Controller
     }
 
     /**
-     * Step 5 — Strategic Priorities™: list, with readiness_priority_id
-     * resolved back to the readiness priority's name for the UI's
-     * "Related Readiness Priority" select (which matches by name, not id).
+     * Step 5 — Strategic Priorities™: list. Readiness linking is the
+     * "Related Readiness Indicator(s)" multi-select (readiness_indicator,
+     * by name) — the single-select readiness_priority_id FK was dropped as
+     * a duplicate of it.
      */
     public function getStrategicPriorities(Arp $arp)
     {
         $items = ArpStrategicPriority::where('arp_id', $arp->id)
-            ->with('readinessPriority:id,name')
             ->orderBy('priority_rank')
             ->get();
 
-        return response()->json([
-            'success' => true,
-            'data' => $items->map(function (ArpStrategicPriority $p) {
-                $arr = $p->toArray();
-                $arr['related_readiness'] = $p->readinessPriority?->name;
-                unset($arr['readiness_priority']);
-
-                return $arr;
-            }),
-        ]);
+        return response()->json(['success' => true, 'data' => $items]);
     }
 
-    /**
-     * Step 5 — replace-all save. `related_readiness` arrives as the
-     * readiness priority's NAME (the UI matches by name, not id) — resolved
-     * here against this ARP's saved readiness priorities before insert.
-     */
+    /** Step 5 — replace-all save. */
     public function saveStrategicPriorities(Request $request, Arp $arp)
     {
         $userId = (int) $request->input('user_id');
@@ -704,7 +691,6 @@ class ArpController extends Controller
         $data = $request->validate([
             'items' => 'present|array',
             'items.*.title' => 'nullable|string|max:255',
-            'items.*.related_readiness' => 'nullable|string',
             'items.*.executive_owner_user_ids' => 'nullable|array',
             'items.*.executive_owner_user_ids.*' => 'nullable',
             'items.*.target_date' => 'nullable|string',
@@ -718,11 +704,7 @@ class ArpController extends Controller
             'items.*.related_groups.*' => 'nullable',
         ]);
 
-        $readinessByName = ArpReadinessPriority::where('arp_id', $arp->id)
-            ->get(['id', 'name'])
-            ->keyBy('name');
-
-        DB::transaction(function () use ($arp, $data, $readinessByName) {
+        DB::transaction(function () use ($arp, $data) {
             ArpStrategicPriority::where('arp_id', $arp->id)->delete();
 
             foreach (array_values($data['items']) as $index => $item) {
@@ -734,13 +716,10 @@ class ArpController extends Controller
                     fn ($id) => filter_var($id, FILTER_VALIDATE_INT),
                     $item['related_groups'] ?? []
                 ), fn ($id) => $id !== false));
-                $readinessName = $item['related_readiness'] ?? null;
-                $readinessId = $readinessName !== null ? ($readinessByName->get($readinessName)?->id) : null;
                 $targetDate = ! empty($item['target_date']) ? $item['target_date'] : null;
 
                 ArpStrategicPriority::create([
                     'arp_id' => $arp->id,
-                    'readiness_priority_id' => $readinessId,
                     'title' => $item['title'] ?? '',
                     'description' => $item['description'] ?? null,
                     'owner_user_ids' => $ownerIds,
