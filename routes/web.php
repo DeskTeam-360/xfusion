@@ -314,7 +314,7 @@ Route::middleware(['auth',],)->group(function () {
 
     Route::get('user/course/{user}/details', function ($user,) {
         return view('admin.user.course', compact('user',),);
-    },)->name('user.course',);
+    },)->name('user.course.details',);
 
     Route::get('user/access/{user}/', function ($user,) {
         return view('admin.user.show-access', compact('user',),);
