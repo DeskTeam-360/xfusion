@@ -1314,11 +1314,12 @@ class OneOnOneController extends Controller
         }
 
         $employeeId = (int) $oneOnOne->employee_user_id;
+        $companyId = (int) $oneOnOne->company_id;
         $currentId = (int) $conversation->id;
 
         $previousMeetings = OneOnOneConversation::query()
             ->where('id', '!=', $currentId)
-            ->whereHas('oneOnOne', fn ($q) => $q->where('employee_user_id', $employeeId))
+            ->whereHas('oneOnOne', fn ($q) => $q->where('employee_user_id', $employeeId)->where('company_id', $companyId))
             ->with(['oneOnOne.leader:ID,display_name,user_nicename'])
             ->orderByRaw('COALESCE(held_at, scheduled_at) DESC')
             ->get()
@@ -1335,7 +1336,7 @@ class OneOnOneController extends Controller
             ->values();
 
         $commitments = OneOnOneCommitment::query()
-            ->whereHas('conversation.oneOnOne', fn ($q) => $q->where('employee_user_id', $employeeId))
+            ->whereHas('conversation.oneOnOne', fn ($q) => $q->where('employee_user_id', $employeeId)->where('company_id', $companyId))
             ->with(['conversation.oneOnOne.leader:ID,display_name,user_nicename'])
             ->orderByDesc('created_at')
             ->get()
