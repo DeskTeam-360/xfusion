@@ -92,6 +92,7 @@ var xarSaveDraft = function () {
         future_state: function () { return window.xarSavePlanStep('future_state'); },
         learning: function () { return window.xarSavePlanStep('learning'); },
         readiness: window.xarSaveReadinessDraft,
+        kpis: window.xarSaveKpiDraft,
         priorities: window.xarSaveStrategicDraft,
         ai_review: function () {
             var ta = root.querySelector('#xar-leadership-context-card textarea[data-key="leadership_context"]');
