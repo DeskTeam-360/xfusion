@@ -252,49 +252,46 @@ function xfarp_wizard_strategic_init_js(): string
             };
         }
 
-        var finishInit = function () {
-            if (window.xarStrategicLoaded) {
-                renderList();
-                return;
-            }
+        // Readiness (Step 3), KPIs (Step 4) and the strategic priorities
+        // themselves are independent fetches — run whichever aren't cached
+        // yet in parallel, and render once all of them are in. (Previously
+        // these ran one after another, and the Readiness branch skipped the
+        // KPI load entirely, leaving Related Organizational KPI(s) empty.)
+        var loaders = [];
 
-            showLoading();
-            if (typeof window.xarLoadStrategicDraft === 'function') {
-                window.xarLoadStrategicDraft().then(function (items) {
-                    window.xarStrategicCache = items || [];
-                    window.xarStrategicLoaded = true;
-                    renderList();
-                });
-                return;
-            }
-            window.xarStrategicCache = [];
-            window.xarStrategicLoaded = true;
-            renderList();
-        };
-
-        // Options for Related Readiness Indicator(s) come from Step 3
-        // Priority Name — load that cache first if this session skipped Step 3.
         if (!window.xarReadinessLoaded && typeof window.xarLoadReadinessDraft === 'function') {
-            window.xarLoadReadinessDraft().then(function (items) {
+            loaders.push(window.xarLoadReadinessDraft().then(function (items) {
                 window.xarReadinessCache = items || [];
                 window.xarReadinessLoaded = true;
-                finishInit();
-            });
-            return;
+            }));
         }
 
-        // Options for Related Organizational KPI(s) come from Step 4's KPIs
-        // — load that cache first if this session skipped Step 4.
         if (!window.xarKpiLoaded && typeof window.xarLoadKpiDraft === 'function') {
-            window.xarLoadKpiDraft().then(function (items) {
+            loaders.push(window.xarLoadKpiDraft().then(function (items) {
                 window.xarKpiCache = items || [];
                 window.xarKpiLoaded = true;
-                finishInit();
-            });
+            }));
+        }
+
+        if (!window.xarStrategicLoaded) {
+            if (typeof window.xarLoadStrategicDraft === 'function') {
+                loaders.push(window.xarLoadStrategicDraft().then(function (items) {
+                    window.xarStrategicCache = items || [];
+                    window.xarStrategicLoaded = true;
+                }));
+            } else {
+                window.xarStrategicCache = [];
+                window.xarStrategicLoaded = true;
+            }
+        }
+
+        if (!loaders.length) {
+            renderList();
             return;
         }
 
-        finishInit();
+        showLoading();
+        Promise.all(loaders).then(renderList, renderList);
     };
 })();
 JS;
