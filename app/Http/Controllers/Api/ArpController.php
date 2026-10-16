@@ -361,6 +361,35 @@ class ArpController extends Controller
         ]);
     }
 
+    /**
+     * Unpublish: take an active ARP back to draft so its content can be
+     * edited again. Version number and version history are untouched — the
+     * next publish bumps the version as usual.
+     */
+    public function unpublish(Request $request, Arp $arp)
+    {
+        $userId = (int) $request->input('user_id');
+        if ($userId < 1 || ! $this->leadableCompanyIds($userId)->contains($arp->company_id)) {
+            return response()->json(['success' => false, 'message' => 'You do not lead this ARP\'s company group.'], 403);
+        }
+
+        if ($arp->status !== Arp::STATUS_ACTIVE) {
+            return response()->json(['success' => false, 'message' => 'This ARP is not published.'], 422);
+        }
+
+        $arp->update([
+            'status' => Arp::STATUS_DRAFT,
+            'published_at' => null,
+        ]);
+
+        app(ArpPlanService::class)->refreshStepProgress($arp->fresh());
+
+        return response()->json([
+            'success' => true,
+            'data' => ['version' => (string) $arp->version, 'status' => Arp::STATUS_DRAFT],
+        ]);
+    }
+
     /** Full plan state at the moment of archive/publish — the version history's source of truth. */
     private function buildSnapshot(Arp $arp): array
     {

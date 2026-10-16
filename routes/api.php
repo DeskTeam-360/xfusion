@@ -485,6 +485,7 @@ Route::prefix('v1')->middleware('fusion.api')->group(function () {
         Route::get('/{arp}/versions/{version}', [ArpController::class, 'getVersion']);
         Route::post('/{arp}/archive-version', [ArpController::class, 'archiveVersion']);
         Route::post('/{arp}/publish', [ArpController::class, 'publish']);
+        Route::post('/{arp}/unpublish', [ArpController::class, 'unpublish']);
         Route::get('/{arp}', [ArpController::class, 'show']);
     };
     Route::prefix('arps')->group($registerArpRoutes);

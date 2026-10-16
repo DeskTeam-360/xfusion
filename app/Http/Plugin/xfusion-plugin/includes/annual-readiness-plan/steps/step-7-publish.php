@@ -41,6 +41,7 @@ publish: function () {
     var publishedAt = formatDate(cfg.publishedAt, null);
     var statusBadgeEl = root ? root.querySelector('#xar-si-status .xar-badge') : null;
     var statusBadgeHtml = statusBadgeEl ? statusBadgeEl.outerHTML : '<span class="xar-badge amber">Draft</span>';
+    var isActive = !!statusBadgeEl && /active/i.test(statusBadgeEl.textContent || '');
 
     function summaryRow(label, value) {
         return '<div class="xar-summary-item"><dt>' + label + '</dt><dd>' + value + '</dd></div>';
@@ -131,6 +132,10 @@ publish: function () {
             'Archive the current version (' + version + ') as a snapshot before publishing the next one.', 'Archive Version ' + version, 'xar-btn-outline') +
         actionCard('xar-publish-go', 'Trending-Up-Arrow-Icon-Green-1.svg', 'Publish ARP',
             'Publish this plan as version ' + (Math.round((parseFloat(version) + 0.1) * 10) / 10).toFixed(1) + ' and activate FUSION\'s connected operating system.', 'Publish ARP', 'xar-btn-accent') +
+        (isActive && cfg.canEdit && !cfg.viewingVersion
+            ? actionCard('xar-publish-undo', 'Database-Icon-1.svg', 'Unpublish ARP',
+                'Take this plan back to Draft so its data can be edited again. Publish again when you are done.', 'Unpublish ARP', 'xar-btn-outline')
+            : '') +
         '</div>' +
         '<p class="xar-muted" id="xar-publish-status" style="margin-top:.75rem"></p>';
 }
@@ -302,6 +307,39 @@ function xfarp_wizard_publish_init_js(): string
         if (publishBtn) {
             publishBtn.onclick = function () {
                 window.xarPublishArp();
+            };
+        }
+        var undoBtn = document.getElementById('xar-publish-undo');
+        if (undoBtn) {
+            undoBtn.onclick = function () {
+                if (!window.confirm('Unpublish this ARP and set it back to Draft? Other modules will stop treating it as the Active ARP until you publish it again.')) {
+                    return;
+                }
+                undoBtn.disabled = true;
+                setPublishStatus('Unpublishing…', false);
+                window.xarUnpublishArp().then(function (json) {
+                    undoBtn.disabled = false;
+                    if (!json || !json.success) {
+                        setPublishStatus((json && json.message) ? json.message : 'Unpublish failed.', true);
+                        return;
+                    }
+                    window.XFARP_WIZARD.publishedAt = null;
+                    var badge = document.querySelector('#xar-si-status .xar-badge');
+                    if (badge) {
+                        badge.textContent = 'Draft';
+                        badge.classList.remove('green');
+                        badge.classList.add('amber');
+                    }
+                    if (window.XFARP_WIZARD.stepProgress) {
+                        window.XFARP_WIZARD.stepProgress.publish = false;
+                    }
+                    if (typeof window.xarRenderCurrentStep === 'function') {
+                        window.xarRenderCurrentStep();
+                    }
+                }).catch(function () {
+                    undoBtn.disabled = false;
+                    setPublishStatus('Unpublish failed — network error.', true);
+                });
             };
         }
     };
