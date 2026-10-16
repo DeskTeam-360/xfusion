@@ -253,7 +253,16 @@ function xfarp_wizard_kpis_init_js(): string
             }
             return [];
         }).then(function (items) {
-            window.xarKpiCache = items || [];
+            if (items === null) {
+                // Load failed (not "no KPIs yet") — leave it unloaded so a
+                // save can never replace the stored KPIs with an empty list.
+                var list = document.getElementById('xar-kpi-list');
+                if (list) {
+                    list.innerHTML = '<p class="xar-muted">Could not load your KPIs. Reload the page to try again — nothing has been changed.</p>';
+                }
+                return;
+            }
+            window.xarKpiCache = items;
             window.xarKpiLoaded = true;
             renderList();
         });

@@ -109,6 +109,12 @@ window.xarSaveStrategicDraft = function () {
     if (!window.XFARP_WIZARD || !window.XFARP_WIZARD.arpId) {
         return Promise.reject(new Error('No ARP selected.'));
     }
+    // Save replaces the whole list — refuse if what's on screen never loaded
+    // from the server (or its KPI/readiness options failed to load, which
+    // would silently drop the checked KPI/readiness links).
+    if (!window.xarStrategicLoaded || !window.xarKpiLoaded || !window.xarReadinessLoaded) {
+        return Promise.resolve({ success: false, message: 'Step data has not fully loaded — not saving, so existing priorities are not overwritten. Reload the page.' });
+    }
     var items = window.xarStrategicCache || [];
     var payload = new URLSearchParams();
     payload.set('action', 'xfarp_strategic_save');

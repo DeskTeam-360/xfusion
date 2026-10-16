@@ -263,14 +263,16 @@ function xfarp_wizard_strategic_init_js(): string
 
         if (!window.xarReadinessLoaded && typeof window.xarLoadReadinessDraft === 'function') {
             loaders.push(window.xarLoadReadinessDraft().then(function (items) {
-                window.xarReadinessCache = items || [];
+                if (items === null) { return; }
+                window.xarReadinessCache = items;
                 window.xarReadinessLoaded = true;
             }));
         }
 
         if (!window.xarKpiLoaded && typeof window.xarLoadKpiDraft === 'function') {
             loaders.push(window.xarLoadKpiDraft().then(function (items) {
-                window.xarKpiCache = items || [];
+                if (items === null) { return; }
+                window.xarKpiCache = items;
                 window.xarKpiLoaded = true;
             }));
         }
@@ -278,7 +280,8 @@ function xfarp_wizard_strategic_init_js(): string
         if (!window.xarStrategicLoaded) {
             if (typeof window.xarLoadStrategicDraft === 'function') {
                 loaders.push(window.xarLoadStrategicDraft().then(function (items) {
-                    window.xarStrategicCache = items || [];
+                    if (items === null) { return; }
+                    window.xarStrategicCache = items;
                     window.xarStrategicLoaded = true;
                 }));
             } else {
@@ -293,7 +296,17 @@ function xfarp_wizard_strategic_init_js(): string
         }
 
         showLoading();
-        Promise.all(loaders).then(renderList, renderList);
+        var done = function () {
+            if (window.xarStrategicLoaded && window.xarKpiLoaded && window.xarReadinessLoaded) {
+                renderList();
+                return;
+            }
+            var list = document.getElementById('xar-strategic-list');
+            if (list) {
+                list.innerHTML = '<p class="xar-muted">Could not load all the data for this step. Reload the page to try again — nothing has been changed.</p>';
+            }
+        };
+        Promise.all(loaders).then(done, done);
     };
 })();
 JS;

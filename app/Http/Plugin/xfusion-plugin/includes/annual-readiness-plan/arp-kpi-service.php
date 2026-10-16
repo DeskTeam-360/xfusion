@@ -102,6 +102,11 @@ window.xarSaveKpiDraft = function () {
     if (!window.XFARP_WIZARD || !window.XFARP_WIZARD.arpId) {
         return Promise.reject(new Error('No ARP selected.'));
     }
+    // Save replaces the whole KPI list, so never save before the stored list
+    // has actually loaded — an empty cache would wipe existing KPIs.
+    if (!window.xarKpiLoaded) {
+        return Promise.resolve({ success: false, message: 'KPIs have not loaded — not saving, so your existing KPIs are not overwritten. Reload the page.' });
+    }
     // Optional text fields must be strings (never null) so MySQL NOT NULL
     // columns / Laravel inserts do not reject blank draft textareas.
     var items = (window.xarKpiCache || []).map(function (item) {
