@@ -36,23 +36,27 @@ class QbrController extends Controller
             return response()->json(['success' => false, 'message' => 'user_id is required'], 422);
         }
 
-        $groups = CompanyGroupDetail::query()
-            ->where('user_id', $userId)
-            ->where('status', CompanyGroup::STATUS_LEADER)
-            ->whereHas('companyGroup')
-            ->with('companyGroup:id,company_id,title', 'companyGroup.company:id,title')
-            ->get()
-            ->pluck('companyGroup')
-            ->filter()
-            ->unique('id')
-            ->values();
+        $groups = \App\Support\WpAdmin::isAdministrator($userId)
+            ? CompanyGroup::query()->with('company:id,title')->get()
+            : CompanyGroupDetail::query()
+                ->where('user_id', $userId)
+                ->where('status', CompanyGroup::STATUS_LEADER)
+                ->whereHas('companyGroup')
+                ->with('companyGroup:id,company_id,title', 'companyGroup.company:id,title')
+                ->get()
+                ->pluck('companyGroup')
+                ->filter()
+                ->unique('id')
+                ->values();
 
         return response()->json([
             'success' => true,
             'data' => $groups->map(fn ($g) => [
                 'id' => $g->id,
                 'name' => $g->title.($g->company ? ' ('.$g->company->title.')' : ''),
+                'group_title' => $g->title,
                 'company_id' => $g->company_id,
+                'company_name' => $g->company?->title,
             ]),
         ]);
     }
@@ -871,6 +875,11 @@ class QbrController extends Controller
 
     private function leadableGroupIds(int $userId)
     {
+        // WordPress administrators can work in every group of every company.
+        if (\App\Support\WpAdmin::isAdministrator($userId)) {
+            return CompanyGroup::query()->pluck('id')->values();
+        }
+
         return CompanyGroupDetail::query()
             ->where('user_id', $userId)
             ->where('status', CompanyGroup::STATUS_LEADER)
@@ -883,6 +892,10 @@ class QbrController extends Controller
 
     private function memberGroupIds(int $userId)
     {
+        if (\App\Support\WpAdmin::isAdministrator($userId)) {
+            return CompanyGroup::query()->pluck('id')->values();
+        }
+
         return CompanyGroupDetail::query()
             ->where('user_id', $userId)
             ->whereHas('companyGroup')

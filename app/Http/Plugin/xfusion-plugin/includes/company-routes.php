@@ -160,6 +160,13 @@ add_action('template_redirect', function (): void {
     exit;
 });
 
+/** Lets the pickers know the visitor is a WordPress administrator (no-access redirects don't apply to them). */
+add_action('wp_head', function (): void {
+    if (is_user_logged_in() && current_user_can('manage_options')) {
+        echo '<script>window.XFUSION_IS_WP_ADMIN = true;</script>' . "\n";
+    }
+});
+
 /** Lets the wizard pickers narrow their list to the company in the URL. */
 add_action('wp_head', function (): void {
     $company = $GLOBALS['xfusion_route_company'] ?? null;

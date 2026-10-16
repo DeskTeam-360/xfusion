@@ -53,9 +53,7 @@ class ArrController extends Controller
         // ARR is company-leader-only: the pool here must match
         // leadableCompanyIds()/memberCompanyIds() below, or a group leader
         // could pick a group here and then get rejected by store().
-        $leadableCompanyIds = \App\Models\Company::query()
-            ->where('user_id', $userId)
-            ->pluck('id');
+        $leadableCompanyIds = $this->leadableCompanyIds($userId);
 
         $groups = CompanyGroup::query()
             ->whereIn('company_id', $leadableCompanyIds)
@@ -732,6 +730,11 @@ class ArrController extends Controller
      */
     private function leadableCompanyIds(int $userId)
     {
+        // WordPress administrators can work in every company.
+        if (\App\Support\WpAdmin::isAdministrator($userId)) {
+            return \App\Models\Company::query()->pluck('id')->values();
+        }
+
         return \App\Models\Company::query()
             ->where('user_id', $userId)
             ->pluck('id')

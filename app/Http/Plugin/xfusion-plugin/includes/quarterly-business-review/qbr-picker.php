@@ -201,15 +201,30 @@ function xfqbr_render_picker_gate(): string
             html += '</tbody></table></div>';
         }
 
+        // Distinct organizations among the groups the user may create a QBR for.
+        var orgs = [];
+        (companies || []).forEach(function (c) {
+            var key = String(c.company_id);
+            if (!orgs.some(function (o) { return o.id === key; })) {
+                orgs.push({ id: key, name: c.company_name || ('Organization #' + key) });
+            }
+        });
+        orgs.sort(function (a, b) { return a.name.localeCompare(b.name); });
+
         if (canCreate) {
             var qOpts = [1, 2, 3, 4].map(function (q) {
                 return '<option value="' + q + '"' + (q === currentQuarter() ? ' selected' : '') + '>' + quarterLabel(q) + '</option>';
             }).join('');
             html += '<div class="xfqbr-new-form">' +
                 '<div style="font-weight:700;font-size:15px;color:var(--navy);margin-bottom:.5rem">Create a new QBR</div>' +
-                '<select class="xqbr-input" id="xfqbr-new-company">' + companies.map(function (c) {
-                    return '<option value="' + c.id + '">' + escHtml(c.name) + '</option>';
-                }).join('') + '</select>' +
+                // Organization first, then a group inside it. Hidden when there is
+                // only one organization (the usual leader case).
+                (orgs.length > 1
+                    ? '<select class="xqbr-input" id="xfqbr-new-org">' + orgs.map(function (o) {
+                        return '<option value="' + escHtml(o.id) + '">' + escHtml(o.name) + '</option>';
+                    }).join('') + '</select>'
+                    : '') +
+                '<select class="xqbr-input" id="xfqbr-new-company"></select>' +
                 '<select class="xqbr-input" id="xfqbr-new-quarter">' + qOpts + '</select>' +
                 '<input type="number" class="xqbr-input" id="xfqbr-new-year" value="' + new Date().getFullYear() + '" style="width:6rem"/>' +
                 '<button type="button" class="xqbr-btn xqbr-btn-accent" id="xfqbr-new-btn">+ Create QBR</button>' +
@@ -221,6 +236,23 @@ function xfqbr_render_picker_gate(): string
         body.querySelectorAll('[data-open]').forEach(function (a) {
             a.addEventListener('click', function () { openQbr(a.dataset.open); });
         });
+
+        var orgSelect = document.getElementById('xfqbr-new-org');
+        var groupSelect = document.getElementById('xfqbr-new-company');
+        function fillGroups() {
+            if (!groupSelect) return;
+            var orgId = orgSelect ? orgSelect.value : null;
+            groupSelect.innerHTML = companies.filter(function (c) {
+                return orgId === null || String(c.company_id) === orgId;
+            }).map(function (c) {
+                var label = orgSelect ? (c.group_title || c.name) : c.name;
+                return '<option value="' + c.id + '">' + escHtml(label) + '</option>';
+            }).join('');
+        }
+        fillGroups();
+        if (orgSelect) {
+            orgSelect.addEventListener('change', fillGroups);
+        }
 
         var newBtn = document.getElementById('xfqbr-new-btn');
         if (newBtn) {

@@ -367,7 +367,9 @@ function xfirr_render_picker_gate(): string
             body.innerHTML = '<p class="xirr-muted">' + escHtml(res.message || 'Unable to load.') + '</p>';
             return;
         }
-        if (res.has_access === false) {
+        // WordPress administrators may browse any company's IRR page, but IRR is
+        // tied to a person-to-person pairing — they see it empty and cannot create.
+        if (res.has_access === false && !window.XFUSION_IS_WP_ADMIN) {
             window.location.href = '/resources/resource-menu/';
             return;
         }
