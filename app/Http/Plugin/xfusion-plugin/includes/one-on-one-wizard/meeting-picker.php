@@ -620,7 +620,12 @@ var xfwRenderAllMeetings = function () {
             '<span class="xfw-meeting-when">' + xfwEsc(fmt.date) + ' ' + xfwEsc(fmt.time) + '</span></div></td>' +
             '<td>' + xfwEsc(groupLabel) + '</td>' +
             '<td>' + xfwEsc(m.counterpart_name || '—') + '</td>' +
-            '<td><button type="button" class="xfw-badge green xfw-meeting-open-btn" data-open-meeting-id="' + m.id + '">' + btnLabel + '</button></td></tr>';
+            '<td><div class="xfw-meeting-actions">' +
+            '<button type="button" class="xfw-badge green xfw-meeting-open-btn" data-open-meeting-id="' + m.id + '">' + btnLabel + '</button>' +
+            ((m.user_role === 'leader' && m.status !== 'completed')
+                ? '<button type="button" class="xfw-badge red xfw-meeting-delete-btn" data-delete-meeting-id="' + m.id + '">Delete</button>'
+                : '') +
+            '</div></td></tr>';
     });
 
     html += '</tbody></table></div>';
@@ -649,6 +654,33 @@ var xfwRenderAllMeetings = function () {
             if (row) {
                 xfwOpenMeetingRow(row);
             }
+        });
+    });
+
+    el.querySelectorAll('[data-delete-meeting-id]').forEach(function (btn) {
+        btn.addEventListener('click', function () {
+            var meetingId = parseInt(btn.getAttribute('data-delete-meeting-id'), 10);
+            if (isNaN(meetingId)) {
+                return;
+            }
+            if (!window.confirm('Delete this meeting? Its preparation, notes and commitments will be permanently removed.')) {
+                return;
+            }
+            btn.disabled = true;
+            xfwOoCall('xfusion_oo_delete_conversation', { conversation_id: meetingId }).then(function (res) {
+                if (!res || !res.success) {
+                    btn.disabled = false;
+                    window.alert((res && res.message) ? res.message : 'Unable to delete this meeting.');
+                    return;
+                }
+                xfwPickerState.meetings = (xfwPickerState.meetings || []).filter(function (m) {
+                    return parseInt(m.id, 10) !== meetingId;
+                });
+                xfwRenderAllMeetings();
+            }).catch(function () {
+                btn.disabled = false;
+                window.alert('Unable to delete this meeting — network error.');
+            });
         });
     });
 };

@@ -236,6 +236,14 @@ add_action('wp_ajax_xfusion_oo_complete', function (): void {
     ]));
 });
 
+add_action('wp_ajax_xfusion_oo_delete_conversation', function (): void {
+    xfusion_oo_require_login();
+    $conversationId = (int) ($_POST['conversation_id'] ?? 0);
+    xfusion_oo_send(xfusion_oo_api_request('POST', "/conversations/{$conversationId}/delete", [], [
+        'user_id' => get_current_user_id(),
+    ]));
+});
+
 add_action('wp_ajax_xfusion_oo_update_status', function (): void {
     xfusion_oo_require_login();
     $conversationId = (int) ($_POST['conversation_id'] ?? 0);

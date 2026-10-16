@@ -452,6 +452,7 @@ Route::prefix('v1')->middleware('fusion.api')->group(function () {
         Route::post('/commitments/{commitment}', [OneOnOneController::class, 'updateCommitment']);
         Route::post('/conversations/{conversation}/complete', [OneOnOneController::class, 'complete']);
         Route::post('/conversations/{conversation}/status', [OneOnOneController::class, 'updateConversationStatus']);
+        Route::post('/conversations/{conversation}/delete', [OneOnOneController::class, 'deleteConversation']);
     });
 
     // ARP — consumed by the [fusion_arp_wizard] WordPress shortcode's picker gate.

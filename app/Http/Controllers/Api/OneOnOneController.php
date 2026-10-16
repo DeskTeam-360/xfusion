@@ -23,6 +23,7 @@ use App\Services\OneOnOneAiService;
 use App\Services\OneOnOneCompanyGroupSyncService;
 use App\Services\OneOnOneWizardDraftService;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
 
 /**
  * Bridge for the WordPress [fusion_one_on_one] shortcode. All preparation /
@@ -1556,6 +1557,36 @@ class OneOnOneController extends Controller
                 'held_at' => $conversation->held_at?->toIso8601String(),
             ],
         ]);
+    }
+
+    /**
+     * Delete a meeting and everything hanging off it. Leader-only, and never
+     * a completed meeting — those feed QBR/IRR evidence and 1-on-1 history.
+     */
+    public function deleteConversation(Request $request, OneOnOneConversation $conversation)
+    {
+        $this->mergeJsonPayload($request);
+
+        $userId = (int) $request->input('user_id');
+        $pair = $conversation->oneOnOne;
+        if ($pair === null || (int) $pair->leader_user_id !== $userId) {
+            return response()->json(['success' => false, 'message' => 'Only the leader can delete this meeting.'], 403);
+        }
+
+        if ($conversation->status === OneOnOneConversation::STATUS_COMPLETED) {
+            return response()->json(['success' => false, 'message' => 'Completed meetings cannot be deleted.'], 422);
+        }
+
+        DB::transaction(function () use ($conversation) {
+            $conversation->briefs()->delete();
+            $conversation->preparations()->delete();
+            $conversation->notes()->delete();
+            $conversation->commitments()->delete();
+            $conversation->syntheses()->delete();
+            $conversation->delete();
+        });
+
+        return response()->json(['success' => true]);
     }
 
     private function isPairParticipant(int $userId, OneOnOne $pair): bool
