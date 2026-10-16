@@ -27,6 +27,7 @@ class Company extends Component
     public $user_id;
 //    #[Validate('required|max:255')]
     public $title;
+    public $slug;
 //    #[Validate('image:4096|mimes:png')]
     public $logo_url;
 //    #[Validate('image:4096|mimes:png')]
@@ -42,6 +43,7 @@ class Company extends Component
 
     protected $rules = [
         'title' => 'required|max:255',
+        'slug' => 'nullable|string|max:120|regex:/^[a-z0-9]+(?:-[a-z0-9]+)*$/|unique:wp_companies,slug',
         'logo_url' => 'nullable|image|mimes:jpeg,png,jpg,gif|max:4096|dimensions:min_width=140,min_height=60,max_width=160,max_height=80',
         'company_url' => 'nullable',
         'user_id' => 'required',
@@ -58,6 +60,8 @@ class Company extends Component
         'logo_url.max' => 'The logo may not be greater than 4MB.',
         'logo_url.dimensions' => 'The logo must be between 140x60 and 160x80 pixels (recommended: 150x70).',
         'user_id.required' => 'Please select a Company leader.',
+        'slug.regex' => 'The slug may only contain lowercase letters, numbers and single dashes.',
+        'slug.unique' => 'That slug is already used by another company.',
     ];
 
     public function mount()
@@ -74,6 +78,7 @@ class Company extends Component
             $data = \App\Models\Company::find($this->dataId);
             $this->user_id = (int)$data->user_id;
             $this->title = $data->title;
+            $this->slug = $data->slug;
             $this->logo_url = $data->logo_url;
             $this->qrcode_url = $data->qrcode_url;
             $this->company_url = $data->company_url;
@@ -119,6 +124,7 @@ class Company extends Component
         $company = \App\Models\Company::create([
             'user_id' => $this->user_id,
             'title' => $this->title,
+            'slug' => $this->slug ?: null,
             'logo_url' => $logoUrl??'',
             'qrcode_url' => $qrcodeUrl??'',
             'company_url' => $this->company_url,
@@ -156,6 +162,7 @@ class Company extends Component
         $this->validate([
             'user_id' => 'required',
             'title' => 'required|string|max:255',
+            'slug' => ['nullable', 'string', 'max:120', 'regex:/^[a-z0-9]+(?:-[a-z0-9]+)*$/', IlluminateValidationRule::unique('wp_companies', 'slug')->ignore($this->dataId)],
             'logo_url' => $logoRule,
         ]);
         $data_compare = \App\Models\Company::find($this->dataId);
@@ -179,6 +186,7 @@ class Company extends Component
         \App\Models\Company::find($this->dataId)->update([
             'user_id' => $this->user_id,
             'title' => $this->title,
+            'slug' => $this->slug ?: null,
             'company_url' => $this->company_url,
             'role' => $this->role,
             'team' => $this->team,

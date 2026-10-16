@@ -257,7 +257,9 @@ function xfqbr_render_picker_gate(): string
         }
 
         var companies = (companiesRes.success ? companiesRes.data : []) || [];
-        render(listRes.data || [], companies, !!listRes.can_create);
+        var xfQbrRows = window.xfusionFilterByRouteCompany ? window.xfusionFilterByRouteCompany(listRes.data || []) : (listRes.data || []);
+        var xfQbrCompanies = window.xfusionFilterByRouteCompany ? window.xfusionFilterByRouteCompany(companies) : companies;
+        render(xfQbrRows, xfQbrCompanies, !!listRes.can_create);
     });
 })();
 </script>

@@ -31,9 +31,43 @@ class Company extends Model
     protected $table = 'wp_companies';
 
     protected $fillable = [
-        'user_id', 'title', 'logo_url', 'qrcode_url', 'company_url',
+        'user_id', 'title', 'slug', 'logo_url', 'qrcode_url', 'company_url',
         'role', 'team', 'organizational_goals', 'readiness_priorities',
     ];
+
+    protected static function booted(): void
+    {
+        // URL slug (/{slug}/arp ...) defaults to the company name; whatever is
+        // typed in manually is only normalized, never overridden.
+        static::saving(function (Company $company) {
+            // Deployed before the slug column exists? Don't break company saves.
+            static $hasSlugColumn = null;
+            $hasSlugColumn ??= \Illuminate\Support\Facades\Schema::hasColumn('wp_companies', 'slug');
+            if (! $hasSlugColumn) {
+                unset($company->slug);
+
+                return;
+            }
+
+            $wanted = trim((string) $company->slug) !== '' ? (string) $company->slug : (string) $company->title;
+            if ($company->isDirty('slug') || trim((string) $company->getOriginal('slug')) === '') {
+                $company->slug = static::uniqueSlug($wanted, $company->exists ? $company->id : null);
+            }
+        });
+    }
+
+    /** Lower-case, dash-separated slug that no other company uses (suffixes -2, -3 ... on clash). */
+    public static function uniqueSlug(string $source, ?int $ignoreId = null): string
+    {
+        $base = \Illuminate\Support\Str::slug($source) ?: 'company';
+        $slug = $base;
+        $i = 2;
+        while (static::query()->where('slug', $slug)->when($ignoreId, fn ($q) => $q->where('id', '!=', $ignoreId))->exists()) {
+            $slug = $base.'-'.$i++;
+        }
+
+        return $slug;
+    }
 
     public function companyEmployees()
     {

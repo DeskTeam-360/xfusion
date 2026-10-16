@@ -9,6 +9,7 @@
 defined('ABSPATH') || exit;
 
 $xfusion_include_files = [
+    'company-routes.php',
     'course-scoring-group-gauge-shortcode.php',
     'tool-library-shortcode.php',
     'one-on-one-shortcode.php',

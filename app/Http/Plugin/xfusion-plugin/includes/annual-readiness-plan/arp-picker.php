@@ -244,7 +244,9 @@ function xfarp_render_picker_gate(): string
         // }
 
         var companies = (companiesRes.success ? companiesRes.data : []) || [];
-        render(listRes.data || [], companies, !!listRes.can_create);
+        var xfArpRows = window.xfusionFilterByRouteCompany ? window.xfusionFilterByRouteCompany(listRes.data || []) : (listRes.data || []);
+        var xfArpCompanies = window.xfusionFilterByRouteCompany ? window.xfusionFilterByRouteCompany(companies) : companies;
+        render(xfArpRows, xfArpCompanies, !!listRes.can_create);
     });
 })();
 </script>

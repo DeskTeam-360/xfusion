@@ -245,7 +245,9 @@ function xfarr_render_picker_gate(): string
         }
 
         var groups = (groupsRes.success ? groupsRes.data : []) || [];
-        render(listRes.data || [], groups, !!listRes.can_create);
+        var xfArrRows = window.xfusionFilterByRouteCompany ? window.xfusionFilterByRouteCompany(listRes.data || []) : (listRes.data || []);
+        var xfArrGroups = window.xfusionFilterByRouteCompany ? window.xfusionFilterByRouteCompany(groups) : groups;
+        render(xfArrRows, xfArrGroups, !!listRes.can_create);
     });
 })();
 </script>

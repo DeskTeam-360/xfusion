@@ -6,6 +6,11 @@
     </div>
 
     <div class="form-group">
+        <x-input model="slug" id="slug" title="URL slug (leave empty to use the company name)"/>
+        <small class="text-muted">Used for /{{ $slug ?: 'company-name' }}/arp, /arr, /qbr, /irr on the website.</small>
+    </div>
+
+    <div class="form-group">
         <x-input model="logo_url" type="file" accept="image/jpeg,image/png,image/jpg,image/gif" ignore="{{true}}" id="logo_url"  title="Company logo"/>
         <small class="text-muted d-block" style="margin-top:-.5rem">You can resize your logo on <a href="https://www.iloveimg.com/resize-image#resize-options,pixels" target="_blank" class="text-blue-600 hover:text-blue-800">iLoveIMG</a></small>
         @error('logo_url') <span style="margin-left: 10px; color: indianred;" >{{ $message }}</span> @enderror
