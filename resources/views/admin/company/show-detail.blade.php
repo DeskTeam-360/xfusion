@@ -4,6 +4,28 @@
     </div>
     <div class="px-5 py-5">
 
+        @php
+            $wpBase = \App\Support\WordpressPublicUrl::base();
+            $websiteModules = ['arp' => 'ARP', 'arr' => 'ARR', 'qbr' => 'QBR', 'irr' => 'IRR', '1on1' => '1-on-1'];
+        @endphp
+        <div class="card mb-3">
+            <div class="card-body py-4">
+                <h5 class="text-xl mb-2">Open on website</h5>
+                @if(filled($company->slug))
+                    <div class="flex flex-wrap items-center gap-2">
+                        @foreach($websiteModules as $moduleKey => $moduleLabel)
+                            <a href="{{ $wpBase }}/{{ $company->slug }}/{{ $moduleKey }}/" target="_blank" rel="noopener" class="btn btn-light-primary inline-flex items-center">
+                                {{ $moduleLabel }} <i class="ti ti-external-link ms-1"></i>
+                            </a>
+                        @endforeach
+                    </div>
+                    <p class="text-muted mt-2 mb-0">{{ $wpBase }}/<strong>{{ $company->slug }}</strong>/…</p>
+                @else
+                    <p class="text-muted mb-0">This company has no URL slug yet — edit the company and save it (or leave the slug empty to use its name) to enable these links.</p>
+                @endif
+            </div>
+        </div>
+
         <div class="col-span-12 grid grid-cols-12 gap-3">
 
             <div class="lg:col-span-4 md:col-span-6 sm:col-span-12 col-span-12">

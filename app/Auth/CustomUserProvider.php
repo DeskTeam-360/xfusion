@@ -34,6 +34,19 @@ class CustomUserProvider extends EloquentUserProvider
         return parent::validateCredentials($user, $credentials);
     }
 
+    /**
+     * Laravel 11 rewrites the stored hash on a successful login whenever it is
+     * not its own bcrypt cost (always true for WordPress' $P$ / $wp$ hashes).
+     * The password column here is wp_users.user_pass, and WordPress derives
+     * its auth cookie from part of that hash — so rewriting it logs the user
+     * out of WordPress every time they sign in to the admin panel. WordPress
+     * owns this hash; never touch it from here.
+     */
+    public function rehashPasswordIfRequired(UserContract $user, array $credentials, bool $force = false)
+    {
+        // intentionally a no-op
+    }
+
     protected function checkPhpPass($plain, $hashed)
     {
         $hasher = new PasswordHash(8, true);
