@@ -133,6 +133,13 @@ return [
     */
     'wordpress_url' => env('WORDPRESS_URL'),
 
+    /*
+    | Shared secret for the Laravel → WordPress one-time sign-in hand-off
+    | (must equal XFUSION_SSO_SECRET in the WordPress wp-config.php).
+    | Unset = links open WordPress directly without signing the user in.
+    */
+    'wp_sso_secret' => env('WP_SSO_SECRET'),
+
     /* URL segment before the topic slug, e.g. topics → .../topics/my-topic-slug/ */
     'wordpress_topic_path' => trim((string) env('WORDPRESS_TOPIC_PATH', 'topics'), '/'),
 

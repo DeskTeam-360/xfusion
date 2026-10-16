@@ -14,7 +14,7 @@
                 @if(filled($company->slug))
                     <div class="flex flex-wrap items-center gap-2">
                         @foreach($websiteModules as $moduleKey => $moduleLabel)
-                            <a href="{{ $wpBase }}/{{ $company->slug }}/{{ $moduleKey }}/" target="_blank" rel="noopener" class="btn btn-light-primary inline-flex items-center">
+                            <a href="{{ \App\Support\WpSso::link($wpBase.'/'.$company->slug.'/'.$moduleKey.'/') }}" target="_blank" rel="noopener" class="btn btn-light-primary inline-flex items-center">
                                 {{ $moduleLabel }} <i class="ti ti-external-link ms-1"></i>
                             </a>
                         @endforeach

@@ -116,7 +116,7 @@
                                 <td>{{ $row['created_at']?->format('M d, Y H:i') }}</td>
                                 <td style="width:9rem; text-align:right; vertical-align:top">
                                     @if($row['wp_url'])
-                                        <a href="{{ $row['wp_url'] }}" target="_blank" rel="noopener" class="btn inline-flex items-center btn-light-primary">
+                                        <a href="{{ \App\Support\WpSso::link($row['wp_url']) }}" target="_blank" rel="noopener" class="btn inline-flex items-center btn-light-primary">
                                             Open <i class="ti ti-external-link"></i>
                                         </a>
                                     @endif

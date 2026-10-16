@@ -262,6 +262,9 @@ Route::get('/refresh-all-users', function () {
 })->name('refresh-all-users');
 
 Route::middleware(['auth',],)->group(function () {
+    // One-time sign-in hand-off to the WordPress site (see App\Support\WpSso).
+    Route::get('/wp-sso', \App\Http\Controllers\Admin\WpSsoController::class)->name('wp-sso');
+
     Route::middleware(['company.admin',])->group(function () {
         Route::get('/company/dashboard', [CompanyPortalController::class, 'dashboard',],)->name('company.portal.dashboard',);
         Route::get('/company/users', [CompanyPortalController::class, 'users',],)->name('company.portal.users',);

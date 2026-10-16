@@ -46,7 +46,7 @@
                                 <td>{{ ucfirst(str_replace('_', ' ', (string) $record['status'])) }}</td>
                                 <td>{{ $record['created_at']?->format('F d, Y') }}</td>
                                 <td class="admin-table__cell-actions" style="text-align:right">
-                                    <a href="{{ $record['wp_url'] }}" target="_blank" rel="noopener" class="btn inline-flex items-center btn-light-primary">
+                                    <a href="{{ \App\Support\WpSso::link($record['wp_url']) }}" target="_blank" rel="noopener" class="btn inline-flex items-center btn-light-primary">
                                         Open in WordPress <i class="ti ti-external-link"></i>
                                     </a>
                                 </td>
