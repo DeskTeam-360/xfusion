@@ -164,7 +164,9 @@ function xfarp_wizard_strategic_init_js(): string
             multiCheckboxField('Related Readiness Indicator(s)', false, 'readiness_indicator', readinessIndicatorOptions(), asArray(item.readiness_indicator).filter(function (n) { return readinessNames().indexOf(n) !== -1; }), 'No readiness priorities yet — add one in Step 3') +
             '</div>' +
             '<div class="xar-prio-grid xar-prio-grid-1">' +
-            multiCheckboxField('Executive Owner(s)', true, 'executive_owner_user_ids', OWNERS, item.executive_owner_user_ids, 'No group members found') +
+            // Saved rows (API + version snapshots) come back as owner_user_ids;
+            // in-session edits use executive_owner_user_ids — accept both.
+            multiCheckboxField('Executive Owner(s)', true, 'executive_owner_user_ids', OWNERS, asArray(item.executive_owner_user_ids || item.owner_user_ids), 'No group members found') +
             '</div>' +
             '<div class="xar-prio-grid xar-prio-grid-1">' +
             multiCheckboxField('Related Group(s)', false, 'related_groups', GROUPS, item.related_groups, 'No groups found in this company') +
