@@ -162,7 +162,7 @@ class Company extends Component
         $this->validate([
             'user_id' => 'required',
             'title' => 'required|string|max:255',
-            'slug' => ['nullable', 'string', 'max:120', 'regex:/^[a-z0-9]+(?:-[a-z0-9]+)*$/', IlluminateValidationRule::unique('wp_companies', 'slug')->ignore($this->dataId)],
+            'slug' => ['nullable', 'string', 'max:120', 'regex:/^[a-z0-9]+(?:-[a-z0-9]+)*$/', \Illuminate\Validation\Rule::unique('wp_companies', 'slug')->ignore($this->dataId)],
             'logo_url' => $logoRule,
         ]);
         $data_compare = \App\Models\Company::find($this->dataId);
