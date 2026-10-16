@@ -69,7 +69,11 @@ window.xfirrLoadCommitments = function () {
     params.set('irr_id', String(window.XFIRR_WIZARD.irrId));
     return fetch(window.XFIRR_WIZARD.ajaxUrl + '?' + params.toString(), { credentials: 'same-origin' })
         .then(function (res) { return res.json(); })
-        .then(function (json) { return (json && json.success && Array.isArray(json.data)) ? json.data : []; })
+        .then(function (json) {
+            // Distinguishes a real empty list from a failed load for the save guard.
+            window.xirrCommitmentsLoadedOk = !!(json && json.success && Array.isArray(json.data));
+            return window.xirrCommitmentsLoadedOk ? json.data : [];
+        })
         .catch(function () { return []; });
 };
 

@@ -212,6 +212,8 @@ var loadWizardDraft = function (force) {
                 window.xfwDraftCache.data = { employee: {}, leader: {}, conversation: {} };
             } else {
                 window.xfwDraftCache.data = json.data;
+                // Real server data (vs. the empty fallback used on failure) — save guard keys off this.
+                window.xfwDraftCache.ok = true;
                 // Laravel resolves the role for THIS conversation's pairing
                 // directly - authoritative, unlike the picker's client-side
                 // scan across every pair the user belongs to (which can pick

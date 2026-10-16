@@ -157,7 +157,7 @@ function xfirr_wizard_conversation_init_js(): string
         if (notesEl && !notesEl.disabled) {
             var saveTimer = null;
             notesEl.addEventListener('blur', function () {
-                if (typeof window.xfirrSaveConversation !== 'function') return;
+                if (typeof window.xfirrSaveConversation !== 'function' || !window.xirrConversationLoadedOk) return;
                 if (notesStatus) notesStatus.textContent = 'Saving…';
                 window.xfirrSaveConversation({ conversation_notes: notesEl.value }).then(function (json) {
                     if (notesStatus) {
@@ -196,6 +196,9 @@ function xfirr_wizard_conversation_init_js(): string
         var notesEl = document.getElementById('xirr-conversation-notes');
         if (!notesEl || typeof window.xfirrSaveConversation !== 'function') {
             return Promise.resolve({ success: false });
+        }
+        if (!window.xirrConversationLoadedOk) {
+            return Promise.resolve({ success: false, message: 'Conversation has not loaded — not saving, so your existing notes are not overwritten. Reload the page.' });
         }
         return window.xfirrSaveConversation({ conversation_notes: notesEl.value });
     };

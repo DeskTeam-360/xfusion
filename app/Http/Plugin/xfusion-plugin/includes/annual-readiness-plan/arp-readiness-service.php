@@ -107,6 +107,10 @@ window.xarSaveReadinessDraft = function () {
     if (!window.XFARP_WIZARD || !window.XFARP_WIZARD.arpId) {
         return Promise.reject(new Error('No ARP selected.'));
     }
+    // Save replaces the whole list — never before the stored list has loaded.
+    if (!window.xarReadinessLoaded) {
+        return Promise.resolve({ success: false, message: 'Readiness priorities have not loaded — not saving, so your existing priorities are not overwritten. Reload the page.' });
+    }
     // Optional text fields must be strings (never null) so MySQL NOT NULL
     // columns / Laravel inserts do not reject blank draft textareas.
     var items = (window.xarReadinessCache || []).map(function (item) {

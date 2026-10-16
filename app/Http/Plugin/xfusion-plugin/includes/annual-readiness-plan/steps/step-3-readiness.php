@@ -238,7 +238,14 @@ function xfarp_wizard_readiness_init_js(): string
         showLoading();
         if (typeof window.xarLoadReadinessDraft === 'function') {
             window.xarLoadReadinessDraft().then(function (items) {
-                window.xarReadinessCache = items || [];
+                if (items === null) {
+                    var failedList = document.getElementById('xar-readiness-list');
+                    if (failedList) {
+                        failedList.innerHTML = '<p class="xar-muted">Could not load your readiness priorities. Reload the page to try again — nothing has been changed.</p>';
+                    }
+                    return;
+                }
+                window.xarReadinessCache = items;
                 window.xarReadinessLoaded = true;
                 renderList();
             });

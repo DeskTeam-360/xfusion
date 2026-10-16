@@ -220,6 +220,11 @@ function xfqbr_wizard_assessment_init_js(): string
 
     window.xqbrSaveAssessmentContext = function () {
         var contextEl = document.getElementById('xqbr-leadership-context');
+        // No context box means the assessment never rendered (not generated yet, or the
+        // load failed) — saving '' here would blank an existing leadership context.
+        if (!contextEl) {
+            return Promise.resolve({ success: false, message: 'Nothing to save for this step yet.' });
+        }
         var ratingEl = document.querySelector('input[name="xqbr-agreement"]:checked');
         return window.xqbrSaveLeadershipContext(contextEl ? contextEl.value : '', ratingEl ? ratingEl.value : '');
     };

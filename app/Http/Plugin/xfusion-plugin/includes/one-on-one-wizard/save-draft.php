@@ -257,6 +257,13 @@ var saveDraft = function () {
     }
 
     var stepKey = STEPS[current] ? STEPS[current].key : '';
+    // Preparation/conversation fields are filled from the loaded draft. If that
+    // load failed they are blank, and saving would overwrite the stored text.
+    if ((stepKey === 'preparation' || stepKey === 'conversation') && !(window.xfwDraftCache && window.xfwDraftCache.ok)) {
+        updateAutosaveLabel('Draft has not loaded — not saving, so your existing text is not overwritten. Reload the page.', true);
+        return;
+    }
+
     var payload = new URLSearchParams();
     payload.set('action', 'xfoo_wizard_save_draft');
     payload.set('nonce', window.XFW_WIZARD.nonce);

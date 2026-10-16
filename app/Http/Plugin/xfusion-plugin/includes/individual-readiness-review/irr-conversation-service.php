@@ -60,7 +60,10 @@ window.xfirrLoadConversation = function () {
     params.set('irr_id', String(window.XFIRR_WIZARD.irrId));
     return fetch(window.XFIRR_WIZARD.ajaxUrl + '?' + params.toString(), { credentials: 'same-origin' })
         .then(function (res) { return res.json(); })
-        .then(function (json) { return (json && json.success) ? json.data : null; })
+        .then(function (json) {
+            window.xirrConversationLoadedOk = !!(json && json.success);
+            return (json && json.success) ? json.data : null;
+        })
         .catch(function () { return null; });
 };
 

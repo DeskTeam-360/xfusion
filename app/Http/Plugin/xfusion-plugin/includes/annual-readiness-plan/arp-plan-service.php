@@ -78,6 +78,12 @@ window.xarSavePlanStep = function (stepKey) {
         return Promise.reject(new Error('No ARP selected.'));
     }
 
+    // The fields are filled from the loaded draft — if that load failed, the
+    // textareas are empty and saving would overwrite the stored text.
+    if (!window.xarDraftCache || !window.xarDraftCache.loaded) {
+        return Promise.resolve({ success: false, message: 'This step has not loaded — not saving, so your existing text is not overwritten. Reload the page.' });
+    }
+
     var values = {};
     var main = root.querySelector('#xar-main');
     if (main) {

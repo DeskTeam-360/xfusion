@@ -58,7 +58,11 @@ window.xfarrLoadRecommendations = function () {
     params.set('arr_id', String(window.XFARR_WIZARD.arrId));
     return fetch(window.XFARR_WIZARD.ajaxUrl + '?' + params.toString(), { credentials: 'same-origin' })
         .then(function (res) { return res.json(); })
-        .then(function (json) { return (json && json.success) ? json.data : null; })
+        .then(function (json) {
+            // Distinguishes a real empty list from a failed load for the save guard.
+            window.xarrRecommendationsLoadedOk = !!(json && json.success);
+            return (json && json.success) ? json.data : null;
+        })
         .catch(function () { return null; });
 };
 

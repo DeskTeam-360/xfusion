@@ -125,6 +125,10 @@ function xfarr_wizard_reflection_init_js(): string
         if (typeof window.xfarrSaveReflection !== 'function') {
             return Promise.resolve({ success: false, message: 'Reflection service unavailable.' });
         }
+        // Fields are filled from the loaded reflection — an unloaded form would save blanks over it.
+        if (!window.xarrReflectionLoadedOk) {
+            return Promise.resolve({ success: false, message: 'Reflection has not loaded — not saving, so your existing notes are not overwritten. Reload the page.' });
+        }
         return window.xfarrSaveReflection(collectValues());
     };
 

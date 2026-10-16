@@ -172,6 +172,10 @@ function xfirr_wizard_commitments_init_js(): string
     }
 
     window.xirrSaveCommitmentsStep = function () {
+        // Save replaces the whole list — refuse if the stored list never loaded.
+        if (!window.xirrCommitmentsLoadedOk) {
+            return Promise.resolve({ success: false, message: 'Commitments have not loaded — not saving, so your existing commitments are not overwritten. Reload the page.' });
+        }
         var items = cache
             .filter(function (c) { return (c.title || '').trim() !== ''; })
             .map(toApi);

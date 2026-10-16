@@ -74,7 +74,11 @@ window.xqbrLoadDecisions = function () {
     params.set('qbr_id', String(window.XFQBR_WIZARD.qbrId));
     return fetch(window.XFQBR_WIZARD.ajaxUrl + '?' + params.toString(), { credentials: 'same-origin' })
         .then(function (res) { return res.json(); })
-        .then(function (json) { return (json && json.success && Array.isArray(json.data)) ? json.data : []; })
+        .then(function (json) {
+            // Distinguishes a real empty list from a failed load for the save guard.
+            window.xqbrDecisionsLoadedOk = !!(json && json.success && Array.isArray(json.data));
+            return window.xqbrDecisionsLoadedOk ? json.data : [];
+        })
         .catch(function () { return []; });
 };
 
@@ -123,9 +127,15 @@ window.xqbrSaveCollaborationStep = function (snapshot) {
     var notes = snapshot ? snapshot.notes : (notesEl ? notesEl.value : '');
     var items = snapshot ? snapshot.decisions : window.xqbrCollectCollaborationDecisions();
 
+    // Decisions are saved as a whole list — if the stored list never loaded,
+    // leave it untouched (notes still save).
+    var decisionsSave = window.xqbrDecisionsLoadedOk
+        ? window.xqbrSaveDecisions(items)
+        : Promise.resolve({ success: true, skipped: true });
+
     return Promise.all([
         window.xqbrSaveDiscussionNotes(notes),
-        window.xqbrSaveDecisions(items),
+        decisionsSave,
     ]).then(function (results) {
         var notesJson = results[0];
         var decisionsJson = results[1];

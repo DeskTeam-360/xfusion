@@ -90,7 +90,11 @@ window.xqbrLoadCommitments = function () {
     params.set('qbr_id', String(window.XFQBR_WIZARD.qbrId));
     return fetch(window.XFQBR_WIZARD.ajaxUrl + '?' + params.toString(), { credentials: 'same-origin' })
         .then(function (res) { return res.json(); })
-        .then(function (json) { return (json && json.success && Array.isArray(json.data)) ? json.data : []; })
+        .then(function (json) {
+            // Distinguishes a real empty list from a failed load for the save guard.
+            window.xqbrCommitmentsLoadedOk = !!(json && json.success && Array.isArray(json.data));
+            return window.xqbrCommitmentsLoadedOk ? json.data : [];
+        })
         .catch(function () { return []; });
 };
 
@@ -150,6 +154,10 @@ window.xqbrCollectCommitments = function () {
 };
 
 window.xqbrSaveCommitmentsStep = function (items) {
+    // Save replaces the whole list — refuse if the stored list never loaded.
+    if (!window.xqbrCommitmentsLoadedOk) {
+        return Promise.resolve({ success: false, message: 'Commitments have not loaded — not saving, so your existing commitments are not overwritten. Reload the page.' });
+    }
     var payload = items || window.xqbrCollectCommitments();
     return window.xqbrSaveCommitments(payload).then(function (json) {
         if (!json || !json.success) {

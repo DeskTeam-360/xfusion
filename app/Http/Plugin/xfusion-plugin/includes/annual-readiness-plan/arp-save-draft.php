@@ -96,6 +96,11 @@ var xarSaveDraft = function () {
         priorities: window.xarSaveStrategicDraft,
         ai_review: function () {
             var ta = root.querySelector('#xar-leadership-context-card textarea[data-key="leadership_context"]');
+            // No textarea and nothing cached means the AI review never loaded — saving ''
+            // would blank the stored leadership context.
+            if (!ta && window.xarLeadershipContext === undefined && !window.xarAiReviewCache) {
+                return Promise.resolve({ success: false, message: 'AI review has not loaded — not saving, so your existing leadership context is not overwritten. Reload the page.' });
+            }
             var ctx = ta ? ta.value : (window.xarLeadershipContext || '');
             return window.xarSaveLeadershipContext(ctx);
         },

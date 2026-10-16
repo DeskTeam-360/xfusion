@@ -61,7 +61,10 @@ window.xfarrLoadReflection = function () {
     params.set('arr_id', String(window.XFARR_WIZARD.arrId));
     return fetch(window.XFARR_WIZARD.ajaxUrl + '?' + params.toString(), { credentials: 'same-origin' })
         .then(function (res) { return res.json(); })
-        .then(function (json) { return (json && json.success) ? json.data : null; })
+        .then(function (json) {
+            window.xarrReflectionLoadedOk = !!(json && json.success);
+            return (json && json.success) ? json.data : null;
+        })
         .catch(function () { return null; });
 };
 

@@ -134,6 +134,10 @@ function xfarr_wizard_recommendations_init_js(): string
         if (typeof window.xfarrSaveRecommendations !== 'function') {
             return Promise.resolve({ success: false, message: 'Recommendations service unavailable.' });
         }
+        // Save replaces the whole list — refuse if the stored list never loaded.
+        if (!window.xarrRecommendationsLoadedOk) {
+            return Promise.resolve({ success: false, message: 'Recommendations have not loaded — not saving, so your existing recommendations are not overwritten. Reload the page.' });
+        }
         return window.xfarrSaveRecommendations(cache);
     };
 
