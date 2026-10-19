@@ -226,21 +226,21 @@ class CompanyController extends Controller
                 'meta' => null,
                 'status' => $r->status,
                 'created_at' => $r->created_at,
-                'wp_url' => $wpBase . '?' . $wpRoute['param'] . '=' . $r->id,
+                'wp_url' => AppSupportWordpressPublicUrl::recordUrl('arp', $r->id, $company->slug),
             ]),
             'qbr' => \App\Models\Qbr::where('company_id', $id)->with('companyGroup:id,title')->orderByDesc('created_at')->get()->map(fn ($r) => [
                 'title' => 'Q' . $r->quarter . ' ' . $r->year,
                 'meta' => $r->companyGroup?->title ?: '—',
                 'status' => $r->status,
                 'created_at' => $r->created_at,
-                'wp_url' => $wpBase . '?' . $wpRoute['param'] . '=' . $r->id,
+                'wp_url' => AppSupportWordpressPublicUrl::recordUrl('qbr', $r->id, $company->slug),
             ]),
             'arr' => \App\Models\Arr::where('company_id', $id)->orderByDesc('created_at')->get()->map(fn ($r) => [
                 'title' => 'ARR ' . $r->year,
                 'meta' => null,
                 'status' => $r->status,
                 'created_at' => $r->created_at,
-                'wp_url' => $wpBase . '?' . $wpRoute['param'] . '=' . $r->id,
+                'wp_url' => AppSupportWordpressPublicUrl::recordUrl('arr', $r->id, $company->slug),
             ]),
             'irr' => \App\Models\IrrReview::where('company_id', $id)
                 ->with(['employee:ID,display_name,user_nicename', 'manager:ID,display_name,user_nicename'])
@@ -250,7 +250,7 @@ class CompanyController extends Controller
                     'employee' => $userLabel($r->employee),
                     'status' => $r->status,
                     'created_at' => $r->created_at,
-                    'wp_url' => $wpBase . '?' . $wpRoute['param'] . '=' . $r->id,
+                    'wp_url' => AppSupportWordpressPublicUrl::recordUrl('irr', $r->id, $company->slug),
                 ]),
             'one-on-one' => \App\Models\OneOnOneConversation::whereHas('oneOnOne', function ($q) use ($id) {
                 $q->where('company_id', $id);
@@ -261,7 +261,7 @@ class CompanyController extends Controller
                     'employee' => $userLabel($r->oneOnOne?->employee),
                     'status' => $r->status,
                     'created_at' => $r->created_at,
-                    'wp_url' => $wpBase . '?' . $wpRoute['param'] . '=' . $r->id,
+                    'wp_url' => AppSupportWordpressPublicUrl::recordUrl('one-on-one', $r->id, $company->slug),
                 ]),
             default => collect(),
         };

@@ -124,16 +124,16 @@ class AiUsageService
     {
         $out = collect();
 
-        QbrAiAssessment::with('qbr.company:id,title')->get()->each(function (QbrAiAssessment $a) use (&$out, $wpBase) {
+        QbrAiAssessment::with('qbr.company')->get()->each(function (QbrAiAssessment $a) use (&$out, $wpBase) {
             $qbr = $a->qbr;
             $out->push($this->row('QBR', 'Assessment (Step 3)', $qbr?->company?->id, $qbr?->company?->title, $qbr ? 'Q'.$qbr->quarter.' '.$qbr->year : '—', $a,
-                $qbr ? $wpBase.'/quarterly-business-review/?qbr_id='.$qbr->id : null));
+                $qbr ? WordpressPublicUrl::recordUrl('qbr', $qbr->id, $qbr->company?->slug) : null));
         });
 
-        QbrAiSynthesis::with('qbr.company:id,title')->get()->each(function (QbrAiSynthesis $a) use (&$out, $wpBase) {
+        QbrAiSynthesis::with('qbr.company')->get()->each(function (QbrAiSynthesis $a) use (&$out, $wpBase) {
             $qbr = $a->qbr;
             $out->push($this->row('QBR', 'Synthesis (Step 6)', $qbr?->company?->id, $qbr?->company?->title, $qbr ? 'Q'.$qbr->quarter.' '.$qbr->year : '—', $a,
-                $qbr ? $wpBase.'/quarterly-business-review/?qbr_id='.$qbr->id : null));
+                $qbr ? WordpressPublicUrl::recordUrl('qbr', $qbr->id, $qbr->company?->slug) : null));
         });
 
         return $out;
@@ -143,10 +143,10 @@ class AiUsageService
     {
         $out = collect();
 
-        ArpAiAssessment::with('arp.company:id,title')->get()->each(function (ArpAiAssessment $a) use (&$out, $wpBase) {
+        ArpAiAssessment::with('arp.company')->get()->each(function (ArpAiAssessment $a) use (&$out, $wpBase) {
             $arp = $a->arp;
             $out->push($this->row('ARP', 'Readiness Review (Step 6)', $arp?->company?->id, $arp?->company?->title, $arp ? 'ARP '.$arp->year : '—', $a,
-                $arp ? $wpBase.'/annual-readiness-plan/?arp_id='.$arp->id : null));
+                $arp ? WordpressPublicUrl::recordUrl('arp', $arp->id, $arp->company?->slug) : null));
         });
 
         return $out;
@@ -156,16 +156,16 @@ class AiUsageService
     {
         $out = collect();
 
-        ArrAiAssessment::with('arr.company:id,title')->get()->each(function (ArrAiAssessment $a) use (&$out, $wpBase) {
+        ArrAiAssessment::with('arr.company')->get()->each(function (ArrAiAssessment $a) use (&$out, $wpBase) {
             $arr = $a->arr;
             $out->push($this->row('ARR', 'Assessment (Step 3)', $arr?->company?->id, $arr?->company?->title, $arr ? 'ARR '.$arr->year : '—', $a,
-                $arr ? $wpBase.'/annual-readiness-review/?arr_id='.$arr->id : null));
+                $arr ? WordpressPublicUrl::recordUrl('arr', $arr->id, $arr->company?->slug) : null));
         });
 
-        ArrAiSynthesis::with('arr.company:id,title')->get()->each(function (ArrAiSynthesis $a) use (&$out, $wpBase) {
+        ArrAiSynthesis::with('arr.company')->get()->each(function (ArrAiSynthesis $a) use (&$out, $wpBase) {
             $arr = $a->arr;
             $out->push($this->row('ARR', 'Synthesis (Step 6)', $arr?->company?->id, $arr?->company?->title, $arr ? 'ARR '.$arr->year : '—', $a,
-                $arr ? $wpBase.'/annual-readiness-review/?arr_id='.$arr->id : null));
+                $arr ? WordpressPublicUrl::recordUrl('arr', $arr->id, $arr->company?->slug) : null));
         });
 
         return $out;
@@ -175,16 +175,16 @@ class AiUsageService
     {
         $out = collect();
 
-        IrrAiAssessment::with('review.company:id,title')->get()->each(function (IrrAiAssessment $a) use (&$out, $wpBase) {
+        IrrAiAssessment::with('review.company')->get()->each(function (IrrAiAssessment $a) use (&$out, $wpBase) {
             $review = $a->review;
             $out->push($this->row('IRR', 'Assessment (Step 3)', $review?->company?->id, $review?->company?->title, $review ? 'IRR '.$review->year : '—', $a,
-                $review ? $wpBase.'/individual-readiness-review/?irr_id='.$review->id : null));
+                $review ? WordpressPublicUrl::recordUrl('irr', $review->id, $review->company?->slug) : null));
         });
 
-        IrrAiSynthesis::with('review.company:id,title')->get()->each(function (IrrAiSynthesis $a) use (&$out, $wpBase) {
+        IrrAiSynthesis::with('review.company')->get()->each(function (IrrAiSynthesis $a) use (&$out, $wpBase) {
             $review = $a->review;
             $out->push($this->row('IRR', 'Synthesis (Step 6)', $review?->company?->id, $review?->company?->title, $review ? 'IRR '.$review->year : '—', $a,
-                $review ? $wpBase.'/individual-readiness-review/?irr_id='.$review->id : null));
+                $review ? WordpressPublicUrl::recordUrl('irr', $review->id, $review->company?->slug) : null));
         });
 
         return $out;
@@ -194,16 +194,16 @@ class AiUsageService
     {
         $out = collect();
 
-        OneOnOneAiBrief::with('conversation.oneOnOne.company:id,title')->get()->each(function (OneOnOneAiBrief $a) use (&$out, $wpBase) {
+        OneOnOneAiBrief::with('conversation.oneOnOne.company')->get()->each(function (OneOnOneAiBrief $a) use (&$out, $wpBase) {
             $conversation = $a->conversation;
             $out->push($this->row('1-on-1', 'Meeting Brief (Step 2)', $conversation?->oneOnOne?->company?->id, $conversation?->oneOnOne?->company?->title, $conversation ? 'Meeting #'.$conversation->id : '—', $a,
-                $conversation ? $wpBase.'/1-on-1-alignment/?conversation_id='.$conversation->id : null));
+                $conversation ? WordpressPublicUrl::recordUrl('one-on-one', $conversation->id, $conversation?->oneOnOne?->company?->slug) : null));
         });
 
-        OneOnOneAiSynthesis::with('conversation.oneOnOne.company:id,title')->get()->each(function (OneOnOneAiSynthesis $a) use (&$out, $wpBase) {
+        OneOnOneAiSynthesis::with('conversation.oneOnOne.company')->get()->each(function (OneOnOneAiSynthesis $a) use (&$out, $wpBase) {
             $conversation = $a->conversation;
             $out->push($this->row('1-on-1', 'Meeting Synthesis (Step 6)', $conversation?->oneOnOne?->company?->id, $conversation?->oneOnOne?->company?->title, $conversation ? 'Meeting #'.$conversation->id : '—', $a,
-                $conversation ? $wpBase.'/1-on-1-alignment/?conversation_id='.$conversation->id : null));
+                $conversation ? WordpressPublicUrl::recordUrl('one-on-one', $conversation->id, $conversation?->oneOnOne?->company?->slug) : null));
         });
 
         return $out;
