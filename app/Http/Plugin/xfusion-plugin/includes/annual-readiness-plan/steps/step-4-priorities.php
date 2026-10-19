@@ -281,6 +281,14 @@ function xfarp_wizard_strategic_init_js(): string
             if (typeof window.xarLoadStrategicDraft === 'function') {
                 loaders.push(window.xarLoadStrategicDraft().then(function (items) {
                     if (items === null) { return; }
+                    // The API names the owners owner_user_ids; the form and the save use
+                    // executive_owner_user_ids. Carry the stored owners over now, otherwise
+                    // saving without touching a control would send no owners at all.
+                    items.forEach(function (row) {
+                        if (!Array.isArray(row.executive_owner_user_ids)) {
+                            row.executive_owner_user_ids = asArray(row.owner_user_ids);
+                        }
+                    });
                     window.xarStrategicCache = items;
                     window.xarStrategicLoaded = true;
                 }));

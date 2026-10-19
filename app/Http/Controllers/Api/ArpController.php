@@ -722,6 +722,8 @@ class ArpController extends Controller
             'items.*.title' => 'nullable|string|max:255',
             'items.*.executive_owner_user_ids' => 'nullable|array',
             'items.*.executive_owner_user_ids.*' => 'nullable',
+            'items.*.owner_user_ids' => 'nullable|array',
+            'items.*.owner_user_ids.*' => 'nullable',
             'items.*.target_date' => 'nullable|string',
             'items.*.description' => 'nullable|string',
             'items.*.success_measures' => 'nullable|string',
@@ -737,9 +739,11 @@ class ArpController extends Controller
             ArpStrategicPriority::where('arp_id', $arp->id)->delete();
 
             foreach (array_values($data['items']) as $index => $item) {
+                // owner_user_ids is the stored/API name — accepted as a fallback so a
+                // client that echoes a loaded row back unchanged can't blank the owners.
                 $ownerIds = array_values(array_filter(array_map(
                     fn ($id) => filter_var($id, FILTER_VALIDATE_INT),
-                    $item['executive_owner_user_ids'] ?? []
+                    $item['executive_owner_user_ids'] ?? $item['owner_user_ids'] ?? []
                 ), fn ($id) => $id !== false));
                 $groupIds = array_values(array_filter(array_map(
                     fn ($id) => filter_var($id, FILTER_VALIDATE_INT),
