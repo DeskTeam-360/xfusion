@@ -71,7 +71,7 @@ function xfusion_core_objects_items(): array
             ],
         ],
         [
-            'key' => 'irr', 'page' => 'individual-readiness-review', 'label' => '360 Review™',
+            'key' => 'irr', 'page' => 'individual-readiness-review', 'label' => 'Individual Readiness Review™ (IRR)',
             'paths' => [
                 'M353.5,211.2c-10.2-41.5-43.1-56.4-74.8-73.5c-13-7-17.9-25.9-38.1-17.3c-11.1,4.7-21.3,15.4-21.7,28.7c-0.6,17.5,12.3,25.3,22.2,30.2c19.2,9.6,27.4-15,39.3-16c28.6-2.3,46.9,31.3,57.6,50.4C341.4,220,354.5,215.4,353.5,211.2z M257.8,158.9c-5.9,5-13.7,4.3-16.2,1c-5.1-6.8-7.1-16.1,2.1-21.2c7.3-4,14.1,0.4,16.4,4.4C264.1,150.2,261.6,155.7,257.8,158.9L257.8,158.9z',
                 'M209,343.9c-8.2-15.3-48.2-28.8-46.6-57.6c8.5-10.4,22.6-20.7,16.9-36.1c-5-13.5-14.4-23.9-28.3-23.7c-16.7,0.2-25.2,11.7-29.3,23.1c-6.8,19.1,11.3,24.4,17.6,37.4C178.9,367.5,216.4,357.7,209,343.9L209,343.9z M154.5,268c-6.1,1.2-11.3-0.4-13.9-5c-3.2-5.8-1.6-15.1,8-17.9c7.4-2.2,12,3.4,13.4,7C164.8,259,160.1,266.9,154.5,268z',
@@ -100,7 +100,7 @@ add_shortcode('fusion_core_objects', function ($atts): string {
     $slug = xfusion_core_objects_company_slug();
 
     $html = '<style>'
-        . '.xf-core{background:#fff;border-radius:10px;box-shadow:0 2px 10px rgba(0,0,0,.18);padding:20px;max-width:560px}'
+        . '.xf-core{font-family:var(--e-global-typography-primary-font-family),var(--e-global-typography-text-font-family),inherit;background:#fff;border-radius:10px;box-shadow:0 2px 10px rgba(0,0,0,.18);padding:20px;max-width:560px}'
         . '.xf-core__title{margin:0 0 14px;font-size:22px;line-height:1.2;text-transform:uppercase;color:#36435f}'
         . '.xf-core__item{display:flex;align-items:center;gap:20px;margin-bottom:10px;padding:0 20px;min-height:85px;'
         . 'background:#36435f;border-radius:8px;text-decoration:none!important}'
