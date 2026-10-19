@@ -167,6 +167,71 @@ add_action('wp_head', function (): void {
     }
 });
 
+/**
+ * The company a module page is showing: the company in the URL, or — on an old
+ * URL that carries a record id — the company that record belongs to.
+ *
+ * @return array{id: int, title: string}|null
+ */
+function xfusion_admin_viewed_company(): ?array
+{
+    $route = $GLOBALS['xfusion_route_company'] ?? null;
+    if (is_array($route)) {
+        return ['id' => (int) $route['id'], 'title' => (string) $route['title']];
+    }
+
+    global $wpdb;
+    $p = $wpdb->prefix;
+    // query param => SQL returning the record's company_id (the id is bound as %d).
+    $lookups = [
+        'arp_id' => "SELECT company_id FROM {$p}fusion_arps WHERE id = %d",
+        'arr_id' => "SELECT company_id FROM {$p}fusion_arrs WHERE id = %d",
+        'qbr_id' => "SELECT company_id FROM {$p}fusion_qbrs WHERE id = %d",
+        'irr_id' => "SELECT company_id FROM {$p}fusion_360_reviews WHERE id = %d",
+        'conversation_id' => "SELECT o.company_id FROM {$p}fusion_one_on_one_conversations c JOIN {$p}fusion_one_on_ones o ON o.id = c.one_on_one_id WHERE c.id = %d",
+    ];
+    foreach ($lookups as $param => $sql) {
+        $recordId = isset($_GET[$param]) ? (int) $_GET[$param] : 0;
+        if ($recordId < 1) {
+            continue;
+        }
+        // phpcs:ignore WordPress.DB.PreparedSQL.NotPrepared -- table names from $wpdb->prefix, id bound.
+        $companyId = (int) $wpdb->get_var($wpdb->prepare($sql, $recordId));
+        if ($companyId > 0) {
+            $table = $p . 'companies';
+            // phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared
+            $title = (string) $wpdb->get_var($wpdb->prepare("SELECT title FROM {$table} WHERE id = %d", $companyId));
+
+            return ['id' => $companyId, 'title' => $title];
+        }
+    }
+
+    return null;
+}
+
+/**
+ * WordPress administrators can open and edit every company. When the company
+ * on screen is not one they belong to, show a fixed warning so they never edit
+ * another organisation's data by accident.
+ */
+add_action('wp_footer', function (): void {
+    if (! is_user_logged_in() || ! current_user_can('manage_options')) {
+        return;
+    }
+    $company = xfusion_admin_viewed_company();
+    if ($company === null || xfusion_user_belongs_to_company(get_current_user_id(), $company['id'])) {
+        return;
+    }
+
+    $name = $company['title'] !== '' ? $company['title'] : ('#' . $company['id']);
+    echo '<div id="xf-admin-company-warning" role="alert" style="position:fixed;left:0;right:0;bottom:0;z-index:99999;'
+        . 'background:#b45309;color:#fff;padding:10px 16px;font:600 14px/1.4 system-ui,sans-serif;text-align:center;'
+        . 'box-shadow:0 -2px 8px rgba(0,0,0,.25)">'
+        . '⚠ You are signed in as a WordPress administrator and viewing <strong>' . esc_html($name) . '</strong>, '
+        . 'which is not your company. Anything you change here is saved to that company.'
+        . '</div>' . "\n";
+});
+
 /** Lets the wizard pickers narrow their list to the company in the URL. */
 add_action('wp_head', function (): void {
     $company = $GLOBALS['xfusion_route_company'] ?? null;
