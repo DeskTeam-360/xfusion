@@ -7,7 +7,7 @@
  * a company page, otherwise the company the logged-in user belongs to. With no
  * company (or no slug yet) the button falls back to the plain module page.
  *
- * Optional attribute: title="CORE OPERATING OBJECTS".
+ * Renders only the buttons; add the heading/card in Elementor.
  *
  * @package XFusion
  */
@@ -96,12 +96,10 @@ function xfusion_core_objects_items(): array
 }
 
 add_shortcode('fusion_core_objects', function ($atts): string {
-    $atts = shortcode_atts(['title' => 'CORE OPERATING OBJECTS'], $atts, 'fusion_core_objects');
     $slug = xfusion_core_objects_company_slug();
 
     $html = '<style>'
-        . '.xf-core{font-family:var(--e-global-typography-primary-font-family),var(--e-global-typography-text-font-family),inherit;background:#fff;border-radius:10px;box-shadow:0 2px 10px rgba(0,0,0,.18);padding:20px;max-width:560px}'
-        . '.xf-core__title{margin:0 0 14px;font-size:22px;line-height:1.2;text-transform:uppercase;color:#36435f}'
+        . '.xf-core{font-family:var(--e-global-typography-primary-font-family),var(--e-global-typography-text-font-family),inherit}'
         . '.xf-core__item{display:flex;align-items:center;gap:20px;margin-bottom:10px;padding:0 20px;min-height:85px;'
         . 'background:#36435f;border-radius:8px;text-decoration:none!important}'
         . '.xf-core__item:last-child{margin-bottom:0}'
@@ -109,7 +107,7 @@ add_shortcode('fusion_core_objects', function ($atts): string {
         . '.xf-core__icon{flex:0 0 40px;width:40px;height:40px;display:block}'
         . '.xf-core__icon path{fill:#fff}'
         . '.xf-core__label{color:#d9dce3;font-size:20px;font-weight:700;line-height:1.3}'
-        . '</style><div class="xf-core"><p class="xf-core__title">' . esc_html((string) $atts['title']) . '</p>';
+        . '</style><div class="xf-core">';
 
     foreach (xfusion_core_objects_items() as $item) {
         $url = $slug !== '' ? home_url('/' . $slug . '/' . $item['key'] . '/') : home_url('/' . $item['page'] . '/');
