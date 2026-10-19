@@ -36,8 +36,8 @@ class ArpStrategicPriority extends Model
     ];
 
     protected $casts = [
-        'owner_user_ids' => 'array',
-        'related_groups' => 'array',
+        'owner_user_ids' => \App\Casts\IdList::class,
+        'related_groups' => \App\Casts\IdList::class,
     ];
 
     public function arp()

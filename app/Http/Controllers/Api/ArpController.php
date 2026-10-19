@@ -583,8 +583,7 @@ class ArpController extends Controller
             'items.*.priority_level' => 'nullable|string|max:20',
             'items.*.description' => 'nullable|string',
             'items.*.business_rationale' => 'nullable|string',
-            'items.*.executive_owner_user_ids' => 'nullable|array',
-            'items.*.executive_owner_user_ids.*' => 'nullable',
+            'items.*.executive_owner_user_ids' => 'nullable',
             'items.*.expected_impact' => 'nullable|string',
         ]);
 
@@ -593,11 +592,8 @@ class ArpController extends Controller
 
             foreach (array_values($data['items']) as $index => $item) {
                 // Each id must be a real wp_users.ID — anything non-numeric
-                // is dropped rather than stored.
-                $ownerIds = array_values(array_filter(array_map(
-                    fn ($id) => filter_var($id, FILTER_VALIDATE_INT),
-                    $item['executive_owner_user_ids'] ?? []
-                ), fn ($id) => $id !== false));
+                // is dropped rather than stored. A lone scalar is accepted too.
+                $ownerIds = \App\Casts\IdList::parse($item['executive_owner_user_ids'] ?? null);
 
                 ArpReadinessPriority::create([
                     'arp_id' => $arp->id,
@@ -653,8 +649,7 @@ class ArpController extends Controller
             'items.*.measurement_frequency' => 'nullable|string|max:20',
             'items.*.data_source' => 'nullable|string|max:255',
             'items.*.owner_user_id' => 'nullable',
-            'items.*.readiness_priority_ids' => 'nullable|array',
-            'items.*.readiness_priority_ids.*' => 'nullable',
+            'items.*.readiness_priority_ids' => 'nullable',
             'items.*.notes' => 'nullable|string',
         ]);
 
@@ -662,10 +657,7 @@ class ArpController extends Controller
             ArpKpi::where('arp_id', $arp->id)->delete();
 
             foreach (array_values($data['items']) as $index => $item) {
-                $readinessIds = array_values(array_filter(array_map(
-                    fn ($id) => filter_var($id, FILTER_VALIDATE_INT),
-                    $item['readiness_priority_ids'] ?? []
-                ), fn ($id) => $id !== false));
+                $readinessIds = \App\Casts\IdList::parse($item['readiness_priority_ids'] ?? null);
 
                 $ownerId = filter_var($item['owner_user_id'] ?? null, FILTER_VALIDATE_INT);
                 $targetDate = ! empty($item['target_date']) ? $item['target_date'] : null;
@@ -704,7 +696,12 @@ class ArpController extends Controller
     {
         $items = ArpStrategicPriority::where('arp_id', $arp->id)
             ->orderBy('priority_rank')
-            ->get();
+            ->get()
+            // The form calls the owners executive_owner_user_ids, the column is
+            // owner_user_ids — send both so no client has to translate.
+            ->map(fn (ArpStrategicPriority $p) => array_merge($p->toArray(), [
+                'executive_owner_user_ids' => $p->owner_user_ids,
+            ]));
 
         return response()->json(['success' => true, 'data' => $items]);
     }
@@ -720,10 +717,8 @@ class ArpController extends Controller
         $data = $request->validate([
             'items' => 'present|array',
             'items.*.title' => 'nullable|string|max:255',
-            'items.*.executive_owner_user_ids' => 'nullable|array',
-            'items.*.executive_owner_user_ids.*' => 'nullable',
-            'items.*.owner_user_ids' => 'nullable|array',
-            'items.*.owner_user_ids.*' => 'nullable',
+            'items.*.executive_owner_user_ids' => 'nullable',
+            'items.*.owner_user_ids' => 'nullable',
             'items.*.target_date' => 'nullable|string',
             'items.*.description' => 'nullable|string',
             'items.*.success_measures' => 'nullable|string',
@@ -731,8 +726,7 @@ class ArpController extends Controller
             // names) — not a single 80-char slug, so no short max() here.
             'items.*.org_kpi' => 'nullable|string',
             'items.*.readiness_indicator' => 'nullable|string',
-            'items.*.related_groups' => 'nullable|array',
-            'items.*.related_groups.*' => 'nullable',
+            'items.*.related_groups' => 'nullable',
         ]);
 
         DB::transaction(function () use ($arp, $data) {
@@ -741,14 +735,8 @@ class ArpController extends Controller
             foreach (array_values($data['items']) as $index => $item) {
                 // owner_user_ids is the stored/API name — accepted as a fallback so a
                 // client that echoes a loaded row back unchanged can't blank the owners.
-                $ownerIds = array_values(array_filter(array_map(
-                    fn ($id) => filter_var($id, FILTER_VALIDATE_INT),
-                    $item['executive_owner_user_ids'] ?? $item['owner_user_ids'] ?? []
-                ), fn ($id) => $id !== false));
-                $groupIds = array_values(array_filter(array_map(
-                    fn ($id) => filter_var($id, FILTER_VALIDATE_INT),
-                    $item['related_groups'] ?? []
-                ), fn ($id) => $id !== false));
+                $ownerIds = \App\Casts\IdList::parse($item['executive_owner_user_ids'] ?? $item['owner_user_ids'] ?? null);
+                $groupIds = \App\Casts\IdList::parse($item['related_groups'] ?? null);
                 $targetDate = ! empty($item['target_date']) ? $item['target_date'] : null;
 
                 ArpStrategicPriority::create([

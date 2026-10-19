@@ -26,7 +26,7 @@ class ArpReadinessPriority extends Model
     ];
 
     protected $casts = [
-        'executive_owner_user_ids' => 'array',
+        'executive_owner_user_ids' => \App\Casts\IdList::class,
     ];
 
     public function arp()

@@ -84,7 +84,8 @@ function xfarp_wizard_strategic_init_js(): string
                 } catch (e) { /* fall through */ }
             }
         }
-        return [String(value)];
+        // A lone scalar ("432") or a comma-separated list ("432,437").
+        return String(value).split(',').map(function (part) { return part.trim(); }).filter(Boolean);
     }
 
     function readinessIndicatorOptions() {

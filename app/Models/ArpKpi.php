@@ -33,7 +33,7 @@ class ArpKpi extends Model
     ];
 
     protected $casts = [
-        'readiness_priority_ids' => 'array',
+        'readiness_priority_ids' => \App\Casts\IdList::class,
         'target_date' => 'date',
     ];
 
