@@ -108,7 +108,7 @@ add_shortcode('fusion_core_objects', function ($atts): string {
         . '.xf-core__item:hover{background:#2c3750}'
         . '.xf-core__icon{flex:0 0 40px;width:40px;height:40px;display:block}'
         . '.xf-core__icon path{fill:#fff}'
-        . '.xf-core__label{color:#d9dce3;font-size:18px;line-height:1.3}'
+        . '.xf-core__label{color:#d9dce3;font-size:20px;font-weight:700;line-height:1.3}'
         . '</style><div class="xf-core"><p class="xf-core__title">' . esc_html((string) $atts['title']) . '</p>';
 
     foreach (xfusion_core_objects_items() as $item) {
