@@ -57,6 +57,19 @@
         .swal2-actions {
             margin-top: 1.5em !important;
         }
+
+        /* Forms: black text so a typed value is never mistaken for a placeholder;
+           placeholders stay clearly lighter. */
+        .form-label,
+        .form-control,
+        .form-control option {
+            color: #111827;
+        }
+        .form-control::placeholder,
+        textarea.form-control::placeholder {
+            color: #9ca3af;
+            opacity: 1;
+        }
     </style>
 
 </head>

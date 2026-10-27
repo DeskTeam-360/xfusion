@@ -12,7 +12,7 @@
               @if($required) required @endif></textarea>
 
     @if($help !== '')
-        <div id="{{ $id }}-help" style="margin-top:.35rem;font-size:.85rem;line-height:1.4;color:#6b7280">{!! $help !!}</div>
+        <div id="{{ $id }}-help" style="margin-top:.35rem;font-size:.85rem;line-height:1.4;color:#374151">{!! $help !!}</div>
     @endif
 
     @error($model)
