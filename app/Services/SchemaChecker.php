@@ -6,9 +6,10 @@ use Illuminate\Support\Facades\File;
 use Illuminate\Support\Facades\Schema;
 
 /**
- * Compares the database with the tables/columns the models declare (read-only).
- * Deliberately ignores migrations: tables such as `users` are unused (WordPress's
- * wp_users is the source of truth) and production tables come from database/sql.
+ * Compares the database with the hand-kept requirement list in
+ * config/fusion_schema.php (Laravel + WordPress plugin), read-only.
+ * Deliberately not derived from migrations or models: tables such as `users`
+ * are unused (wp_users is the source of truth).
  * Used by `php artisan fusion:check-schema` and GET /api/v1/schema-check.
  */
 class SchemaChecker
@@ -50,26 +51,28 @@ class SchemaChecker
     }
 
     /**
-     * Reads $table and $fillable straight from each model's source instead of
-     * loading the class, so one broken model cannot take the whole check down.
-     * Models without an explicit $table are skipped.
+     * The hand-kept manifest (config/fusion_schema.php), Laravel and plugin
+     * requirements merged per table.
      *
      * @return list<array{model: string, table: string, fillable: list<string>}>
      */
     private function declaredModels(): array
     {
+        $merged = [];
+        foreach (['laravel', 'wordpress'] as $source) {
+            foreach ((array) config("fusion_schema.{$source}", []) as $table => $columns) {
+                $merged[$table]['sources'][] = $source;
+                $merged[$table]['columns'] = array_values(array_unique(array_merge($merged[$table]['columns'] ?? [], (array) $columns)));
+            }
+        }
+        $optional = (array) config('fusion_schema.optional', []);
+
         $out = [];
-        foreach (File::allFiles(app_path('Models')) as $file) {
-            $src = File::get($file->getPathname());
-            if (! preg_match('/protected\s+\$table\s*=\s*[\x27\x22]([^\x27\x22]+)[\x27\x22]/', $src, $t)) {
+        foreach ($merged as $table => $info) {
+            if (in_array($table, $optional, true)) {
                 continue;
             }
-            $fillable = [];
-            if (preg_match('/protected\s+\$fillable\s*=\s*\[(.*?)\]\s*;/s', $src, $f)) {
-                preg_match_all('/[\x27\x22]([A-Za-z0-9_]+)[\x27\x22]/', $f[1], $names);
-                $fillable = $names[1];
-            }
-            $out[] = ['model' => str_replace(['/', '.php'], ['\\', ''], $file->getRelativePathname()), 'table' => $t[1], 'fillable' => $fillable];
+            $out[] = ['model' => implode(' + ', $info['sources']), 'table' => $table, 'fillable' => $info['columns']];
         }
         usort($out, fn ($x, $y) => strcmp($x['table'], $y['table']));
 

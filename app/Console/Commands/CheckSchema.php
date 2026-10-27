@@ -15,7 +15,7 @@ class CheckSchema extends Command
 {
     protected $signature = 'fusion:check-schema {--ok : Also list the tables that are complete}';
 
-    protected $description = 'Check that every table and column the models need is present in the database';
+    protected $description = 'Check that every table and column in config/fusion_schema.php is present in the database';
 
     public function handle(SchemaChecker $checker): int
     {

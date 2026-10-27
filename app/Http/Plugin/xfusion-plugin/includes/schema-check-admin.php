@@ -2,8 +2,8 @@
 /**
  * Tools → FUSION Schema Check.
  *
- * Asks Laravel (GET /api/v1/schema-check) whether every table and column the models
- * need exists in the shared database, and lists what is
+ * Asks Laravel (GET /api/v1/schema-check) whether every table and column listed in
+ * Laravel's config/fusion_schema.php exists in the shared database, and lists what is
  * missing. Read-only; administrators only. Needs XFUSION_API_BEARER_TOKEN to
  * match FUSION_API_TOKEN in Laravel's .env.
  *
