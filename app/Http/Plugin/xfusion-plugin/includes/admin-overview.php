@@ -41,7 +41,7 @@ function xfusion_admin_overview_modules(): array
 function xfusion_admin_overview_url(string $slug, string $page, string $param = '', int $id = 0): string
 {
     $path = $slug !== '' ? '/' . $slug . '/' . $page . '/' : '/' . $page . '/';
-    $url = home_url($path);
+    $url = add_query_arg('xf_overview', 1, home_url($path));
 
     return $param !== '' ? add_query_arg($param, $id, $url) : $url;
 }
@@ -120,9 +120,9 @@ function xfusion_admin_overview_html(): string
 
     echo '<h2>' . $e($company['title']) . '</h2><p>';
     foreach ($modules as $m) {
-        echo '<a class="button" style="margin-right:6px" href="' . esc_url(xfusion_admin_overview_url($slug, $m[1])) . '">' . $e($m[0]) . ' page</a>';
+        echo '<a class="button" style="margin-right:6px" target="_blank" rel="noopener" href="' . esc_url(xfusion_admin_overview_url($slug, $m[1])) . '">' . $e($m[0]) . ' page</a>';
     }
-    echo '<a class="button" href="' . esc_url(xfusion_admin_overview_url($slug, '1-on-1-alignment')) . '">1-on-1 page</a></p>';
+    echo '<a class="button" target="_blank" rel="noopener" href="' . esc_url(xfusion_admin_overview_url($slug, '1-on-1-alignment')) . '">1-on-1 page</a></p>';
 
     foreach ($modules as $key => $m) {
         $table = $p . $m[3];
@@ -139,7 +139,7 @@ function xfusion_admin_overview_html(): string
         }
         echo '<table class="widefat striped"><thead><tr><th>Record</th><th>Status</th><th></th></tr></thead><tbody>';
         foreach ($rows as $r) {
-            echo '<tr><td>' . $e($r['label']) . '</td><td>' . $e($r['status']) . '</td><td><a class="button" href="'
+            echo '<tr><td>' . $e($r['label']) . '</td><td>' . $e($r['status']) . '</td><td><a class="button" target="_blank" rel="noopener" href="'
                 . esc_url(xfusion_admin_overview_url($slug, $m[1], $m[2], (int) $r['id'])) . '">Open</a></td></tr>';
         }
         echo '</tbody></table>';
@@ -162,7 +162,7 @@ function xfusion_admin_overview_html(): string
         echo '<table class="widefat striped"><thead><tr><th>Leader / Employee</th><th>Scheduled</th><th>Status</th><th></th></tr></thead><tbody>';
         foreach ($meetings as $r) {
             echo '<tr><td>' . $e($r['leader']) . ' / ' . $e($r['employee']) . '</td><td>' . $e($r['scheduled_at']) . '</td><td>' . $e($r['status'])
-                . '</td><td><a class="button" href="' . esc_url(xfusion_admin_overview_url($slug, '1-on-1-alignment', 'conversation_id', (int) $r['id'])) . '">Open (read-only)</a></td></tr>';
+                . '</td><td><a class="button" target="_blank" rel="noopener" href="' . esc_url(xfusion_admin_overview_url($slug, '1-on-1-alignment', 'conversation_id', (int) $r['id'])) . '">Open (read-only)</a></td></tr>';
         }
         echo '</tbody></table>';
     }

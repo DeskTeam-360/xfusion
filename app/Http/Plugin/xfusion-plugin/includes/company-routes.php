@@ -253,3 +253,34 @@ add_action('wp_head', function (): void {
 add_filter('redirect_canonical', function ($redirect, $requested) {
     return get_query_var('xf_company') !== '' ? false : $redirect;
 }, 10, 2);
+
+/**
+ * Pages opened from the admin FUSION Overview (?xf_overview=1) get a "Close tab"
+ * button. The flag is remembered per tab (sessionStorage) so it survives
+ * navigating inside the module, and never shows in tabs opened any other way.
+ */
+add_action('wp_footer', function (): void {
+    if (! is_user_logged_in() || ! current_user_can('manage_options')) {
+        return;
+    }
+    ?>
+<script>
+(function () {
+    try {
+        if (/[?&]xf_overview=1(&|$)/.test(location.search)) { sessionStorage.setItem('xf_overview_tab', '1'); }
+        if (sessionStorage.getItem('xf_overview_tab') !== '1') { return; }
+    } catch (e) { return; }
+    var b = document.createElement('button');
+    b.type = 'button';
+    b.textContent = 'Close tab';
+    b.setAttribute('style', 'position:fixed;right:16px;bottom:64px;z-index:99999;padding:.55rem 1rem;border:0;border-radius:999px;background:#36435f;color:#fff;font:600 14px system-ui,sans-serif;cursor:pointer;box-shadow:0 2px 8px rgba(0,0,0,.3)');
+    b.addEventListener('click', function () {
+        window.close();
+        // Browsers refuse to close tabs they consider user-opened; fall back to the overview.
+        setTimeout(function () { if (!window.closed) { b.textContent = 'Press Ctrl+W to close this tab'; } }, 300);
+    });
+    document.body.appendChild(b);
+})();
+</script>
+    <?php
+});
