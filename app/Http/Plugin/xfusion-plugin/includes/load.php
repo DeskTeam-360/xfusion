@@ -12,6 +12,7 @@ $xfusion_include_files = [
     'company-routes.php',
     'wp-sso.php',
     'schema-check-admin.php',
+    'admin-overview.php',
     'core-operating-objects-shortcode.php',
     'course-scoring-group-gauge-shortcode.php',
     'tool-library-shortcode.php',
