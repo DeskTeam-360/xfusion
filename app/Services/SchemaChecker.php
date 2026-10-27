@@ -2,7 +2,6 @@
 
 namespace App\Services;
 
-use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Facades\File;
 use Illuminate\Support\Facades\Schema;
 
@@ -22,18 +21,16 @@ class SchemaChecker
     public function run(): array
     {
         $tables = [];
-        foreach ($this->models() as $class) {
-            /** @var Model $model */
-            $model = new $class;
-            $table = $model->getTable();
-            $row = ['table' => $table, 'model' => $class, 'status' => 'ok', 'missing' => [], 'sql_hint' => ''];
+        foreach ($this->declaredModels() as $decl) {
+            $table = $decl['table'];
+            $row = ['table' => $table, 'model' => $decl['model'], 'status' => 'ok', 'missing' => [], 'sql_hint' => ''];
 
             if (! Schema::hasTable($table)) {
                 $row['status'] = 'missing_table';
             } else {
                 $have = array_map('strtolower', Schema::getColumnListing($table));
                 $row['missing'] = array_values(array_filter(
-                    $model->getFillable(),
+                    $decl['fillable'],
                     fn (string $c) => ! in_array(strtolower($c), $have, true)
                 ));
                 if ($row['missing']) {
@@ -52,24 +49,31 @@ class SchemaChecker
         return ['ok' => $ok, 'tables' => $tables, 'pending_migrations' => $pending];
     }
 
-    /** @return list<class-string<Model>> */
-    private function models(): array
+    /**
+     * Reads $table and $fillable straight from each model's source instead of
+     * loading the class, so one broken model cannot take the whole check down.
+     * Models without an explicit $table are skipped.
+     *
+     * @return list<array{model: string, table: string, fillable: list<string>}>
+     */
+    private function declaredModels(): array
     {
-        $classes = [];
+        $out = [];
         foreach (File::allFiles(app_path('Models')) as $file) {
-            $class = 'App\\Models\\'.str_replace(['/', '.php'], ['\\', ''], $file->getRelativePathname());
-            if (! class_exists($class)) {
+            $src = File::get($file->getPathname());
+            if (! preg_match('/protected\s+\$table\s*=\s*[\x27\x22]([^\x27\x22]+)[\x27\x22]/', $src, $t)) {
                 continue;
             }
-            $ref = new \ReflectionClass($class);
-            if ($ref->isAbstract() || ! $ref->isSubclassOf(Model::class)) {
-                continue;
+            $fillable = [];
+            if (preg_match('/protected\s+\$fillable\s*=\s*\[(.*?)\]\s*;/s', $src, $f)) {
+                preg_match_all('/[\x27\x22]([A-Za-z0-9_]+)[\x27\x22]/', $f[1], $names);
+                $fillable = $names[1];
             }
-            $classes[] = $class;
+            $out[] = ['model' => str_replace(['/', '.php'], ['\\', ''], $file->getRelativePathname()), 'table' => $t[1], 'fillable' => $fillable];
         }
-        sort($classes);
+        usort($out, fn ($x, $y) => strcmp($x['table'], $y['table']));
 
-        return $classes;
+        return $out;
     }
 
     /** @return list<string> */
