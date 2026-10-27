@@ -283,10 +283,11 @@ function xfqbr_render_picker_gate(): string
             body.innerHTML = '<p class="xqbr-muted">' + escHtml(listRes.message || 'Unable to load.') + '</p>';
             return;
         }
-        if (listRes.has_access === false) {
-            window.location.href = '/resources/resource-menu/';
-            return;
-        }
+        // TEMP: no-access redirect disabled while access is still being tested (same as ARP).
+        // if (listRes.has_access === false) {
+        //     window.location.href = '/resources/resource-menu/';
+        //     return;
+        // }
 
         var companies = (companiesRes.success ? companiesRes.data : []) || [];
         var xfQbrRows = window.xfusionFilterByRouteCompany ? window.xfusionFilterByRouteCompany(listRes.data || []) : (listRes.data || []);

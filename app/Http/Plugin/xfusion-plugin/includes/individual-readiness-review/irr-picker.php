@@ -369,10 +369,11 @@ function xfirr_render_picker_gate(): string
         }
         // WordPress administrators may browse any company's IRR page, but IRR is
         // tied to a person-to-person pairing — they see it empty and cannot create.
-        if (res.has_access === false && !window.XFUSION_IS_WP_ADMIN) {
-            window.location.href = '/resources/resource-menu/';
-            return;
-        }
+        // TEMP: no-access redirect disabled while access is still being tested (same as ARP).
+        // if (res.has_access === false && !window.XFUSION_IS_WP_ADMIN) {
+        //     window.location.href = '/resources/resource-menu/';
+        //     return;
+        // }
         render(res.data || {}, !!res.can_create);
     }).catch(function () {
         body.innerHTML = '<p class="xirr-muted">Unable to load reviews.</p>';

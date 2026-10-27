@@ -20,6 +20,10 @@ schema check, and optionally `WP_SSO_SECRET` = `XFUSION_SSO_SECRET` for "Open in
 - Tools → FUSION Schema Check: verifies required tables/columns (list kept in Laravel `config/fusion_schema.php`).
 - QBR picker: organization-first create for administrators.
 
+### Known / before going live
+- TEMP: the no-access redirect to `/resources/resource-menu/` is commented out in the ARP, ARR, QBR and IRR pickers
+  (`*-picker.php`, search "TEMP: no-access"). Re-enable it for production.
+
 ### Fixed
 - ARP Step 5: Executive Owners were blanked when saving without touching the form; a lone or comma-separated owner id loads again.
 - Module tables keep their bottom border on the last row.

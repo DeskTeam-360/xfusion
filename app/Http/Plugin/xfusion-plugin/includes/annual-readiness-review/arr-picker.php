@@ -239,10 +239,11 @@ function xfarr_render_picker_gate(): string
             body.innerHTML = '<p class="xarr-muted">' + escHtml(listRes.message || 'Unable to load.') + '</p>';
             return;
         }
-        if (listRes.has_access === false) {
-            window.location.href = '/resources/resource-menu/';
-            return;
-        }
+        // TEMP: no-access redirect disabled while access is still being tested (same as ARP).
+        // if (listRes.has_access === false) {
+        //     window.location.href = '/resources/resource-menu/';
+        //     return;
+        // }
 
         var groups = (groupsRes.success ? groupsRes.data : []) || [];
         var xfArrRows = window.xfusionFilterByRouteCompany ? window.xfusionFilterByRouteCompany(listRes.data || []) : (listRes.data || []);
