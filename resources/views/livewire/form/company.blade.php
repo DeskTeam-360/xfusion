@@ -1,57 +1,34 @@
 <form wire:submit="{{ $action }}">
 
-    <div class="form-group">
-{{--        <label for="title">{{ __('Name company') }}</label>@error('title') <span style="margin-left: 10px; color: indianred;" >{{ $message }}</span> @enderror--}}
-        <x-input model="title" id="title" required="true" title="Company Name"/>
-    </div>
+    <x-input model="title" required="true" title="Company Name"/>
 
-    <div class="form-group">
-        <x-input model="slug" id="slug" title="Company custom URL (leave empty to use the company name)"/>
-        <small class="text-muted">Used in the website links, e.g. /{{ $slug ?: 'company-name' }}/annual-readiness-plan/, /annual-readiness-review/, /quarterly-business-review/, /individual-readiness-review/, /1-on-1-alignment/.</small>
-    </div>
+    <x-input model="slug" title="Company custom URL"
+             :placeholder="\Illuminate\Support\Str::slug($title ?: 'company-name')"
+             :help="'Leave empty to use the company name. Used in the website links, e.g. <code>/'.e($slug ?: \Illuminate\Support\Str::slug($title ?: 'company-name')).'/annual-readiness-plan/</code>'"/>
 
-    <div class="form-group">
-        <x-input model="logo_url" type="file" accept="image/jpeg,image/png,image/jpg,image/gif" ignore="{{true}}" id="logo_url"  title="Company logo"/>
-        <small class="text-muted d-block" style="margin-top:-.5rem">You can resize your logo on <a href="https://www.iloveimg.com/resize-image#resize-options,pixels" target="_blank" class="text-blue-600 hover:text-blue-800">iLoveIMG</a></small>
-        @error('logo_url') <span style="margin-left: 10px; color: indianred;" >{{ $message }}</span> @enderror
-    </div>
-    <div class="form-group">
-{{--        <label for="title">{{ __('Website company') }}</label>@error('company_url') <span style="margin-left: 10px; color: indianred;" >{{ $message }}</span> @enderror--}}
-        <x-input model="company_url" id="company_url" title="Company Website"/>
-    </div>
+    <x-input model="logo_url" type="file" accept="image/jpeg,image/png,image/jpg,image/gif" ignore="{{true}}" title="Company logo"
+             help='You can resize your logo on <a href="https://www.iloveimg.com/resize-image#resize-options,pixels" target="_blank" rel="noopener" class="text-blue-600 hover:text-blue-800">iLoveIMG</a>'/>
 
-{{--    <div class="form-group">--}}
-{{--        <label for="qrcode_url">{{ __('Company QR code') }}</label>@error('qrcode_url') <span style="margin-left: 10px; color: indianred;" >{{ $message }}</span> @enderror--}}
-{{--        <x-input model="qrcode_url" type="file" accept="image/png" ignore="{{true}}" id="qrcode_url"/>--}}
-{{--    </div>--}}
+    <x-input model="company_url" title="Company Website"/>
 
-    <div class="form-group">
-{{--        <label for="user_id">{{ __('Company leader') }}</label>@error('user_id') <span style="margin-left: 10px; color: indianred;" >{{ $message }}</span> @enderror--}}
-        <x-select model="user_id" :options="$usersOption" id="user_id" required="true" title="Company leader"/>
-        @if($leaderWarning)
-            <div class="alert alert-warning" role="alert" style="margin-top:-.5rem">{{ $leaderWarning }}</div>
-        @endif
-    </div>
+    <x-select model="user_id" :options="$usersOption" required="true" title="Company leader"/>
+    @if($leaderWarning)
+        <div class="alert alert-warning" role="alert" style="margin:-.5rem 0 1rem">{{ $leaderWarning }}</div>
+    @endif
 
-    <hr>
-    <h5>Organizational Context&trade;</h5>
-    <p class="text-muted" style="margin-top:-.5rem">Shown read-only in the 1-on-1 wizard's Step 1 evidence card. A group's own values (if set) override these company-level defaults.</p>
+    <x-form-section title="Organizational Context&trade;"
+                    description="Shown read-only in the 1-on-1 wizard's Step 1 evidence card. A group's own values (if set) override these company-level defaults."/>
 
-    <div class="form-group">
-        <x-input model="role" id="role" title="Role"/>
-    </div>
-    <div class="form-group">
-        <x-input model="team" id="team" title="Team"/>
-    </div>
-    <div class="form-group">
-        <label for="organizational_goals">{{ __('Organizational Goals') }}</label>@error('organizational_goals') <span style="margin-left: 10px; color: indianred;">{{ $message }}</span> @enderror
-        <textarea wire:model="organizational_goals" id="organizational_goals" class="form-control" rows="3"></textarea>
-    </div>
-    <div class="form-group">
-        <label for="readiness_priorities">{{ __('Readiness Priorities') }}</label>@error('readiness_priorities') <span style="margin-left: 10px; color: indianred;">{{ $message }}</span> @enderror
-        <textarea wire:model="readiness_priorities" id="readiness_priorities" class="form-control" rows="3"></textarea>
-    </div>
+    <x-input model="role" title="Role"/>
+    <x-input model="team" title="Team"/>
+    <x-textarea model="organizational_goals" title="Organizational Goals" rows="4"/>
+    <x-textarea model="readiness_priorities" title="Readiness Priorities" rows="4"/>
 
-    <button type="submit" class="btn" wire:loading.attr="disabled">Submit</button>
+    <div style="position:sticky;bottom:0;z-index:5;margin-top:1rem;padding:.75rem 0;background:#fff;border-top:1px solid #e5e7eb">
+        <button type="submit" class="btn btn-primary" wire:loading.attr="disabled">
+            <span wire:loading.remove wire:target="{{ $action }}">Submit</span>
+            <span wire:loading wire:target="{{ $action }}">Saving…</span>
+        </button>
+    </div>
 
 </form>

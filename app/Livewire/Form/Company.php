@@ -3,6 +3,8 @@
 namespace App\Livewire\Form;
 
 use App\Repository\View\CompanyEmployee;
+use Illuminate\Support\Facades\DB;
+use Livewire\Attributes\Locked;
 use Livewire\Attributes\Validate;
 use Livewire\Component;
 use Livewire\WithFileUploads;
@@ -13,10 +15,13 @@ class Company extends Component
 
     use WithFileUploads;
 
+    // Locked: public properties can be rewritten from the browser, and these two
+    // decide which company update() writes to and which method the form calls.
+    #[Locked]
     public $action;
+    #[Locked]
     public $dataId;
     public $data;
-    public $usersOption;
 
     // Informational only — any user can be selected as a company leader
     // even if they already belong to another company; this just surfaces
@@ -70,14 +75,6 @@ class Company extends Component
 
     public function mount()
     {
-        $this->usersOption = [];
-        // Any user can be assigned as a company leader, including someone
-        // who already leads/works at another company — see updatedUserId()
-        // for the informational warning shown when that's the case.
-        foreach (\App\Models\User::get() as $item) {
-            $this->usersOption[] = ['value' => $item->ID, 'title' => $item->user_email];
-        }
-
         if ($this->dataId) {
             $data = \App\Models\Company::find($this->dataId);
             $this->user_id = (int)$data->user_id;
@@ -119,32 +116,32 @@ class Company extends Component
     {
         $this->validate();
 
-        if ($this->logo_url != null) {
-            $logoUrl = $this->logo_url->store(path: 'public/photos');
-        }
-        if ($this->qrcode_url != null) {
-            $qrcodeUrl = $this->qrcode_url->store(path: 'public/qrcode');
-        }
-        $company = \App\Models\Company::create([
-            'user_id' => $this->user_id,
-            'title' => $this->title,
-            'slug' => $this->slug ?: null,
-            'logo_url' => $logoUrl??'',
-            'qrcode_url' => $qrcodeUrl??'',
-            'company_url' => $this->company_url,
-            'role' => $this->role,
-            'team' => $this->team,
-            'organizational_goals' => $this->organizational_goals,
-            'readiness_priorities' => $this->readiness_priorities,
-        ]);
-        \App\Models\User::find($this->user_id)
-        ->saveMeta([
-            'company'=>$company->id
-        ]);
-        CompanyEmployee::create([
-           'user_id' => $this->user_id,
-           'company_id' => $company->id
-        ]);
+        $logoUrl = $this->logo_url != null ? $this->logo_url->store(path: 'public/photos') : '';
+        $qrcodeUrl = $this->qrcode_url != null ? $this->qrcode_url->store(path: 'public/qrcode') : '';
+
+        // One transaction: a failure part-way must not leave a company without its leader/employee row.
+        DB::transaction(function () use ($logoUrl, $qrcodeUrl) {
+            $company = \App\Models\Company::create([
+                'user_id' => $this->user_id,
+                'title' => $this->title,
+                'slug' => $this->slug ?: null,
+                'logo_url' => $logoUrl,
+                'qrcode_url' => $qrcodeUrl,
+                'company_url' => $this->company_url,
+                'role' => $this->role,
+                'team' => $this->team,
+                'organizational_goals' => $this->organizational_goals,
+                'readiness_priorities' => $this->readiness_priorities,
+            ]);
+            \App\Models\User::find($this->user_id)
+                ->saveMeta([
+                    'company' => $company->id,
+                ]);
+            CompanyEmployee::create([
+                'user_id' => $this->user_id,
+                'company_id' => $company->id,
+            ]);
+        });
         $this->dispatch('swal:alert', data:[
             'icon' => 'success',
             'title' => 'Successfully added company',
@@ -206,6 +203,17 @@ class Company extends Component
 
     public function render()
     {
-        return view('livewire.form.company');
+        // Any user can be assigned as a company leader, including someone who
+        // already leads/works at another company — see updatedUserId() for the
+        // informational warning. Loaded per render (two columns) instead of being
+        // a public property, which would ship every WordPress user to the browser
+        // inside the Livewire snapshot on every request.
+        $usersOption = \App\Models\User::query()
+            ->orderBy('user_email')
+            ->get(['ID', 'user_email'])
+            ->map(fn ($u) => ['value' => $u->ID, 'title' => $u->user_email])
+            ->all();
+
+        return view('livewire.form.company', ['usersOption' => $usersOption]);
     }
 }

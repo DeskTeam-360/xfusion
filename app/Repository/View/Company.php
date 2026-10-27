@@ -50,7 +50,9 @@ class Company extends \App\Models\Company implements View
         $qrcode_url = $data->qrcode_url ? Storage::url($data->qrcode_url) : null;
         $link = route('company.edit',$data->id);
         $link2 = route('company.show',$data->id);
-        $company_url = $data->company_url?"<span><a href='$data->company_url' class='btn btn-light-success text-nowrap' target='_blank'>Company Website</a></span>":'';
+        // Only http(s) links, and always escaped: these values go into raw HTML below.
+        $safeCompanyUrl = preg_match('#^https?://#i', (string) $data->company_url) ? e($data->company_url) : null;
+        $company_url = $safeCompanyUrl ? "<span><a href='$safeCompanyUrl' class='btn btn-light-success text-nowrap' target='_blank' rel='noopener'>Company Website</a></span>" : '';
         
         // Handle logo display - show "No Logo" if logo_url is null
         $logo_display = $logo_url 
@@ -61,7 +63,7 @@ class Company extends \App\Models\Company implements View
             if ($user == null) {
                 $user_nicename = 'User has been deleted';
             } else {
-                $user_nicename = $user->user_nicename;
+                $user_nicename = e($user->user_nicename);
             }
 
             $slug = (string) ($data->slug ?? '');
@@ -69,8 +71,8 @@ class Company extends \App\Models\Company implements View
                 ? '<code>'.e($slug).'</code>'
                 : '<span class="text-muted">— (not set)</span>';
 
-            $companyInfo = "<b>Company Name</b>: ".$data->title.' <br> <b>Custom URL</b>: '.$slugLabel.' <br> <b>Company Leader</b>: '.$user_nicename;
-            $companyInfo .= "<br> <b>Company Website</b>: ".$data->company_url;
+            $companyInfo = "<b>Company Name</b>: ".e($data->title).' <br> <b>Custom URL</b>: '.$slugLabel.' <br> <b>Company Leader</b>: '.$user_nicename;
+            $companyInfo .= "<br> <b>Company Website</b>: ".e($data->company_url);
             $companyInfo .= "<br> <b>Company Logo</b>:<br> ".$logo_display;
             $companyInfo .= "<br> <b>Company Employees</b>: ".$data->companyEmployees()->count();
             $link3 = route('company.show-detail',$data->id);
