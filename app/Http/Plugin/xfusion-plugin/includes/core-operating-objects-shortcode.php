@@ -110,7 +110,7 @@ add_shortcode('fusion_core_objects', function ($atts): string {
         . '</style><div class="xf-core">';
 
     foreach (xfusion_core_objects_items() as $item) {
-        $url = $slug !== '' ? home_url('/' . $slug . '/' . $item['key'] . '/') : home_url('/' . $item['page'] . '/');
+        $url = $slug !== '' ? home_url('/' . $slug . '/' . $item['page'] . '/') : home_url('/' . $item['page'] . '/');
         $paths = '';
         foreach ($item['paths'] as $d) {
             $paths .= '<path d="' . esc_attr($d) . '"/>';

@@ -47,7 +47,7 @@ final class WordpressPublicUrl
         ];
         [$companyKey, $page, $param] = $map[$module];
 
-        $path = filled($companySlug) ? $companySlug.'/'.$companyKey : $page;
+        $path = filled($companySlug) ? $companySlug.'/'.$page : $page;
 
         return self::base().'/'.$path.'/?'.$param.'='.$recordId;
     }

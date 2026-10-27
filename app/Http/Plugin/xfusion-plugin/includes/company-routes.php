@@ -16,7 +16,7 @@
 
 defined('ABSPATH') || exit;
 
-const XFUSION_COMPANY_ROUTES_VERSION = '1';
+const XFUSION_COMPANY_ROUTES_VERSION = '2';
 
 /** module key in the URL => slug of the WordPress Page that holds its shortcode. */
 function xfusion_company_route_modules(): array
@@ -32,11 +32,14 @@ function xfusion_company_route_modules(): array
 
 add_action('init', function (): void {
     foreach (xfusion_company_route_modules() as $module => $page) {
-        add_rewrite_rule(
-            '^([a-z0-9]+(?:-[a-z0-9]+)*)/' . $module . '/?$',
-            'index.php?pagename=' . $page . '&xf_company=$matches[1]&xf_module=' . $module,
-            'top'
-        );
+        // Full page path (/{company}/annual-readiness-plan/) and the short alias (/{company}/arp/).
+        foreach (array_unique([$page, $module]) as $tail) {
+            add_rewrite_rule(
+                '^([a-z0-9]+(?:-[a-z0-9]+)*)/' . preg_quote($tail, '#') . '/?$',
+                'index.php?pagename=' . $page . '&xf_company=$matches[1]&xf_module=' . $module,
+                'top'
+            );
+        }
     }
 
     // Flush once per version so no manual "Save Permalinks" is needed after deploy.
@@ -154,7 +157,7 @@ add_action('template_redirect', function (): void {
         return;
     }
 
-    $target = home_url('/' . $companySlug . '/' . $module . '/');
+    $target = home_url('/' . $companySlug . '/' . $pageSlug . '/');
     $query = (string) wp_parse_url((string) ($_SERVER['REQUEST_URI'] ?? ''), PHP_URL_QUERY);
     wp_safe_redirect($query !== '' ? $target . '?' . $query : $target, 302);
     exit;
@@ -245,3 +248,8 @@ add_action('wp_head', function (): void {
         'return rows.filter(function (r) { return !r || r.company_id === undefined || r.company_id === null || Number(r.company_id) === id; });' .
         '};</script>' . "\n";
 });
+
+/** The company URL is a virtual path to an existing Page; stop WordPress "correcting" it back to /annual-readiness-plan/. */
+add_filter('redirect_canonical', function ($redirect, $requested) {
+    return get_query_var('xf_company') !== '' ? false : $redirect;
+}, 10, 2);
