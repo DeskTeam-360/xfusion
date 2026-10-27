@@ -31,7 +31,7 @@ add_shortcode('fusion_admin_overview', function (): string {
 function xfusion_admin_overview_modules(): array
 {
     return [
-        'arp' => ['Annual Readiness Plan', 'annual-readiness-plan', 'arp_id', 'fusion_arps', "CONCAT(IFNULL(NULLIF(t.title,''),'ARP'), ' ', t.year)"],
+        'arp' => ['Annual Readiness Plan', 'annual-readiness-plan', 'arp_id', 'fusion_arps', "IFNULL(NULLIF(t.title,''), CONCAT('ARP ', t.year))"],
         'arr' => ['Annual Readiness Review', 'annual-readiness-review', 'arr_id', 'fusion_arrs', "CONCAT('ARR ', t.year)"],
         'qbr' => ['Quarterly Business Review', 'quarterly-business-review', 'qbr_id', 'fusion_qbrs', "CONCAT('Q', t.quarter, ' ', t.year)"],
         'irr' => ['Individual Readiness Review (IRR)', 'individual-readiness-review', 'irr_id', 'fusion_360_reviews', "CONCAT('IRR ', t.year, ' - ', IFNULL(u.display_name, CONCAT('user #', t.employee_user_id)))"],
@@ -56,6 +56,13 @@ function xfusion_admin_overview_html(): string
     $e = static fn ($v) => esc_html((string) $v);
 
     ob_start();
+    echo '<style>'
+        . '.xf-ov{width:100%;max-width:none}'
+        . '.xf-ov table{width:100%;border-collapse:collapse}'
+        . '.xf-ov th,.xf-ov td{text-align:left;padding:.6rem .75rem;border:1px solid #ddd}'
+        . '.xf-ov select{width:100%;max-width:420px}'
+        . '.xf-ov a.button{display:inline-block;padding:.35rem .8rem;border:1px solid #c9ccd3;border-radius:6px;background:#f6f7f9;text-decoration:none}'
+        . '</style><div class="xf-ov">';
     echo '<h1>FUSION Overview</h1>';
     echo '<p>Every company in one place. IRR and 1-on-1 open read-only for administrators; the raw 1-on-1 preparation stays private.</p>';
 
@@ -84,7 +91,7 @@ function xfusion_admin_overview_html(): string
             $counts[(int) $r['company_id']]['oo'] = (int) $r['n'];
         }
 
-        echo '<table class="widefat striped" style="max-width:1100px"><thead><tr><th>Company</th><th>ARP</th><th>ARR</th><th>QBR</th><th>IRR</th><th>1-on-1 pairs</th><th></th></tr></thead><tbody>';
+        echo '<table class="widefat striped"><thead><tr><th>Company</th><th>ARP</th><th>ARR</th><th>QBR</th><th>IRR</th><th>1-on-1 pairs</th><th></th></tr></thead><tbody>';
         foreach ($companies as $c) {
             $n = $counts[(int) $c['id']] ?? [];
             echo '<tr><td><strong>' . $e($c['title']) . '</strong></td>'
@@ -94,7 +101,7 @@ function xfusion_admin_overview_html(): string
         }
         echo '</tbody></table>';
 
-        return (string) ob_get_clean();
+        return (string) ob_get_clean() . '</div>';
     }
 
     // ---- One company ----
@@ -107,7 +114,7 @@ function xfusion_admin_overview_html(): string
     if ($company === null) {
         echo '<p>Company not found.</p>';
 
-        return (string) ob_get_clean();
+        return (string) ob_get_clean() . '</div>';
     }
     $slug = (string) $company['slug'];
 
@@ -130,7 +137,7 @@ function xfusion_admin_overview_html(): string
             echo '<p><em>None.</em></p>';
             continue;
         }
-        echo '<table class="widefat striped" style="max-width:900px"><thead><tr><th>Record</th><th>Status</th><th></th></tr></thead><tbody>';
+        echo '<table class="widefat striped"><thead><tr><th>Record</th><th>Status</th><th></th></tr></thead><tbody>';
         foreach ($rows as $r) {
             echo '<tr><td>' . $e($r['label']) . '</td><td>' . $e($r['status']) . '</td><td><a class="button" href="'
                 . esc_url(xfusion_admin_overview_url($slug, $m[1], $m[2], (int) $r['id'])) . '">Open</a></td></tr>';
@@ -152,7 +159,7 @@ function xfusion_admin_overview_html(): string
     if (! $meetings) {
         echo '<p><em>None.</em></p>';
     } else {
-        echo '<table class="widefat striped" style="max-width:900px"><thead><tr><th>Leader / Employee</th><th>Scheduled</th><th>Status</th><th></th></tr></thead><tbody>';
+        echo '<table class="widefat striped"><thead><tr><th>Leader / Employee</th><th>Scheduled</th><th>Status</th><th></th></tr></thead><tbody>';
         foreach ($meetings as $r) {
             echo '<tr><td>' . $e($r['leader']) . ' / ' . $e($r['employee']) . '</td><td>' . $e($r['scheduled_at']) . '</td><td>' . $e($r['status'])
                 . '</td><td><a class="button" href="' . esc_url(xfusion_admin_overview_url($slug, '1-on-1-alignment', 'conversation_id', (int) $r['id'])) . '">Open (read-only)</a></td></tr>';
@@ -160,5 +167,5 @@ function xfusion_admin_overview_html(): string
         echo '</tbody></table>';
     }
 
-    return (string) ob_get_clean();
+    return (string) ob_get_clean() . '</div>';
 }
