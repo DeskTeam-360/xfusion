@@ -251,7 +251,7 @@ select.xarr-input[multiple]{min-height:4.75rem;padding:.35rem}
 table.xarr-table{width:100%;border-collapse:collapse;font-size:.8rem}
 table.xarr-table th{text-align:left;padding:.65rem .75rem;color:var(--muted);font-weight:700;border-bottom:1px solid var(--border);font-size:.75rem;text-transform:uppercase;letter-spacing:.03em}
 table.xarr-table td{padding:.85rem .75rem;border-bottom:1px solid var(--border);vertical-align:top}
-table.xarr-table tr:last-child td{border-bottom:none}
+table.xarr-table tr:last-child td{border-bottom:1px solid var(--border)}
 table.xarr-table.xarr-table-gaps{border:1px solid var(--border);border-radius:.35rem;overflow:hidden}
 table.xarr-table.xarr-table-gaps th,
 table.xarr-table.xarr-table-gaps td{border-right:1px solid var(--border)}

@@ -300,6 +300,7 @@ function xfoo_wizard_styles_css(): string
 table.xfw-table{width:100%;border-collapse:collapse;font-size:.8rem;min-width:640px}
 table.xfw-table th{text-align:left;padding:.5rem .6rem;color:var(--muted);font-weight:600;border-bottom:1px solid var(--border);font-size:.72rem;text-transform:uppercase}
 table.xfw-table td{padding:.6rem;border-bottom:1px solid var(--border);vertical-align:middle;font-size:.70rem;}
+table.xfw-table tr:last-child td{border-bottom:1px solid var(--border)}
 table.xfw-table .xfw-input{width:100%;border:1px solid var(--border);border-radius:.375rem;padding:.35rem .5rem;font-size:.75rem;box-sizing:border-box;font-family:inherit;resize:vertical}
 table.xfw-table select.xfw-input{padding:.35rem .4rem}
 .xfw-commit-empty td{text-align:center;padding:1rem}

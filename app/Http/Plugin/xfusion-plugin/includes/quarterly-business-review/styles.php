@@ -273,7 +273,7 @@ select.xqbr-input[multiple]{min-height:4.75rem;padding:.35rem}
 table.xqbr-table{width:100%;border-collapse:collapse;font-size:.8rem}
 table.xqbr-table th{text-align:left;padding:.65rem .75rem;color:var(--muted);font-weight:700;border-bottom:1px solid var(--border);font-size:.75rem;text-transform:uppercase;letter-spacing:.03em}
 table.xqbr-table td{padding:.85rem .75rem;border-bottom:1px solid var(--border);vertical-align:top}
-table.xqbr-table tr:last-child td{border-bottom:none}
+table.xqbr-table tr:last-child td{border-bottom:1px solid var(--border)}
 table.xqbr-table.xqbr-table-gaps{border:1px solid var(--border);border-radius:.35rem;overflow:hidden}
 table.xqbr-table.xqbr-table-gaps th,
 table.xqbr-table.xqbr-table-gaps td{border-right:1px solid var(--border)}
