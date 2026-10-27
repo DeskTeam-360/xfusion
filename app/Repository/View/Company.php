@@ -4,6 +4,7 @@ namespace App\Repository\View;
 
 use App\Repository\View;
 use Illuminate\Database\Eloquent\Builder;
+use Illuminate\Support\Facades\Schema;
 use Illuminate\Support\Facades\Storage;
 
 class Company extends \App\Models\Company implements View
@@ -11,7 +12,19 @@ class Company extends \App\Models\Company implements View
     public static function tableSearch($params = null): Builder
     {
         $query = $params['query'];
-        return empty($query) ? static::query() : static::query()->where('title', 'like', "%$query%");
+        if (empty($query)) {
+            return static::query();
+        }
+
+        // The slug column only exists after wp_companies_add_slug.sql has been run.
+        $searchSlug = Schema::hasColumn((new static)->getTable(), 'slug');
+
+        return static::query()->where(function (Builder $q) use ($query, $searchSlug) {
+            $q->where('title', 'like', "%$query%");
+            if ($searchSlug) {
+                $q->orWhere('slug', 'like', "%$query%");
+            }
+        });
     }
 
     public static function tableView(): array
@@ -51,7 +64,12 @@ class Company extends \App\Models\Company implements View
                 $user_nicename = $user->user_nicename;
             }
 
-            $companyInfo = "<b>Company Name</b>: ".$data->title.' <br> <b>Company Leader</b>: '.$user_nicename;
+            $slug = (string) ($data->slug ?? '');
+            $slugLabel = $slug !== ''
+                ? '<code>'.e($slug).'</code>'
+                : '<span class="text-muted">— (not set)</span>';
+
+            $companyInfo = "<b>Company Name</b>: ".$data->title.' <br> <b>Slug</b>: '.$slugLabel.' <br> <b>Company Leader</b>: '.$user_nicename;
             $companyInfo .= "<br> <b>Company Website</b>: ".$data->company_url;
             $companyInfo .= "<br> <b>Company Logo</b>:<br> ".$logo_display;
             $companyInfo .= "<br> <b>Company Employees</b>: ".$data->companyEmployees()->count();
