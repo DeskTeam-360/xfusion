@@ -3,13 +3,18 @@
 /**
  * Plugin Name: Xperience Fusion  Plugin
  * Description: Plugin for Xperience Fusion.
- * Version: 1.2.0
+ * Version: 1.3.0
  * Author: Deskteam360
  * Requires at least: 6.0
  * Requires PHP: 8.0
  */
 
 defined('ABSPATH') || exit;
+
+/** Keep in step with the Version header above and CHANGELOG.md. */
+if (!defined('XFUSION_PLUGIN_VERSION')) {
+    define('XFUSION_PLUGIN_VERSION', '1.3.0');
+}
 
 if (!defined('XFUSION_PLUGIN_DIR')) {
     define('XFUSION_PLUGIN_DIR', plugin_dir_path(__FILE__));
