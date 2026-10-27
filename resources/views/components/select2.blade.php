@@ -13,7 +13,6 @@
         <script>
             $(document).ready(function () {
                 let data;
-                console.log("asd")
                 $('#{{$model}}').select2();
                 $('#{{$model}}').on('change', function (e) {
                     data = $('#{{$model}}').select2("val");

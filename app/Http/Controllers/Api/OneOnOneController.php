@@ -947,30 +947,6 @@ class OneOnOneController extends Controller
             }
         }
 
-        $debugPayload = null;
-        if ($request->boolean('debug', false)) {
-            $pair = $conversation->oneOnOne;
-            $debugPayload = [
-                'conversation_id' => $conversation->id,
-                'leader_user_id' => $pair?->leader_user_id,
-                'employee_user_id' => $pair?->employee_user_id,
-                'preparations' => $contextOverrides['preparations'] ?? $conversation->preparations()->get(['author_role', 'content'])->mapWithKeys(
-                    fn ($p) => [$p->author_role => $p->content]
-                )->all(),
-                'notes' => $contextOverrides['notes'] ?? $conversation->notes()->get(['section', 'note'])->map(
-                    fn ($n) => ['section' => $n->section, 'note' => $n->note]
-                )->values()->all(),
-                'commitments' => $contextOverrides['commitments'] ?? $conversation->commitments()->get(['title', 'description', 'owner_role', 'status'])->map(
-                    fn ($c) => [
-                        'title' => $c->title,
-                        'description' => $c->description,
-                        'owner_role' => $c->owner_role,
-                        'status' => $c->status,
-                    ]
-                )->values()->all(),
-            ];
-        }
-
         return response()->json([
             'success' => true,
             'data' => $synthesis->synthesis,
@@ -980,7 +956,6 @@ class OneOnOneController extends Controller
                 'llm_fallback' => $llmError !== null,
                 'llm_error' => $llmError,
             ],
-            'debug_payload' => $debugPayload,
         ]);
     }
 

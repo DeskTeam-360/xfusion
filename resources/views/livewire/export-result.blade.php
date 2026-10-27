@@ -114,7 +114,6 @@
                     </label>
                     <script>
                         function clearCourseLists() {
-                            console.log('clear');
                             @this.set('courseLists', []);
                             $('#datacourseLists').val([]).trigger('change');
                         }

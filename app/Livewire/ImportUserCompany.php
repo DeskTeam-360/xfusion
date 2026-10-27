@@ -34,11 +34,6 @@ class ImportUserCompany extends Component
         $this->companyId = $companyId;
     }
 
-    public function checkCsv()
-    {
-        dd($this->file);
-    }
-    
     protected $listeners = ["updatedFile" => "updatedFile"];
 
 

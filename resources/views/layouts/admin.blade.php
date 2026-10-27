@@ -107,10 +107,8 @@
 
     <script>
         function handleColorTheme(e) {
-            console.log(e)
             document.documentElement.setAttribute("data-color-theme", e);
             localStorage.setItem('ColorTheme', e)
-            console.log(localStorage.getItem('ColorTheme'))
         }
     </script>
 

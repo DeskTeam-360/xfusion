@@ -23,11 +23,6 @@ class ImportUser extends Component
 
     public $duplicateEmail;
 
-    public function checkCsv()
-    {
-        dd($this->file,);
-    }
-
     public function updatedFile()
     {
         $this->validate(['file' => 'required|file|mimes:csv,txt|max:2048',],);

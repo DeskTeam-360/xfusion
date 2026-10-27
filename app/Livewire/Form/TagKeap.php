@@ -96,7 +96,8 @@ class TagKeap extends Component
             ]);
 
         }catch (BadRequestException $badRequestException){
-            dd($badRequestException);
+            report($badRequestException);
+            session()->flash('error', 'Keap rejected the request: '.$badRequestException->getMessage());
         }
 
 

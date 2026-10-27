@@ -82,9 +82,8 @@ class GetTag extends Command
                 }else{
                     WpUserMeta::create(['user_id' => $user->ID, 'meta_key' => 'access_tags', 'meta_value' => $tag]);
                 }
-                var_dump($user->ID);
             } catch (Exception $exception) {
-                var_dump("error " . $user->ID. $exception->getMessage());
+                $this->error('error '.$user->ID.' '.$exception->getMessage());
             }
 
 

@@ -191,11 +191,6 @@ class UserCourse extends Component
     }
 
 
-    public function sortingResults()
-    {
-        dd($this->getFilteredCourseUserProperty());
-    }
-
     public function redirectToCourse($lessonId, $courseId, $topicId)
     {
 

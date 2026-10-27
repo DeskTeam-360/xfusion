@@ -4,7 +4,6 @@ use App\Http\Controllers\Admin\AiGenerationController;
 use App\Http\Controllers\Admin\CampaignController;
 use App\Http\Controllers\Admin\CompanyController;
 use App\Http\Controllers\Admin\CompanyGroupController;
-use App\Http\Controllers\Admin\ContactController;
 use App\Http\Controllers\Admin\CourseGroupController;
 use App\Http\Controllers\Admin\CourseScoringGroupController;
 use App\Http\Controllers\Admin\XfusionKnowledgeController;
@@ -377,18 +376,6 @@ Route::middleware(['auth',],)->group(function () {
         'courseScheduleGenerateEdit',
     ],)->name('course-schedule-generate-edit',);
 
-    Route::get('/contacts/{contactId}', [
-        ContactController::class,
-        'see_contacts',
-    ],)->name('contacts_show',);
-    Route::get('/apply-tags/{contactId}/{tagId}', [
-        ContactController::class,
-        'applyTags',
-    ],)->name('apply_tag',);
-    Route::get('/tag-list/', [
-        ContactController::class,
-        'tag_list',
-    ],)->name('tag_list',);
     Route::get('/campaign/create/group', [
         CampaignController::class,
         'create_company',
