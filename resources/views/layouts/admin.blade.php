@@ -58,6 +58,26 @@
             margin-top: 1.5em !important;
         }
 
+        /* Sidebar: the menu area was a fixed 100vh - 180px, which left a blank band at the
+           bottom and clipped the last section ("Reports & Activity" items). Let it fill
+           whatever height the logo block leaves. */
+        .left-sidebar .scroll-sidebar {
+            height: calc(100vh - 100px);
+        }
+        @media (min-width: 1280px) {
+            .left-sidebar.with-vertical {
+                display: flex;
+                flex-direction: column;
+            }
+            .left-sidebar.with-vertical > .overflow-hidden {
+                flex: 1 1 auto;
+                min-height: 0;
+            }
+            .left-sidebar.with-vertical .scroll-sidebar {
+                height: 100%;
+            }
+        }
+
         /* Forms: black text so a typed value is never mistaken for a placeholder;
            placeholders stay clearly lighter. */
         .form-label,
