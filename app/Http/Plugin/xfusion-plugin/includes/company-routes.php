@@ -1,6 +1,8 @@
 <?php
 /**
- * Company-scoped URLs: /{company-slug}/arp, /arr, /qbr, /irr, /1on1.
+ * Company-scoped URLs: /{company-slug}/annual-readiness-plan, /annual-readiness-review,
+ * /quarterly-business-review, /individual-readiness-review, /1-on-1-alignment
+ * (the short aliases /arp /arr /qbr /irr /1on1 still work).
  *
  * Each URL loads the existing module Page (the one holding the shortcode)
  * natively, so the theme template and shortcode render exactly as before —
