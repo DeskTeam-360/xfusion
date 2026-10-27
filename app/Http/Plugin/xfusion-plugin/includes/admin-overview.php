@@ -57,11 +57,10 @@ function xfusion_admin_overview_html(): string
 
     ob_start();
     echo '<style>'
-        . '.xf-ov{box-sizing:border-box;position:relative;left:50%;width:100vw;max-width:100vw;margin-left:-50vw;padding:0 24px}'
-        . '.wrap .xf-ov{position:static;width:auto;max-width:none;margin-left:0;padding:0}'
+        . '.xf-ov{box-sizing:border-box;width:100%;max-width:none}'
         . '.xf-ov table{width:100%;border-collapse:collapse}'
         . '.xf-ov th,.xf-ov td{text-align:left;padding:.6rem .75rem;border:1px solid #ddd}'
-        . '.xf-ov select{width:100%;max-width:420px}'
+        . '.xf-ov select{width:100%}'
         . '.xf-ov a.button{display:inline-block;padding:.35rem .8rem;border:1px solid #c9ccd3;border-radius:6px;background:#f6f7f9;text-decoration:none}'
         . '</style><div class="xf-ov">';
     echo '<h1>FUSION Overview</h1>';
