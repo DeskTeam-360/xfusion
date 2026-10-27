@@ -156,10 +156,10 @@
     @if(session('swal'))
         <script>
             Swal.fire({
-                title: '{{ session('swal.title') }}',
-                text: '{{ session('swal.message') ?? "" }}',
-                icon: '{{ session('swal.icon') ?? "success" }}',
-                timer: {{ session('swal.timeout') ?? 3000 }},
+                title: @json((string) session('swal.title')),
+                text: @json((string) (session('swal.message') ?? '')),
+                icon: @json((string) (session('swal.icon') ?? 'success')),
+                timer: {{ (int) (session('swal.timeout') ?? 3000) }},
                 showConfirmButton: false,
                 timerProgressBar: true,
             });

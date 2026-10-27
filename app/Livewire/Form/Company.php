@@ -142,10 +142,8 @@ class Company extends Component
                 'company_id' => $company->id,
             ]);
         });
-        $this->dispatch('swal:alert', data:[
-            'icon' => 'success',
-            'title' => 'Successfully added company',
-        ]);
+        // Flashed, not dispatched: a browser event fired right before the redirect is lost with the page.
+        session()->flash('swal', ['icon' => 'success', 'title' => 'Successfully added company']);
         $this->redirect(route('company.index'));
     }
 
@@ -167,6 +165,7 @@ class Company extends Component
             'logo_url' => $logoRule,
         ]);
         $data_compare = \App\Models\Company::find($this->dataId);
+        $previousLeaderId = (int) $data_compare->user_id;
 
         if ($data_compare->logo_url != $this->logo_url) {
             if ($this->logo_url != null) {
@@ -194,10 +193,18 @@ class Company extends Component
             'organizational_goals' => $this->organizational_goals,
             'readiness_priorities' => $this->readiness_priorities,
         ]);
-        $this->dispatch('swal:alert', data:[
-            'icon' => 'success',
-            'title' => 'successfully changed the company',
-        ]);
+        // A new leader must be a member of the company too (as create() does), or they
+        // would lead it without being able to open its modules. The previous leader stays
+        // an employee. Idempotent: running it twice adds nothing.
+        if ((int) $this->user_id !== $previousLeaderId) {
+            CompanyEmployee::firstOrCreate([
+                'user_id' => $this->user_id,
+                'company_id' => $this->dataId,
+            ]);
+            \App\Models\User::find($this->user_id)?->saveMeta(['company' => $this->dataId]);
+        }
+
+        session()->flash('swal', ['icon' => 'success', 'title' => 'Successfully changed the company']);
         $this->redirect(route('company.index'));
     }
 
