@@ -412,6 +412,7 @@ Route::get('/next-course/', function (Request $request) {
 | Set FUSION_API_TOKEN in Laravel .env to require Authorization: Bearer <token>
 */
 Route::prefix('v1')->middleware('fusion.api')->group(function () {
+    Route::get('/schema-check', \App\Http\Controllers\Api\SchemaCheckController::class);
     Route::get('/companies', [CompanyPublicController::class, 'index']);
     Route::get('/companies/{company}', [CompanyPublicController::class, 'show']);
     Route::get('/companies/{company}/participation-charts', [ParticipationChartsController::class, 'show']);
