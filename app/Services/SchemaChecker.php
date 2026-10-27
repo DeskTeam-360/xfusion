@@ -6,7 +6,9 @@ use Illuminate\Support\Facades\File;
 use Illuminate\Support\Facades\Schema;
 
 /**
- * Compares the database with what the code expects (read-only).
+ * Compares the database with the tables/columns the models declare (read-only).
+ * Deliberately ignores migrations: tables such as `users` are unused (WordPress's
+ * wp_users is the source of truth) and production tables come from database/sql.
  * Used by `php artisan fusion:check-schema` and GET /api/v1/schema-check.
  */
 class SchemaChecker
@@ -14,8 +16,7 @@ class SchemaChecker
     /**
      * @return array{
      *   ok: bool,
-     *   tables: list<array{table: string, model: string, status: 'ok'|'missing_table'|'missing_columns', missing: list<string>, sql_hint: string}>,
-     *   pending_migrations: list<string>
+     *   tables: list<array{table: string, model: string, status: 'ok'|'missing_table'|'missing_columns', missing: list<string>, sql_hint: string}>
      * }
      */
     public function run(): array
@@ -43,10 +44,9 @@ class SchemaChecker
             $tables[] = $row;
         }
 
-        $pending = $this->pendingMigrations();
-        $ok = $pending === [] && collect($tables)->every(fn ($t) => $t['status'] === 'ok');
+        $ok = collect($tables)->every(fn ($t) => $t['status'] === 'ok');
 
-        return ['ok' => $ok, 'tables' => $tables, 'pending_migrations' => $pending];
+        return ['ok' => $ok, 'tables' => $tables];
     }
 
     /**
@@ -74,20 +74,6 @@ class SchemaChecker
         usort($out, fn ($x, $y) => strcmp($x['table'], $y['table']));
 
         return $out;
-    }
-
-    /** @return list<string> */
-    private function pendingMigrations(): array
-    {
-        $migrator = app('migrator');
-        $repository = $migrator->getRepository();
-        if (! $repository->repositoryExists()) {
-            return ['(migrations table missing — run php artisan migrate)'];
-        }
-
-        $files = $migrator->getMigrationFiles($migrator->paths() + [database_path('migrations')]);
-
-        return array_values(array_diff(array_keys($files), $repository->getRan()));
     }
 
     /** The hand-run SQL file that creates the table, if there is one. */

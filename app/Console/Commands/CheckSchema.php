@@ -9,13 +9,13 @@ use Illuminate\Console\Command;
  * Run on the target server after deploying, before going live:
  *   php artisan fusion:check-schema
  *
- * Read-only. Exit code 1 when any table, column or migration is missing.
+ * Read-only. Exit code 1 when any table or column is missing.
  */
 class CheckSchema extends Command
 {
     protected $signature = 'fusion:check-schema {--ok : Also list the tables that are complete}';
 
-    protected $description = 'Check that every model table/column and migration is present in the database';
+    protected $description = 'Check that every table and column the models need is present in the database';
 
     public function handle(SchemaChecker $checker): int
     {
@@ -35,18 +35,13 @@ class CheckSchema extends Command
             }
         }
 
-        foreach ($result['pending_migrations'] as $name) {
-            $problems++;
-            $this->error("PENDING MIGRATION {$name}");
-        }
-
         if ($problems === 0) {
             $this->info('Schema is complete.');
 
             return self::SUCCESS;
         }
 
-        $this->error("{$problems} problem(s) found. Run the listed .sql files / php artisan migrate, then re-run this check.");
+        $this->error("{$problems} problem(s) found. Run the listed .sql files, then re-run this check.");
 
         return self::FAILURE;
     }

@@ -2,8 +2,8 @@
 /**
  * Tools → FUSION Schema Check.
  *
- * Asks Laravel (GET /api/v1/schema-check) whether every table, column and
- * migration the code expects exists in the shared database, and lists what is
+ * Asks Laravel (GET /api/v1/schema-check) whether every table and column the models
+ * need exists in the shared database, and lists what is
  * missing. Read-only; administrators only. Needs XFUSION_API_BEARER_TOKEN to
  * match FUSION_API_TOKEN in Laravel's .env.
  *
@@ -44,15 +44,14 @@ function xfusion_schema_check_page(): void
             $problems[] = $t;
         }
     }
-    $pending = (array) ($data['pending_migrations'] ?? []);
 
     if (! empty($data['ok'])) {
-        echo '<div class="notice notice-success"><p><strong>Schema is complete.</strong> ' . count((array) ($data['tables'] ?? [])) . ' tables checked, no pending migrations.</p></div></div>';
+        echo '<div class="notice notice-success"><p><strong>Schema is complete.</strong> ' . count((array) ($data['tables'] ?? [])) . ' tables checked, no missing tables or columns.</p></div></div>';
 
         return;
     }
 
-    echo '<div class="notice notice-error"><p><strong>' . (count($problems) + count($pending)) . ' problem(s) found.</strong> Run the listed SQL files / <code>php artisan migrate</code> on the Laravel server, then reload this page.</p></div>';
+    echo '<div class="notice notice-error"><p><strong>' . count($problems) . ' problem(s) found.</strong> Run the listed SQL files on the database, then reload this page.</p></div>';
 
     if ($problems) {
         echo '<table class="widefat striped" style="max-width:1000px"><thead><tr><th>Table</th><th>Problem</th><th>Fix with</th></tr></thead><tbody>';
@@ -64,14 +63,6 @@ function xfusion_schema_check_page(): void
                 . esc_html((string) ($t['sql_hint'] ?? '')) . '</code></td></tr>';
         }
         echo '</tbody></table>';
-    }
-
-    if ($pending) {
-        echo '<h2>Pending migrations</h2><ul>';
-        foreach ($pending as $name) {
-            echo '<li><code>' . esc_html((string) $name) . '</code></li>';
-        }
-        echo '</ul>';
     }
 
     echo '</div>';
