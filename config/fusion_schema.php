@@ -10,15 +10,16 @@
  * to run when the table/columns are missing.
  */
 return [
-    // ---- Used by the Laravel app (models) ----
+    // ---- Used by the Laravel app (models). Models on the 'wordpress' connection are listed with their wp_ prefix. ----
+    // Not listed: the activity log (WpViewAllLog) — it declares no table name, so its real name is unknown here.
     'laravel' => [
-        'company_employees' => ['user_id', 'company_id'],
-        'gf_entry' => ['form_id', 'post_id', 'date_created', 'date_updated', 'is_starred', 'is_read', 'ip', 'source_url', 'user_agent', 'currency', 'payment_status', 'payment_date', 'payment_amount', 'payment_method', 'is_fulfilled', 'transaction_id', 'created_by', 'transaction_type', 'status'],
-        'gf_entry_meta' => ['form_id', 'entry_id', 'meta_key', 'meta_value', 'item_index'],
-        'gf_form' => ['title', 'date_created', 'date_updated', 'is_active', 'is_trash'],
-        'gf_form_meta' => ['form_id', 'display_meta', 'entries_grid_meta', 'confirmations', 'notifications'],
-        'usermeta' => ['user_id', 'meta_key', 'meta_value'],
-        'users' => ['user_login', 'user_pass', 'user_nicename', 'user_email', 'user_url', 'user_registered', 'user_activation_key', 'user_status', 'display_name'],
+        'wp_company_employees' => ['user_id', 'company_id'],
+        'wp_gf_entry' => ['form_id', 'post_id', 'date_created', 'date_updated', 'is_starred', 'is_read', 'ip', 'source_url', 'user_agent', 'currency', 'payment_status', 'payment_date', 'payment_amount', 'payment_method', 'is_fulfilled', 'transaction_id', 'created_by', 'transaction_type', 'status'],
+        'wp_gf_entry_meta' => ['form_id', 'entry_id', 'meta_key', 'meta_value', 'item_index'],
+        'wp_gf_form' => ['title', 'date_created', 'date_updated', 'is_active', 'is_trash'],
+        'wp_gf_form_meta' => ['form_id', 'display_meta', 'entries_grid_meta', 'confirmations', 'notifications'],
+        'wp_usermeta' => ['user_id', 'meta_key', 'meta_value'],
+        'wp_users' => ['user_login', 'user_pass', 'user_nicename', 'user_email', 'user_url', 'user_registered', 'user_activation_key', 'user_status', 'display_name'],
         'wp_campaign_logs' => ['user_id', 'tag_id', 'status'],
         'wp_campaigns' => ['users', 'created_by_group', 'tags', 'status', 'time_schedule'],
         'wp_companies' => ['user_id', 'title', 'slug', 'logo_url', 'qrcode_url', 'company_url', 'role', 'team', 'organizational_goals', 'readiness_priorities'],
@@ -70,7 +71,6 @@ return [
         'wp_posts' => ['ID', 'post_author', 'post_date', 'post_date_gmt', 'post_content', 'post_title', 'post_excerpt', 'post_status', 'comment_status', 'ping_status', 'post_password', 'post_name', 'to_ping', 'pinged', 'post_modified', 'post_modified_gmt', 'post_content_filtered', 'post_parent', 'guid', 'menu_order', 'post_type', 'post_mime_type', 'comment_count'],
         'wp_tags' => ['id', 'name', 'description', 'category'],
         'wp_user_roles' => ['id', 'title', 'accesses', 'tag_starter'],
-        'wp_view_all_log' => ['id', 'user_id', 'log_time', 'source', 'note', 'reference'],
         'wp_xfusion_result_evaluations' => [],
     ],
 

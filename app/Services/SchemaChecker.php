@@ -27,7 +27,7 @@ class SchemaChecker
             $table = $decl['table'];
             $row = ['table' => $table, 'model' => $decl['model'], 'status' => 'ok', 'missing' => [], 'sql_hint' => ''];
 
-            if (! Schema::hasTable($table)) {
+            if (! Schema::hasTable($table) && ! Schema::hasView($table)) {
                 $row['status'] = 'missing_table';
             } else {
                 $have = array_map('strtolower', Schema::getColumnListing($table));
