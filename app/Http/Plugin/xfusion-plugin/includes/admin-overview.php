@@ -103,7 +103,7 @@ function xfusion_admin_overview_section_html(string $key, int $companyId, int $p
     $html .= '<h3>' . $e($title) . ' <span class="xf-ov-count">' . $total . '</span></h3>';
 
     if ($total === 0) {
-        return $html . '<p><em>None.</em></p></div>';
+        return $html . '<p class="xf-ov-muted">None yet.</p></div>';
     }
 
     if ($key === '1on1') {
@@ -119,7 +119,7 @@ function xfusion_admin_overview_section_html(string $key, int $companyId, int $p
         $html .= '<table><thead><tr><th>Leader / Employee</th><th>Scheduled</th><th>Status</th><th></th></tr></thead><tbody>';
         foreach ($rows as $r) {
             $html .= '<tr><td>' . $e($r['leader']) . ' / ' . $e($r['employee']) . '</td><td>' . $e($r['scheduled_at']) . '</td><td>' . xfusion_admin_overview_badge($r['status'])
-                . '</td><td><a class="button" target="_blank" rel="noopener" href="'
+                . '</td><td><a class="xf-open" target="_blank" rel="noopener" href="'
                 . esc_url(xfusion_admin_overview_url($slug, '1-on-1-alignment', 'conversation_id', (int) $r['id'])) . '">Open (read-only)</a></td></tr>';
         }
     } else {
@@ -131,7 +131,7 @@ function xfusion_admin_overview_section_html(string $key, int $companyId, int $p
         ), ARRAY_A);
         $html .= '<table><thead><tr><th>Record</th><th>Status</th><th></th></tr></thead><tbody>';
         foreach ($rows as $r) {
-            $html .= '<tr><td>' . $e($r['label']) . '</td><td>' . xfusion_admin_overview_badge($r['status']) . '</td><td><a class="button" target="_blank" rel="noopener" href="'
+            $html .= '<tr><td>' . $e($r['label']) . '</td><td>' . xfusion_admin_overview_badge($r['status']) . '</td><td><a class="xf-open" target="_blank" rel="noopener" href="'
                 . esc_url(xfusion_admin_overview_url($slug, $m[1], $m[2], (int) $r['id'])) . '">Open</a></td></tr>';
         }
     }
@@ -174,38 +174,44 @@ function xfusion_admin_overview_html(): string
 
     ob_start();
     echo '<style>'
-        . '.xf-ov{box-sizing:border-box;width:100%;max-width:none;--xf-brand:#36435f;--xf-line:#e3e6ec;--xf-soft:#f6f7fa}'
-        . '.xf-ov h1{margin:0 0 .25rem}'
-        . '.xf-ov .xf-ov-lead{margin:0 0 1.25rem;color:#667085}'
-        . '.xf-ov select{width:100%;padding:.65rem .9rem;border:1px solid var(--xf-line);border-radius:10px;background:#fff}'
-        . '.xf-ov-company{display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:12px;margin:1.25rem 0}'
-        . '.xf-ov-company h2{margin:0}'
-        . '.xf-ov-links{display:flex;flex-wrap:wrap;gap:8px}'
-        . '.xf-ov-section{background:#fff;border:1px solid var(--xf-line);border-radius:14px;padding:1rem 1.25rem 1.1rem;margin:0 0 1.25rem;box-shadow:0 1px 3px rgba(16,24,40,.05)}'
-        . '.xf-ov-section h3{display:flex;align-items:center;gap:10px;margin:0 0 .75rem}'
-        . '.xf-ov-count{display:inline-block;min-width:1.7rem;padding:.1rem .55rem;border-radius:999px;background:var(--xf-soft);color:var(--xf-brand);font-size:.8em;text-align:center}'
-        . '.xf-ov table{width:100%;border-collapse:separate;border-spacing:0;border:1px solid var(--xf-line);border-radius:10px;overflow:hidden}'
-        . '.xf-ov th{background:var(--xf-soft);color:#667085;font-size:.78rem;text-transform:uppercase;letter-spacing:.04em}'
-        . '.xf-ov th,.xf-ov td{text-align:left;padding:.7rem .9rem;border:0;border-bottom:1px solid var(--xf-line)}'
-        . '.xf-ov tbody tr:last-child td{border-bottom:0}'
+        . '.xf-ov{--navy:#1e2a52;--navy-dark:#141d3d;--green:#5f9a3f;--green-light:#7cb356;--ink:#1f2937;--muted:#6b7280;--border:#e5e7eb;--bg:#f7f8fa;'
+        . 'box-sizing:border-box;width:100%;max-width:none;font-family:inherit;font-size:18px;color:var(--ink);background:var(--bg);border:1px solid var(--border);border-radius:.5rem;overflow:hidden}'
+        . '.xf-ov-header{background:linear-gradient(120deg,var(--navy-dark) 0%,var(--navy) 55%,var(--green) 140%);padding:1.5rem 1.75rem;color:#fff}'
+        . '.xf-ov-header h1{margin:0;font-size:40px;letter-spacing:.02em;font-weight:600;color:#fff}'
+        . '.xf-ov-header p{margin:.25rem 0 0;font-size:18px;opacity:.85;color:#fff}'
+        . '.xf-ov-body{padding:1.5rem 1.75rem}'
+        . '.xf-ov select{width:100%;padding:.55rem .75rem;border:1px solid var(--border);border-radius:.375rem;background:#fff;font-size:16px;margin:0 0 1rem}'
+        . '.xf-ov-company{display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:.75rem;margin:0 0 1rem}'
+        . '.xf-ov-company h2{margin:0;font-size:32px;color:var(--navy)}'
+        . '.xf-ov-links{display:flex;flex-wrap:wrap;gap:.6rem}'
+        . '.xf-ov-section{background:#fff;border:1px solid var(--border);border-radius:.5rem;padding:1.1rem 1.25rem;margin-bottom:1rem}'
+        . '.xf-ov-section h3{display:flex;align-items:center;gap:.6rem;margin:0 0 .6rem;font-size:20px;font-weight:500;text-transform:uppercase;letter-spacing:.04em;color:var(--navy)}'
+        . '.xf-ov-count{display:inline-block;padding:.1rem .55rem;border-radius:999px;background:#eef0f6;color:var(--navy);font-size:14px;font-weight:700}'
+        . '.xf-ov table{width:100%;border-collapse:collapse;font-size:.8rem;border:0}'
+        . '.xf-ov th{text-align:left;padding:.65rem .75rem;color:var(--muted);font-weight:700;border:0;border-bottom:1px solid var(--border);font-size:.75rem;text-transform:uppercase;letter-spacing:.03em;background:transparent}'
+        . '.xf-ov td{padding:.85rem .75rem;border:0;border-bottom:1px solid var(--border);vertical-align:top;font-size:16px}'
         . '.xf-ov tbody tr:hover td{background:#fafbfd}'
         . '.xf-ov td:last-child,.xf-ov th:last-child{text-align:right;white-space:nowrap}'
-        . '.xf-ov a.button,.xf-ov button.button{display:inline-block;padding:.4rem .95rem;border:1px solid var(--xf-brand);border-radius:8px;background:#fff;color:var(--xf-brand)!important;font-weight:600;text-decoration:none!important;cursor:pointer;line-height:1.3}'
-        . '.xf-ov a.button:hover,.xf-ov button.button:hover{background:var(--xf-brand);color:#fff!important}'
-        . '.xf-ov a.button.is-primary{background:var(--xf-brand);color:#fff!important}'
-        . '.xf-ov button.button[disabled]{opacity:.4;cursor:default;background:#fff;color:var(--xf-brand)!important}'
-        . '.xf-ov-badge{display:inline-block;padding:.15rem .65rem;border-radius:999px;font-size:.8rem;font-weight:600;background:#eef0f4;color:#475467}'
-        . '.xf-ov-badge.is-active,.xf-ov-badge.is-published,.xf-ov-badge.is-completed{background:#dcfae6;color:#067647}'
-        . '.xf-ov-badge.is-draft,.xf-ov-badge.is-scheduled{background:#fef0c7;color:#b54708}'
-        . '.xf-ov-badge.is-in_progress{background:#d1e9ff;color:#175cd3}'
-        . '.xf-ov-badge.is-cancelled,.xf-ov-badge.is-archived{background:#fee4e2;color:#b42318}'
-        . '.xf-ov-pager{display:flex;align-items:center;justify-content:flex-end;gap:12px;margin:.85rem 0 0;color:#667085}'
+        . '.xf-ov .xf-btn,.xf-ov a.button,.xf-ov button.button{display:inline-block;cursor:pointer;border-radius:.375rem;padding:.55rem 1.1rem;font-size:.85rem;font-weight:600;border:1px solid var(--border);background:#fff;color:var(--ink)!important;text-decoration:none!important;white-space:nowrap;line-height:1.3;font-family:inherit}'
+        . '.xf-ov a.button:hover,.xf-ov button.button:hover{background:#f3f4f6}'
+        . '.xf-ov a.button.is-primary{background:var(--green);border-color:var(--green);color:#fff!important}'
+        . '.xf-ov a.button.is-primary:hover{background:var(--green-light)}'
+        . '.xf-ov button.button[disabled]{opacity:.45;cursor:default}'
+        . '.xf-ov a.xf-open{display:inline-block;padding:.15rem .55rem;border-radius:999px;font-size:16px;font-weight:600;line-height:1.25;border:1px solid #86efac;background:#dcfce7;color:#166534!important;text-decoration:none!important;white-space:nowrap}'
+        . '.xf-ov a.xf-open:hover{background:#bbf7d0}'
+        . '.xf-ov-badge{display:inline-block;padding:.15rem .55rem;border-radius:999px;font-size:16px;font-weight:600;background:#f3f4f6;color:#374151}'
+        . '.xf-ov-badge.is-active,.xf-ov-badge.is-published,.xf-ov-badge.is-completed{background:#dcfce7;color:#166534}'
+        . '.xf-ov-badge.is-draft,.xf-ov-badge.is-scheduled{background:#fef3c7;color:#92400e}'
+        . '.xf-ov-badge.is-in_progress{background:#dbeafe;color:#1e40af}'
+        . '.xf-ov-badge.is-cancelled,.xf-ov-badge.is-archived{background:#fee2e2;color:#991b1b}'
+        . '.xf-ov-pager{display:flex;align-items:center;justify-content:flex-end;gap:.75rem;margin:.85rem 0 0;color:var(--muted);font-size:16px}'
         . '.xf-ov-section.is-loading{opacity:.5;pointer-events:none;transition:opacity .15s}'
+        . '.xf-ov .xf-ov-muted{color:var(--muted);line-height:1.5}'
         . '</style><div class="xf-ov">';
-    echo '<h1>FUSION Overview</h1>';
-    echo '<p class="xf-ov-lead">Every company in one place. IRR and 1-on-1 open read-only for administrators; the raw 1-on-1 preparation stays private.</p>';
+    echo '<div class="xf-ov-header"><h1>FUSION OVERVIEW</h1><p>Every company in one place. IRR and 1-on-1 open read-only; raw 1-on-1 preparation stays private.</p></div>';
+    echo '<div class="xf-ov-body">';
 
-    echo '<form method="get" style="margin:12px 0">';
+    echo '<form method="get" style="margin:0">';
     if (isset($_GET['page'])) {
         echo '<input type="hidden" name="page" value="' . esc_attr((string) $_GET['page']) . '">';
     }
@@ -239,7 +245,7 @@ function xfusion_admin_overview_html(): string
         }
         echo '</tbody></table>';
 
-        return (string) ob_get_clean() . '</div>';
+        return (string) ob_get_clean() . '</div></div>';
     }
 
     // ---- One company ----
@@ -247,7 +253,7 @@ function xfusion_admin_overview_html(): string
     if ($company === null) {
         echo '<p>Company not found.</p>';
 
-        return (string) ob_get_clean() . '</div>';
+        return (string) ob_get_clean() . '</div></div>';
     }
 
     echo '<div class="xf-ov-company"><h2>' . $e($company['title']) . '</h2><div class="xf-ov-links">';
@@ -292,5 +298,5 @@ function xfusion_admin_overview_html(): string
 </script>
     <?php
 
-    return (string) ob_get_clean() . '</div>';
+    return (string) ob_get_clean() . '</div></div>';
 }
