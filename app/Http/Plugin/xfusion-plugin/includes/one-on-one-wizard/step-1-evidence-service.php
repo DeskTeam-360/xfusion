@@ -1411,7 +1411,6 @@ var loadWizardEvidence = function (force) {
         .then(function (json) {
             if (json && json.success && json.data) {
                 window.xfwEvidenceCache.data = json.data;
-                console.log('[XFW Step 1] evidence summary (UI / accordion)', json.data);
             } else {
                 window.xfwEvidenceCache.data = xfwEvidenceEmptyDefaults();
             }

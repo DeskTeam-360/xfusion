@@ -27,7 +27,6 @@ function xfoo_wizard_ajax_generate_synthesis(): void
     $payload = [
         'user_id' => get_current_user_id(),
         'force_refresh' => true,
-        'debug' => true,
     ];
 
     $preparations = xfoo_wizard_decode_json_post('preparations');
@@ -56,7 +55,6 @@ function xfoo_wizard_ajax_generate_synthesis(): void
     wp_send_json_success([
         'synthesis' => $body['data'] ?? null,
         'meta' => $body['meta'] ?? [],
-        'debug_payload' => $body['debug_payload'] ?? null,
     ]);
 }
 
@@ -550,11 +548,6 @@ var xfwSaveCommitmentsBeforeSynthesis = function () {
     payload.set('employee_commitments', JSON.stringify(collectCommitmentRows('employee')));
     payload.set('leader_commitments', JSON.stringify(collectCommitmentRows('leader')));
 
-    console.log('[XFW Step 5] commitments → save draft', {
-        employee: collectCommitmentRows('employee'),
-        leader: collectCommitmentRows('leader'),
-    });
-
     return fetch(window.XFW_WIZARD.ajaxUrl, {
         method: 'POST',
         credentials: 'same-origin',
@@ -597,11 +590,6 @@ var generateWizardSynthesis = function () {
                 commitments: xfwCollectSynthesisCommitments(),
             };
 
-            console.log('[XFW Step 6] generate synthesis request', {
-                conversation_id: cid,
-                payload: synthesisPayload,
-            });
-
             var body = new URLSearchParams({
                 action: 'xfoo_wizard_generate_synthesis',
                 nonce: window.XFW_WIZARD.nonce,
@@ -637,12 +625,8 @@ var generateWizardSynthesis = function () {
         window.xfwSynthesisCache.loaded = true;
         window.xfwSynthesisCache.conversationId = cid;
 
-        console.log('[XFW Step 6] AI Meeting Synthesis response', json.data.synthesis, json.data.meta || {});
         if (json.data.meta && json.data.meta.llm_fallback) {
             console.warn('[XFW Step 6] LLM unavailable, used context-composer fallback', json.data.meta.llm_error || '');
-        }
-        if (json.data.debug_payload) {
-            console.log('[XFW Step 6] synthesis payload → LLM (from server)', json.data.debug_payload);
         }
 
         if (typeof STEPS !== 'undefined' && STEPS[current] && STEPS[current].key === 'synthesis') {

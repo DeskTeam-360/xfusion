@@ -403,7 +403,6 @@ function gpi_radar_chart_shortcode() {
 		$current_user = wp_get_current_user(); 
 		echo esc_js( $current_user->user_email ); 
 	  ?>";
-	  console.log("WP user email:", window.userEmail); // debug
 	</script>
 	<script>
 	(async function () {

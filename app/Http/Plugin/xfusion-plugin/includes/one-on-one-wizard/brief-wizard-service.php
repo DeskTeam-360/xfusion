@@ -466,7 +466,6 @@ var xfwFetchBriefBundlePreview = function (conversationId) {
         .then(function (res) { return res.json(); })
         .then(function (json) {
             if (json && json.success && json.data) {
-                console.log('[XFW Step 2] evidence_context → LLM (brief bundle)', json.data);
                 return json.data;
             }
             return null;
@@ -520,10 +519,6 @@ var generateWizardBrief = function () {
             window.xfwBriefCache.data = json.data.brief;
             window.xfwBriefCache.loaded = true;
             window.xfwBriefCache.conversationId = cid;
-            if (json.data.evidence_context) {
-                console.log('[XFW Step 2] evidence_context (sent with generate)', json.data.evidence_context);
-            }
-            console.log('[XFW Step 2] AI Meeting Brief response', json.data.brief, json.data.meta || {});
 
             if (typeof STEPS !== 'undefined' && STEPS[current] && STEPS[current].key === 'brief' && typeof xfwRenderBriefStep === 'function') {
                 xfwRenderBriefStep();
