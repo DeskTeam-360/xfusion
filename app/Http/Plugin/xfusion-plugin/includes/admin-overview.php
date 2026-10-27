@@ -205,90 +205,67 @@ function xfusion_admin_overview_html(): string
         . '.xf-ov-badge.is-in_progress{background:#dbeafe;color:#1e40af}'
         . '.xf-ov-badge.is-cancelled,.xf-ov-badge.is-archived{background:#fee2e2;color:#991b1b}'
         . '.xf-ov-pager{display:flex;align-items:center;justify-content:flex-end;gap:.75rem;margin:.85rem 0 0;color:var(--muted);font-size:16px}'
-        . '.xf-ov-section.is-loading{opacity:.5;pointer-events:none;transition:opacity .15s}'
+        . '.xf-ov-section.is-loading,#xf-ov-view.is-loading{opacity:.5;pointer-events:none;transition:opacity .15s}'
         . '.xf-ov .xf-ov-muted{color:var(--muted);line-height:1.5}'
         . '</style><div class="xf-ov">';
     echo '<div class="xf-ov-header"><h1>FUSION OVERVIEW</h1><p>Every company in one place. IRR and 1-on-1 open read-only; raw 1-on-1 preparation stays private.</p></div>';
     echo '<div class="xf-ov-body">';
 
-    echo '<form method="get" style="margin:0">';
-    if (isset($_GET['page'])) {
-        echo '<input type="hidden" name="page" value="' . esc_attr((string) $_GET['page']) . '">';
-    }
-    echo '<select name="company_id" onchange="this.form.submit()"><option value="0">All companies (summary)</option>';
+    echo '<select id="xf-ov-select"><option value="0">All companies (summary)</option>';
     foreach ($companies as $c) {
         echo '<option value="' . (int) $c['id'] . '"' . selected($selected, (int) $c['id'], false) . '>' . $e($c['title']) . '</option>';
     }
-    echo '</select> <noscript><button>Show</button></noscript></form>';
+    echo '</select>';
 
-    $modules = xfusion_admin_overview_modules();
-
-    // ---- Summary of all companies ----
-    if ($selected === 0) {
-        $counts = [];
-        foreach ($modules as $key => $m) {
-            foreach ((array) $wpdb->get_results("SELECT company_id, COUNT(*) AS n FROM {$p}{$m[3]} GROUP BY company_id", ARRAY_A) as $r) {
-                $counts[(int) $r['company_id']][$key] = (int) $r['n'];
-            }
-        }
-        foreach ((array) $wpdb->get_results("SELECT company_id, COUNT(*) AS n FROM {$p}fusion_one_on_ones GROUP BY company_id", ARRAY_A) as $r) {
-            $counts[(int) $r['company_id']]['oo'] = (int) $r['n'];
-        }
-
-        echo '<table><thead><tr><th>Company</th><th>ARP</th><th>ARR</th><th>QBR</th><th>IRR</th><th>1-on-1 pairs</th><th></th></tr></thead><tbody>';
-        foreach ($companies as $c) {
-            $n = $counts[(int) $c['id']] ?? [];
-            echo '<tr><td><strong>' . $e($c['title']) . '</strong></td>'
-                . '<td>' . (int) ($n['arp'] ?? 0) . '</td><td>' . (int) ($n['arr'] ?? 0) . '</td><td>' . (int) ($n['qbr'] ?? 0)
-                . '</td><td>' . (int) ($n['irr'] ?? 0) . '</td><td>' . (int) ($n['oo'] ?? 0) . '</td>'
-                . '<td><a class="button is-primary" href="' . esc_url(add_query_arg('company_id', (int) $c['id'])) . '">Open</a></td></tr>';
-        }
-        echo '</tbody></table>';
-
-        return (string) ob_get_clean() . '</div></div>';
-    }
-
-    // ---- One company ----
-    $company = xfusion_admin_overview_company($selected);
-    if ($company === null) {
-        echo '<p>Company not found.</p>';
-
-        return (string) ob_get_clean() . '</div></div>';
-    }
-
-    echo '<div class="xf-ov-company"><h2>' . $e($company['title']) . '</h2><div class="xf-ov-links">';
-    foreach ($modules as $m) {
-        echo '<a class="button" target="_blank" rel="noopener" href="' . esc_url(xfusion_admin_overview_url($company['slug'], $m[1])) . '">' . $e($m[0]) . ' page</a>';
-    }
-    echo '<a class="button" target="_blank" rel="noopener" href="' . esc_url(xfusion_admin_overview_url($company['slug'], '1-on-1-alignment')) . '">1-on-1 page</a></div></div>';
-
-    echo '<div id="xf-ov-lists">';
-    foreach (array_merge(array_keys($modules), ['1on1']) as $key) {
-        echo xfusion_admin_overview_section_html($key, $selected, 1);
-    }
-    echo '</div>';
+    echo '<div id="xf-ov-view">' . xfusion_admin_overview_view_html($selected) . '</div>';
 
     $ajax = esc_js(admin_url('admin-ajax.php'));
     $nonce = esc_js(wp_create_nonce('xfusion_overview'));
     ?>
 <script>
 (function () {
-    var box = document.getElementById('xf-ov-lists');
-    if (!box) { return; }
-    box.addEventListener('click', function (ev) {
+    var view = document.getElementById('xf-ov-view');
+    var select = document.getElementById('xf-ov-select');
+    if (!view || !select) { return; }
+
+    function post(data) {
+        data.nonce = '<?php echo $nonce; ?>';
+        return fetch('<?php echo $ajax; ?>', { method: 'POST', credentials: 'same-origin', body: new URLSearchParams(data) })
+            .then(function (r) { return r.json(); });
+    }
+
+    function loadCompany(id, push) {
+        view.classList.add('is-loading');
+        post({ action: 'xfusion_overview_view', company_id: id })
+            .then(function (res) {
+                view.classList.remove('is-loading');
+                if (!res || !res.success) { return; }
+                view.innerHTML = res.data.html;
+                select.value = String(id);
+                if (push) {
+                    var url = new URL(window.location.href);
+                    url.searchParams.set('company_id', id);
+                    window.history.pushState({ company: id }, '', url);
+                }
+            })
+            .catch(function () { view.classList.remove('is-loading'); });
+    }
+
+    select.addEventListener('change', function () { loadCompany(select.value, true); });
+    window.addEventListener('popstate', function () {
+        var id = new URL(window.location.href).searchParams.get('company_id') || '0';
+        loadCompany(id, false);
+    });
+
+    view.addEventListener('click', function (ev) {
+        var open = ev.target.closest('[data-company-open]');
+        if (open) { ev.preventDefault(); loadCompany(open.dataset.companyOpen, true); return; }
+
         var btn = ev.target.closest('.xf-ov-pager button[data-page]');
         if (!btn || btn.disabled) { return; }
         var section = btn.closest('.xf-ov-section');
-        var body = new URLSearchParams({
-            action: 'xfusion_overview_section',
-            nonce: '<?php echo $nonce; ?>',
-            key: section.dataset.key,
-            company_id: section.dataset.company,
-            page: btn.dataset.page
-        });
         section.classList.add('is-loading');
-        fetch('<?php echo $ajax; ?>', { method: 'POST', credentials: 'same-origin', body: body })
-            .then(function (r) { return r.json(); })
+        post({ action: 'xfusion_overview_section', key: section.dataset.key, company_id: section.dataset.company, page: btn.dataset.page })
             .then(function (res) {
                 if (res && res.success) { section.outerHTML = res.data.html; } else { section.classList.remove('is-loading'); }
             })
@@ -300,3 +277,69 @@ function xfusion_admin_overview_html(): string
 
     return (string) ob_get_clean() . '</div></div>';
 }
+
+/** The body under the company picker: the all-company summary (0) or one company's lists. */
+function xfusion_admin_overview_view_html(int $companyId): string
+{
+    global $wpdb;
+    $p = $wpdb->prefix;
+    $e = static fn ($v) => esc_html((string) $v);
+    $modules = xfusion_admin_overview_modules();
+
+    ob_start();
+
+    // ---- Summary of all companies ----
+    if ($companyId === 0) {
+        $companies = (array) $wpdb->get_results("SELECT id, title FROM {$p}companies ORDER BY title", ARRAY_A);
+        $counts = [];
+        foreach ($modules as $key => $m) {
+            foreach ((array) $wpdb->get_results("SELECT company_id, COUNT(*) AS n FROM {$p}{$m[3]} GROUP BY company_id", ARRAY_A) as $r) {
+                $counts[(int) $r['company_id']][$key] = (int) $r['n'];
+            }
+        }
+        foreach ((array) $wpdb->get_results("SELECT company_id, COUNT(*) AS n FROM {$p}fusion_one_on_ones GROUP BY company_id", ARRAY_A) as $r) {
+            $counts[(int) $r['company_id']]['oo'] = (int) $r['n'];
+        }
+
+        echo '<table style="margin-top:1rem"><thead><tr><th>Company</th><th>ARP</th><th>ARR</th><th>QBR</th><th>IRR</th><th>1-on-1 pairs</th><th></th></tr></thead><tbody>';
+        foreach ($companies as $c) {
+            $n = $counts[(int) $c['id']] ?? [];
+            echo '<tr><td><strong>' . $e($c['title']) . '</strong></td>'
+                . '<td>' . (int) ($n['arp'] ?? 0) . '</td><td>' . (int) ($n['arr'] ?? 0) . '</td><td>' . (int) ($n['qbr'] ?? 0)
+                . '</td><td>' . (int) ($n['irr'] ?? 0) . '</td><td>' . (int) ($n['oo'] ?? 0) . '</td>'
+                . '<td><a class="button is-primary" data-company-open="' . (int) $c['id'] . '" href="' . esc_url(add_query_arg('company_id', (int) $c['id'])) . '">Open</a></td></tr>';
+        }
+        echo '</tbody></table>';
+
+        return (string) ob_get_clean();
+    }
+
+    // ---- One company ----
+    $company = xfusion_admin_overview_company($companyId);
+    if ($company === null) {
+        return '<p class="xf-ov-muted">Company not found.</p>';
+    }
+
+    echo '<div class="xf-ov-company" style="margin-top:1rem"><h2>' . $e($company['title']) . '</h2><div class="xf-ov-links">';
+    foreach ($modules as $m) {
+        echo '<a class="button" target="_blank" rel="noopener" href="' . esc_url(xfusion_admin_overview_url($company['slug'], $m[1])) . '">' . $e($m[0]) . ' page</a>';
+    }
+    echo '<a class="button" target="_blank" rel="noopener" href="' . esc_url(xfusion_admin_overview_url($company['slug'], '1-on-1-alignment')) . '">1-on-1 page</a></div></div>';
+
+    echo '<div id="xf-ov-lists">';
+    foreach (array_merge(array_keys($modules), ['1on1']) as $key) {
+        echo xfusion_admin_overview_section_html($key, $companyId, 1);
+    }
+    echo '</div>';
+
+    return (string) ob_get_clean();
+}
+
+add_action('wp_ajax_xfusion_overview_view', function (): void {
+    if (! current_user_can('manage_options')) {
+        wp_send_json_error(['message' => 'Not allowed.'], 403);
+    }
+    check_ajax_referer('xfusion_overview', 'nonce');
+
+    wp_send_json_success(['html' => xfusion_admin_overview_view_html((int) ($_POST['company_id'] ?? 0))]);
+});
