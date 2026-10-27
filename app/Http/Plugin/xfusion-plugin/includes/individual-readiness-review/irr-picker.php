@@ -337,11 +337,16 @@ function xfirr_render_picker_gate(): string
         });
         pickerState.groups = groups;
         var reviews = dashboard.reviews || [];
+        if (window.xfusionFilterByRouteCompany) {
+            reviews = window.xfusionFilterByRouteCompany(reviews);
+        }
 
         var html = '<h2>Individual Readiness Review&trade;</h2>' +
             '<p class="xirr-muted">' + (canCreate
                 ? 'Start a new annual review for a team member, or open an existing review below.'
-                : 'Open an existing review below. Only leaders of your group can start or edit reviews.') + '</p>' +
+                : (window.XFUSION_IS_WP_ADMIN
+                    ? 'Administrator view: reviews are read-only.'
+                    : 'Open an existing review below. Only leaders of your group can start or edit reviews.')) + '</p>' +
             '<div class="xfirr-gate-columns">' +
             '<div class="xfirr-gate-col">' +
             '<h3>Start a new review</h3>' +

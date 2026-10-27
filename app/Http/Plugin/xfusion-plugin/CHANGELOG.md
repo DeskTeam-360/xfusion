@@ -19,6 +19,9 @@ schema check, and optionally `WP_SSO_SECRET` = `XFUSION_SSO_SECRET` for "Open in
 - `[fusion_core_objects]` shortcode: the Core Operating Objects menu, linking to the visitor's company URLs.
 - Tools → FUSION Schema Check: verifies required tables/columns (list kept in Laravel `config/fusion_schema.php`).
 - QBR picker: organization-first create for administrators.
+- WordPress administrators can view IRR and 1-on-1 read-only (all pairs of the opened company). They cannot create, edit, generate or
+  sign, and never see either side's raw preparation; notes only once the meeting has started or finished. Laravel decides this from
+  the user's WordPress role, not from any flag sent by the browser.
 
 ### Known / before going live
 - TEMP: the no-access redirect to `/resources/resource-menu/` is commented out in the ARP, ARR, QBR and IRR pickers

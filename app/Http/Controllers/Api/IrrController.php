@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers\Api;
 
+use App\Support\WpAdmin;
 use App\Http\Controllers\Controller;
 use App\Models\CompanyGroup;
 use App\Models\CompanyGroupDetail;
@@ -43,12 +44,19 @@ class IrrController extends Controller
             fn (array $g) => ($g['role'] ?? '') === 'leader'
         ));
 
+        // WordPress administrators browse every review read-only (never create).
+        $isViewer = WpAdmin::isAdministrator($userId);
+        if ($isViewer) {
+            $groups = [];
+        }
+
         $reviews = $this->reviewsForUser($userId);
-        $hasAccess = $groups !== [] || $reviews !== [];
+        $hasAccess = $isViewer || $groups !== [] || $reviews !== [];
 
         return response()->json([
             'success' => true,
             'has_access' => $hasAccess,
+            'is_viewer' => $isViewer,
             'can_create' => $groups !== [],
             'data' => [
                 'groups' => $groups,
@@ -126,6 +134,10 @@ class IrrController extends Controller
     /** Create or resume an IRR for employee + year in a group the user leads. */
     public function store(Request $request)
     {
+        if (WpAdmin::isAdministrator((int) $request->input('user_id'))) {
+            return $this->forbidden();
+        }
+
         $userId = (int) $request->input('user_id');
         $data = $request->validate([
             'company_group_id' => 'required|integer|min:1',
@@ -428,7 +440,7 @@ class IrrController extends Controller
     public function saveConversationAgreement(Request $request, IrrReview $irr)
     {
         $userId = (int) $request->input('user_id');
-        if (! $this->canAccessReview($userId, $irr)) {
+        if (! $this->canAccessReview($userId, $irr) || WpAdmin::isAdministrator($userId)) {
             return $this->forbidden();
         }
 
@@ -593,6 +605,22 @@ class IrrController extends Controller
      */
     private function reviewsForUser(int $userId): array
     {
+        if (WpAdmin::isAdministrator($userId)) {
+            return IrrReview::query()
+                ->with([
+                    'employee:ID,display_name,user_nicename',
+                    'manager:ID,display_name,user_nicename',
+                    'companyGroup:id,title',
+                    'company:id,title',
+                ])
+                ->orderByDesc('year')
+                ->orderByDesc('id')
+                ->get()
+                ->map(fn (IrrReview $review) => $this->reviewListPayload($review, $userId))
+                ->values()
+                ->all();
+        }
+
         $teamMemberIds = $this->companyGroupSync->teamMemberUserIdsForLeader($userId);
 
         return IrrReview::query()
@@ -620,6 +648,7 @@ class IrrController extends Controller
     {
         return [
             'id' => $review->id,
+            'company_id' => $review->company_id,
             'employee_user_id' => $review->employee_user_id,
             'employee_name' => $this->userDisplayName($review->employee),
             'manager_name' => $this->userDisplayName($review->manager),
@@ -656,6 +685,10 @@ class IrrController extends Controller
 
     private function canAccessReview(int $userId, IrrReview $review): bool
     {
+        if (WpAdmin::isAdministrator($userId)) {
+            return true;
+        }
+
         if ((int) $review->employee_user_id === $userId) {
             return true;
         }
@@ -669,6 +702,11 @@ class IrrController extends Controller
 
     private function canEditReview(int $userId, IrrReview $review): bool
     {
+        // Administrators only view; the review belongs to its manager/employee pairing.
+        if (WpAdmin::isAdministrator($userId)) {
+            return false;
+        }
+
         if ($review->status === IrrReview::STATUS_PUBLISHED) {
             return false;
         }

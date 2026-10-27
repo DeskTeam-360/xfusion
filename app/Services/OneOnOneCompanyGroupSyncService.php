@@ -261,12 +261,15 @@ class OneOnOneCompanyGroupSyncService
     /**
      * @return list<array<string, mixed>>
      */
-    public function meetingsForUser(int $userId): array
+    public function meetingsForUser(int $userId, bool $asViewer = false): array
     {
+        // $asViewer: a WordPress administrator browsing every pair read-only.
         $pairs = OneOnOne::query()
             ->where('status', OneOnOne::STATUS_ACTIVE)
-            ->where(function ($q) use ($userId) {
-                $q->where('leader_user_id', $userId)->orWhere('employee_user_id', $userId);
+            ->when(! $asViewer, function ($query) use ($userId) {
+                $query->where(function ($q) use ($userId) {
+                    $q->where('leader_user_id', $userId)->orWhere('employee_user_id', $userId);
+                });
             })
             ->with(['leader:ID,display_name,user_nicename', 'employee:ID,display_name,user_nicename'])
             ->get();
@@ -291,15 +294,18 @@ class OneOnOneCompanyGroupSyncService
                 continue;
             }
 
-            $role = $pair->leader_user_id === $userId ? 'leader' : 'employee';
+            $role = $asViewer ? 'viewer' : ($pair->leader_user_id === $userId ? 'leader' : 'employee');
             $leaderName = $pair->leader ? ($pair->leader->display_name ?: $pair->leader->user_nicename) : '—';
             $employeeName = $pair->employee ? ($pair->employee->display_name ?: $pair->employee->user_nicename) : '—';
-            $counterpartName = $role === 'leader' ? $employeeName : $leaderName;
+            $counterpartName = $role === 'viewer'
+                ? $leaderName.' ↔ '.$employeeName
+                : ($role === 'leader' ? $employeeName : $leaderName);
             $group = $this->findGroupForPair((int) $pair->leader_user_id, (int) $pair->employee_user_id);
 
             $meetings[] = [
                 'id' => (int) $conversation->id,
                 'pair_id' => (int) $pair->id,
+                'company_id' => (int) $pair->company_id,
                 'scheduled_at' => $conversation->scheduled_at,
                 'meeting_link' => $conversation->meeting_link,
                 'status' => (string) $conversation->status,

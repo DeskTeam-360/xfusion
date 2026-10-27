@@ -6,8 +6,9 @@ use App\Models\WpUserMeta;
 
 /**
  * Whether a wp_users.ID holds the WordPress "administrator" role. Used to let
- * administrators work across every company in ARP/ARR/QBR (never IRR/1-on-1,
- * which are tied to a specific person-to-person pairing).
+ * administrators work across every company in ARP/ARR/QBR, and view IRR and
+ * 1-on-1 read-only (never create or edit them: they are tied to a specific
+ * person-to-person pairing, and raw preparation stays private).
  */
 class WpAdmin
 {

@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers\Api;
 
+use App\Support\WpAdmin;
 use App\Http\Controllers\Controller;
 use App\Models\CompanyEmployee;
 use App\Models\CompanyGroup;
@@ -307,15 +308,20 @@ class OneOnOneController extends Controller
 
         $user = User::query()->find($userId, ['ID', 'display_name', 'user_nicename']);
 
+        // WordPress administrators browse every pair read-only: no groups, so
+        // nothing can be scheduled from here.
+        $isViewer = WpAdmin::isAdministrator($userId);
+
         return response()->json([
             'success' => true,
+            'is_viewer' => $isViewer,
             'data' => [
                 'user' => $user ? [
                     'id' => (int) $user->ID,
                     'name' => $user->display_name ?: $user->user_nicename,
                 ] : null,
-                'groups' => $this->companyGroupSync->groupsForUser($userId),
-                'meetings' => $this->companyGroupSync->meetingsForUser($userId),
+                'groups' => $isViewer ? [] : $this->companyGroupSync->groupsForUser($userId),
+                'meetings' => $this->companyGroupSync->meetingsForUser($userId, $isViewer),
             ],
         ]);
     }
@@ -328,7 +334,7 @@ class OneOnOneController extends Controller
     public function employeeScoring(Request $request, OneOnOne $oneOnOne)
     {
         $callerId = (int) $request->query('user_id');
-        if (! $this->isPairParticipant($callerId, $oneOnOne)) {
+        if (! $this->canViewPair($callerId, $oneOnOne)) {
             return $this->notAuthorized();
         }
 
@@ -450,7 +456,7 @@ class OneOnOneController extends Controller
     public function conversations(Request $request, OneOnOne $oneOnOne)
     {
         $callerId = (int) $request->query('user_id');
-        if (! $this->isPairParticipant($callerId, $oneOnOne)) {
+        if (! $this->canViewPair($callerId, $oneOnOne)) {
             return $this->notAuthorized();
         }
 
@@ -618,6 +624,9 @@ class OneOnOneController extends Controller
         if ($access instanceof \Illuminate\Http\JsonResponse) {
             return $access;
         }
+        if (! empty($access['read_only'])) {
+            return $this->notAuthorized();
+        }
 
         $step = (string) $request->input('step', '');
         if (! in_array($step, self::WIZARD_STEP_KEYS, true)) {
@@ -642,6 +651,9 @@ class OneOnOneController extends Controller
         $access = $this->wizardDraftAccess($request, $conversation, 'wizard');
         if ($access instanceof \Illuminate\Http\JsonResponse) {
             return $access;
+        }
+        if (! empty($access['read_only'])) {
+            return $this->notAuthorized();
         }
 
         $data = $request->validate([
@@ -689,6 +701,9 @@ class OneOnOneController extends Controller
         if ($access instanceof \Illuminate\Http\JsonResponse) {
             return $access;
         }
+        if (! empty($access['read_only'])) {
+            return $this->notAuthorized();
+        }
 
         $data = $request->validate([
             'values' => 'required|array',
@@ -707,7 +722,7 @@ class OneOnOneController extends Controller
     public function preparationStatus(Request $request, OneOnOneConversation $conversation)
     {
         $userId = (int) $request->query('user_id');
-        if (! $this->isConversationParticipant($userId, $conversation)) {
+        if (! $this->canViewConversation($userId, $conversation)) {
             return $this->notAuthorized();
         }
 
@@ -749,7 +764,7 @@ class OneOnOneController extends Controller
     public function brief(Request $request, OneOnOneConversation $conversation, OneOnOneAiService $ai)
     {
         $userId = (int) $request->query('user_id');
-        if (! $this->isConversationParticipant($userId, $conversation)) {
+        if (! $this->canViewConversation($userId, $conversation)) {
             return $this->notAuthorized();
         }
 
@@ -766,7 +781,7 @@ class OneOnOneController extends Controller
     public function briefHistory(Request $request, OneOnOneConversation $conversation)
     {
         $userId = (int) $request->query('user_id');
-        if (! $this->isConversationParticipant($userId, $conversation)) {
+        if (! $this->canViewConversation($userId, $conversation)) {
             return $this->notAuthorized();
         }
 
@@ -794,7 +809,7 @@ class OneOnOneController extends Controller
     public function showBriefVersion(Request $request, OneOnOneConversation $conversation, int $brief)
     {
         $userId = (int) $request->query('user_id');
-        if (! $this->isConversationParticipant($userId, $conversation)) {
+        if (! $this->canViewConversation($userId, $conversation)) {
             return $this->notAuthorized();
         }
 
@@ -984,7 +999,8 @@ class OneOnOneController extends Controller
             return response()->json(['success' => false, 'message' => 'user_id is required.'], 422);
         }
 
-        $isAdmin = $request->boolean('wizard_admin');
+        // Server-verified: a client-sent flag is never trusted for this.
+        $isAdmin = WpAdmin::isAdministrator($userId);
         $pair = $conversation->oneOnOne;
         if ($pair === null) {
             return response()->json(['success' => false, 'message' => 'Pairing not found.'], 404);
@@ -1000,14 +1016,19 @@ class OneOnOneController extends Controller
             $revealed = $conversation->preparations()->where('is_revealed', true)->exists();
             $completed = $conversation->status === OneOnOneConversation::STATUS_COMPLETED;
 
-            if (! $revealed && ! $completed && ! $isAdmin) {
+            if (! $isParticipant) {
+                // Administrator from outside the pair: no raw preparation, read-only.
+                return ['user_id' => $userId, 'roles' => [], 'is_admin' => true, 'read_only' => true, 'notes_scope' => ($revealed || $completed) ? 'all' : 'own'];
+            }
+
+            if (! $revealed && ! $completed) {
                 return ['user_id' => $userId, 'roles' => [], 'is_admin' => false, 'notes_scope' => 'own'];
             }
 
             return [
                 'user_id' => $userId,
                 'roles' => OneOnOnePreparation::validRoles(),
-                'is_admin' => $isAdmin,
+                'is_admin' => false,
                 'notes_scope' => 'all',
             ];
         }
@@ -1020,7 +1041,11 @@ class OneOnOneController extends Controller
         // would see the other side's private answers, which is exactly the
         // leak this endpoint exists to prevent.
         if ($isAdmin && ! $isParticipant) {
-            return ['user_id' => $userId, 'roles' => OneOnOnePreparation::validRoles(), 'is_admin' => true, 'notes_scope' => 'all'];
+            $revealed = $conversation->preparations()->where('is_revealed', true)->exists();
+            $completed = $conversation->status === OneOnOneConversation::STATUS_COMPLETED;
+
+            // Read-only, and never the raw preparation of either side.
+            return ['user_id' => $userId, 'roles' => [], 'is_admin' => true, 'read_only' => true, 'notes_scope' => ($revealed || $completed) ? 'all' : 'own'];
         }
 
         // Preparation content is never shared between the two parties, even
@@ -1055,7 +1080,7 @@ class OneOnOneController extends Controller
     public function synthesis(Request $request, OneOnOneConversation $conversation)
     {
         $userId = (int) $request->query('user_id');
-        if (! $this->isConversationParticipant($userId, $conversation)) {
+        if (! $this->canViewConversation($userId, $conversation)) {
             return $this->notAuthorized();
         }
 
@@ -1072,7 +1097,7 @@ class OneOnOneController extends Controller
     public function synthesisHistory(Request $request, OneOnOneConversation $conversation)
     {
         $userId = (int) $request->query('user_id');
-        if (! $this->isConversationParticipant($userId, $conversation)) {
+        if (! $this->canViewConversation($userId, $conversation)) {
             return $this->notAuthorized();
         }
 
@@ -1100,7 +1125,7 @@ class OneOnOneController extends Controller
     public function showSynthesisVersion(Request $request, OneOnOneConversation $conversation, int $synthesis)
     {
         $userId = (int) $request->query('user_id');
-        if (! $this->isConversationParticipant($userId, $conversation)) {
+        if (! $this->canViewConversation($userId, $conversation)) {
             return $this->notAuthorized();
         }
 
@@ -1150,8 +1175,16 @@ class OneOnOneController extends Controller
     public function getNotes(Request $request, OneOnOneConversation $conversation)
     {
         $userId = (int) $request->query('user_id');
-        if (! $this->isConversationParticipant($userId, $conversation)) {
+        if (! $this->canViewConversation($userId, $conversation)) {
             return $this->notAuthorized();
+        }
+
+        // Notes are private to their author until the meeting starts; an
+        // administrator viewing from outside the pair only sees them after that.
+        if (! $this->isConversationParticipant($userId, $conversation)
+            && $conversation->status !== OneOnOneConversation::STATUS_COMPLETED
+            && ! $conversation->preparations()->where('is_revealed', true)->exists()) {
+            return response()->json(['success' => true, 'data' => []]);
         }
 
         return response()->json([
@@ -1170,7 +1203,7 @@ class OneOnOneController extends Controller
     public function getCommitments(Request $request, OneOnOneConversation $conversation)
     {
         $userId = (int) $request->query('user_id');
-        if (! $this->isConversationParticipant($userId, $conversation)) {
+        if (! $this->canViewConversation($userId, $conversation)) {
             return $this->notAuthorized();
         }
 
@@ -1336,7 +1369,7 @@ class OneOnOneController extends Controller
         }
 
         $userId = (int) $request->query('user_id');
-        if (! $this->isPairParticipant($userId, $oneOnOne)) {
+        if (! $this->canViewPair($userId, $oneOnOne)) {
             return $this->notAuthorized();
         }
 
@@ -1423,7 +1456,7 @@ class OneOnOneController extends Controller
         }
 
         $userId = (int) $request->query('user_id');
-        if (! $this->isPairParticipant($userId, $oneOnOne)) {
+        if (! $this->canViewPair($userId, $oneOnOne)) {
             return $this->notAuthorized();
         }
 
@@ -1562,6 +1595,21 @@ class OneOnOneController extends Controller
         });
 
         return response()->json(['success' => true]);
+    }
+
+    /**
+     * Read-only access: the two participants, or a WordPress administrator
+     * (verified server-side, never from a client flag). Anything that writes
+     * keeps using isPairParticipant()/isConversationParticipant().
+     */
+    private function canViewPair(int $userId, OneOnOne $pair): bool
+    {
+        return $this->isPairParticipant($userId, $pair) || WpAdmin::isAdministrator($userId);
+    }
+
+    private function canViewConversation(int $userId, OneOnOneConversation $conversation): bool
+    {
+        return $this->isConversationParticipant($userId, $conversation) || WpAdmin::isAdministrator($userId);
     }
 
     private function isPairParticipant(int $userId, OneOnOne $pair): bool

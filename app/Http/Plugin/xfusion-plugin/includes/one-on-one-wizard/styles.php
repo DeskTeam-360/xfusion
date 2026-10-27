@@ -413,5 +413,15 @@ table.xfw-table select.xfw-input{padding:.35rem .4rem}
 .xfw-evidence-status{padding-left:calc(46px + .85rem)}
 .xfw-numbered .n{width:22px;height:22px;font-size:11px}
 }
+
+/* WordPress administrator viewing someone else's meeting: read-only. */
+#xfoo-wiz[data-user-role="viewer"]::before{content:"Read-only view — you are viewing this meeting as an administrator.";display:block;margin:0 0 1rem;padding:.6rem .9rem;border-radius:8px;background:#fef3c7;color:#92400e;font-weight:600}
+#xfoo-wiz[data-user-role="viewer"] textarea,
+#xfoo-wiz[data-user-role="viewer"] input:not([type="button"]),
+#xfoo-wiz[data-user-role="viewer"] select{pointer-events:none;opacity:.85}
+#xfoo-wiz[data-user-role="viewer"] #xfw-save-draft,
+#xfoo-wiz[data-user-role="viewer"] #xfw-save-draft-2,
+#xfoo-wiz[data-user-role="viewer"] #xfw-generate-brief,
+#xfoo-wiz[data-user-role="viewer"] #xfw-generate-synthesis{display:none!important}
 CSS;
 }

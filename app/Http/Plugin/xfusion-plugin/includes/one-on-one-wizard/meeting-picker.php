@@ -817,7 +817,9 @@ var xfwRenderGroupPicker = function (groups) {
     }
 
     if (!groups.length) {
-        pairsEl.innerHTML = '<p class="xfw-muted">No company groups found. Ask your admin to add you to a Company Group.</p>';
+        pairsEl.innerHTML = window.XFUSION_IS_WP_ADMIN
+            ? '<p class="xfw-muted">Administrator view: meetings are read-only. Scheduling is done by each group leader.</p>'
+            : '<p class="xfw-muted">No company groups found. Ask your admin to add you to a Company Group.</p>';
         return;
     }
 
@@ -965,7 +967,9 @@ window.xfwInitMeetingPicker = function () {
 
         xfwPickerState.dashboard = res.data;
         xfwPickerState.groups = res.data.groups || [];
-        xfwPickerState.meetings = res.data.meetings || [];
+        xfwPickerState.meetings = window.xfusionFilterByRouteCompany
+            ? window.xfusionFilterByRouteCompany(res.data.meetings || [])
+            : (res.data.meetings || []);
         xfwPickerState.meetingsPage = 1;
 
         xfwWireMeetingsListControls();
