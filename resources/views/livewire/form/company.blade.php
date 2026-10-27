@@ -6,7 +6,7 @@
     </div>
 
     <div class="form-group">
-        <x-input model="slug" id="slug" title="URL slug (leave empty to use the company name)"/>
+        <x-input model="slug" id="slug" title="Company custom URL (leave empty to use the company name)"/>
         <small class="text-muted">Used in the website links, e.g. /{{ $slug ?: 'company-name' }}/annual-readiness-plan/, /annual-readiness-review/, /quarterly-business-review/, /individual-readiness-review/, /1-on-1-alignment/.</small>
     </div>
 

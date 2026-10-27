@@ -69,7 +69,7 @@ class Company extends \App\Models\Company implements View
                 ? '<code>'.e($slug).'</code>'
                 : '<span class="text-muted">— (not set)</span>';
 
-            $companyInfo = "<b>Company Name</b>: ".$data->title.' <br> <b>Slug</b>: '.$slugLabel.' <br> <b>Company Leader</b>: '.$user_nicename;
+            $companyInfo = "<b>Company Name</b>: ".$data->title.' <br> <b>Custom URL</b>: '.$slugLabel.' <br> <b>Company Leader</b>: '.$user_nicename;
             $companyInfo .= "<br> <b>Company Website</b>: ".$data->company_url;
             $companyInfo .= "<br> <b>Company Logo</b>:<br> ".$logo_display;
             $companyInfo .= "<br> <b>Company Employees</b>: ".$data->companyEmployees()->count();

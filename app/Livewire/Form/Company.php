@@ -60,8 +60,12 @@ class Company extends Component
         'logo_url.max' => 'The logo may not be greater than 4MB.',
         'logo_url.dimensions' => 'The logo must be between 140x60 and 160x80 pixels (recommended: 150x70).',
         'user_id.required' => 'Please select a Company leader.',
-        'slug.regex' => 'The slug may only contain lowercase letters, numbers and single dashes.',
-        'slug.unique' => 'That slug is already used by another company.',
+        'slug.regex' => 'The company custom URL may only contain lowercase letters, numbers and single dashes.',
+        'slug.unique' => 'That custom URL is already used by another company.',
+    ];
+
+    protected $validationAttributes = [
+        'slug' => 'company custom URL',
     ];
 
     public function mount()
