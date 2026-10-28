@@ -1,7 +1,9 @@
 @props(['title'=>'','placeholder'=>'','type'=>'text','class'=>'','model'=>'','accept'=>'','step'=>'any', 'required'=>false, 'ignore'=>false, 'help'=>''])
 {{-- Stable id (derived from the model path). A random id changed on every Livewire re-render and could collide between inputs. --}}
 @php($id = 'f-'.\Illuminate\Support\Str::slug((string) $model, '-'))
-<div class="mb-3 {{ $class }}" @if($ignore) wire:ignore @endif >
+{{-- wire:ignore keeps a chosen file name after re-render, but it also freezes every child — including @error — so the message must sit outside it. --}}
+<div class="mb-3 {{ $class }}">
+    <div @if($ignore) wire:ignore @endif>
     <label for="{{ $id }}" class="form-label" style="width: 100%">
         {!! $title !!}@if($required)<span class="text-red-600"> *</span>@endif
     </label>
@@ -36,6 +38,7 @@
     @if($help !== '')
         <div id="{{ $id }}-help" style="margin-top:.35rem;font-size:.85rem;line-height:1.4;color:#374151">{!! $help !!}</div>
     @endif
+    </div>
 
     @error($model)
         <div style="margin-top:.35rem;font-size:.875rem;color:#dc2626" role="alert">{{ $message }}</div>

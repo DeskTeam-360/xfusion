@@ -112,8 +112,25 @@ class Company extends Component
         }
     }
 
+    /**
+     * The custom URL field submits "" when left blank. nullable only skips
+     * the regex for null, so an empty box was rejected even though the
+     * label says to leave it empty and let the name become the URL.
+     */
+    private function normalizeSlug(): void
+    {
+        if (! is_string($this->slug) || trim($this->slug) === '') {
+            $this->slug = null;
+
+            return;
+        }
+
+        $this->slug = trim($this->slug);
+    }
+
     public function create()
     {
+        $this->normalizeSlug();
         $this->validate();
 
         $logoUrl = $this->logo_url != null ? $this->logo_url->store(path: 'public/photos') : '';
@@ -158,6 +175,7 @@ class Company extends Component
             ? 'nullable|image|mimes:jpeg,png,jpg,gif|max:4096|dimensions:min_width=140,min_height=60,max_width=160,max_height=80'
             : 'nullable';
 
+        $this->normalizeSlug();
         $this->validate([
             'user_id' => 'required',
             'title' => 'required|string|max:255',
