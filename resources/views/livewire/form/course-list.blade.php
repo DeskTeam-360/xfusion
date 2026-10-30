@@ -2,6 +2,12 @@
     <x-select title="Course title" model="courseTitle" :options="$optionCourseTitle" required="true"/>
     <x-input title="Page title" model="pageTitle" required="true"/>
     <x-input title="Url" model="url" required="true"/>
+    <p class="-mt-2 mb-3 text-xs text-gray-500">
+        Use the canonical page URL <strong>without</strong> a company slug
+        (e.g. <code>https://sandbox.xperiencefusion.com/quarterly-business-review/</code>).
+        Company-scoped URLs like <code>/{company}/quarterly-business-review/</code> still match this row.
+        Plain LMS / tool pages keep their exact URL as before.
+    </p>
     <x-input title="Next Url" model="urlNext"/>
 
 

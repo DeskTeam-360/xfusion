@@ -79,6 +79,55 @@ function xfusion_company_slug_by_id(int $companyId): string
     return is_string($slug) ? $slug : '';
 }
 
+/**
+ * Candidate URLs for wp_course_lists lookup.
+ *
+ * Company-scoped pages like /{company-slug}/quarterly-business-review/ (and short
+ * aliases /qbr/, /arp/, …) must also match the canonical page URL registered in
+ * Laravel course-title admin (without the company slug). Plain LMS/tool URLs are
+ * unchanged — only the original URL is returned.
+ *
+ * @return list<string>
+ */
+function xfusion_course_list_url_candidates(string $url): array
+{
+    $candidates = [$url];
+    $parts = wp_parse_url($url);
+    if (! is_array($parts) || empty($parts['path']) || empty($parts['host'])) {
+        return $candidates;
+    }
+
+    $trimmed = trim((string) $parts['path'], '/');
+    $segments = $trimmed === '' ? [] : explode('/', $trimmed);
+    if (count($segments) < 2) {
+        return $candidates;
+    }
+
+    $companySlug = $segments[0];
+    $tail = $segments[1];
+    $modules = xfusion_company_route_modules();
+
+    $pageSlug = null;
+    if (isset($modules[$tail])) {
+        $pageSlug = $modules[$tail];
+    } elseif (in_array($tail, $modules, true)) {
+        $pageSlug = $tail;
+    }
+
+    if ($pageSlug === null || xfusion_company_by_slug($companySlug) === null) {
+        return $candidates;
+    }
+
+    $scheme = isset($parts['scheme']) ? (string) $parts['scheme'] : 'https';
+    $port = isset($parts['port']) ? ':' . (int) $parts['port'] : '';
+    $canonical = $scheme . '://' . $parts['host'] . $port . '/' . $pageSlug . '/';
+    if (! in_array($canonical, $candidates, true)) {
+        $candidates[] = $canonical;
+    }
+
+    return $candidates;
+}
+
 function xfusion_user_belongs_to_company(int $userId, int $companyId): bool
 {
     if ($userId < 1 || $companyId < 1) {

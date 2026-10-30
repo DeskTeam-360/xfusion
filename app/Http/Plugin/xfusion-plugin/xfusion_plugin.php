@@ -447,12 +447,28 @@ function get_company_info()
 
     $url = isset($_POST['url']) ? sanitize_text_field(wp_unslash($_POST['url'])) : '';
 
-    $limitLinks = $wpdb->get_results(
-        $wpdb->prepare(
-            'SELECT * FROM wp_course_lists WHERE url = %s',
-            $url
-        )
-    );
+    // Match exact URL, and also the canonical page URL after stripping a
+    // company slug (e.g. /dheas-company/quarterly-business-review/ →
+    // /quarterly-business-review/). Register FUSION modules in course-title
+    // without the company slug so renaming a company does not break branding.
+    $urlCandidates = function_exists('xfusion_course_list_url_candidates')
+        ? xfusion_course_list_url_candidates($url)
+        : [$url];
+
+    $limitLinks = [];
+    if ($urlCandidates !== []) {
+        $placeholders = implode(',', array_fill(0, count($urlCandidates), '%s'));
+        // phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared,WordPress.DB.PreparedSQLPlaceholders.UnfinishedPrepare -- placeholders built from count().
+        $limitLinks = $wpdb->get_results(
+            $wpdb->prepare(
+                "SELECT * FROM wp_course_lists WHERE url IN ({$placeholders})",
+                ...$urlCandidates
+            )
+        );
+        if (! is_array($limitLinks)) {
+            $limitLinks = [];
+        }
+    }
 
     $userID = get_current_user_id();
     $qu = $wpdb->get_results(
