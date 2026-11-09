@@ -36,6 +36,9 @@ schema check, and optionally `WP_SSO_SECRET` = `XFUSION_SSO_SECRET` for "Open in
   branded paths `get_company_info()` already knows (`/resources/resource-menu/`, `/lms-home-screen/`, `/account/`, `/start-here/`,
   `/leader/`, `/individual-contributor/`, `/topics/dependability/`, `/user/<login>/`). Anything else (blog, marketing, unlisted
   pages) redirects to the same path on the main domain. Adjust with the `xfusion_tenant_page_allowed` filter.
+  The reverse also holds: one of those company pages opened on the **main domain** by someone who has a company is redirected to that
+  company's subdomain (same path and query, signed in by the one-time token). WordPress administrators are exempt; they browse every
+  company from the main domain. Visitors who are signed out, or have no company, are not redirected.
 
 ### Known / before going live
 - TEMP: the no-access redirect to `/resources/resource-menu/` is commented out in the ARP, ARR, QBR and IRR pickers

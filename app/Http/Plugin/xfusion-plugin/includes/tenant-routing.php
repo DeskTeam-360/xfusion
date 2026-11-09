@@ -262,9 +262,32 @@ function xfusion_tenant_url_in_course_list(string $url): bool
 }
 
 /**
- * On a company subdomain only pages of the course list (plus the FUSION module
- * pages and the branded paths above) stay; everything else — blog, marketing,
- * unlisted pages — goes back to the main domain. Always true off a company host.
+ * Is the page being requested one of the "company pages" — a row of the course list,
+ * a FUSION module page, or one of the branded paths? Works on any host.
+ *
+ * @param string $path request path starting with "/"
+ * @param string $url  same page as an absolute URL without query (used for the course-list lookup)
+ */
+function xfusion_tenant_is_company_page(string $path, string $url): bool
+{
+    $isCompanyPage = in_array($path, xfusion_tenant_static_paths(), true);
+
+    if (! $isCompanyPage && is_page() && function_exists('xfusion_company_route_modules')) {
+        $page = get_queried_object();
+        $isCompanyPage = $page instanceof WP_Post && in_array($page->post_name, array_values(xfusion_company_route_modules()), true);
+    }
+
+    if (! $isCompanyPage) {
+        $isCompanyPage = xfusion_tenant_url_in_course_list($url);
+    }
+
+    return (bool) apply_filters('xfusion_tenant_page_allowed', $isCompanyPage, $url);
+}
+
+/**
+ * On a company subdomain only company pages stay; everything else — blog,
+ * marketing, unlisted pages — goes back to the main domain. Always true off a
+ * company host.
  */
 function xfusion_tenant_page_allowed_on_company_host(): bool
 {
@@ -273,18 +296,27 @@ function xfusion_tenant_page_allowed_on_company_host(): bool
     }
 
     $path = '/' . ltrim((string) wp_parse_url((string) ($_SERVER['REQUEST_URI'] ?? '/'), PHP_URL_PATH), '/');
-    $url = xfusion_tenant_scheme() . '://' . xfusion_tenant_current_host() . $path;
 
-    $allowed = in_array($path, xfusion_tenant_static_paths(), true);
+    return xfusion_tenant_is_company_page($path, xfusion_tenant_scheme() . '://' . xfusion_tenant_current_host() . $path);
+}
 
-    if (! $allowed && is_page() && function_exists('xfusion_company_route_modules')) {
-        $page = get_queried_object();
-        $allowed = $page instanceof WP_Post && in_array($page->post_name, array_values(xfusion_company_route_modules()), true);
+/**
+ * The other half of the rule: a company page opened on the MAIN domain by someone
+ * who has a company goes to that company's subdomain (signed in there by the
+ * one-time token), same path and query. Administrators are exempt — they browse
+ * every company from the main domain. Returns '' when it does not apply.
+ */
+function xfusion_tenant_main_domain_redirect(): string
+{
+    if (! xfusion_tenant_enabled() || xfusion_tenant_on_company_host() || ! is_user_logged_in() || current_user_can('manage_options')) {
+        return '';
     }
 
-    if (! $allowed) {
-        $allowed = xfusion_tenant_url_in_course_list($url);
+    $uri = (string) ($_SERVER['REQUEST_URI'] ?? '/');
+    $path = '/' . ltrim((string) wp_parse_url($uri, PHP_URL_PATH), '/');
+    if ($path === '/' || ! xfusion_tenant_is_company_page($path, xfusion_main_url($path))) {
+        return '';
     }
 
-    return (bool) apply_filters('xfusion_tenant_page_allowed', $allowed, $url);
+    return xfusion_tenant_login_target(wp_get_current_user(), xfusion_main_url($uri));
 }

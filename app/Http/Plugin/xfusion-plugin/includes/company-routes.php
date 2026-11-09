@@ -221,6 +221,16 @@ add_action('template_redirect', function (): void {
         return;
     }
 
+    // Subdomain model: a company page (course list, FUSION module, branded path) opened on the
+    // main domain by someone with a company moves to that company's subdomain, query included.
+    if (function_exists('xfusion_tenant_main_domain_redirect')) {
+        $toCompany = xfusion_tenant_main_domain_redirect();
+        if ($toCompany !== '') {
+            wp_safe_redirect($toCompany, 302);
+            exit;
+        }
+    }
+
     // Old module URL: administrators keep it, everyone else is moved to the
     // company URL — but only for the plain picker view, so deep links that
     // carry an explicit record id (?arp_id=…) keep working.
