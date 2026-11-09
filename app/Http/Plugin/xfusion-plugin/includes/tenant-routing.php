@@ -109,15 +109,21 @@ add_filter('um_login_redirect_url', function ($url, $userId = 0) {
     return $target !== '' ? $target : $url;
 }, 20, 2);
 
-// Someone already signed in on the main domain opens wp-login.php?redirect_to=<company subdomain URL>
-// (a company page found nobody signed in there, or "Open in WordPress" from the Laravel admin):
-// hand the session over straight away instead of showing the login form.
-add_action('login_init', function (): void {
-    if (! xfusion_tenant_enabled() || ! is_user_logged_in() || ($_REQUEST['action'] ?? 'login') !== 'login') {
+// Someone already signed in on the main domain opens a login page with
+// ?redirect_to=<company subdomain URL> (a company page found nobody signed in there, or "Open in
+// WordPress" from the Laravel admin): hand the session over straight away instead of showing the
+// form. Two entry points: wp-login.php (login_init) and any front-end page, which covers the
+// Ultimate Member login page (/login/) — UM would otherwise bounce a signed-in visitor elsewhere.
+function xfusion_tenant_maybe_handoff(): void
+{
+    if (! xfusion_tenant_enabled() || xfusion_tenant_on_company_host() || ! is_user_logged_in()) {
         return;
     }
+    if (isset($_REQUEST['action']) && $_REQUEST['action'] !== 'login') {
+        return; // logout, lostpassword, ...
+    }
 
-    $requested = isset($_REQUEST['redirect_to']) ? esc_url_raw(wp_unslash((string) $_REQUEST['redirect_to'])) : '';
+    $requested = isset($_GET['redirect_to']) ? esc_url_raw(wp_unslash((string) $_GET['redirect_to'])) : '';
     $host = (string) wp_parse_url($requested, PHP_URL_HOST);
     if ($requested === '' || xfusion_tenant_slug_from_host($host) === '') {
         return;
@@ -128,7 +134,9 @@ add_action('login_init', function (): void {
         wp_safe_redirect($target);
         exit;
     }
-}, 1);
+}
+add_action('login_init', 'xfusion_tenant_maybe_handoff', 1);
+add_action('template_redirect', 'xfusion_tenant_maybe_handoff', 0);
 
 // wp_safe_redirect() only goes to allowed hosts: let valid company subdomains through.
 add_filter('allowed_redirect_hosts', function ($hosts, $host = '') {
