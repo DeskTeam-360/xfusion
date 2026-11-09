@@ -207,3 +207,84 @@ add_action('send_headers', function (): void {
         header('Vary: Host', false);
     }
 });
+
+// ---- Which pages belong on a company subdomain ----
+
+/**
+ * Pages that always stay on a company subdomain although they are not rows in
+ * wp_course_lists: the paths get_company_info() (xfusion_plugin.php) already
+ * brands with the company logo. Keep in step with $arrayLinks there.
+ *
+ * @return list<string>
+ */
+function xfusion_tenant_static_paths(): array
+{
+    $paths = [
+        '/lms-home-screen/',
+        '/topics/dependability/',
+        '/account/',
+        '/resources/resource-menu/',
+        '/start-here/',
+        '/individual-contributor/',
+        '/leader/',
+    ];
+
+    $user = wp_get_current_user();
+    if ($user instanceof WP_User && $user->exists()) {
+        $paths[] = '/user/' . str_replace(' ', '+', strtolower((string) $user->user_login)) . '/';
+    }
+
+    return $paths;
+}
+
+/** Is this URL (without query) a row of the course list (wp_course_lists.url)? Fails open if the table cannot be read. */
+function xfusion_tenant_url_in_course_list(string $url): bool
+{
+    global $wpdb;
+
+    $candidates = function_exists('xfusion_course_list_url_candidates') ? xfusion_course_list_url_candidates($url) : [$url];
+    foreach ($candidates as $candidate) {
+        // Stored with or without the trailing slash.
+        $candidates[] = rtrim($candidate, '/');
+        $candidates[] = rtrim($candidate, '/') . '/';
+    }
+    $candidates = array_values(array_unique($candidates));
+
+    $placeholders = implode(',', array_fill(0, count($candidates), '%s'));
+    $table = $wpdb->prefix . 'course_lists';
+    $suppress = $wpdb->suppress_errors(true);
+    // phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared,WordPress.DB.PreparedSQLPlaceholders.UnfinishedPrepare -- table from $wpdb->prefix, placeholders from count().
+    $count = $wpdb->get_var($wpdb->prepare("SELECT COUNT(*) FROM {$table} WHERE url IN ({$placeholders})", ...$candidates));
+    $failed = (string) $wpdb->last_error !== '';
+    $wpdb->suppress_errors($suppress);
+
+    return $failed ? true : (int) $count > 0;
+}
+
+/**
+ * On a company subdomain only pages of the course list (plus the FUSION module
+ * pages and the branded paths above) stay; everything else — blog, marketing,
+ * unlisted pages — goes back to the main domain. Always true off a company host.
+ */
+function xfusion_tenant_page_allowed_on_company_host(): bool
+{
+    if (! xfusion_tenant_on_company_host()) {
+        return true;
+    }
+
+    $path = '/' . ltrim((string) wp_parse_url((string) ($_SERVER['REQUEST_URI'] ?? '/'), PHP_URL_PATH), '/');
+    $url = xfusion_tenant_scheme() . '://' . xfusion_tenant_current_host() . $path;
+
+    $allowed = in_array($path, xfusion_tenant_static_paths(), true);
+
+    if (! $allowed && is_page() && function_exists('xfusion_company_route_modules')) {
+        $page = get_queried_object();
+        $allowed = $page instanceof WP_Post && in_array($page->post_name, array_values(xfusion_company_route_modules()), true);
+    }
+
+    if (! $allowed) {
+        $allowed = xfusion_tenant_url_in_course_list($url);
+    }
+
+    return (bool) apply_filters('xfusion_tenant_page_allowed', $allowed, $url);
+}

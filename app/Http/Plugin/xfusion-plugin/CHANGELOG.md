@@ -31,6 +31,11 @@ schema check, and optionally `WP_SSO_SECRET` = `XFUSION_SSO_SECRET` for "Open in
   starts the session on the company subdomain, so no cookie is shared between subdomains. On a company subdomain `wp-admin` and
   `wp-login.php` go back to the main domain, `admin-ajax.php` stays, pages are not cached, and a company address nobody owns
   returns 404. See "Turning on company subdomains" below.
+  **Only the course list stays on a subdomain:** a page is served on `<company>.<base>` only if its URL is a row of
+  `wp_course_lists` (the same list that drives login/access/branding), one of the five FUSION module pages, or one of the
+  branded paths `get_company_info()` already knows (`/resources/resource-menu/`, `/lms-home-screen/`, `/account/`, `/start-here/`,
+  `/leader/`, `/individual-contributor/`, `/topics/dependability/`, `/user/<login>/`). Anything else (blog, marketing, unlisted
+  pages) redirects to the same path on the main domain. Adjust with the `xfusion_tenant_page_allowed` filter.
 
 ### Known / before going live
 - TEMP: the no-access redirect to `/resources/resource-menu/` is commented out in the ARP, ARR, QBR and IRR pickers

@@ -188,6 +188,13 @@ add_action('template_redirect', function (): void {
             return;
         }
 
+        // A company subdomain only serves the course list's pages (and the FUSION modules);
+        // anything else goes back to the main domain, signed in or not.
+        if ($hostSlug !== '' && function_exists('xfusion_tenant_page_allowed_on_company_host') && ! xfusion_tenant_page_allowed_on_company_host()) {
+            wp_safe_redirect(xfusion_main_url((string) ($_SERVER['REQUEST_URI'] ?? '/')), 302);
+            exit;
+        }
+
         if (! is_user_logged_in()) {
             // Sign-in is central (main domain); the redirect brings them back here, signed in.
             $back = $hostSlug !== '' ? xfusion_tenant_current_url() : home_url(add_query_arg([]));
