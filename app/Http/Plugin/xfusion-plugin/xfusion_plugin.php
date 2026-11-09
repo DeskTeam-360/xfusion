@@ -25,6 +25,14 @@ require_once XFUSION_PLUGIN_DIR . 'includes/load.php';
 function company_detect()
 {
     $ajax_url = admin_url('admin-ajax.php');
+
+    // Laravel serves the logos from admin.<main site host>/storage/. On a company subdomain the
+    // current host is <company>.<base>, so "admin." + current host would be a host that does not
+    // exist (broken logo); take the main site's host instead. '' = keep the old browser-side rule.
+    $storage_base = '';
+    if (function_exists('xfusion_tenant_on_company_host') && xfusion_tenant_on_company_host()) {
+        $storage_base = xfusion_tenant_scheme() . '://admin.' . xfusion_tenant_main_host() . '/storage/';
+    }
     ?>
     <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.7.1/jquery.min.js"></script>
     <script>
@@ -35,7 +43,7 @@ function company_detect()
     var XFUSION_AJAX_URL = <?php echo wp_json_encode($ajax_url); ?>;
 
     /** Base URL untuk mengganti prefix path storage logo/qrcode dari Laravel. */
-    var BASE_STORAGE = window.location.protocol + '//admin.' + window.location.host + '/storage/';
+    var BASE_STORAGE = <?php echo wp_json_encode($storage_base); ?> || (window.location.protocol + '//admin.' + window.location.host + '/storage/');
 
     /** Dibutuhkan shortcode LearnDash / markup lain â€” tetap global. */
     window.openWindowXfusion = function (href) {
@@ -118,7 +126,7 @@ function company_detect()
         } else {
             var fallbackImg = document.querySelector('#company-logo > div > a > img');
             if (fallbackImg) {
-                fallbackImg.src = 'http://xperiencefusion.com/wp-content/uploads/2025/08/XFUSION_Transparent.png';
+                fallbackImg.src = 'https://xperiencefusion.com/wp-content/uploads/2025/08/XFUSION_Transparent.png';
             }
         }
     }
