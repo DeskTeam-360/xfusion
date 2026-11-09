@@ -741,9 +741,16 @@ class ArrController extends Controller
             ->values();
     }
 
-    /** Same as leadableCompanyIds() — ARR has no separate "view only" tier. */
+    /**
+     * Companies whose ARR this user may SEE: everyone inside the organization
+     * (owner, employees, group members). Only the owner can edit — see
+     * leadableCompanyIds(); the endpoints that write all check that one.
+     */
     private function memberCompanyIds(int $userId)
     {
-        return $this->leadableCompanyIds($userId);
+        return $this->leadableCompanyIds($userId)
+            ->merge(\App\Support\CompanyMembership::companyIdsFor($userId))
+            ->unique()
+            ->values();
     }
 }

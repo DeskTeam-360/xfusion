@@ -920,6 +920,9 @@ class QbrController extends Controller
             ->whereIn('id', $this->leadableGroupIds($userId))
             ->pluck('company_id')
             ->merge(\App\Models\Company::where('user_id', $userId)->pluck('id'))
+            // Everyone inside the organization (employees, group members) sees the
+            // company's QBR list too — read-only; editing still needs leading the group.
+            ->merge(\App\Support\CompanyMembership::companyIdsFor($userId))
             ->filter()
             ->unique();
 
