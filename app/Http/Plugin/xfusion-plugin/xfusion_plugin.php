@@ -108,26 +108,77 @@ function company_detect()
         return btn;
     }
 
+    var DEFAULT_LOGO = 'https://xperiencefusion.com/wp-content/uploads/2025/08/XFUSION_Transparent.png';
+
+    /** Laravel stores "public/photos/x.png"; turn any stored form into a loadable absolute URL ('' if none). */
+    function storageUrl(path) {
+        var p = String(path === null || path === undefined ? '' : path).trim();
+        if (p === '') {
+            return '';
+        }
+        if (/^https?:\/\//i.test(p)) {
+            return p;
+        }
+        if (p.indexOf('public/') === 0) {
+            return BASE_STORAGE + p.slice(7);
+        }
+        if (p.indexOf('storage/') === 0) {
+            return BASE_STORAGE + p.slice(8);
+        }
+        return BASE_STORAGE + p.replace(/^\/+/, '');
+    }
+
+    /**
+     * Point an <img> at a new picture. WordPress adds srcset/sizes and lazy-load attributes
+     * that make the browser ignore a changed src, so they are cleared; if the new picture
+     * fails to load, onFail gets the element (no broken-image icon is left on the page).
+     */
+    function setImage(img, url, onFail) {
+        if (!img) {
+            return;
+        }
+        ['srcset', 'sizes', 'data-src', 'data-srcset', 'data-lazy-src'].forEach(function (attr) {
+            img.removeAttribute(attr);
+        });
+        img.loading = 'eager';
+        img.onerror = function () {
+            img.onerror = null;
+            onFail(img);
+        };
+        img.src = url;
+    }
+
+    function useDefaultLogo(img) {
+        img.removeAttribute('srcset');
+        img.src = DEFAULT_LOGO;
+    }
+
     function syncCompanyBranding(data) {
-        if (data.logo_url !== null && data.logo_url !== undefined && data.logo_url !== '') {
-            var companyLogo = document.getElementsByClassName('wp-image-11067');
-            if (companyLogo.length > 0) {
-                companyLogo[0].src = String(data.logo_url).replace('public/', BASE_STORAGE);
+        var logoUrl = storageUrl(data.logo_url);
+        var logoImg = document.querySelector('.wp-image-11067') || document.querySelector('#company-logo > div > a > img');
+
+        if (logoUrl === '') {
+            if (logoImg) {
+                useDefaultLogo(logoImg);
             }
-            var qrcode = document.getElementsByClassName('wp-image-1124');
-            if (qrcode.length > 0) {
-                qrcode[0].src = String(data.qrcode_url || '').replace('public/', BASE_STORAGE);
-                qrcode[0].srcset = '';
+            return;
+        }
+
+        setImage(logoImg, logoUrl, useDefaultLogo);
+
+        var qrImg = document.querySelector('.wp-image-1124');
+        if (qrImg) {
+            var qrUrl = storageUrl(data.qrcode_url);
+            if (qrUrl === '') {
+                qrImg.style.display = 'none';
+            } else {
+                setImage(qrImg, qrUrl, function (img) { img.style.display = 'none'; });
             }
-            var companyLogoLink = document.querySelector('#company-logo > div > a');
-            if (companyLogoLink) {
-                companyLogoLink.href = data.company_url ? data.company_url : '#';
-            }
-        } else {
-            var fallbackImg = document.querySelector('#company-logo > div > a > img');
-            if (fallbackImg) {
-                fallbackImg.src = 'https://xperiencefusion.com/wp-content/uploads/2025/08/XFUSION_Transparent.png';
-            }
+        }
+
+        var companyLogoLink = document.querySelector('#company-logo > div > a');
+        if (companyLogoLink) {
+            companyLogoLink.href = data.company_url ? data.company_url : '#';
         }
     }
 
