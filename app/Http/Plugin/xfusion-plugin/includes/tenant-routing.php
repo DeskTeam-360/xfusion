@@ -320,3 +320,51 @@ function xfusion_tenant_main_domain_redirect(): string
 
     return xfusion_tenant_login_target(wp_get_current_user(), xfusion_main_url($uri));
 }
+
+// ---- Status panel (Tools → FUSION Schema Check) ----
+
+/** What the subdomain model needs, and whether it is there. Read-only HTML for wp-admin. */
+function xfusion_tenant_status_html(): string
+{
+    global $wpdb;
+
+    $on = xfusion_tenant_enabled();
+    $secret = xfusion_sso_ready();
+    $currentHost = xfusion_tenant_current_host();
+    $hostSlug = $on ? xfusion_tenant_slug_from_host($currentHost) : '';
+    $company = $hostSlug !== '' && function_exists('xfusion_company_by_slug') ? xfusion_company_by_slug($hostSlug) : null;
+    $user = wp_get_current_user();
+    $isAdmin = $user instanceof WP_User && user_can($user, 'manage_options');
+
+    $suppress = $wpdb->suppress_errors(true);
+    $listCount = $wpdb->get_var("SELECT COUNT(*) FROM {$wpdb->prefix}course_lists");
+    $wpdb->suppress_errors($suppress);
+
+    $yes = static fn (string $t): string => '<span style="color:#067647;font-weight:600">' . esc_html($t) . '</span>';
+    $no = static fn (string $t): string => '<span style="color:#b42318;font-weight:600">' . esc_html($t) . '</span>';
+
+    $rows = [
+        ['Company subdomains', $on ? $yes('ON') : $no('OFF') . ' — define XFUSION_TENANT_BASE_DOMAIN in wp-config.php'],
+        ['Base domain', $on ? '<code>' . esc_html(xfusion_tenant_base_domain()) . '</code>' : '—'],
+        ['Main site host', '<code>' . esc_html(xfusion_tenant_main_host()) . '</code>'],
+        ['One-time sign-in secret (XFUSION_SSO_SECRET)', $secret ? $yes('set') : $no('MISSING') . ($on ? ' — without it nobody is handed over to a company subdomain' : '')],
+        ['COOKIE_DOMAIN', defined('COOKIE_DOMAIN') && COOKIE_DOMAIN ? $no('defined: ' . (string) COOKIE_DOMAIN) . ' — remove it; sessions must stay per host' : $yes('not defined (correct)')],
+        ['This request', '<code>' . esc_html($currentHost) . '</code> — ' . ($hostSlug !== '' ? ($company ? 'company host of <strong>' . esc_html($company['title']) . '</strong>' : $no('company host, but no company has that custom URL')) : 'main site')],
+        ['You', $isAdmin ? 'WordPress administrator — exempt from the main-domain → subdomain redirect, may open every company' : 'regular user'],
+        ['Pages kept on the subdomain', count(xfusion_tenant_static_paths()) . ' branded paths + the 5 FUSION module pages + ' . ($listCount === null ? $no('course list unreadable') : (int) $listCount . ' course list rows')],
+    ];
+
+    $html = '<h2>Company subdomains</h2><table class="widefat striped" style="max-width:1000px"><tbody>';
+    foreach ($rows as $row) {
+        $html .= '<tr><th style="width:36%">' . esc_html($row[0]) . '</th><td>' . $row[1] . '</td></tr>';
+    }
+    $html .= '</tbody></table>';
+
+    if ($on && ! $secret) {
+        $html .= '<div class="notice notice-error inline"><p><strong>Company subdomains are on but the sign-in secret is missing.</strong> '
+            . 'People are not redirected between the main domain and company subdomains until XFUSION_SSO_SECRET '
+            . '(same value as WP_SSO_SECRET in Laravel) is defined in wp-config.php.</p></div>';
+    }
+
+    return $html;
+}

@@ -25,6 +25,11 @@ function xfusion_schema_check_page(): void
     echo '<div class="wrap"><h1>FUSION Schema Check</h1>';
     echo '<p>Plugin version: <strong>' . esc_html(defined('XFUSION_PLUGIN_VERSION') ? XFUSION_PLUGIN_VERSION : 'unknown') . '</strong></p>';
 
+    if (function_exists('xfusion_tenant_status_html')) {
+        echo xfusion_tenant_status_html();
+        echo '<h2>Database tables</h2>';
+    }
+
     if (! function_exists('xfusion_company_api_request')) {
         echo '<p>The Laravel API helper is not loaded.</p></div>';
 

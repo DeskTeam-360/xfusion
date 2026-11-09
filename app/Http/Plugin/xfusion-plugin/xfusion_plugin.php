@@ -487,16 +487,21 @@ function get_company_info()
         $user_login = str_replace(' ', '+', strtolower($data[0]['user_login']));
     }
 
-    $arrayLinks = [
-        "/user/$user_login/",
-        "/lms-home-screen/",
-        "/topics/dependability/",
-        "/account/",
-        "/resources/resource-menu/",
-		"/start-here/",
-		"/individual-contributor/",
-		"/leader/",
-    ];
+    // Single source of truth for these paths: xfusion_tenant_static_paths() (includes/tenant-routing.php).
+    // They are the pages that get the company branding and, with company subdomains on, live on the
+    // company's subdomain. The literal list is only a fallback if that file is not loaded.
+    $arrayLinks = function_exists('xfusion_tenant_static_paths')
+        ? xfusion_tenant_static_paths()
+        : [
+            "/user/$user_login/",
+            "/lms-home-screen/",
+            "/topics/dependability/",
+            "/account/",
+            "/resources/resource-menu/",
+            "/start-here/",
+            "/individual-contributor/",
+            "/leader/",
+        ];
 
     if (!$limitLinks) {
         if ($userID != null) {
