@@ -2,9 +2,16 @@
 
     <x-input model="title" required="true" title="Company Name"/>
 
+    @php
+        $urlLabel = $slug ?: \Illuminate\Support\Str::slug($title ?: 'company-name');
+        $tenantBase = \App\Support\WordpressPublicUrl::tenantBase();
+        $urlExample = $tenantBase
+            ? e($urlLabel).'.'.e($tenantBase)
+            : '/'.e($urlLabel).'/annual-readiness-plan/';
+    @endphp
     <x-input model="slug" title="Company custom URL"
              :placeholder="\Illuminate\Support\Str::slug($title ?: 'company-name')"
-             :help="'Leave empty to use the company name. Used in the website links, e.g. <code>/'.e($slug ?: \Illuminate\Support\Str::slug($title ?: 'company-name')).'/annual-readiness-plan/</code>'"/>
+             :help="'Leave empty to use the company name. Lowercase letters, numbers and dashes only (max 63 characters). The company opens at: <code>'.$urlExample.'</code>'"/>
 
     <x-input model="logo_url" type="file" accept="image/jpeg,image/png,image/jpg,image/gif" ignore="{{true}}" title="Company logo"
              help='Must be 140×60 to 160×80 pixels (recommended 150×70). Resize on <a href="https://www.iloveimg.com/resize-image#resize-options,pixels" target="_blank" rel="noopener" class="text-blue-600 hover:text-blue-800">iLoveIMG</a>.'/>

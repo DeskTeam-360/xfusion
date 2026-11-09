@@ -25,6 +25,37 @@ function xfusion_sso_b64url_decode(string $value): string
     return (string) base64_decode(strtr($value, '-_', '+/'), true);
 }
 
+function xfusion_sso_ready(): bool
+{
+    return defined('XFUSION_SSO_SECRET') && (string) XFUSION_SSO_SECRET !== '';
+}
+
+function xfusion_sso_b64url_encode(string $value): string
+{
+    return rtrim(strtr(base64_encode($value), '+/', '-_'), '=');
+}
+
+/**
+ * A token this site hands to itself (main domain -> company subdomain). Same
+ * format Laravel signs, so the handler below verifies both. $to is a path on the
+ * target host ("/annual-readiness-plan/?arp_id=7"). Valid for 60 seconds, once.
+ */
+function xfusion_sso_make_token(int $uid, string $to, int $ttl = 60): string
+{
+    if (! xfusion_sso_ready() || $uid < 1 || ! xfusion_sso_safe_path($to)) {
+        return '';
+    }
+
+    $payload = xfusion_sso_b64url_encode((string) wp_json_encode([
+        'uid' => $uid,
+        'exp' => time() + min(max($ttl, 5), 120),
+        'jti' => wp_generate_password(24, false, false),
+        'to' => $to,
+    ], JSON_UNESCAPED_SLASHES));
+
+    return $payload . '.' . hash_hmac('sha256', $payload, (string) XFUSION_SSO_SECRET);
+}
+
 add_action('init', function (): void {
     if (! isset($_GET['xf_sso']) || ! defined('XFUSION_SSO_SECRET') || (string) XFUSION_SSO_SECRET === '') {
         return;

@@ -46,17 +46,34 @@ class Company extends Component
     public $organizational_goals;
     public $readiness_priorities;
 
-    protected $rules = [
-        'title' => 'required|max:255',
-        'slug' => 'nullable|string|max:120|regex:/^[a-z0-9]+(?:-[a-z0-9]+)*$/|unique:wp_companies,slug',
-        'logo_url' => 'nullable|image|mimes:jpeg,png,jpg,gif|max:4096|dimensions:min_width=140,min_height=60,max_width=160,max_height=80',
-        'company_url' => 'nullable',
-        'user_id' => 'required',
-        'role' => 'nullable|string|max:255',
-        'team' => 'nullable|string|max:255',
-        'organizational_goals' => 'nullable|string',
-        'readiness_priorities' => 'nullable|string',
-    ];
+    /**
+     * The custom URL is also the company's subdomain (<url>.domain), so it follows DNS
+     * label rules: lowercase letters, digits and inner dashes, at most 63 characters,
+     * and not one of the reserved names (www, admin, sandbox, ...).
+     */
+    private function slugRules(): array
+    {
+        return [
+            'nullable', 'string', 'max:'.\App\Models\Company::SLUG_MAX_LENGTH,
+            'regex:/^[a-z0-9]+(?:-[a-z0-9]+)*$/',
+            'not_in:'.implode(',', \App\Models\Company::RESERVED_SLUGS),
+        ];
+    }
+
+    protected function rules(): array
+    {
+        return [
+            'title' => 'required|max:255',
+            'slug' => array_merge($this->slugRules(), ['unique:wp_companies,slug']),
+            'logo_url' => 'nullable|image|mimes:jpeg,png,jpg,gif|max:4096|dimensions:min_width=140,min_height=60,max_width=160,max_height=80',
+            'company_url' => 'nullable',
+            'user_id' => 'required',
+            'role' => 'nullable|string|max:255',
+            'team' => 'nullable|string|max:255',
+            'organizational_goals' => 'nullable|string',
+            'readiness_priorities' => 'nullable|string',
+        ];
+    }
 
     protected $messages = [
         'title.required' => 'Please fill the Company name.',
@@ -66,6 +83,8 @@ class Company extends Component
         'logo_url.dimensions' => 'The logo must be between 140x60 and 160x80 pixels (recommended: 150x70).',
         'user_id.required' => 'Please select a Company leader.',
         'slug.regex' => 'The company custom URL may only contain lowercase letters, numbers and single dashes.',
+        'slug.max' => 'The company custom URL can be at most 63 characters (it becomes a web address).',
+        'slug.not_in' => 'That custom URL is reserved for the system. Please choose another one.',
         'slug.unique' => 'That custom URL is already used by another company.',
     ];
 
@@ -179,7 +198,7 @@ class Company extends Component
         $this->validate([
             'user_id' => 'required',
             'title' => 'required|string|max:255',
-            'slug' => ['nullable', 'string', 'max:120', 'regex:/^[a-z0-9]+(?:-[a-z0-9]+)*$/', \Illuminate\Validation\Rule::unique('wp_companies', 'slug')->ignore($this->dataId)],
+            'slug' => array_merge($this->slugRules(), [\Illuminate\Validation\Rule::unique('wp_companies', 'slug')->ignore($this->dataId)]),
             'logo_url' => $logoRule,
         ]);
         $data_compare = \App\Models\Company::find($this->dataId);

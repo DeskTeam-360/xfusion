@@ -25,6 +25,13 @@ schema check, and optionally `WP_SSO_SECRET` = `XFUSION_SSO_SECRET` for "Open in
   sign, and never see either side's raw preparation; notes only once the meeting has started or finished. Laravel decides this from
   the user's WordPress role, not from any flag sent by the browser.
 
+- **Company subdomains** (`<company>.<base domain>`), **off by default**. One WordPress installation and one database (not
+  Multisite): the label in front of the base domain is read as the company's custom URL. The `/{slug}/…` path model keeps
+  working as the fallback. Sign-in happens on the main domain only; a one-time token (the same mechanism as "Open in WordPress")
+  starts the session on the company subdomain, so no cookie is shared between subdomains. On a company subdomain `wp-admin` and
+  `wp-login.php` go back to the main domain, `admin-ajax.php` stays, pages are not cached, and a company address nobody owns
+  returns 404. See "Turning on company subdomains" below.
+
 ### Known / before going live
 - TEMP: the no-access redirect to `/resources/resource-menu/` is commented out in the ARP, ARR, QBR and IRR pickers
   (`*-picker.php`, search "TEMP: no-access"). Re-enable it for production.
@@ -33,3 +40,35 @@ schema check, and optionally `WP_SSO_SECRET` = `XFUSION_SSO_SECRET` for "Open in
 - ARP Step 5: Executive Owners were blanked when saving without touching the form; a lone or comma-separated owner id loads again.
 - Module tables keep their bottom border on the last row.
 - Removed leftover debugging from the ARP AI review (`arp-ai-review-service.php`, commit `e8edc5e`).
+
+## Turning on company subdomains
+
+Nothing changes until `XFUSION_TENANT_BASE_DOMAIN` is defined. Do it per environment, after the checks below.
+
+1. **Check the data** (Laravel server): `php artisan companies:check-slugs`. Every company needs a custom URL that works as a web
+   address (lowercase letters, digits and dashes, at most 63 characters, not `www`/`admin`/`sandbox`/…). Fix in the company form,
+   or clear the URL and run `php artisan companies:backfill-slugs`.
+2. **DNS and SSL:** a wildcard DNS record `*` to the WordPress server and a certificate that covers it.
+   Production `*.xperiencefusion.com` (e.g. behind Cloudflare). A wildcard certificate covers one label only, so the sandbox
+   (`sandbox.xperiencefusion.com`) needs its own: either explicit test subdomains created in cPanel (AutoSSL issues each one) or a
+   separate wildcard for `*.sandbox.xperiencefusion.com`.
+3. **wp-config.php** (WordPress):
+   ```php
+   define('XFUSION_TENANT_BASE_DOMAIN', 'xperiencefusion.com');          // production
+   define('XFUSION_TENANT_BASE_DOMAIN', 'sandbox.xperiencefusion.com');  // sandbox
+   define('XFUSION_SSO_SECRET', '...');  // same value as WP_SSO_SECRET in Laravel's .env; required for the hand-over
+   ```
+   Do **not** define `COOKIE_DOMAIN`: sessions stay per host on purpose.
+4. **Laravel `.env`:** `WORDPRESS_TENANT_BASE_DOMAIN=` the same base domain (links then use `https://<company>.<base>/…`),
+   then `php artisan config:clear`.
+5. **Test with two companies** (one leader, one outsider): open `<company>.<base>/annual-readiness-plan/` while signed out (must go
+   to the main-domain login and come back signed in), then as an outsider (must land on their own company), then
+   "Open in WordPress" from the Laravel admin, then log out from a company subdomain.
+6. **Page cache / CDN:** do not cache company subdomains (the plugin sends no-cache headers and `DONOTCACHEPAGE`, but confirm
+   the cache plugin or CDN honours them and keys by host).
+
+To turn it off again, remove the constant from wp-config.php (and the `.env` value): links return to the path model.
+
+Known limits: a person belongs to one company (the `company` user meta), so there is no chooser yet; logging out on the main
+domain does not end sessions already created on company subdomains (log out on the subdomain); fonts/assets are still served from
+the main domain, so a CDN or server rule may need `Access-Control-Allow-Origin` for fonts.

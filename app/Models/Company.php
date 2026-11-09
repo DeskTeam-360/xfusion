@@ -56,17 +56,48 @@ class Company extends Model
         });
     }
 
-    /** Lower-case, dash-separated slug that no other company uses (suffixes -2, -3 ... on clash). */
+    /**
+     * Names that can never be a company custom URL: the URL is also the company's
+     * subdomain, and these are real hosts or common service names. Keep in step with
+     * xfusion_tenant_reserved() in the WordPress plugin (includes/tenant-host.php).
+     */
+    public const RESERVED_SLUGS = [
+        'www', 'admin', 'sandbox', 'api', 'app', 'mail', 'smtp', 'imap', 'pop', 'ftp',
+        'cpanel', 'whm', 'webmail', 'webdisk', 'autodiscover', 'autoconfig',
+        'staging', 'dev', 'test', 'static', 'cdn', 'assets', 'login', 'auth', 'ns1', 'ns2',
+    ];
+
+    /** A DNS label is at most 63 characters. */
+    public const SLUG_MAX_LENGTH = 63;
+
+    /**
+     * Lower-case, dash-separated slug that no other company uses (suffixes -2, -3 ... on clash).
+     * It is also the company's subdomain, so: at most 63 characters, no leading/trailing dash,
+     * and never a reserved name.
+     */
     public static function uniqueSlug(string $source, ?int $ignoreId = null): string
     {
         $base = \Illuminate\Support\Str::slug($source) ?: 'company';
-        $slug = $base;
+        if (in_array($base, self::RESERVED_SLUGS, true)) {
+            $base .= '-company';
+        }
+
+        $slug = static::fitLabel($base);
         $i = 2;
         while (static::query()->where('slug', $slug)->when($ignoreId, fn ($q) => $q->where('id', '!=', $ignoreId))->exists()) {
-            $slug = $base.'-'.$i++;
+            $suffix = '-'.$i++;
+            $slug = static::fitLabel($base, strlen($suffix)).$suffix;
         }
 
         return $slug;
+    }
+
+    /** Cut to the 63-character label limit (minus room for a suffix) without leaving a trailing dash. */
+    private static function fitLabel(string $slug, int $reserve = 0): string
+    {
+        $max = self::SLUG_MAX_LENGTH - $reserve;
+
+        return rtrim(substr($slug, 0, $max), '-') ?: 'company';
     }
 
     public function companyEmployees()

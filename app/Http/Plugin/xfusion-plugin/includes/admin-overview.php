@@ -43,8 +43,8 @@ function xfusion_admin_overview_modules(): array
 
 function xfusion_admin_overview_url(string $slug, string $page, string $param = '', int $id = 0): string
 {
-    $path = $slug !== '' ? '/' . $slug . '/' . $page . '/' : '/' . $page . '/';
-    $url = add_query_arg('xf_overview', 1, home_url($path));
+    // Company subdomain when that model is on, /{slug}/… path otherwise.
+    $url = add_query_arg('xf_overview', 1, xfusion_company_url($slug, $page));
 
     return $param !== '' ? add_query_arg($param, $id, $url) : $url;
 }

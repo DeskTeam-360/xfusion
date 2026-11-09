@@ -97,6 +97,14 @@ function xfusion_course_list_url_candidates(string $url): array
         return $candidates;
     }
 
+    // Subdomain model: https://acme.<base>/page/ is the same page as https://<main host>/page/.
+    if (function_exists('xfusion_tenant_slug_from_host') && xfusion_tenant_slug_from_host((string) $parts['host']) !== '') {
+        $mainVariant = xfusion_tenant_replace_host($url, xfusion_tenant_main_host());
+        if (! in_array($mainVariant, $candidates, true)) {
+            $candidates[] = $mainVariant;
+        }
+    }
+
     $trimmed = trim((string) $parts['path'], '/');
     $segments = $trimmed === '' ? [] : explode('/', $trimmed);
     if (count($segments) < 2) {
@@ -161,22 +169,43 @@ add_filter('request', function (array $vars): array {
 });
 
 add_action('template_redirect', function (): void {
-    $slug = (string) get_query_var('xf_company');
+    // Subdomain model (tenant-host.php): the company comes from the host. Otherwise
+    // from the path (/{slug}/…), which keeps working as the fallback.
+    $hostSlug = function_exists('xfusion_tenant_slug_from_host') ? xfusion_tenant_slug_from_host() : '';
+    $slug = $hostSlug !== '' ? $hostSlug : (string) get_query_var('xf_company');
 
     if ($slug !== '') {
         $company = xfusion_company_by_slug($slug);
         if ($company === null) {
+            if ($hostSlug !== '') {
+                // A company address nobody owns: a real 404, not the main site.
+                global $wp_query;
+                $wp_query->set_404();
+                status_header(404);
+                nocache_headers();
+            }
+
             return;
         }
 
         if (! is_user_logged_in()) {
-            wp_safe_redirect(wp_login_url(home_url(add_query_arg([]))));
+            // Sign-in is central (main domain); the redirect brings them back here, signed in.
+            $back = $hostSlug !== '' ? xfusion_tenant_current_url() : home_url(add_query_arg([]));
+            wp_safe_redirect(wp_login_url($back));
             exit;
         }
 
         $userId = get_current_user_id();
         if (! current_user_can('manage_options') && ! xfusion_user_belongs_to_company($userId, $company['id'])) {
-            wp_safe_redirect(home_url('/resources/resource-menu/'));
+            $ownSlug = function_exists('xfusion_wp_user_linked_company_id')
+                ? xfusion_company_slug_by_id(xfusion_wp_user_linked_company_id($userId))
+                : '';
+            if ($hostSlug !== '' && $ownSlug !== '' && $ownSlug !== $slug) {
+                // Wrong company address: send them to their own (central sign-in hands the session over).
+                wp_safe_redirect(wp_login_url(xfusion_tenant_url($ownSlug, '/')));
+            } else {
+                wp_safe_redirect($hostSlug !== '' ? xfusion_main_url('/resources/resource-menu/') : home_url('/resources/resource-menu/'));
+            }
             exit;
         }
 
@@ -208,9 +237,22 @@ add_action('template_redirect', function (): void {
         return;
     }
 
-    $target = home_url('/' . $companySlug . '/' . $pageSlug . '/');
     $query = (string) wp_parse_url((string) ($_SERVER['REQUEST_URI'] ?? ''), PHP_URL_QUERY);
-    wp_safe_redirect($query !== '' ? $target . '?' . $query : $target, 302);
+
+    // Subdomain model: sign them in on their company's subdomain and land on this same page.
+    if (function_exists('xfusion_tenant_login_target')) {
+        $handoff = xfusion_tenant_login_target(
+            wp_get_current_user(),
+            xfusion_main_url('/' . $pageSlug . '/' . ($query !== '' ? '?' . $query : ''))
+        );
+        if ($handoff !== '') {
+            wp_safe_redirect($handoff, 302);
+            exit;
+        }
+    }
+
+    $target = xfusion_company_url($companySlug, $pageSlug);
+    wp_safe_redirect($query !== '' ? $target . (str_contains($target, '?') ? '&' : '?') . $query : $target, 302);
     exit;
 });
 

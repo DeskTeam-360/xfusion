@@ -134,6 +134,14 @@ return [
     'wordpress_url' => env('WORDPRESS_URL'),
 
     /*
+    | Subdomain model: company links become https://{company}.{this base}/…
+    | Must equal XFUSION_TENANT_BASE_DOMAIN in the WordPress wp-config.php
+    | (xperiencefusion.com in production, sandbox.xperiencefusion.com in sandbox).
+    | Unset = the path model (https://{site}/{company}/…).
+    */
+    'wordpress_tenant_base' => env('WORDPRESS_TENANT_BASE_DOMAIN'),
+
+    /*
     | Shared secret for the Laravel → WordPress one-time sign-in hand-off
     | (must equal XFUSION_SSO_SECRET in the WordPress wp-config.php).
     | Unset = links open WordPress directly without signing the user in.

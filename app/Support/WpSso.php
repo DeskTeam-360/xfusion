@@ -57,6 +57,12 @@ final class WpSso
             return null;
         }
 
+        // A company subdomain: sign in on the main site, then let its own sign-in redirect
+        // hand the session over to that subdomain (wp-login.php + redirect_to, one-time token).
+        if (WordpressPublicUrl::isTenantUrl($url)) {
+            return route('wp-sso', ['to' => '/wp-login.php?redirect_to='.rawurlencode($url)]);
+        }
+
         $base = WordpressPublicUrl::base();
         $path = str_starts_with($url, $base) ? substr($url, strlen($base)) : $url;
         if ($path === '' || $path[0] !== '/') {

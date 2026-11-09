@@ -27,11 +27,37 @@ final class WordpressPublicUrl
         return rtrim($scheme . '://' . $host, '/');
     }
 
+    /** Base domain of the company-subdomain model (WORDPRESS_TENANT_BASE_DOMAIN), or null when it is off. */
+    public static function tenantBase(): ?string
+    {
+        $base = strtolower(trim((string) config('app.wordpress_tenant_base'), ' .'));
+
+        return $base !== '' ? $base : null;
+    }
+
+    /** https://{company}.{base}{path} for a company's custom URL (its slug). */
+    public static function tenantUrl(string $companySlug, string $path = '/'): string
+    {
+        $scheme = parse_url(self::base(), PHP_URL_SCHEME) ?: 'https';
+
+        return $scheme.'://'.$companySlug.'.'.self::tenantBase().'/'.ltrim($path, '/');
+    }
+
+    /** Is this an absolute URL on one of the company subdomains? */
+    public static function isTenantUrl(string $url): bool
+    {
+        $base = self::tenantBase();
+        $host = strtolower((string) parse_url($url, PHP_URL_HOST));
+
+        return $base !== null && $host !== '' && str_ends_with($host, '.'.$base);
+    }
+
     /**
      * Link to one record's wizard on the WordPress site.
      *
-     * With the company's slug it is the company URL (/{slug}/arp/?arp_id=7);
-     * without one it falls back to the plain module page, which still works.
+     * Subdomain model on: https://{company}.{base}/annual-readiness-plan/?arp_id=7.
+     * Otherwise, with the company's custom URL: /{slug}/annual-readiness-plan/?arp_id=7;
+     * without one, the plain module page, which still works.
      *
      * @param  'arp'|'arr'|'qbr'|'irr'|'one-on-one'  $module
      */
@@ -46,6 +72,10 @@ final class WordpressPublicUrl
             'one-on-one' => ['1on1', '1-on-1-alignment', 'conversation_id'],
         ];
         [$companyKey, $page, $param] = $map[$module];
+
+        if (filled($companySlug) && self::tenantBase() !== null) {
+            return self::tenantUrl($companySlug, '/'.$page.'/?'.$param.'='.$recordId);
+        }
 
         $path = filled($companySlug) ? $companySlug.'/'.$page : $page;
 
