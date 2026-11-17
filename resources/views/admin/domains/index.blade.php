@@ -57,6 +57,7 @@
                                         'missing' => ['Missing', '#fef3c7', '#92400e'],
                                         'unused' => ['Unused', '#fee2e2', '#991b1b'],
                                         'unknown' => ['Unknown', '#f3f4f6', '#374151'],
+                                        'system' => ['System', '#e0e7ff', '#3730a3'],
                                     ][$row['status']];
                                     $sslBadge = [
                                         'valid' => ['Valid', '#dcfce7', '#166534'],
@@ -75,7 +76,7 @@
                                         @if($row['company'])
                                             <a href="{{ route('company.show-detail', $row['company_id']) }}">{{ $row['company'] }}</a>
                                         @else
-                                            <span class="text-muted">— no company</span>
+                                            <span class="text-muted">{{ $row['status'] === 'system' ? '— system site, not a company' : '— no company' }}</span>
                                         @endif
                                     </td>
                                     <td>{{ $row['employees'] !== null ? number_format($row['employees']) : '—' }}</td>
@@ -119,7 +120,7 @@
 
             <p class="mt-3 text-xs text-muted dark:text-darklink">
                 <strong>In use</strong>: a company owns the name and the subdomain exists. <strong>Missing</strong>: a company has the custom URL but the subdomain does not exist in cPanel yet.
-                <strong>Unused</strong>: the subdomain exists but no company owns it.
+                <strong>Unused</strong>: the subdomain exists but no company owns it. <strong>System</strong>: a site of its own (such as the admin) that is not a company subdomain; it is never offered for removal.
                 @unless($canRemove) Removing is switched off (<code>CPANEL_DELETE_ON_REMOVE</code>). @endunless
             </p>
         @endif

@@ -13,6 +13,8 @@ use App\Support\WordpressPublicUrl;
  *   in_use  — company has a custom URL and its subdomain exists in cPanel
  *   missing — company has a custom URL but no subdomain exists yet (can be created)
  *   unused  — a subdomain exists under the base domain but no company owns that name
+ *   system  — a subdomain that is not a company one (a reserved name such as admin, or one that
+ *             points somewhere other than the WordPress folder); shown, never counted as unused
  *   unknown — cPanel is not connected, so existence cannot be told
  */
 class DomainOverviewService
@@ -31,7 +33,7 @@ class DomainOverviewService
     public function build(): array
     {
         $base = WordpressPublicUrl::tenantBase();
-        $result = ['base' => $base, 'connected' => false, 'error' => null, 'rows' => [], 'counts' => ['in_use' => 0, 'missing' => 0, 'unused' => 0, 'unknown' => 0]];
+        $result = ['base' => $base, 'connected' => false, 'error' => null, 'rows' => [], 'counts' => ['in_use' => 0, 'missing' => 0, 'unused' => 0, 'unknown' => 0, 'system' => 0]];
 
         if ($base === null) {
             $result['error'] = 'The subdomain model is off: set WORDPRESS_TENANT_BASE_DOMAIN in .env.';
@@ -81,12 +83,23 @@ class DomainOverviewService
                 if (isset($owned[$fqdn]) || ! str_ends_with($fqdn, $suffix) || str_contains(substr($fqdn, 0, -strlen($suffix)), '.')) {
                     continue;
                 }
-                $result['rows'][] = $this->row('unused', $fqdn, null, null, $dir, $ssl[$fqdn] ?? null);
-                $result['counts']['unused']++;
+                $label = substr($fqdn, 0, -strlen($suffix));
+                $status = (in_array($label, Company::RESERVED_SLUGS, true) || ! $this->pointsToWordpress($dir)) ? 'system' : 'unused';
+                $result['rows'][] = $this->row($status, $fqdn, null, null, $dir, $ssl[$fqdn] ?? null);
+                $result['counts'][$status]++;
             }
         }
 
         return $result;
+    }
+
+    /** Does this document root belong to the WordPress site every company subdomain shares? */
+    private function pointsToWordpress(?string $dir): bool
+    {
+        $wanted = trim((string) config('cpanel.document_root'), '/');
+        $dir = trim((string) $dir, '/');
+
+        return $wanted !== '' && ($dir === $wanted || str_ends_with($dir, '/'.$wanted));
     }
 
     /** @param array{expires: ?int, self_signed: bool}|null $ssl */
