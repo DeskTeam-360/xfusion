@@ -5,6 +5,7 @@ namespace App\Observers;
 use App\Jobs\SyncCompanySubdomain;
 use App\Models\Company;
 use App\Services\CpanelSubdomainService;
+use Illuminate\Support\Facades\Log;
 
 /**
  * The trigger for cPanel automation: a company saved with a new custom URL (slug) needs
@@ -48,7 +49,15 @@ class CompanyObserver
                 return;
             }
 
-            SyncCompanySubdomain::dispatchAfterResponse($slug, $slugChanged ? $previous : null);
+            $old = $slugChanged ? $previous : null;
+            $mode = (string) config('cpanel.dispatch', 'after_response');
+            Log::info("cPanel: company #{$company->id} saved with custom URL '{$slug}' (was '".($old ?? $slug)."'); syncing subdomain [{$mode}]");
+
+            match ($mode) {
+                'sync' => SyncCompanySubdomain::dispatchSync($slug, $old),
+                'queue' => SyncCompanySubdomain::dispatch($slug, $old),
+                default => SyncCompanySubdomain::dispatchAfterResponse($slug, $old),
+            };
         } catch (\Throwable $e) {
             report($e);
         }

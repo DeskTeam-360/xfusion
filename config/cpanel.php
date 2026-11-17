@@ -50,6 +50,12 @@ return [
     // Delete the cPanel subdomain when a company is deleted or its custom URL changes.
     'delete_on_remove' => (bool) env('CPANEL_DELETE_ON_REMOVE', false),
 
+    // How saving a company triggers the subdomain sync:
+    //   after_response = right after the page has been sent (default; no queue worker needed)
+    //   sync           = inside the request, so a slow or failing cPanel shows up at once (good for debugging)
+    //   queue          = the 'database' queue; needs `php artisan queue:work` running
+    'dispatch' => env('CPANEL_DISPATCH', 'after_response'),
+
     'timeout' => (int) env('CPANEL_TIMEOUT', 25),
     'verify_ssl' => (bool) env('CPANEL_VERIFY_SSL', true),
 ];

@@ -156,7 +156,7 @@ class Company extends Component
         $qrcodeUrl = $this->qrcode_url != null ? $this->qrcode_url->store(path: 'public/qrcode') : '';
 
         // One transaction: a failure part-way must not leave a company without its leader/employee row.
-        DB::transaction(function () use ($logoUrl, $qrcodeUrl) {
+        $created = DB::transaction(function () use ($logoUrl, $qrcodeUrl) {
             $company = \App\Models\Company::create([
                 'user_id' => $this->user_id,
                 'title' => $this->title,
@@ -177,9 +177,11 @@ class Company extends Component
                 'user_id' => $this->user_id,
                 'company_id' => $company->id,
             ]);
+
+            return $company;
         });
         // Flashed, not dispatched: a browser event fired right before the redirect is lost with the page.
-        session()->flash('swal', ['icon' => 'success', 'title' => 'Successfully added company']);
+        session()->flash('swal', ['icon' => 'success', 'title' => 'Successfully added company'.$this->subdomainNote(null, (string) $created->fresh()?->slug), 'timeout' => 6000]);
         $this->redirect(route('company.index'));
     }
 
@@ -241,8 +243,22 @@ class Company extends Component
             \App\Models\User::find($this->user_id)?->saveMeta(['company' => $this->dataId]);
         }
 
-        session()->flash('swal', ['icon' => 'success', 'title' => 'Successfully changed the company']);
+        $slugNow = (string) \App\Models\Company::find($this->dataId)?->slug;
+        session()->flash('swal', ['icon' => 'success', 'title' => 'Successfully changed the company'.$this->subdomainNote((string) $data_compare->slug, $slugNow), 'timeout' => 6000]);
         $this->redirect(route('company.index'));
+    }
+
+    /**
+     * With cPanel automation on, saving a new or changed custom URL creates its subdomain
+     * (CompanyObserver). Say so in the confirmation, so it is visible that the trigger ran.
+     */
+    private function subdomainNote(?string $before, string $after): string
+    {
+        if ($after === '' || $after === (string) $before || ! \App\Services\CpanelSubdomainService::enabled()) {
+            return '';
+        }
+
+        return ' Subdomain '.\App\Services\CpanelSubdomainService::fqdn($after).' is being created in cPanel (see Organization > Domains).';
     }
 
     public function render()
