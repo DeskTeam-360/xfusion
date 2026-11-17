@@ -4,6 +4,7 @@ namespace App\Console\Commands;
 
 use App\Models\Company;
 use App\Services\CpanelSubdomainService;
+use App\Support\WordpressPublicUrl;
 use Illuminate\Console\Command;
 
 /**
@@ -40,13 +41,20 @@ class SyncCompanySubdomains extends Command
             return $result['ok'] ? self::SUCCESS : self::FAILURE;
         }
 
+        // --only takes the custom URL ("acme"); the full host ("acme.sandbox.example.com") is accepted too.
+        $only = strtolower(trim((string) $this->option('only')));
+        $suffix = '.'.WordpressPublicUrl::tenantBase();
+        if ($only !== '' && str_ends_with($only, $suffix)) {
+            $only = substr($only, 0, -strlen($suffix));
+        }
+
         $companies = Company::query()
             ->whereNotNull('slug')->where('slug', '!=', '')
-            ->when($this->option('only'), fn ($q, $only) => $q->where('slug', $only))
+            ->when($only !== '', fn ($q) => $q->where('slug', $only))
             ->orderBy('id')->get(['id', 'title', 'slug']);
 
         if ($companies->isEmpty()) {
-            $this->warn('No companies with a custom URL.');
+            $this->warn($only !== '' ? "No company has the custom URL '{$only}'." : 'No companies with a custom URL.');
 
             return self::SUCCESS;
         }
