@@ -5,6 +5,7 @@ use App\Http\Controllers\Admin\CampaignController;
 use App\Http\Controllers\Admin\CompanyController;
 use App\Http\Controllers\Admin\CompanyGroupController;
 use App\Http\Controllers\Admin\CourseGroupController;
+use App\Http\Controllers\Admin\DomainController;
 use App\Http\Controllers\Admin\CourseScoringGroupController;
 use App\Http\Controllers\Admin\XfusionKnowledgeController;
 use App\Http\Controllers\Admin\ExportController;
@@ -494,6 +495,11 @@ Route::middleware(['auth',],)->group(function () {
         AiGenerationController::class,
         'index',
     ],)->name('ai-generations.index',);
+
+    // Company subdomains: in use / missing / unused (WordPress administrators only; checked in the controller).
+    Route::get('domains', [DomainController::class, 'index'])->name('domains.index');
+    Route::post('domains/{slug}/create', [DomainController::class, 'create'])->where('slug', '[a-z0-9-]+')->name('domains.create');
+    Route::post('domains/{slug}/remove', [DomainController::class, 'remove'])->where('slug', '[a-z0-9-]+')->name('domains.remove');
 
     Route::get('company/{id}/activity/{type}', [
         CompanyController::class,

@@ -147,6 +147,81 @@ class CpanelSubdomainService
         ];
     }
 
+    /**
+     * Every subdomain that exists in the cPanel account.
+     *
+     * @return array{ok: bool, message: string, hosts: array<string, string>} host => document root
+     */
+    public function listSubdomains(): array
+    {
+        try {
+            $response = $this->http()->get($this->base().'/json-api/cpanel', [
+                'cpanel_jsonapi_user' => config('cpanel.user'),
+                'cpanel_jsonapi_apiversion' => 2,
+                'cpanel_jsonapi_module' => 'SubDomain',
+                'cpanel_jsonapi_func' => 'listsubdomains',
+            ]);
+        } catch (\Throwable $e) {
+            return $this->fail($e->getMessage()) + ['hosts' => []];
+        }
+
+        $json = $response->json();
+        $error = data_get($json, 'cpanelresult.error');
+        if (! $response->successful() || filled($error)) {
+            return ['ok' => false, 'message' => (string) ($error ?: 'HTTP '.$response->status()), 'hosts' => []];
+        }
+
+        $hosts = [];
+        foreach ((array) data_get($json, 'cpanelresult.data', []) as $row) {
+            $host = strtolower((string) data_get($row, 'domain', ''));
+            if ($host === '' && filled(data_get($row, 'subdomain')) && filled(data_get($row, 'rootdomain'))) {
+                $host = strtolower(data_get($row, 'subdomain').'.'.data_get($row, 'rootdomain'));
+            }
+            if ($host !== '') {
+                $hosts[$host] = (string) (data_get($row, 'basedir') ?: data_get($row, 'dir', ''));
+            }
+        }
+
+        return ['ok' => true, 'message' => 'ok', 'hosts' => $hosts];
+    }
+
+    /**
+     * Certificates installed on the account, by host. Best effort: the shape of this answer
+     * differs between cPanel versions, so anything unexpected simply yields no entry.
+     *
+     * @return array<string, array{expires: ?int, self_signed: bool}>
+     */
+    public function sslHosts(): array
+    {
+        try {
+            $response = $this->http()->get($this->base().'/execute/SSL/installed_hosts');
+        } catch (\Throwable) {
+            return [];
+        }
+
+        if (! $response->successful() || (int) data_get($response->json(), 'status', 0) !== 1) {
+            return [];
+        }
+
+        $map = [];
+        foreach ((array) data_get($response->json(), 'data', []) as $item) {
+            $expires = data_get($item, 'certificate.not_after');
+            $entry = [
+                'expires' => is_numeric($expires) ? (int) $expires : null,
+                'self_signed' => (bool) data_get($item, 'certificate.is_self_signed', false),
+            ];
+            $names = (array) data_get($item, 'domains', []);
+            if ($names === [] && filled(data_get($item, 'servername'))) {
+                $names = [data_get($item, 'servername')];
+            }
+            foreach ($names as $name) {
+                $map[strtolower((string) $name)] = $entry;
+            }
+        }
+
+        return $map;
+    }
+
     // ---- internals ----
 
     private function base(): string
