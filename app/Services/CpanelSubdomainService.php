@@ -27,6 +27,29 @@ class CpanelSubdomainService
     }
 
     /**
+     * Names of the settings that stop the automation from being on (values are never shown).
+     *
+     * @return list<string>
+     */
+    public static function missingSettings(): array
+    {
+        $missing = [];
+        if (! config('cpanel.enabled')) {
+            $missing[] = 'CPANEL_AUTOMATION_ENABLED=true';
+        }
+        foreach (['host' => 'CPANEL_HOST', 'user' => 'CPANEL_USER', 'token' => 'CPANEL_API_TOKEN', 'document_root' => 'CPANEL_DOCUMENT_ROOT'] as $key => $env) {
+            if (! filled(config('cpanel.'.$key))) {
+                $missing[] = $env;
+            }
+        }
+        if (WordpressPublicUrl::tenantBase() === null) {
+            $missing[] = 'WORDPRESS_TENANT_BASE_DOMAIN';
+        }
+
+        return $missing;
+    }
+
+    /**
      * The "domain" value cPanel wants for a company: the label plus whatever sits between the
      * label and the root domain. Base sandbox.xperiencefusion.com, root xperiencefusion.com,
      * slug "acme" => "acme.sandbox" (cPanel appends the root domain). Null when the slug

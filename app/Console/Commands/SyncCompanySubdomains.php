@@ -24,7 +24,11 @@ class SyncCompanySubdomains extends Command
     public function handle(CpanelSubdomainService $cpanel): int
     {
         if (! CpanelSubdomainService::enabled()) {
-            $this->error('Not enabled: set CPANEL_AUTOMATION_ENABLED=true, CPANEL_HOST, CPANEL_USER, CPANEL_API_TOKEN, CPANEL_DOCUMENT_ROOT and WORDPRESS_TENANT_BASE_DOMAIN (see config/cpanel.php), then php artisan config:clear.');
+            $this->error('Not enabled. Still missing or empty in .env:');
+            foreach (CpanelSubdomainService::missingSettings() as $name) {
+                $this->line('  - '.$name);
+            }
+            $this->line('Then run: php artisan config:clear  (see config/cpanel.php)');
 
             return self::FAILURE;
         }
