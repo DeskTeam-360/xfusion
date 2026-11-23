@@ -142,9 +142,20 @@ function xfusion_tenant_maybe_handoff(): void
 add_action('login_init', 'xfusion_tenant_maybe_handoff', 1);
 add_action('template_redirect', 'xfusion_tenant_maybe_handoff', 0);
 
-// wp_safe_redirect() only goes to allowed hosts: let valid company subdomains through.
+// wp_safe_redirect() only goes to allowed hosts. WordPress treats the host of home_url() as "this
+// site" — and on a company subdomain our home_url filter makes that the subdomain, so the MAIN
+// host (central login, wp-login.php) would count as foreign and every redirect to it would be
+// swapped for wp-admin. Allow the main host explicitly, and every valid company subdomain.
 add_filter('allowed_redirect_hosts', function ($hosts, $host = '') {
-    if (xfusion_tenant_enabled() && xfusion_tenant_slug_from_host((string) $host) !== '') {
+    if (! xfusion_tenant_enabled()) {
+        return $hosts;
+    }
+
+    $main = xfusion_tenant_main_host();
+    if ($main !== '') {
+        $hosts[] = $main;
+    }
+    if (xfusion_tenant_slug_from_host((string) $host) !== '') {
         $hosts[] = (string) $host;
     }
 
