@@ -33,19 +33,26 @@ function xfusion_custom_mark_complete_button($atts): string
 
 add_shortcode('mark_complete_button', 'xfusion_custom_mark_complete_button');
 
+// Signed-in learners only: there is no one to mark a topic complete for when signed out.
 add_action('wp_ajax_mark_topic_complete', 'xfusion_mark_topic_complete');
-add_action('wp_ajax_nopriv_mark_topic_complete', 'xfusion_mark_topic_complete');
 
 function xfusion_mark_topic_complete(): void
 {
     check_ajax_referer('xfusion_mark_topic_complete', 'nonce');
 
-    if (!isset($_POST['topic_id'], $_POST['user_id'])) {
+    if (!is_user_logged_in()) {
+        wp_send_json_error('Not signed in', 401);
+        return;
+    }
+
+    if (!isset($_POST['topic_id'])) {
         wp_send_json_error('Invalid request');
         return;
     }
 
-    $user_id = (int) $_POST['user_id'];
+    // Always the signed-in person. The page also posts a user_id, but a browser can send any number
+    // there, which let one person mark topics complete for another; it is ignored.
+    $user_id = get_current_user_id();
     $topic_id = (int) $_POST['topic_id'];
 
     if (!function_exists('learndash_is_topic_complete') || !function_exists('learndash_process_mark_complete')) {
