@@ -9,4 +9,11 @@ return [
     */
     'token' => env('FUSION_API_TOKEN'),
 
+    /*
+    | Shared secret for scheduled jobs that call maintenance URLs (refresh-all-users,
+    | export-password-to-keap). Send it as header X-Cron-Token or ?token=. Unset = only a
+    | signed-in WordPress administrator may call them.
+    */
+    'cron_token' => env('CRON_TOKEN'),
+
 ];

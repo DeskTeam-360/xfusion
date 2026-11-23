@@ -27,6 +27,8 @@ use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Route;
 use App\Support\CompanyAdmin;
+use App\Support\WpAdmin;
+use App\Services\CourseProgressService;
 
 Route::get('/', function () {
     return redirect()->route('dashboard',);
@@ -57,101 +59,31 @@ Route::get('/export-password-to-keap', function () {
         }
     }
     return response()->json(['status' => 'done']);
-},)->name('export-password-to-keap',);
+},)->middleware('admin.or.cron')->name('export-password-to-keap',);
 
+// "Refresh Progress" on Admin > User > Course. Needs a signed-in administrator, or the Company Admin of
+// that person's company (it used to answer anyone on the internet and change any user's progress).
 Route::get('/fresh-progress/{userId}', function ($userId) {
-    $user = User::find($userId);
-    
-    if (!$user) {
-        return response()->json([
-            'status' => 'error',
-            'message' => 'User not found'
-        ], 404);
+    $target = User::find($userId);
+    if (! $target) {
+        return response()->json(['status' => 'error', 'message' => 'User not found'], 404);
     }
 
-    // Get user's course progress meta
-    // $userMeta = $user->meta->where('meta_key', '=', '_sfwd-course_progress')->first();
-    $userMeta = WpUserMeta::where('user_id', $userId)
-    ->where('meta_key', '=', '_sfwd-course_progress')->first();
-    
-    if (!$userMeta) {
-        return response()->json([
-            'status' => 'error',
-            'message' => 'No course progress found for this user'
-        ], 404);
-    }
+    $viewer = Auth::user();
+    $allowed = WpAdmin::isAdministrator((int) Auth::id())
+        || (CompanyAdmin::isCompanyAdminPortalUser($viewer)
+            && CompanyAdmin::portalCompanyMetaId($viewer) !== null
+            && CompanyAdmin::portalCompanyMetaId($viewer) === CompanyAdmin::portalCompanyMetaId($target));
+    abort_unless($allowed, 403);
 
-    $courseUser = unserialize($userMeta->meta_value);
-    $updatedCount = 0;
-    $totalProcessed = 0;
-    $listErrors = [];
+    $result = app(CourseProgressService::class)->refreshForUser((int) $userId);
 
-    // Get all active WpGfEntry records for this user
-    $activeEntries = WpGfEntry::where('created_by', $userId)
-        ->where('status', 'active')
-        // ->where('is_read', 0)
-        ->get();
-
-    foreach ($activeEntries as $entry) {
-        $totalProcessed++;
-        
-        // Try to find the topic ID from the source_url
-        $topicId = null;
-        $courseId = null;
-        $lessonId = null;
-
-        try {
-            if ($entry->source_url) {
-                // Extract topic name from URL pattern: %/topics/topic-name/
-                if (preg_match('/\/topics\/([^\/]+)\//', $entry->source_url, $matches)) {
-                    $topicName = $matches[1];
-                    $topic = WpPost::where('post_name', $topicName)->where('post_type', 'sfwd-topic')->first();
-                    
-                    if ($topic) {
-                        $topicId = $topic->ID;
-                        $lessonId = WpPostMeta::where('post_id', $topicId)->where('meta_key', '=', 'lesson_id')->first()->meta_value;
-                        $courseId = WpPostMeta::where('post_id', $topicId)->where('meta_key', '=', 'course_id')->first()->meta_value;
-                    }
-                }
-            }
-    
-                $courseUser[$courseId]['topics'][$lessonId][$topicId] = 1;
-                $updatedCount++;
-            // }
-            
-        } catch (\Throwable $th) {
-            //throw $th;
-            $listErrors[] = $th->getMessage().' '.$entry->source_url;
-        }
-
-        
-        $entry->update([
-            'is_read' => 1
-        ]);
-        $entry->save();
-    }
-
-    // Update the user's meta value if any changes were made
-    if ($updatedCount > 0) {
-        $userMeta->update([
-            'meta_value' => serialize($courseUser)
-        ]);
-    }
-    // dd($courseUser);
     return response()->json([
-        'status' => 'success',
-        'message' => "Fresh progress update completed",
-        'data' => [
-            'user_id' => $userId,
-            'user_meta_id' => $courseUser,
-            'total_entries_processed' => $totalProcessed,
-            'progress_entries_updated' => $updatedCount,
-            'user_email' => $user->email,
-            'list_errors' => $listErrors
-        ]
-    ]);
-
-})->name('fresh-progress');
+        'status' => $result['ok'] ? 'success' : 'error',
+        'message' => $result['message'],
+        'data' => $result['data'],
+    ], $result['http']);
+})->middleware('auth')->name('fresh-progress');
 
 Route::get('/refresh-all-users', function () {
     $users = User::all();
@@ -259,7 +191,7 @@ Route::get('/refresh-all-users', function () {
             'errors' => $allErrors
         ]
     ]);
-})->name('refresh-all-users');
+})->middleware('admin.or.cron')->name('refresh-all-users');
 
 Route::middleware(['auth',],)->group(function () {
     // One-time sign-in hand-off to the WordPress site (see App\Support\WpSso).

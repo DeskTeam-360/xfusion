@@ -233,10 +233,23 @@ Route::post('/register/',function(Request $request){
 
 Route::post('/next-course/', function (Request $request) {
     $data = $request->all();
-    $dataEntry = WpGfEntry::find($data['entry_id']);
+    $dataEntry = WpGfEntry::find($data['entry_id'] ?? 0);
+    if (! $dataEntry) {
+        return response()->json(['status' => 'error', 'message' => 'Entry not found'], 404);
+    }
+
+    // Every form submission refreshes that person's course progress from their form entries (what the
+    // "Refresh Progress" button does), so a submitted form always shows up, whatever happens below.
+    try {
+        app(\App\Services\CourseProgressService::class)->refreshForUser((int) $dataEntry->created_by);
+    } catch (\Throwable $e) {
+        report($e);
+    }
+
     $userId = $dataEntry->created_by;
-    $tag = CourseList::where('wp_gf_form_id',$dataEntry->form_id)->first()->keap_tag_next;
-    $tag2 = CourseList::where('wp_gf_form_id',$dataEntry->form_id)->first()->keap_tag_next;
+    $courseListRow = CourseList::where('wp_gf_form_id', $dataEntry->form_id)->first();
+    $tag = $courseListRow?->keap_tag_next;
+    $tag2 = $tag;
 
 
     
@@ -273,8 +286,11 @@ Route::post('/next-course/', function (Request $request) {
                     $courseId = WpPostMeta::where('post_id', $topicId)->where('meta_key', '=', 'course_id')->first()->meta_value;
                 }
             }
-            $courseUser[$courseId]['topics'][$lessonId][$topicId] = 1;
-            $updatedCount++;
+            // Only when the topic was found (with a missing id this wrote a nameless entry into the progress).
+            if ($topicId && $lessonId && $courseId) {
+                $courseUser[$courseId]['topics'][$lessonId][$topicId] = 1;
+                $updatedCount++;
+            }
 
             // Update the user's meta value if any changes were made
             if ($updatedCount > 0) {
@@ -296,7 +312,7 @@ Route::post('/next-course/', function (Request $request) {
         if (str_contains($userAccess, '"sustain"')) {
             $tag2 = 322;
             if ($tag2){
-                $tag = tag2;
+                $tag = $tag2;
                 $user = User::find($userId);
                 $keapId = $user->meta->where('meta_key','keap_contact_id')->first();
                 $keapTag = $user->meta->where('meta_key','keap_tags')->first();
@@ -331,7 +347,7 @@ Route::post('/next-course/', function (Request $request) {
         if (str_contains($userAccess, '"transform"')) {
             $tag2 = 1012;
             if ($tag2){
-                $tag = tag2;
+                $tag = $tag2;
                 $user = User::find($userId);
                 $keapId = $user->meta->where('meta_key','keap_contact_id')->first();
                 $keapTag = $user->meta->where('meta_key','keap_tags')->first();

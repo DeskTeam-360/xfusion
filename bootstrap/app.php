@@ -16,6 +16,7 @@ return Application::configure(basePath: dirname(__DIR__))
             'checkRole' => \App\Http\Middleware\CheckRole::class,
             'fusion.api' => \App\Http\Middleware\VerifyFusionApiToken::class,
             'company.admin' => \App\Http\Middleware\EnsureCompanyAdmin::class,
+            'admin.or.cron' => \App\Http\Middleware\EnsureAdminOrCronToken::class,
         ]);
     })
     ->withExceptions(function (Exceptions $exceptions) {
