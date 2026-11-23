@@ -13,10 +13,35 @@ defined('ABSPATH') || exit;
 add_action('gform_after_submission', 'xfusion_gform_after_submission_mark_ld_topic_from_course_list', 10, 2);
 
 /**
+ * Every submitted form tells Laravel (/api/next-course), whatever happens to the LearnDash topic.
+ * Laravel then refreshes that person's course progress from their form entries. This used to be
+ * called only when this function had just marked a topic complete, so a form with no LMS topic
+ * mapped, a topic that was already complete, or a failed mark-complete never reached Laravel and
+ * the progress stayed out of date until someone pressed "Refresh Progress".
+ *
  * @param array<string, mixed> $entry
  * @param array<string, mixed> $form
  */
 function xfusion_gform_after_submission_mark_ld_topic_from_course_list(array $entry, array $form): void
+{
+    try {
+        xfusion_mark_ld_topic_for_submission($entry, $form);
+    } finally {
+        $entry_id = isset($entry['id']) ? (int) $entry['id'] : 0;
+        $user_id = (int) ($entry['created_by'] ?? 0) ?: get_current_user_id();
+        if ($entry_id > 0 && $user_id > 0) {
+            xfusion_post_next_course_api($entry_id);
+        }
+    }
+}
+
+/**
+ * Marks the LearnDash topic linked to the form (wp_course_lists.lms_topic_id) complete, if there is one.
+ *
+ * @param array<string, mixed> $entry
+ * @param array<string, mixed> $form
+ */
+function xfusion_mark_ld_topic_for_submission(array $entry, array $form): void
 {
     if (!isset($form['id'])) {
         return;
@@ -64,14 +89,7 @@ function xfusion_gform_after_submission_mark_ld_topic_from_course_list(array $en
         return;
     }
 
-    if (!learndash_process_mark_complete($user_id, $topic_id)) {
-        return;
-    }
-
-    $entry_id = isset($entry['id']) ? (int) $entry['id'] : 0;
-    if ($entry_id > 0) {
-        xfusion_post_next_course_api($entry_id);
-    }
+    learndash_process_mark_complete($user_id, $topic_id);
 }
 
 /**
