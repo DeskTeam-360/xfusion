@@ -375,11 +375,13 @@ add_filter('redirect_canonical', function ($redirect, $requested) {
 }, 10, 2);
 
 /**
- * Pages opened from the admin FUSION Overview (?xf_overview=1) get a "Close tab"
- * button next to the wizard's Prev/Close button (floating bottom-right when the
- * page has no wizard, e.g. a picker). The flag is remembered per tab
- * (sessionStorage) so it survives navigating inside the module, and never
- * shows in tabs opened any other way.
+ * Tabs the admin FUSION Overview opened with window.open (it marks the URL with
+ * ?xf_overview=1) get a "Close tab" button next to the wizard's Prev/Close button
+ * (floating bottom-right when the page has no wizard, e.g. a picker). Browsers only
+ * let a script close a tab that a script opened, so the button is shown only for
+ * those tabs (window.opener is set); a tab opened any other way gets no button.
+ * The decision is remembered per tab (sessionStorage) so it survives moving around
+ * inside the module, where the opener may no longer be reachable.
  */
 add_action('wp_footer', function (): void {
     if (! is_user_logged_in() || ! current_user_can('manage_options')) {
@@ -389,8 +391,12 @@ add_action('wp_footer', function (): void {
 <script>
 (function () {
     try {
-        if (/[?&]xf_overview=1(&|$)/.test(location.search)) { sessionStorage.setItem('xf_overview_tab', '1'); }
-        if (sessionStorage.getItem('xf_overview_tab') !== '1') { return; }
+        // First page of a tab opened from the overview: it is closable only if a script opened it.
+        if (/[?&]xf_overview=1(&|$)/.test(location.search)) {
+            if (window.opener) { sessionStorage.setItem('xf_closable_tab', '1'); }
+            else { sessionStorage.removeItem('xf_closable_tab'); }
+        }
+        if (sessionStorage.getItem('xf_closable_tab') !== '1') { return; }
     } catch (e) { return; }
 
     var PREV = '#xar-prev-step,#xarr-prev-step,#xirr-prev-step,#xfw-prev-step,#xqbr-prev-step';
@@ -402,8 +408,8 @@ add_action('wp_footer', function (): void {
         b.textContent = 'Close tab';
         b.addEventListener('click', function () {
             window.close();
-            // Browsers refuse to close tabs they consider user-opened.
-            setTimeout(function () { if (!window.closed) { b.textContent = 'Press Ctrl+W to close this tab'; } }, 300);
+            // If the browser still refuses, an inert button is worse than none: remove it.
+            setTimeout(function () { b.remove(); }, 300);
         });
         return b;
     }
