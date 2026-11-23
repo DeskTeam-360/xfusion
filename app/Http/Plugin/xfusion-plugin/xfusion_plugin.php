@@ -823,7 +823,7 @@ function get_company_info()
     wp_send_json_success([
         "logo_url" => null,
         "qrcode_url" => null,
-        "tools" => $limit->repeat_entry,
+        "tools" => null,
     ]);
     wp_die();
 }
