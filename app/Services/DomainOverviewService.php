@@ -93,6 +93,37 @@ class DomainOverviewService
         return $result;
     }
 
+    public const SSL_PENDING_CACHE_KEY = 'domains.ssl_pending';
+
+    /**
+     * Company subdomains that exist but have no usable certificate (none yet, self-signed,
+     * expired) or whose certificate runs out soon. Certificates cannot be requested by API on
+     * this server, so someone has to press "Run AutoSSL" in cPanel; this is the to-do list for it.
+     * Cached for 5 minutes, because it asks cPanel twice.
+     *
+     * @return array{connected: bool, domains: list<array{fqdn: string, state: string, company: ?string}>}
+     */
+    public function pendingSsl(): array
+    {
+        return \Illuminate\Support\Facades\Cache::remember(self::SSL_PENDING_CACHE_KEY, 300, function () {
+            $overview = $this->build();
+            $domains = [];
+            foreach ($overview['rows'] as $row) {
+                if ($row['status'] === 'in_use' && in_array($row['ssl'], ['none', 'self-signed', 'expired', 'expiring'], true)) {
+                    $domains[] = ['fqdn' => $row['fqdn'], 'state' => $row['ssl'], 'company' => $row['company']];
+                }
+            }
+
+            return ['connected' => $overview['connected'], 'domains' => $domains];
+        });
+    }
+
+    /** Forget the cached list, e.g. right after a subdomain was created. */
+    public static function forgetSslPending(): void
+    {
+        \Illuminate\Support\Facades\Cache::forget(self::SSL_PENDING_CACHE_KEY);
+    }
+
     /** Does this document root belong to the WordPress site every company subdomain shares? */
     private function pointsToWordpress(?string $dir): bool
     {

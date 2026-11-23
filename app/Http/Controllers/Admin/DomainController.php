@@ -43,6 +43,7 @@ class DomainController extends Controller
         }
 
         $cpanel->startAutoSsl();
+        DomainOverviewService::forgetSslPending();
 
         return $this->back('success', CpanelSubdomainService::fqdn($slug).' is ready. The certificate follows after AutoSSL runs.');
     }
@@ -60,6 +61,7 @@ class DomainController extends Controller
         }
 
         $result = $cpanel->remove($slug);
+        DomainOverviewService::forgetSslPending();
 
         return $result['ok']
             ? $this->back('success', CpanelSubdomainService::fqdn($slug).' was removed.')

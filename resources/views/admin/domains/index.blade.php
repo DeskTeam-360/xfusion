@@ -9,6 +9,8 @@
             </p>
         </div>
 
+        <x-admin.ssl-notice />
+
         @if($overview['error'])
             <div class="alert alert-warning mb-4" role="alert">{{ $overview['error'] }}</div>
         @elseif(! $automation)

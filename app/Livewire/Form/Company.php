@@ -258,7 +258,7 @@ class Company extends Component
             return '';
         }
 
-        return ' Subdomain '.\App\Services\CpanelSubdomainService::fqdn($after).' is being created in cPanel (see Organization > Domains).';
+        return ' Subdomain '.\App\Services\CpanelSubdomainService::fqdn($after).' is being created in cPanel. Its certificate is not automatic: in cPanel open SSL/TLS Status and click Run AutoSSL.';
     }
 
     public function render()

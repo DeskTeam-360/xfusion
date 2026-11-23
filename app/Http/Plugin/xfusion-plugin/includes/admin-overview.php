@@ -208,6 +208,9 @@ function xfusion_admin_overview_html(): string
         . '.xf-ov-section.is-loading,#xf-ov-view.is-loading{opacity:.5;pointer-events:none;transition:opacity .15s}'
         . '.xf-ov .xf-ov-muted{color:var(--muted);line-height:1.5}'
         . '</style><div class="xf-ov">';
+    if (! is_admin() && function_exists('xfusion_ssl_notice_html')) {
+        echo '<div class="xf-ov-body" style="padding-bottom:0">' . xfusion_ssl_notice_html() . '</div>'; // phpcs:ignore WordPress.Security.EscapeOutput
+    }
     echo '<div class="xf-ov-header"><h1>FUSION OVERVIEW</h1><p>Every company in one place. IRR and 1-on-1 open read-only; raw 1-on-1 preparation stays private.</p></div>';
     echo '<div class="xf-ov-body">';
 

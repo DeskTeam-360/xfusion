@@ -13,6 +13,7 @@ $xfusion_include_files = [
     'tenant-host.php',
     'tenant-routing.php',
     'security-hardening.php',
+    'ssl-notice.php',
     'wp-sso.php',
     'schema-check-admin.php',
     'admin-overview.php',

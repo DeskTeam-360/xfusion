@@ -6,7 +6,7 @@
     </div>
     <div class="px-5 py-5">
 
-    
+    <x-admin.ssl-notice />
 
         <div class="col-span-12 grid grid-cols-12 gap-3 items-stretch">
 

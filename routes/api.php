@@ -413,6 +413,7 @@ Route::get('/next-course/', function (Request $request) {
 */
 Route::prefix('v1')->middleware('fusion.api')->group(function () {
     Route::get('/schema-check', \App\Http\Controllers\Api\SchemaCheckController::class);
+    Route::get('/domain-ssl', \App\Http\Controllers\Api\DomainSslController::class);
     Route::get('/companies', [CompanyPublicController::class, 'index']);
     Route::get('/companies/{company}', [CompanyPublicController::class, 'show']);
     Route::get('/companies/{company}/participation-charts', [ParticipationChartsController::class, 'show']);

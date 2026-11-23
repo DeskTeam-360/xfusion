@@ -41,6 +41,7 @@ class SyncCompanySubdomain implements ShouldQueue
         if ($cpanel->provision($this->slug)['ok']) {
             $cpanel->startAutoSsl();
         }
+        \App\Services\DomainOverviewService::forgetSslPending();
 
         if ($this->oldSlug !== null && $this->oldSlug !== '' && $this->oldSlug !== $this->slug && config('cpanel.delete_on_remove')) {
             $cpanel->remove($this->oldSlug);
