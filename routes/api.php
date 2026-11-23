@@ -241,7 +241,8 @@ Route::post('/next-course/', function (Request $request) {
     // Every form submission refreshes that person's course progress from their form entries (what the
     // "Refresh Progress" button does), so a submitted form always shows up, whatever happens below.
     try {
-        app(\App\Services\CourseProgressService::class)->refreshForUser((int) $dataEntry->created_by);
+        $progress = app(\App\Services\CourseProgressService::class)->refreshForUser((int) $dataEntry->created_by);
+        \Illuminate\Support\Facades\Log::info("next-course: entry {$dataEntry->id}, user {$dataEntry->created_by}: {$progress['message']}; topics marked ".($progress['data']['progress_entries_updated'] ?? 0));
     } catch (\Throwable $e) {
         report($e);
     }
