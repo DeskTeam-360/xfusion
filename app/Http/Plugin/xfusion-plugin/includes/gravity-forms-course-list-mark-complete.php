@@ -133,9 +133,9 @@ function xfusion_post_next_course_api(int $entry_id): void
     $url = $base . '/api/next-course?entry_id=' . $entry_id;
 
     $args = [
-        'timeout' => 15,
+        'timeout' => 20,
         'sslverify' => true,
-        'blocking' => false,
+        'blocking' => true,
         'headers' => [
             'Accept' => 'application/json',
         ],
@@ -148,5 +148,16 @@ function xfusion_post_next_course_api(int $entry_id): void
         $args['headers']['Authorization'] = 'Bearer ' . XFUSION_API_BEARER_TOKEN;
     }
 
-    wp_remote_post($url, $args);
+    $response = wp_remote_post($url, $args);
+
+    // Leave a trace in the PHP error log, so "progress not detected" can be told apart:
+    // WordPress never reached Laravel (error / non-200) versus Laravel ran but found no topic.
+    if (is_wp_error($response)) {
+        error_log('[xfusion] next-course entry ' . $entry_id . ' failed: ' . $response->get_error_message());
+    } else {
+        $code = (int) wp_remote_retrieve_response_code($response);
+        if ($code !== 200) {
+            error_log('[xfusion] next-course entry ' . $entry_id . ' answered HTTP ' . $code . ': ' . substr((string) wp_remote_retrieve_body($response), 0, 300));
+        }
+    }
 }
