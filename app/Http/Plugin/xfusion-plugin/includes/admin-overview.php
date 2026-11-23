@@ -119,7 +119,7 @@ function xfusion_admin_overview_section_html(string $key, int $companyId, int $p
         $html .= '<table><thead><tr><th>Leader / Employee</th><th>Scheduled</th><th>Status</th><th></th></tr></thead><tbody>';
         foreach ($rows as $r) {
             $html .= '<tr><td>' . $e($r['leader']) . ' / ' . $e($r['employee']) . '</td><td>' . $e($r['scheduled_at']) . '</td><td>' . xfusion_admin_overview_badge($r['status'])
-                . '</td><td><a class="xf-open" target="_blank" rel="noopener" href="'
+                . '</td><td><a class="xf-open" target="_blank" rel="noopener" data-xf-newtab="1" href="'
                 . esc_url(xfusion_admin_overview_url($slug, '1-on-1-alignment', 'conversation_id', (int) $r['id'])) . '">Open (read-only)</a></td></tr>';
         }
     } else {
@@ -131,7 +131,7 @@ function xfusion_admin_overview_section_html(string $key, int $companyId, int $p
         ), ARRAY_A);
         $html .= '<table><thead><tr><th>Record</th><th>Status</th><th></th></tr></thead><tbody>';
         foreach ($rows as $r) {
-            $html .= '<tr><td>' . $e($r['label']) . '</td><td>' . xfusion_admin_overview_badge($r['status']) . '</td><td><a class="xf-open" target="_blank" rel="noopener" href="'
+            $html .= '<tr><td>' . $e($r['label']) . '</td><td>' . xfusion_admin_overview_badge($r['status']) . '</td><td><a class="xf-open" target="_blank" rel="noopener" data-xf-newtab="1" href="'
                 . esc_url(xfusion_admin_overview_url($slug, $m[1], $m[2], (int) $r['id'])) . '">Open</a></td></tr>';
         }
     }
@@ -258,6 +258,15 @@ function xfusion_admin_overview_html(): string
     });
 
     view.addEventListener('click', function (ev) {
+        // Open records through window.open(): a tab opened by a script may close itself
+        // (the "Close tab" button). A tab opened by a plain link may not, once it has moved
+        // between pages. If the browser blocks the pop-up, the link works as usual.
+        var tab = ev.target.closest('a[data-xf-newtab]');
+        if (tab && !ev.ctrlKey && !ev.metaKey && !ev.shiftKey && ev.button === 0) {
+            if (window.open(tab.href, '_blank')) { ev.preventDefault(); }
+            return;
+        }
+
         var open = ev.target.closest('[data-company-open]');
         if (open) { ev.preventDefault(); loadCompany(open.dataset.companyOpen, true); return; }
 
@@ -322,9 +331,9 @@ function xfusion_admin_overview_view_html(int $companyId): string
 
     echo '<div class="xf-ov-company" style="margin-top:1rem"><h2>' . $e($company['title']) . '</h2><div class="xf-ov-links">';
     foreach ($modules as $m) {
-        echo '<a class="button" target="_blank" rel="noopener" href="' . esc_url(xfusion_admin_overview_url($company['slug'], $m[1])) . '">' . $e($m[0]) . ' page</a>';
+        echo '<a class="button" target="_blank" rel="noopener" data-xf-newtab="1" href="' . esc_url(xfusion_admin_overview_url($company['slug'], $m[1])) . '">' . $e($m[0]) . ' page</a>';
     }
-    echo '<a class="button" target="_blank" rel="noopener" href="' . esc_url(xfusion_admin_overview_url($company['slug'], '1-on-1-alignment')) . '">1-on-1 page</a></div></div>';
+    echo '<a class="button" target="_blank" rel="noopener" data-xf-newtab="1" href="' . esc_url(xfusion_admin_overview_url($company['slug'], '1-on-1-alignment')) . '">1-on-1 page</a></div></div>';
 
     echo '<div id="xf-ov-lists">';
     foreach (array_merge(array_keys($modules), ['1on1']) as $key) {
