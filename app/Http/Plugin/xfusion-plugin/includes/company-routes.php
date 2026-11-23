@@ -196,6 +196,16 @@ add_action('template_redirect', function (): void {
         }
 
         if (! is_user_logged_in()) {
+            // Without the shared secret nobody can be handed over from the main domain; say so
+            // instead of bouncing between the login page and this address.
+            if ($hostSlug !== '' && function_exists('xfusion_sso_ready') && ! xfusion_sso_ready()) {
+                wp_die(
+                    'Company subdomains are switched on, but XFUSION_SSO_SECRET is not defined in wp-config.php, so signing in on this address cannot work yet.',
+                    'Company subdomain not ready',
+                    ['response' => 503]
+                );
+            }
+
             // Sign-in is central (main domain); the redirect brings them back here, signed in.
             $back = $hostSlug !== '' ? xfusion_tenant_current_url() : home_url(add_query_arg([]));
             wp_safe_redirect(wp_login_url($back));

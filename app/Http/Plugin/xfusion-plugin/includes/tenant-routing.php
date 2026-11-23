@@ -103,8 +103,12 @@ add_filter('login_redirect', function ($redirectTo, $requested, $user) {
 }, 20, 3);
 
 // Ultimate Member computes its own redirect: apply_filters('um_login_redirect_url', $url, $user_id).
+// It does not hand us the page that was asked for, but the login form posts back to the URL that
+// still carries ?redirect_to=<company subdomain URL>, so read it from the request. Without this a
+// successful login ended on UM's own page (wp-admin for administrators) instead of the subdomain.
 add_filter('um_login_redirect_url', function ($url, $userId = 0) {
-    $target = xfusion_tenant_login_target(get_userdata((int) $userId), '');
+    $requested = isset($_REQUEST['redirect_to']) ? esc_url_raw(wp_unslash((string) $_REQUEST['redirect_to'])) : '';
+    $target = xfusion_tenant_login_target(get_userdata((int) $userId), $requested);
 
     return $target !== '' ? $target : $url;
 }, 20, 2);
