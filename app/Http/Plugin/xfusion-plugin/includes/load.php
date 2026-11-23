@@ -12,6 +12,7 @@ $xfusion_include_files = [
     'company-routes.php',
     'tenant-host.php',
     'tenant-routing.php',
+    'security-hardening.php',
     'wp-sso.php',
     'schema-check-admin.php',
     'admin-overview.php',
