@@ -11,7 +11,7 @@
 
     <!-- Include Font Awesome -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/all.min.css"
-        integrity="sha512-ZCN2fU2XFD8wYg5Q9w77p8xJZXsU23Z4A1x02vQs7v3/6aiyA1BcIqXSy3EfrK1kQ2EJRo7ar4+o2pxZlYrElw=="
+        integrity="sha512-1ycn6IcaQQ40/MKBW2W4Rhis/DbILU74C1vSrLJxCq57o941Ym01SwNsOMqvEBF1cgUa6xLiPY/NS5R+E6ztJQ=="
         crossorigin="anonymous" referrerpolicy="no-referrer" />
     <!-- Favicon icon-->
     <link rel="shortcut icon" type="image/png" href="{{ asset('assets/images/logos/favicon.png') }}" />
@@ -170,7 +170,7 @@
     <script src="{{ asset('vendor/select2/select2.min.js') }}"></script>
     {{-- <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11/dist/sweetalert2.min.js"></script> --}}
     <script src="//cdn.jsdelivr.net/npm/sweetalert2@11"></script>
-    <script src="//cdn.jsdelivr.net/npm/@sweetalert2/theme-dark@4/dark.css"></script>
+    {{-- The SweetAlert dark theme is a stylesheet: it is added as a <link> by the theme switcher below. As a <script> it only produced a MIME-type error. --}}
     <script src="https://cdn.jsdelivr.net/gh/fcmam5/nightly.js@v1.0/dist/nightly.min.js"></script>
 
     @if(session('swal'))
