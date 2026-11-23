@@ -655,6 +655,25 @@ function get_company_info()
                     : null;
             }
 
+            // Opening somebody else's entry (?dataId=…): an administrator, or a company admin for their own
+            // company, following a progress link. The answer must carry the entry's form id so the page can
+            // pre-fill it; the owner-only lookup below finds nothing for them, which left the form empty.
+            $viewedId = function_exists('xfusion_requested_data_id') ? xfusion_requested_data_id() : 0;
+            if ($viewedId > 0 && function_exists('xfusion_viewable_entry_for_form')) {
+                $viewed = xfusion_viewable_entry_for_form($viewedId, (int) $limit->wp_gf_form_id);
+                if ($viewed !== null && (int) ($viewed['created_by'] ?? 0) !== (int) $userID) {
+                    wp_send_json_success([
+                        "logo_url" => $result["logo_url"] ?? null,
+                        "qrcode_url" => $result["qrcode_url"] ?? null,
+                        "company_url" => $result["company_url"] ?? null,
+                        "form_id" => (int) $limit->wp_gf_form_id,
+                        "url_next" => $limit->url_next,
+                        "tools" => $limit->repeat_entry,
+                    ]);
+                    wp_die();
+                }
+            }
+
             $checkEntry = $wpdb->get_results(
                 $wpdb->prepare(
                     'SELECT id, form_id FROM wp_gf_entry WHERE form_id = %d AND created_by = %d AND status = %s',

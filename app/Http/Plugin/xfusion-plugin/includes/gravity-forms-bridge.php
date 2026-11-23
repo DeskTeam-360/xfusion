@@ -7,6 +7,61 @@
 
 defined('ABSPATH') || exit;
 
+/** The ?dataId=NNN carried in the "param" the page posts to get_company_info (0 if none). */
+function xfusion_requested_data_id(): int
+{
+    parse_str((string) wp_unslash($_POST['param'] ?? ''), $query);
+
+    return isset($query['dataId']) ? absint($query['dataId']) : 0;
+}
+
+/**
+ * May the signed-in person see this Gravity Forms entry (their raw answers)?
+ *  - the person who made it;
+ *  - a WordPress administrator or a Super Admin;
+ *  - an editor / Company Admin, for entries of people in their own company.
+ * Everyone else — including signed-out visitors — no. Override with the xfusion_gf_entry_viewable filter.
+ *
+ * @param array<string, mixed> $entry
+ */
+function xfusion_can_view_gf_entry(array $entry): bool
+{
+    $allowed = false;
+
+    if (is_user_logged_in()) {
+        $me = wp_get_current_user();
+        $owner = (int) ($entry['created_by'] ?? 0);
+        $rawRole = get_user_meta($me->ID, 'user_role', true);
+        $role = is_array($rawRole) ? (string) ($rawRole[0] ?? '') : (string) $rawRole;
+
+        if ($owner > 0 && $owner === (int) $me->ID) {
+            $allowed = true;
+        } elseif (in_array('administrator', (array) $me->roles, true) || $role === 'Super Admin') {
+            $allowed = true;
+        } elseif ($owner > 0 && (in_array('editor', (array) $me->roles, true) || $role === 'Company Admin')) {
+            $mine = (int) get_user_meta($me->ID, 'company', true);
+            $allowed = $mine > 0 && $mine === (int) get_user_meta($owner, 'company', true);
+        }
+    }
+
+    return (bool) apply_filters('xfusion_gf_entry_viewable', $allowed, $entry);
+}
+
+/** The active entry $entryId of form $formId if the signed-in person may see it, else null. */
+function xfusion_viewable_entry_for_form(int $entryId, int $formId): ?array
+{
+    if (! class_exists('GFAPI') || $entryId < 1 || $formId < 1) {
+        return null;
+    }
+
+    $entry = GFAPI::get_entry($entryId);
+    if (is_wp_error($entry) || (int) ($entry['form_id'] ?? 0) !== $formId || ($entry['status'] ?? '') !== 'active') {
+        return null;
+    }
+
+    return xfusion_can_view_gf_entry($entry) ? $entry : null;
+}
+
 add_action('wp_ajax_get_form_data_gform', 'xfusion_ajax_get_form_data_gform', 20);
 add_action('wp_ajax_nopriv_get_form_data_gform', 'xfusion_ajax_get_form_data_gform', 20);
 
@@ -37,6 +92,12 @@ function xfusion_ajax_get_form_data_gform(): void
 
     if (($entry['status'] ?? '') !== 'active') {
         wp_send_json_error(['message' => 'Entry not active.'], 404);
+    }
+
+    // This endpoint is also registered for signed-out visitors (nopriv) and used to hand any entry's
+    // answers to anyone who knew its number. Only people who may see the entry get it now.
+    if (! xfusion_can_view_gf_entry($entry)) {
+        wp_send_json_error(['message' => 'Not allowed.'], 403);
     }
 
     wp_send_json_success([$entry]);
