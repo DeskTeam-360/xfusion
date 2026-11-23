@@ -391,3 +391,45 @@ function xfusion_tenant_status_html(): string
 
     return $html;
 }
+
+// ---- Assets (CSS, JS, fonts, uploads) come from the host the page was opened on ----
+
+/**
+ * WordPress builds asset URLs from the site's own address (the main domain). On a company
+ * subdomain that makes every stylesheet, script and font a cross-origin request, and browsers
+ * refuse cross-origin fonts unless the server sends an Access-Control-Allow-Origin header. The
+ * files are the same ones (every subdomain points at this WordPress folder), so serve them from
+ * the current host instead: same origin, no header needed, and the fonts a stylesheet refers to
+ * follow it automatically.
+ */
+function xfusion_tenant_localize_asset_url($url)
+{
+    if (! is_string($url) || $url === '' || ! xfusion_tenant_on_company_host()) {
+        return $url;
+    }
+
+    $host = wp_parse_url($url, PHP_URL_HOST);
+    if (! is_string($host) || strtolower($host) !== xfusion_tenant_main_host()) {
+        return $url;
+    }
+
+    return xfusion_tenant_replace_host($url, xfusion_tenant_current_host());
+}
+
+foreach (['style_loader_src', 'script_loader_src', 'content_url', 'plugins_url', 'includes_url', 'theme_root_uri', 'template_directory_uri', 'stylesheet_directory_uri'] as $xfusionAssetFilter) {
+    add_filter($xfusionAssetFilter, 'xfusion_tenant_localize_asset_url', 20, 1);
+}
+unset($xfusionAssetFilter);
+
+// Uploads (Elementor's generated CSS, media): wp_upload_dir() carries the base address.
+add_filter('upload_dir', function ($dirs) {
+    if (is_array($dirs)) {
+        foreach (['url', 'baseurl'] as $key) {
+            if (isset($dirs[$key])) {
+                $dirs[$key] = xfusion_tenant_localize_asset_url($dirs[$key]);
+            }
+        }
+    }
+
+    return $dirs;
+}, 20, 1);
